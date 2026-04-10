@@ -90,10 +90,28 @@ def run(
         print(f"[fetch] {len(enabled)} aktive Feeds{label}")
 
     for jc in enabled:
-        if verbose:
-            print(f"\n[fetch] → {jc.short} ({jc.type})")
-        try:
+        # For backfill: use OpenAlex for RSS/OJS journals that have an ISSN
+        use_openalex_backfill = (
+            since_year
+            and jc.type in ("rss", "ojs", "html")
+            and jc.issn
+        )
+        if use_openalex_backfill:
+            from journal_bot.fetchers.openalex_fetcher import OpenAlexFetcher
+            from journal_bot.settings import JournalConfig
+            backfill_jc = JournalConfig(
+                name=jc.name, short=jc.short, type="openalex",
+                url=f"issn:{jc.issn}", enabled=True, issn=jc.issn,
+            )
+            if verbose:
+                print(f"\n[fetch] → {jc.short} (openalex-backfill, ISSN {jc.issn})")
+            fetcher = OpenAlexFetcher(backfill_jc, since_year=since_year)
+        else:
+            if verbose:
+                print(f"\n[fetch] → {jc.short} ({jc.type})")
             fetcher = build_fetcher(jc, since_year=since_year)
+
+        try:
             articles = fetcher.fetch()
         except Exception as e:
             msg = f"{jc.short}: fetch failed — {e}"

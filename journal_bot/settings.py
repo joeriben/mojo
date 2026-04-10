@@ -16,6 +16,7 @@ class JournalConfig:
     type: str                               # "rss" | "ojs" | "html" | "openalex"
     url: str
     enabled: bool = True
+    issn: str = ""                          # ISSN für OpenAlex-Backfill (bei RSS/OJS-Journals)
     clusters: list[str] = field(default_factory=list)  # Diskursraum-Zuordnung
 
 # --- Zotero ---
@@ -127,6 +128,7 @@ def _load_journals() -> list[JournalConfig]:
                 type=j["type"],
                 url=j["url"],
                 enabled=j.get("enabled", True),
+                issn=j.get("issn", ""),
                 clusters=j.get("clusters", []),
             ))
     else:
