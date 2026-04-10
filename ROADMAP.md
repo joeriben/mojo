@@ -1,41 +1,53 @@
 # ROADMAP
 
-## Phase 5b — Journals erweitern (vor Backfill!)
-- [ ] Journals aus docs/journal_watchlist_full.md schrittweise hinzufügen
-  - Priorität WICHTIG: Studies in Art Education, IJADE, Review of Education/Pedagogy/Cultural Studies, BJET, Environmental Education Research, Ethics and Education, Oxford Review of Education, Big Data and Society, Arts and Humanities in Higher Education, Frontiers in AI
-  - Sonderfälle (Scraper nötig): e-flux Journal, zkmb.de
-- [ ] ZfPäd, ZfM, VjwP als HTML-Scraper oder via OpenAlex prüfen
-- [ ] OpenAlex-Pagination einbauen (max_results-Deckel entfernen, cursor-based paging)
+## ✓ Erledigt
+- [x] OpenAlex-Pagination (cursor-based paging)
+- [x] Journal-Coverage-Analyse (welche Journals werden zitiert aber nicht getrackt?)
+- [x] Scout (Watchlist-Evaluation via Haiku)
+- [x] Rename journal-bot → mojo
+- [x] Diskursraum-Management (CRUD, Profiling, Discovery, diskursraeume.json)
+- [x] Multi-Linsen-Scout (3× Haiku + Opus-Synthese, Positionalitäts-Report)
+- [x] Namensfindung → MOJO (Monitoring Journals)
+
+## Nächste Schritte — UI / Workflow
+
+### Journal-Aufnahme-Workflow
+Aktuell: Scout empfiehlt "aufnehmen" → manuell in settings.py eintragen.
+Gebraucht: Interaktiver Flow nach Scout-Lauf.
+- [ ] `mojo scout --interactive`: Nach Evaluation Journal direkt aufnehmen (ISSN, Typ, Cluster)
+- [ ] Oder: `mojo journal add <name>` mit ISSN-Autodetection + Cluster-Vorschlag aus Scout
+- [ ] Sonderfälle: zkmb.de, e-flux (Scraper nötig, nicht via OpenAlex)
+
+### Obsidian / Ausgabe
+- [ ] Obsidian-Output überdenken (Benjamin findet Obsidian "nerdig")
+- [ ] Alternative: einfache HTML-Reports? Zotero-Writeback? E-Mail-Digest?
+
+## Phase 5b — Journals erweitern
+- [ ] Journals aus docs/journal_watchlist_full.md via Scout prüfen (voller Lauf)
+- [ ] Priorität WICHTIG: Studies in Art Education, IJADE, Review of Education/Pedagogy/Cultural Studies, BJET, Environmental Education Research, Ethics and Education
+- [ ] ZfPäd, ZfM, VjwP aufnehmen (Scout sagt: aufnehmen/beobachten)
 
 ## Phase 5c — Historical Backfill
 - [ ] Erst NACH Phase 5b (sonst unvollständiger Backfill)
-- [ ] OpenAlex-Window auf 3 Jahre erweitern, Pagination nötig
+- [ ] OpenAlex-Window auf 3 Jahre erweitern
 - [ ] Crossref-ISSN-Suche als Alternative für Journals ohne OpenAlex-Coverage
-- [ ] OJS-Archivseiten für MedienPaed historisch crawlen
 
 ## Qualitätsverbesserungen
-- [ ] Biblio: Autor-Fallback für Sammelbände (leere Erst-Autoren bei Editionen)
-- [ ] Biblio: DOI-Validierung in der Anzeige (abgeschnittene DOIs nicht als gültig darstellen)
-- [ ] Biblio: Dedup-Verbesserung (DOI-basierte Normalisierung wenn DOI vorhanden)
-- [ ] Biblio: Aggregation über mehrere Normalisierungsvarianten desselben Werks
-- [ ] Summarize: Qualitätsprüfung der 53 Summaries (stichprobenartig, Benjamin)
-- [ ] Agent: Feedback-Loop (Benjamin markiert Digest-Einträge als nützlich/daneben → persistent in DB)
+- [ ] Biblio: Autor-Fallback für Sammelbände
+- [ ] Biblio: DOI-Validierung, Dedup-Verbesserung
+- [ ] Summarize: Qualitätsprüfung der 53 Summaries (stichprobenartig)
+- [ ] Agent: Feedback-Loop (Digest-Einträge als nützlich/daneben markieren → DB)
 
-## Ausgabe-Schichten
-- [ ] Obsidian: ggf. durch anderes System ersetzen (Benjamin findet Obsidian "nerdig")
-- [ ] Zotero-Writeback: Digest-Verdict + Kommentar als Note/Extra-Feld in "mojo digest"-Collection via pyzotero
-- [ ] Markdown-Export: auch ohne Obsidian nutzbar als Dateiablage
+## Diskursraum-Weiterentwicklung
+- [ ] Positionalitäts-Report auf bereits getrackte Journals anwenden (nicht nur Kandidaten)
+- [ ] `mojo diskurs profile --deep` (Haiku-Interpretation des Datenprofils)
+- [ ] Testfall "Kulturelle Bildung / Arts Education" durchspielen
 
 ## Infrastruktur
-- [ ] launchd-Setup für wöchentliche Ausführung (fetch automatisch, digest ggf. manuell)
+- [ ] launchd-Setup für wöchentliche Ausführung
 - [ ] Token-Logging in DB (pro Call: model, tokens_in, tokens_out, cost, timestamp)
-- [ ] Kosten-Budget-Check (optional: monatliches Limit, Warnung bei Überschreitung)
-- [ ] Git-Repo anlegen, .gitignore prüfen (corpus.json, summaries.json, articles.db, seen.db, .env, *.key)
+- [ ] Kosten-Budget-Check (optional)
 
 ## Architektur (bei Bedarf)
-- [ ] Embedding-Retrieval über Summaries (sentence-transformers lokal) — nur wenn Corpus >200 Publikationen oder Agent-Qualität nachlässt
-- [ ] Delegation-first-Pattern aus transact-qda: Haiku als Vorsortierung pro Artikel, Opus nur für Kandidaten mit positiver Haiku-Einschätzung — relevant bei >50 Artikeln/Woche
+- [ ] Delegation-first: Haiku als Vorsortierung, Opus nur für Kandidaten — relevant bei >50 Artikeln/Woche
 - [ ] Anthropic Batch API (50% Rabatt) für wöchentliche Batch-Digest-Läufe
-
-## Namensfindung
-- [ ] Projekt braucht einen Namen und ein Akronym — offen, bisherige Vorschläge waren zu generisch
