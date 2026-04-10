@@ -171,10 +171,28 @@ MOJO wird als Open-Source-Plattform veröffentlicht. Ein Claude-Agent innerhalb 
 - Diskursraum-Suggest: $0.01
 - **Gesamt: ~$4.60**
 
+### Phase 5c: Historical Backfill
+- `mojo fetch --since YYYY` eingebaut: OpenAlex-Window durch festes Startjahr ersetzbar
+- RSS/OJS-Journals (ZfE, MedienPaed) automatisch via OpenAlex-Backfill wenn `--since` und ISSN vorhanden
+- `journals.json` um optionales `issn`-Feld erweitert (ZfE: 1862-5215, MedienPaed: 1424-3636)
+- Backfill seit 2016: **17.465 Artikel** im Store (vorher 1.224)
+- Alle 28 Journals haben jetzt 10 Jahre Daten
+- Kein einziger Enrichment-Fehler, 196 Artikel ohne DOI
+
+### Kosten der Session (korrigiert)
+- Scout-Volllauf 1 (fehlerhaft): $2.04
+- Scout-Volllauf 2 (gefixt): $2.53
+- Diskursraum-Suggest: $0.01
+- Backfill: $0 (nur OpenAlex + Crossref API)
+- **Gesamt: ~$4.60**
+
 ### Commits dieser Session
 ```
 e571764 feat: Journal-Aufnahme-Workflow + Scout-Bugfixes
 ec212ac docs: Workflow-Scripts für autonomen Agenten (4 Workflows + Index)
+bac1f28 docs: DEVLOG aktualisieren
+5b32ba5 feat: Historical Backfill via `mojo fetch --since YYYY`
+4227aa0 feat: Backfill für RSS/OJS-Journals via OpenAlex
 ```
 
 ---
