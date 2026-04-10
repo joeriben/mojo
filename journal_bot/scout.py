@@ -1,13 +1,17 @@
-"""Journal-Scout: Prüft Kandidaten-Journals auf Relevanz für Benjamins Profil.
+"""Journal-Scout: Multi-Linsen-Evaluation von Kandidaten-Journals.
 
-Workflow:
+Architektur (3 Linsen + Opus-Synthese):
   1. Watchlist parsen → Kandidaten ohne ✓ extrahieren
   2. ISSN via OpenAlex Sources API auflösen (wenn nicht in Watchlist)
   3. 3 Jahre Artikel pro Journal via OpenAlex holen (kein LLM)
-  4. Haiku bewertet Relevanz gegen Benjamins Forschungsprofil (summaries.json)
-  5. Ausgabe: priorisierte Liste mit Empfehlungen
+  4. Drei Haiku-Linsen pro Journal (parallel):
+     A) Thematische Passung — Überlappung mit Benjamins Forschungsthemen
+     B) Disziplinäre Beheimatungen — Zugehörigkeit zu Benjamins 5 diskursiven Räumen
+     C) Latente Relevanz — periphere Diskurse die im Blickfeld bleiben sollten
+  5. Opus-Synthese: kartiert Spannungen zwischen den Linsen, empfiehlt
+  6. Ausgabe: multiperspektivische Bewertung nach Obsidian
 
-Kosten: ~$0.01–$0.02 pro Journal (Haiku), $0.50–$1.00 für die volle Watchlist.
+Kosten: ~$0.03 pro Journal (3× Haiku) + ~$0.50–1.00 Opus-Synthese (gebatcht).
 """
 
 from __future__ import annotations
@@ -22,7 +26,7 @@ from pathlib import Path
 import httpx
 
 from journal_bot.llm_client import build_client
-from journal_bot.settings import JOURNALS, MODEL_SUMMARIZE, SUMMARIES_JSON
+from journal_bot.settings import JOURNALS, MODEL_AGENT, MODEL_SUMMARIZE, SUMMARIES_JSON
 
 
 # ---------------------------------------------------------------- Typen
@@ -51,16 +55,28 @@ class ProbeResult:
 
 
 @dataclass
-class ScoutVerdict:
-    """LLM relevance verdict for a journal."""
-    candidate: Candidate
-    probe: ProbeResult
-    verdict: str = ""        # "relevant" | "marginal" | "irrelevant"
+class LensResult:
+    """Result from a single evaluation lens."""
+    lens: str               # "thematisch" | "disziplinaer" | "latent"
+    verdict: str = ""       # lens-specific verdict
     reason_de: str = ""
-    suggested_clusters: list[str] = field(default_factory=list)
+    details: dict = field(default_factory=dict)  # lens-specific structured data
     tokens_in: int = 0
     tokens_out: int = 0
     est_cost_usd: float = 0.0
+
+
+@dataclass
+class ScoutVerdict:
+    """Multi-lens verdict for a journal."""
+    candidate: Candidate
+    probe: ProbeResult
+    lens_results: list[LensResult] = field(default_factory=list)
+    # Opus synthesis
+    synthesis_de: str = ""
+    empfehlung: str = ""     # "aufnehmen" | "beobachten" | "nicht_aufnehmen"
+    suggested_clusters: list[str] = field(default_factory=list)
+    total_cost_usd: float = 0.0
 
 
 # ---------------------------------------------------------------- Watchlist-Parser
@@ -485,8 +501,46 @@ def _load_profile_block() -> str:
     return "\n".join(lines)
 
 
-SCOUT_SYSTEM = """Du bist ein wissenschaftlicher Evaluator. Du bewertest, ob eine Zeitschrift
-für Benjamin Jörissen relevant ist.
+def _build_sample_block(probe: ProbeResult) -> str:
+    """Build the article sample block shared by all lenses."""
+    c = probe.candidate
+    lines = [f"Zeitschrift: {c.name}"]
+    lines.append(f"Artikel in den letzten 3 Jahren: {probe.article_count}")
+    lines.append(f"\nStichprobe ({len(probe.sample_titles)} Titel):\n")
+    for i, title in enumerate(probe.sample_titles[:25]):
+        abstract = probe.sample_abstracts[i] if i < len(probe.sample_abstracts) else ""
+        lines.append(f"{i+1}. {title}")
+        if abstract:
+            lines.append(f"   {abstract[:300]}")
+    return "\n".join(lines)
+
+
+# --- Beheimatungen (from Benjamin, 2026-04-10) ---
+
+BEHEIMATUNGEN = [
+    ("Allgemeine Pädagogik / Bildungstheorie",
+     "Institutionelle Heimat (Lehrstuhl FAU). Bildungsphilosophie, Subjektivierung, "
+     "Transformationsprozesse, erziehungswissenschaftliche Grundfragen."),
+    ("Posthumanismus / STS / Resilienz",
+     "Paradigmenwechsel zu relationaler Bildungstheorie. New Materialisms, "
+     "Science & Technology Studies, Cultural Resilience, mehr-als-menschliche Perspektiven."),
+    ("Medienbildung / Medienpädagogik",
+     "Kernfeld: mediale Bildungsprozesse, Postdigitalität, generative KI in Bildung, "
+     "Medienkultur und Subjektivierung."),
+    ("Pädagogische Medienforschung / Medienwissenschaft",
+     "Medienwissenschaftlich orientiert: digitale Kultur, Plattformen, "
+     "Algorithmen, methodische Zugänge zu Medienpraktiken."),
+    ("Kulturwissenschaft / Ästhetik",
+     "Kulturelle und ästhetische Bildung, Kunst-Bildungs-Verhältnis, "
+     "visuelle Kultur, ästhetische Erfahrung, künstlerische Forschung."),
+]
+
+
+# ---------------------------------------------------------------- Linse A: Thematisch
+
+
+LENS_A_SYSTEM = """Du bist ein wissenschaftlicher Evaluator. Du bewertest die THEMATISCHE
+PASSUNG einer Zeitschrift zu Benjamin Jörissens konkreten Forschungsthemen.
 
 Benjamins Arbeitsgebiete: ästhetische und kulturelle Bildung, Postdigitalität, generative KI
 in Bildungskontexten, Cultural Resilience, digital-kulturelles Erbe, New Materialisms,
@@ -497,121 +551,451 @@ Unten folgt Benjamins Publikationsstand als Kurzprofile.
 {profile}
 
 === AUFGABE ===
-Du bekommst den Namen einer Zeitschrift und eine Stichprobe kürzlich publizierter Titel
-und Abstracts. Entscheide:
+Bewerte NUR die thematische Passung: Wie viele der Stichproben-Artikel behandeln Themen,
+die an Benjamins konkrete Arbeitsgebiete anschließen? Zähle präzise.
 
-- **relevant**: Die Zeitschrift publiziert regelmäßig Beiträge, die an Benjamins
-  Arbeitsgebiete anschließen. Mindestens 3-4 der Stichproben-Titel haben erkennbaren Bezug.
-- **marginal**: Gelegentliche Berührungspunkte, aber die Zeitschrift deckt primär ein
-  anderes Feld ab. 1-2 der Stichproben sind relevant, der Rest nicht.
-- **irrelevant**: Kein erkennbarer systematischer Bezug zu Benjamins Forschung.
-
-Rufe das Tool `scout_verdict` auf."""
+Rufe das Tool `lens_a_verdict` auf."""
 
 
-def _build_scout_tool() -> dict:
-    """Build the scout_verdict tool definition with dynamic cluster list."""
-    from journal_bot.settings import DISCOURSE_SPACES
-    cluster_list = ", ".join(DISCOURSE_SPACES.keys())
-    return {
-        "type": "function",
-        "function": {
-            "name": "scout_verdict",
-            "description": "Gibt das Relevanz-Urteil für eine Zeitschrift ab.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "verdict": {
-                        "type": "string",
-                        "enum": ["relevant", "marginal", "irrelevant"],
-                        "description": "Relevanz-Einschätzung.",
-                    },
-                    "reason_de": {
-                        "type": "string",
-                        "description": (
-                            "2-3 Sätze Begründung auf Deutsch. Konkret: welche "
-                            "thematischen Überschneidungen (oder deren Fehlen)."
-                        ),
-                    },
-                    "suggested_clusters": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": (
-                            f"Passende Diskursräume aus: {cluster_list}"
-                        ),
-                    },
+LENS_A_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "lens_a_verdict",
+        "description": "Thematische Passung einer Zeitschrift.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "passung": {
+                    "type": "string",
+                    "enum": ["hoch", "mittel", "niedrig"],
+                    "description": "hoch: ≥4 Titel mit Bezug. mittel: 2-3. niedrig: 0-1.",
                 },
-                "required": ["verdict", "reason_de", "suggested_clusters"],
+                "matching_count": {
+                    "type": "integer",
+                    "description": "Anzahl der Stichproben-Titel mit erkennbarem thematischen Bezug.",
+                },
+                "matching_titles": {
+                    "type": "string",
+                    "description": "Nummern der passenden Titel (z.B. '3, 8, 12, 23').",
+                },
+                "reason_de": {
+                    "type": "string",
+                    "description": "2-3 Sätze: Welche Themenüberschneidungen? Was fehlt?",
+                },
             },
+            "required": ["passung", "matching_count", "matching_titles", "reason_de"],
         },
-    }
+    },
+}
 
 
-def evaluate_journal(
-    probe: ProbeResult,
-    profile_block: str,
+# ---------------------------------------------------------------- Linse B: Disziplinäre Beheimatungen
+
+
+def _build_lens_b_system() -> str:
+    beh_block = "\n".join(
+        f"  {i+1}. **{name}**: {desc}"
+        for i, (name, desc) in enumerate(BEHEIMATUNGEN)
+    )
+    return f"""Du bist ein wissenschaftlicher Evaluator. Du bewertest die DISZIPLINÄRE
+ZUGEHÖRIGKEIT einer Zeitschrift zu Benjamin Jörissens diskursiven Beheimatungen.
+
+Benjamin verortet sich in folgenden disziplinären Räumen:
+
+{beh_block}
+
+=== AUFGABE ===
+Bewerte: Ist diese Zeitschrift ein Publikationsort für eine oder mehrere dieser
+disziplinären Communities? Nicht ob einzelne Artikel thematisch passen, sondern ob die
+Zeitschrift ALS GANZES zur Infrastruktur eines dieser Diskursfelder gehört.
+
+Beispiel: Die ZfPäd ist ein zentrales Organ der Allgemeinen Pädagogik, auch wenn einzelne
+Hefte sich mit Themen befassen die Benjamin nicht bearbeitet.
+
+Rufe das Tool `lens_b_verdict` auf."""
+
+
+LENS_B_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "lens_b_verdict",
+        "description": "Disziplinäre Verortung einer Zeitschrift.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "beheimatungen": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string",
+                                     "description": "Name der Beheimatung"},
+                            "fit": {"type": "string",
+                                    "enum": ["zentral", "peripher", "kein_bezug"],
+                                    "description": "zentral: Kernorgan. peripher: gelegentlich relevant. kein_bezug."},
+                        },
+                        "required": ["name", "fit"],
+                    },
+                    "description": "Bewertung für jede der 5 Beheimatungen.",
+                },
+                "reason_de": {
+                    "type": "string",
+                    "description": "2-3 Sätze: Warum gehört (oder gehört nicht) diese Zeitschrift zu diesen diskursiven Räumen?",
+                },
+            },
+            "required": ["beheimatungen", "reason_de"],
+        },
+    },
+}
+
+
+# ---------------------------------------------------------------- Linse C: Latente Relevanz
+
+
+LENS_C_SYSTEM = """Du bist ein wissenschaftlicher Evaluator. Du bewertest die LATENTE RELEVANZ
+einer Zeitschrift für Benjamin Jörissen — d.h. Diskurse die Benjamin nicht aktiv bearbeitet,
+aber im Blickfeld haben sollte.
+
+Benjamins Arbeitsgebiete: ästhetische und kulturelle Bildung, Postdigitalität, generative KI
+in Bildungskontexten, Cultural Resilience, digital-kulturelles Erbe, New Materialisms,
+Bildungstheorie, qualitative Methoden (insb. postqualitative Ansätze).
+
+=== AUFGABE ===
+Prüfe die Stichprobe auf Diskurse die Benjamin NICHT bearbeitet, die aber trotzdem sein
+Denken herausfordern, erweitern oder kontextualisieren könnten.
+
+FILTER: Nicht alles Periphere ist relevant. Eyetracking in der Unterrichtsforschung oder
+PISA-Ranking-Analysen wären NICHT latent relevant. Aber z.B.:
+- Neue methodische Zugänge die seine Methoden ergänzen könnten
+- Debatten in angrenzenden Feldern die seine Grundannahmen berühren
+- Gegenstände die er nicht bearbeitet aber die seine Theorie testen würden
+
+Rufe das Tool `lens_c_verdict` auf."""
+
+
+LENS_C_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "lens_c_verdict",
+        "description": "Latente Relevanz einer Zeitschrift.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "latente_relevanz": {
+                    "type": "string",
+                    "enum": ["hoch", "mittel", "niedrig"],
+                    "description": "hoch: mehrere Diskurse die Benjamins Denken produktiv herausfordern. mittel: vereinzelt. niedrig: nichts Relevantes.",
+                },
+                "topics_de": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "2-5 konkrete Diskurse/Themen die latent relevant wären (leer wenn niedrig).",
+                },
+                "reason_de": {
+                    "type": "string",
+                    "description": "2-3 Sätze: Welche angrenzenden Diskurse? Warum könnten sie Benjamins Arbeit bereichern?",
+                },
+            },
+            "required": ["latente_relevanz", "topics_de", "reason_de"],
+        },
+    },
+}
+
+
+# ---------------------------------------------------------------- Lens Evaluation
+
+
+def _run_lens(
+    lens_name: str,
+    system_prompt: str,
+    tool_def: dict,
+    tool_name: str,
+    sample_block: str,
     client,
-    verbose: bool = True,
-) -> ScoutVerdict:
-    """Ask Haiku to evaluate journal relevance."""
-    c = probe.candidate
-    verdict = ScoutVerdict(candidate=c, probe=probe)
+    use_cache: bool = False,
+) -> LensResult:
+    """Run a single Haiku evaluation lens."""
+    result = LensResult(lens=lens_name)
 
-    if probe.error or not probe.sample_titles:
-        verdict.verdict = "?"
-        verdict.reason_de = probe.error or "Keine Artikel gefunden"
-        return verdict
-
-    # Build user message with sample
-    user_lines = [f"Zeitschrift: {c.name}"]
-    user_lines.append(f"Artikel in den letzten 3 Jahren: {probe.article_count}")
-    user_lines.append(f"\nStichprobe ({len(probe.sample_titles)} Titel):\n")
-
-    for i, title in enumerate(probe.sample_titles[:25]):
-        abstract = probe.sample_abstracts[i] if i < len(probe.sample_abstracts) else ""
-        user_lines.append(f"{i+1}. {title}")
-        if abstract:
-            user_lines.append(f"   {abstract[:300]}")
-
-    system = SCOUT_SYSTEM.format(profile=profile_block)
+    content = [{"type": "text", "text": system_prompt}]
+    if use_cache:
+        content[0]["cache_control"] = {"type": "ephemeral"}
 
     try:
         resp = client.chat.completions.create(
             model=MODEL_SUMMARIZE,
             messages=[
-                {"role": "system", "content": [
-                    {"type": "text", "text": system, "cache_control": {"type": "ephemeral"}},
-                ]},
-                {"role": "user", "content": "\n".join(user_lines)},
+                {"role": "system", "content": content},
+                {"role": "user", "content": sample_block},
             ],
-            tools=[_build_scout_tool()],
-            tool_choice={"type": "function", "function": {"name": "scout_verdict"}},
+            tools=[tool_def],
+            tool_choice={"type": "function", "function": {"name": tool_name}},
             temperature=0.2,
         )
     except Exception as e:
-        verdict.verdict = "?"
-        verdict.reason_de = f"LLM-Fehler: {e}"
-        return verdict
+        result.verdict = "?"
+        result.reason_de = f"LLM-Fehler: {e}"
+        return result
 
     usage = resp.usage
     if usage:
-        verdict.tokens_in = usage.prompt_tokens
-        verdict.tokens_out = usage.completion_tokens
-        # Haiku 4.5 pricing
-        verdict.est_cost_usd = (
+        result.tokens_in = usage.prompt_tokens
+        result.tokens_out = usage.completion_tokens
+        result.est_cost_usd = (
             (usage.prompt_tokens / 1_000_000) * 0.80
             + (usage.completion_tokens / 1_000_000) * 4.00
         )
 
-    # Parse tool call
     msg = resp.choices[0].message
     if msg.tool_calls:
         args = json.loads(msg.tool_calls[0].function.arguments)
-        verdict.verdict = args.get("verdict", "?")
-        verdict.reason_de = args.get("reason_de", "")
-        verdict.suggested_clusters = args.get("suggested_clusters", [])
+        result.details = args
+        result.reason_de = args.get("reason_de", "")
+        # Extract lens-specific verdict
+        if lens_name == "thematisch":
+            result.verdict = args.get("passung", "?")
+        elif lens_name == "disziplinaer":
+            beh = args.get("beheimatungen", [])
+            zentral = [b for b in beh if b.get("fit") == "zentral"]
+            result.verdict = "zentral" if zentral else ("peripher" if beh else "?")
+        elif lens_name == "latent":
+            result.verdict = args.get("latente_relevanz", "?")
 
+    return result
+
+
+def evaluate_journal_multilens(
+    probe: ProbeResult,
+    profile_block: str,
+    client,
+    verbose: bool = True,
+) -> ScoutVerdict:
+    """Run all 3 evaluation lenses on a journal."""
+    c = probe.candidate
+    verdict = ScoutVerdict(candidate=c, probe=probe)
+
+    if probe.error or not probe.sample_titles:
+        verdict.empfehlung = "?"
+        verdict.synthesis_de = probe.error or "Keine Artikel gefunden"
+        return verdict
+
+    sample_block = _build_sample_block(probe)
+
+    # Lens A: Thematische Passung
+    lens_a = _run_lens(
+        "thematisch",
+        LENS_A_SYSTEM.format(profile=profile_block),
+        LENS_A_TOOL,
+        "lens_a_verdict",
+        sample_block,
+        client,
+        use_cache=True,
+    )
+    verdict.lens_results.append(lens_a)
+    if verbose:
+        print(f"A:{lens_a.verdict}", end=" ", flush=True)
+
+    # Lens B: Disziplinäre Beheimatungen
+    lens_b = _run_lens(
+        "disziplinaer",
+        _build_lens_b_system(),
+        LENS_B_TOOL,
+        "lens_b_verdict",
+        sample_block,
+        client,
+    )
+    verdict.lens_results.append(lens_b)
+    if verbose:
+        print(f"B:{lens_b.verdict}", end=" ", flush=True)
+
+    # Lens C: Latente Relevanz
+    lens_c = _run_lens(
+        "latent",
+        LENS_C_SYSTEM,
+        LENS_C_TOOL,
+        "lens_c_verdict",
+        sample_block,
+        client,
+    )
+    verdict.lens_results.append(lens_c)
+    if verbose:
+        print(f"C:{lens_c.verdict}", end=" ", flush=True)
+
+    verdict.total_cost_usd = sum(lr.est_cost_usd for lr in verdict.lens_results)
     return verdict
+
+
+# ---------------------------------------------------------------- Opus-Synthese
+
+
+def _format_verdict_for_synthesis(v: ScoutVerdict) -> str:
+    """Format a single journal's lens results for the Opus synthesis prompt."""
+    lines = [f"### {v.candidate.name}"]
+    if v.probe.article_count:
+        lines.append(f"Artikel (3 Jahre): {v.probe.article_count}")
+
+    for lr in v.lens_results:
+        if lr.lens == "thematisch":
+            mc = lr.details.get("matching_count", "?")
+            mt = lr.details.get("matching_titles", "")
+            lines.append(f"\n**Linse A (Thematisch):** {lr.verdict} "
+                         f"({mc} passende Titel: {mt})")
+            lines.append(f"  {lr.reason_de}")
+
+        elif lr.lens == "disziplinaer":
+            beh = lr.details.get("beheimatungen", [])
+            beh_str = ", ".join(
+                f"{b['name']}: {b['fit']}" for b in beh if b.get("fit") != "kein_bezug"
+            )
+            lines.append(f"\n**Linse B (Disziplinär):** {beh_str or 'kein Bezug'}")
+            lines.append(f"  {lr.reason_de}")
+
+        elif lr.lens == "latent":
+            topics = lr.details.get("topics_de", [])
+            topics_str = ", ".join(topics) if topics else "—"
+            lines.append(f"\n**Linse C (Latent):** {lr.verdict} → {topics_str}")
+            lines.append(f"  {lr.reason_de}")
+
+    return "\n".join(lines)
+
+
+def synthesize_with_opus(
+    verdicts: list[ScoutVerdict],
+    client,
+    verbose: bool = True,
+) -> list[ScoutVerdict]:
+    """Send all lens results to Opus for synthesis. Updates verdicts in-place."""
+    from journal_bot.settings import DISCOURSE_SPACES
+    cluster_list = ", ".join(DISCOURSE_SPACES.keys())
+
+    journal_blocks = "\n\n".join(
+        _format_verdict_for_synthesis(v)
+        for v in verdicts
+        if v.lens_results  # skip errored journals
+    )
+
+    system = f"""Du bist Forschungsberater für Benjamin Jörissen (FAU, Allgemeine Pädagogik).
+
+Du bekommst für jede Kandidaten-Zeitschrift drei Bewertungs-Perspektiven:
+- **Linse A** (Thematisch): Direkte Überlappung mit Benjamins Forschungsthemen
+- **Linse B** (Disziplinär): Zugehörigkeit zu Benjamins diskursiven Beheimatungen
+- **Linse C** (Latent): Periphere Diskurse die im Blickfeld bleiben sollten
+
+Deine Aufgabe: Synthetisiere die drei Perspektiven. Das Interessante sind die SPANNUNGEN:
+- Eine Zeitschrift kann thematisch marginal sein aber disziplinär zentral (z.B. ZfPäd)
+- Eine Zeitschrift kann thematisch relevant sein aber disziplinär fremd
+- Latente Relevanz kann den Ausschlag geben bei unklaren Fällen
+
+Für jede Zeitschrift:
+1. Kartiere die Spannungen zwischen den Linsen (2-4 Sätze)
+2. Gib eine Empfehlung: "aufnehmen" / "beobachten" / "nicht_aufnehmen"
+3. Schlage passende Diskursräume vor aus: {cluster_list}
+
+Rufe das Tool `synthesis` auf — einmal pro Zeitschrift, in der Reihenfolge der Eingabe."""
+
+    synthesis_tool = {
+        "type": "function",
+        "function": {
+            "name": "synthesis",
+            "description": "Synthese-Urteil für eine Zeitschrift.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "journal_name": {
+                        "type": "string",
+                        "description": "Name der Zeitschrift.",
+                    },
+                    "synthesis_de": {
+                        "type": "string",
+                        "description": (
+                            "2-4 Sätze: Spannungen zwischen den Linsen, "
+                            "was macht diese Zeitschrift interessant oder uninteressant?"
+                        ),
+                    },
+                    "empfehlung": {
+                        "type": "string",
+                        "enum": ["aufnehmen", "beobachten", "nicht_aufnehmen"],
+                        "description": (
+                            "aufnehmen: aktiv tracken. beobachten: Watchlist belassen, "
+                            "gelegentlich prüfen. nicht_aufnehmen: streichen."
+                        ),
+                    },
+                    "suggested_clusters": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": f"Passende Diskursräume aus: {cluster_list}",
+                    },
+                },
+                "required": ["journal_name", "synthesis_de", "empfehlung", "suggested_clusters"],
+            },
+        },
+    }
+
+    if verbose:
+        print("[scout] Opus-Synthese...")
+
+    try:
+        resp = client.chat.completions.create(
+            model=MODEL_AGENT,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": journal_blocks},
+            ],
+            tools=[synthesis_tool],
+            temperature=0.3,
+            max_tokens=4000,
+        )
+    except Exception as e:
+        if verbose:
+            print(f"Opus-Fehler: {e}")
+        return verdicts
+
+    usage = resp.usage
+    opus_cost = 0.0
+    if usage:
+        opus_cost = (
+            (usage.prompt_tokens / 1_000_000) * 10.00
+            + (usage.completion_tokens / 1_000_000) * 50.00
+        )
+        if verbose:
+            print(f"[scout] Opus: {usage.prompt_tokens} in, "
+                  f"{usage.completion_tokens} out — ${opus_cost:.3f}")
+
+    # Distribute Opus cost evenly across verdicts
+    evaluable = [v for v in verdicts if v.lens_results]
+    per_journal_opus = opus_cost / max(len(evaluable), 1)
+
+    # Parse tool calls — Opus may call synthesis once per journal
+    msg = resp.choices[0].message
+    synthesis_results: dict[str, dict] = {}
+    for tc in (msg.tool_calls or []):
+        if tc.function.name == "synthesis":
+            args = json.loads(tc.function.arguments)
+            name = args.get("journal_name", "")
+            synthesis_results[name.lower().strip()] = args
+
+    # Match synthesis results to verdicts
+    for v in verdicts:
+        if not v.lens_results:
+            continue
+        key = v.candidate.name.lower().strip()
+        syn = synthesis_results.get(key)
+        if not syn:
+            # Try fuzzy match
+            for syn_key, syn_val in synthesis_results.items():
+                if syn_key in key or key in syn_key:
+                    syn = syn_val
+                    break
+        if syn:
+            v.synthesis_de = syn.get("synthesis_de", "")
+            v.empfehlung = syn.get("empfehlung", "?")
+            v.suggested_clusters = syn.get("suggested_clusters", [])
+        else:
+            v.empfehlung = "?"
+            v.synthesis_de = "(Opus-Synthese nicht zugeordnet)"
+        v.total_cost_usd += per_journal_opus
+
+    return verdicts
 
 
 # ---------------------------------------------------------------- Rendering
@@ -621,56 +1005,86 @@ def render_markdown(verdicts: list[ScoutVerdict], window_years: int = 3) -> str:
     this_year = datetime.now().year
     start_year = this_year - window_years + 1
 
-    relevant = [v for v in verdicts if v.verdict == "relevant"]
-    marginal = [v for v in verdicts if v.verdict == "marginal"]
-    irrelevant = [v for v in verdicts if v.verdict == "irrelevant"]
-    skipped = [v for v in verdicts if v.verdict == "?"]
+    aufnehmen = [v for v in verdicts if v.empfehlung == "aufnehmen"]
+    beobachten = [v for v in verdicts if v.empfehlung == "beobachten"]
+    nicht = [v for v in verdicts if v.empfehlung == "nicht_aufnehmen"]
+    skipped = [v for v in verdicts if v.empfehlung == "?"]
 
-    total_cost = sum(v.est_cost_usd for v in verdicts)
+    total_cost = sum(v.total_cost_usd for v in verdicts)
 
     lines: list[str] = []
-    lines.append(f"# Journal-Scout: Relevanz-Prüfung")
+    lines.append("# Journal-Scout: Multi-Linsen-Evaluation")
     lines.append(f"_Datum: {date.today().isoformat()} · "
                  f"Fenster: {start_year}-{this_year} · "
                  f"Kosten: ${total_cost:.2f}_")
     lines.append("")
-    lines.append(f"**{len(relevant)}** relevant · "
-                 f"**{len(marginal)}** marginal · "
-                 f"**{len(irrelevant)}** irrelevant · "
+    lines.append(f"**{len(aufnehmen)}** aufnehmen · "
+                 f"**{len(beobachten)}** beobachten · "
+                 f"**{len(nicht)}** nicht aufnehmen · "
                  f"**{len(skipped)}** übersprungen")
     lines.append("")
+    lines.append("_Linsen: A=Thematische Passung, B=Disziplinäre Beheimatung, "
+                 "C=Latente Relevanz_")
+    lines.append("")
 
-    def _table(title: str, items: list[ScoutVerdict]) -> None:
+    def _render_journal(v: ScoutVerdict) -> None:
+        c = v.candidate
+        clusters = ", ".join(v.suggested_clusters) if v.suggested_clusters else "—"
+        art_count = v.probe.article_count if v.probe else 0
+        lines.append(f"### {c.name}")
+        if c.issn or v.probe.issn_resolved:
+            lines.append(f"ISSN: {v.probe.issn_resolved or c.issn}")
+        lines.append(f"Artikel ({start_year}-{this_year}): {art_count}")
+        lines.append(f"Diskursräume: {clusters}")
+        lines.append("")
+
+        # Lens verdicts compact
+        for lr in v.lens_results:
+            if lr.lens == "thematisch":
+                mc = lr.details.get("matching_count", "?")
+                lines.append(f"**A (Thematisch):** {lr.verdict} "
+                             f"({mc} Treffer) — {lr.reason_de}")
+            elif lr.lens == "disziplinaer":
+                beh = lr.details.get("beheimatungen", [])
+                relevant_beh = [b for b in beh if b.get("fit") != "kein_bezug"]
+                beh_str = ", ".join(
+                    f"{b['name']}: **{b['fit']}**" for b in relevant_beh
+                ) or "kein Bezug"
+                lines.append(f"**B (Disziplinär):** {beh_str}")
+                lines.append(f"  {lr.reason_de}")
+            elif lr.lens == "latent":
+                topics = lr.details.get("topics_de", [])
+                topics_str = ", ".join(topics) if topics else "—"
+                lines.append(f"**C (Latent):** {lr.verdict} → {topics_str}")
+                lines.append(f"  {lr.reason_de}")
+
+        lines.append("")
+        if v.synthesis_de:
+            lines.append(f"> **Synthese:** {v.synthesis_de}")
+        lines.append("")
+
+    def _section(title: str, items: list[ScoutVerdict]) -> None:
         if not items:
             return
         lines.append(f"## {title}")
         lines.append("")
         for v in items:
-            c = v.candidate
-            clusters = ", ".join(v.suggested_clusters) if v.suggested_clusters else "—"
-            art_count = v.probe.article_count if v.probe else 0
-            lines.append(f"### {c.name}")
-            if c.issn or v.probe.issn_resolved:
-                lines.append(f"ISSN: {v.probe.issn_resolved or c.issn}")
-            lines.append(f"Artikel ({start_year}-{this_year}): {art_count}")
-            lines.append(f"Diskursräume: {clusters}")
-            lines.append(f"\n> {v.reason_de}")
-            lines.append("")
+            _render_journal(v)
         lines.append("")
 
-    _table("Relevant — aufnehmen", relevant)
-    _table("Marginal — optional", marginal)
-    _table("Irrelevant — nicht aufnehmen", irrelevant)
+    _section("Aufnehmen", aufnehmen)
+    _section("Beobachten", beobachten)
+    _section("Nicht aufnehmen", nicht)
 
     if skipped:
         lines.append("## Übersprungen")
         lines.append("")
         for v in skipped:
-            lines.append(f"- **{v.candidate.name}**: {v.reason_de}")
+            lines.append(f"- **{v.candidate.name}**: {v.synthesis_de or '?'}")
         lines.append("")
 
     lines.append("---")
-    lines.append(f"_Kosten: ${total_cost:.2f} (Haiku 4.5) · Keine manuellen Entscheidungen nötig_")
+    lines.append(f"_Kosten: ${total_cost:.2f} (3× Haiku + Opus-Synthese)_")
     return "\n".join(lines)
 
 
@@ -719,39 +1133,46 @@ def run(
         # Polite pause
         time.sleep(0.2)
 
-    # 4. LLM evaluation (Haiku)
+    # 4. Multi-lens LLM evaluation (3× Haiku per journal)
     evaluable = [p for p in probes if not p.error and p.sample_titles]
     if verbose:
-        print(f"\n[scout] LLM-Evaluation für {len(evaluable)} Journals "
+        print(f"\n[scout] Multi-Linsen-Evaluation für {len(evaluable)} Journals "
               f"({len(probes) - len(evaluable)} übersprungen)...")
 
     client = build_client()
     verdicts: list[ScoutVerdict] = []
-    total_cost = 0.0
 
     # Add skipped ones first
     for p in probes:
         if p.error or not p.sample_titles:
             verdicts.append(ScoutVerdict(
                 candidate=p.candidate, probe=p,
-                verdict="?",
-                reason_de=p.error or "Keine Artikel gefunden",
+                empfehlung="?",
+                synthesis_de=p.error or "Keine Artikel gefunden",
             ))
 
     for i, p in enumerate(evaluable):
         if verbose:
-            print(f"[scout]   {i+1}/{len(evaluable)} {p.candidate.name}...", end=" ", flush=True)
-        v = evaluate_journal(p, profile_block, client, verbose)
+            print(f"[scout]   {i+1}/{len(evaluable)} {p.candidate.name}: ", end="", flush=True)
+        v = evaluate_journal_multilens(p, profile_block, client, verbose)
         verdicts.append(v)
-        total_cost += v.est_cost_usd
         if verbose:
-            print(f"{v.verdict} (${v.est_cost_usd:.3f})")
+            print(f" ${v.total_cost_usd:.3f}")
 
-    # Sort: relevant first, then marginal, then irrelevant, then skipped
-    order = {"relevant": 0, "marginal": 1, "irrelevant": 2, "?": 3}
-    verdicts.sort(key=lambda v: order.get(v.verdict, 9))
+    # 5. Opus synthesis (batched)
+    evaluable_verdicts = [v for v in verdicts if v.lens_results]
+    if evaluable_verdicts:
+        verdicts_for_synthesis = synthesize_with_opus(
+            evaluable_verdicts, client, verbose,
+        )
 
-    # 5. Output
+    # Sort by empfehlung
+    order = {"aufnehmen": 0, "beobachten": 1, "nicht_aufnehmen": 2, "?": 3}
+    verdicts.sort(key=lambda v: order.get(v.empfehlung, 9))
+
+    total_cost = sum(v.total_cost_usd for v in verdicts)
+
+    # 6. Output
     md = render_markdown(verdicts, window_years)
 
     trends_dir = out_dir / "trends"
@@ -763,17 +1184,17 @@ def run(
     if verbose:
         print(f"\n[scout] Geschrieben: {out_path}")
         print(f"[scout] Kosten: ${total_cost:.2f}")
-        rel = sum(1 for v in verdicts if v.verdict == "relevant")
-        mar = sum(1 for v in verdicts if v.verdict == "marginal")
-        irr = sum(1 for v in verdicts if v.verdict == "irrelevant")
-        print(f"[scout] Ergebnis: {rel} relevant, {mar} marginal, {irr} irrelevant")
+        a = sum(1 for v in verdicts if v.empfehlung == "aufnehmen")
+        b = sum(1 for v in verdicts if v.empfehlung == "beobachten")
+        n = sum(1 for v in verdicts if v.empfehlung == "nicht_aufnehmen")
+        print(f"[scout] Ergebnis: {a} aufnehmen, {b} beobachten, {n} nicht aufnehmen")
 
     return {
         "status": "ok",
         "path": str(out_path),
         "total_cost_usd": total_cost,
-        "relevant": sum(1 for v in verdicts if v.verdict == "relevant"),
-        "marginal": sum(1 for v in verdicts if v.verdict == "marginal"),
-        "irrelevant": sum(1 for v in verdicts if v.verdict == "irrelevant"),
-        "skipped": sum(1 for v in verdicts if v.verdict == "?"),
+        "aufnehmen": sum(1 for v in verdicts if v.empfehlung == "aufnehmen"),
+        "beobachten": sum(1 for v in verdicts if v.empfehlung == "beobachten"),
+        "nicht_aufnehmen": sum(1 for v in verdicts if v.empfehlung == "nicht_aufnehmen"),
+        "skipped": sum(1 for v in verdicts if v.empfehlung == "?"),
     }
