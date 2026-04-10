@@ -34,12 +34,11 @@ POLITE_MAILTO = "journal-bot@localhost"
 USER_AGENT = f"journal-bot/0.1 (mailto:{POLITE_MAILTO})"
 
 # Default-Fenster: 180 Tage. Hoch genug um langsamer publizierende Journals
-# (JAE, DIME, Resilience) zu erfassen, schnellere Journals sind via MAX_RESULTS
-# gedeckelt.
+# (JAE, DIME, Resilience) zu erfassen.
 DEFAULT_WINDOW_DAYS = 180
 
-# Max Anzahl Artikel pro Zeitschrift pro Lauf (Schutz vor exzessiven Journals)
-MAX_RESULTS = 50
+# Per-page size for OpenAlex requests (API max is 200).
+PAGE_SIZE = 200
 
 
 def _parse_filter(url: str) -> str:
@@ -115,49 +114,57 @@ class OpenAlexFetcher:
         self,
         jc: JournalConfig,
         window_days: int = DEFAULT_WINDOW_DAYS,
-        max_results: int = MAX_RESULTS,
     ) -> None:
         self.jc = jc
         self.window_days = window_days
-        self.max_results = max_results
 
     def fetch(self) -> list[Article]:
         from_date = (datetime.utcnow() - timedelta(days=self.window_days)).date().isoformat()
         source_filter = _parse_filter(self.jc.url)
         full_filter = f"{source_filter},from_publication_date:{from_date},type:article"
 
-        params = {
+        params: dict[str, str | int] = {
             "filter": full_filter,
             "sort": "publication_date:desc",
-            "per-page": min(200, self.max_results),
+            "per-page": PAGE_SIZE,
             "mailto": POLITE_MAILTO,
+            "cursor": "*",
             "select": (
                 "id,doi,title,authorships,publication_date,publication_year,"
                 "abstract_inverted_index,primary_location,type"
             ),
         }
 
-        try:
-            resp = httpx.get(
-                OPENALEX_BASE,
-                params=params,
-                timeout=30,
-                headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
-            )
-        except Exception as e:
-            raise RuntimeError(f"OpenAlex-Request fehlgeschlagen: {e}") from e
-
-        if resp.status_code != 200:
-            raise RuntimeError(
-                f"OpenAlex {resp.status_code}: {resp.text[:300]}"
-            )
-
-        data = resp.json()
-        works = data.get("results") or []
-
+        headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
         articles: list[Article] = []
-        for w in works[: self.max_results]:
-            art = _work_to_article(w, self.jc)
-            if art is not None:
-                articles.append(art)
+
+        while True:
+            try:
+                resp = httpx.get(
+                    OPENALEX_BASE,
+                    params=params,
+                    timeout=30,
+                    headers=headers,
+                )
+            except Exception as e:
+                raise RuntimeError(f"OpenAlex-Request fehlgeschlagen: {e}") from e
+
+            if resp.status_code != 200:
+                raise RuntimeError(
+                    f"OpenAlex {resp.status_code}: {resp.text[:300]}"
+                )
+
+            data = resp.json()
+            works = data.get("results") or []
+
+            for w in works:
+                art = _work_to_article(w, self.jc)
+                if art is not None:
+                    articles.append(art)
+
+            next_cursor = data.get("meta", {}).get("next_cursor")
+            if not next_cursor or not works:
+                break
+            params["cursor"] = next_cursor
+
         return articles

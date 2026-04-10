@@ -26,6 +26,7 @@ from journal_bot.settings import (
     CORPUS_JSON,
     DIGEST_DIR,
     JOURNALS,
+    PROJECT_ROOT,
     SINCE_YEAR,
     SUMMARIES_JSON,
     ZOTERO_COLLECTION,
@@ -135,6 +136,28 @@ def cmd_biblio(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_scout(args: argparse.Namespace) -> int:
+    from journal_bot import scout
+    scout.run(
+        watchlist=Path(args.watchlist),
+        window_years=args.window_years,
+        limit=args.limit,
+        verbose=not args.quiet,
+    )
+    return 0
+
+
+def cmd_coverage(args: argparse.Namespace) -> int:
+    from journal_bot import journal_coverage
+    journal_coverage.run(
+        cluster=args.cluster,
+        window_years=args.window_years,
+        min_citations=args.min_citations,
+        verbose=not args.quiet,
+    )
+    return 0
+
+
 def cmd_stats(args: argparse.Namespace) -> int:
     store = Store()
     s = store.stats()
@@ -213,6 +236,27 @@ def main(argv: list[str] | None = None) -> int:
                           help="Mindest-Zitationszahl (Default 2)")
     p_biblio.add_argument("--quiet", action="store_true")
     p_biblio.set_defaults(func=cmd_biblio)
+
+    p_scout = sub.add_parser("scout",
+                            help="Watchlist-Journals auf Relevanz prüfen (Haiku)")
+    p_scout.add_argument("--watchlist",
+                         default=str(PROJECT_ROOT / "docs" / "journal_watchlist_full.md"),
+                         help="Pfad zur Watchlist-Markdown-Datei")
+    p_scout.add_argument("--window-years", type=int, default=3)
+    p_scout.add_argument("--limit", type=int, default=None,
+                         help="Nur die ersten N Kandidaten prüfen (zum Testen)")
+    p_scout.add_argument("--quiet", action="store_true")
+    p_scout.set_defaults(func=cmd_scout)
+
+    p_cov = sub.add_parser("coverage",
+                            help="Welche Journals werden zitiert, aber nicht getrackt?")
+    p_cov.add_argument("--cluster", required=True,
+                       help="Diskursraum-Key")
+    p_cov.add_argument("--window-years", type=int, default=3)
+    p_cov.add_argument("--min-citations", type=int, default=3,
+                       help="Mindest-Zitationszahl (Default 3)")
+    p_cov.add_argument("--quiet", action="store_true")
+    p_cov.set_defaults(func=cmd_coverage)
 
     p_stats = sub.add_parser("stats", help="Store-Statistik")
     p_stats.set_defaults(func=cmd_stats)
