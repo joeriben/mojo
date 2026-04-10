@@ -1,0 +1,24 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Daten (enthalten Benjamins Texte / API-Keys / personenbezogene Metadaten)
+corpus.json
+summaries.json
+articles.db
+seen.db
+profile.md
+*.key
+.env
+.enrichment_cache/
+
+# OS
+.DS_Store
+
+# Obsolet (aus Phase 1, inzwischen gelöscht)
+config.toml
+
+# Temporäre Dateien
+*.tmp
+/tmp/
