@@ -4,7 +4,7 @@
 
 ## Problem
 
-Academic researchers — especially in theory-heavy fields like Allgemeine Pädagogik, Cultural/Aesthetic Education, and Postdigital Studies — face a persistent problem: the volume of new publications across 20+ relevant journals exceeds what can be manually sighted. The task of a *wissenschaftliche/r Mitarbeiter/in* (research assistant) — scanning new issues, evaluating relevance to ongoing projects, positioning new work against one's own arguments, and tracking discourse movements — requires deep domain knowledge and substantial time. Neither generic alerting services (Google Scholar alerts) nor simple keyword filters provide the depth of engagement needed for substantive academic sighting (*Sichtung*).
+Academic researchers — especially in theory-heavy and highly transdisciplinary fields like Allgemeine Pädagogik, Cultural/Aesthetic Education, and Postdigital Studies — face a persistent problem: the volume of new publications across 20+ relevant journals exceeds what can be manually sighted. This task requires deep domain knowledge and substantial time. Neither generic alerting services (Google Scholar alerts) nor simple keyword filters provide the depth of engagement needed for substantive academic sighting (*Sichtung*).
 
 ## Goals
 
