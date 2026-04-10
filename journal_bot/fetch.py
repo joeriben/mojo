@@ -76,19 +76,24 @@ def _article_to_stored(art: Article, enrichment: dict) -> StoredArticle:
     )
 
 
-def run(store: Store | None = None, verbose: bool = True) -> FetchStats:
+def run(
+    store: Store | None = None,
+    verbose: bool = True,
+    since_year: int | None = None,
+) -> FetchStats:
     store = store or Store()
     stats = FetchStats()
 
     enabled = [j for j in JOURNALS if j.enabled]
     if verbose:
-        print(f"[fetch] {len(enabled)} aktive Feeds")
+        label = f" (seit {since_year})" if since_year else ""
+        print(f"[fetch] {len(enabled)} aktive Feeds{label}")
 
     for jc in enabled:
         if verbose:
             print(f"\n[fetch] → {jc.short} ({jc.type})")
         try:
-            fetcher = build_fetcher(jc)
+            fetcher = build_fetcher(jc, since_year=since_year)
             articles = fetcher.fetch()
         except Exception as e:
             msg = f"{jc.short}: fetch failed — {e}"

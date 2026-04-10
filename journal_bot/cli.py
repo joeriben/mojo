@@ -56,7 +56,7 @@ def cmd_summarize(args: argparse.Namespace) -> int:
 
 
 def cmd_fetch(args: argparse.Namespace) -> int:
-    fetch.run(verbose=not args.quiet)
+    fetch.run(verbose=not args.quiet, since_year=args.since)
     return 0
 
 
@@ -316,6 +316,8 @@ def main(argv: list[str] | None = None) -> int:
     p_fetch = sub.add_parser("fetch",
                              help="Feeds pullen + enrichen → articles.db")
     p_fetch.add_argument("--quiet", action="store_true")
+    p_fetch.add_argument("--since", type=int, default=None,
+                         help="Backfill: Artikel ab diesem Jahr holen (z.B. 2016)")
     p_fetch.set_defaults(func=cmd_fetch)
 
     p_digest = sub.add_parser("digest",

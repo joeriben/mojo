@@ -114,12 +114,17 @@ class OpenAlexFetcher:
         self,
         jc: JournalConfig,
         window_days: int = DEFAULT_WINDOW_DAYS,
+        since_year: int | None = None,
     ) -> None:
         self.jc = jc
         self.window_days = window_days
+        self.since_year = since_year
 
     def fetch(self) -> list[Article]:
-        from_date = (datetime.utcnow() - timedelta(days=self.window_days)).date().isoformat()
+        if self.since_year:
+            from_date = f"{self.since_year}-01-01"
+        else:
+            from_date = (datetime.utcnow() - timedelta(days=self.window_days)).date().isoformat()
         source_filter = _parse_filter(self.jc.url)
         full_filter = f"{source_filter},from_publication_date:{from_date},type:article"
 

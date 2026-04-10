@@ -10,7 +10,7 @@ from journal_bot.fetchers.html_fetcher import HTMLFetcher
 from journal_bot.fetchers.openalex_fetcher import OpenAlexFetcher
 
 
-def build_fetcher(jc: JournalConfig) -> Fetcher:
+def build_fetcher(jc: JournalConfig, since_year: int | None = None) -> Fetcher:
     if jc.type == "rss":
         return RSSFetcher(jc)
     if jc.type == "ojs":
@@ -18,7 +18,7 @@ def build_fetcher(jc: JournalConfig) -> Fetcher:
     if jc.type == "html":
         return HTMLFetcher(jc)
     if jc.type == "openalex":
-        return OpenAlexFetcher(jc)
+        return OpenAlexFetcher(jc, since_year=since_year)
     raise ValueError(f"Unbekannter Fetcher-Typ: {jc.type}")
 
 
