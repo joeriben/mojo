@@ -7,7 +7,7 @@ Journals, die bereits in `settings.JOURNALS` konfiguriert sind, sind mit ✓ mar
 
 ### a) Erziehungswissenschaft (peer-reviewed)
 - ✓ ZfE
-- ZfPäd
+- ✓ ZfPäd
 - Vierteljahresschrift f. wiss. Pädagogik
 - ✓ JERO (j-e-r-o.com)
 - Bildung und Erziehung (vr-elibrary.de)
@@ -22,13 +22,13 @@ Journals, die bereits in `settings.JOURNALS` konfiguriert sind, sind mit ✓ mar
 - Oxford Review of Education (JSTOR)
 - Contemporary Educational Technology (cedtech.net)
 - Critical Questions in Education
-- Ethics and Education (T&F, ceae20)
+- ✓ Ethics and Education (T&F, ceae20)
 - On Education (oneducation.net)
 - ✓ Journal of Transformative Education (JTE)
 
 ### c) Pädagogik/Ewi & Kultur, Medialität
 - IJEA - Int J of Education & the Arts
-- Review of Education, Pedagogy, and Cultural Studies (T&F, gred20)
+- ✓ Review of Education, Pedagogy, and Cultural Studies (T&F, gred20)
 - ✓ JAE - Journal of Aesthetic Education
 - ✓ PCS - Pedagogy, Culture & Society
 - zkmb (zkmb.de) — nicht in OpenAlex, Scraper nötig
@@ -36,12 +36,12 @@ Journals, die bereits in `settings.JOURNALS` konfiguriert sind, sind mit ✓ mar
 - Arts and Humanities in Higher Education (Sage, ahh)
 - ✓ Discourse
 - Journal of Education & Culture (runas.religacion.com)
-- Studies in Art Education (T&F, usae20)
+- ✓ Studies in Art Education (T&F, usae20)
 - ✓ LMT - Learning, Media and Technology
 - ✓ MedienPaed
 
 ### d) (Post-)digital Culture and Ed.
-- BJET - British Journal of Educational Technology (Wiley/BERA, 14678535)
+- ✓ BJET - British Journal of Educational Technology (Wiley/BERA, 14678535)
 - ✓ DCE - Digital Culture & Education
 - ✓ AIandSoc - AI & Society
 
@@ -67,7 +67,7 @@ Journals, die bereits in `settings.JOURNALS` konfiguriert sind, sind mit ✓ mar
 ## III. Culture, media, aesthetic, arts, technology
 
 ### Kultur, Ästhetik, Medialität
-- Journal of Aesthetics and Culture
+- ✓ Journal of Aesthetics and Culture
 - Kulturwissenschaftliche Zeitschrift (de Gruyter)
 - Medienobservationen (online)
 - Zeitschrift f. Ästhetik u. allg. Kunstwissenschaft (Felix Meiner)
@@ -82,12 +82,12 @@ Journals, die bereits in `settings.JOURNALS` konfiguriert sind, sind mit ✓ mar
 - ✓ PDSE
 - Computational Culture (computationalculture.net)
 - ✓ DCS - Digital Culture & Society
-- Big Data and Society (Sage, bds)
+- ✓ Big Data and Society (Sage, bds)
 - APRJA (aprja.net)
 - Digital Humanities Quarterly
 - CTRL-Z (ctrl-z.net.au)
 - Digital Ethnography (digital-ethnography.com)
-- Science, Technology, and Human Values (Sage)
+- ✓ Science, Technology, and Human Values (Sage)
 
 ### Technik
 - Jahrbuch Technikphilosophie (jtphil.de)

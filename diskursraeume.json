@@ -117,6 +117,42 @@
       "deutsche",
       "medienpaed",
       "aesthetische_kulturelle_bildung"
+    ],
+    "ZfPaed": [
+      "deutsche",
+      "erziehungswiss",
+      "bildungstheorie"
+    ],
+    "EthicsEd": [
+      "bildungstheorie",
+      "resilienz",
+      "erziehungswiss"
+    ],
+    "REPCS": [
+      "bildungstheorie",
+      "digitale_kultur",
+      "aesthetische_kulturelle_bildung"
+    ],
+    "SAE": [
+      "aesthetische_kulturelle_bildung",
+      "digitale_kultur",
+      "bildungstheorie"
+    ],
+    "BJET": [
+      "medienpaed",
+      "digitale_kultur"
+    ],
+    "JAC": [
+      "aesthetische_kulturelle_bildung",
+      "digitale_kultur"
+    ],
+    "BDS": [
+      "digitale_kultur",
+      "resilienz"
+    ],
+    "STHV": [
+      "digitale_kultur",
+      "resilienz"
     ]
   }
 }

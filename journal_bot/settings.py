@@ -110,129 +110,36 @@ def available_clusters() -> list[tuple[str, dict[str, str], int]]:
 
 
 # --- Journals ---
-# Die `clusters`-Zuordnungen sind ein ERSTER VORSCHLAG. Bitte prüfen und anpassen.
-# Mehrfach-Zuordnung ist erlaubt und sinnvoll (z.B. ZfE = deutsche + erziehungswiss).
+# Loaded from journals.json (data file). Cluster assignments come from diskursraeume.json.
 
-JOURNALS: list[JournalConfig] = [
-    # --- RSS/OJS-native Feeds ---
-    JournalConfig(
-        name="Zeitschrift für Erziehungswissenschaft", short="ZfE", type="rss",
-        url="https://link.springer.com/search.rss?facet-journal-id=11618&facet-content-type=Article",
-        clusters=["deutsche", "erziehungswiss"],
-    ),
-    JournalConfig(
-        name="MedienPädagogik (medienpaed.com)", short="MedienPaed", type="ojs",
-        url="https://www.medienpaed.com/gateway/plugin/WebFeedGatewayPlugin/rss2",
-        clusters=["deutsche", "medienpaed", "aesthetische_kulturelle_bildung"],
-    ),
+JOURNALS_JSON = PROJECT_ROOT / "journals.json"
 
-    # --- Englischsprachige Kern-Journals via OpenAlex ---
-    JournalConfig(
-        name="Postdigital Science and Education", short="PDSE", type="openalex",
-        url="issn:2524-485X",
-        clusters=["digitale_kultur", "medienpaed", "bildungstheorie"],
-    ),
-    JournalConfig(
-        name="Educational Philosophy and Theory", short="EPT", type="openalex",
-        url="issn:0013-1857",
-        clusters=["bildungstheorie"],
-    ),
-    JournalConfig(
-        name="Educational Theory", short="EduTheory", type="openalex",
-        url="issn:1741-5446",
-        clusters=["bildungstheorie"],
-    ),
-    JournalConfig(
-        name="AI & Society", short="AIandSoc", type="openalex",
-        url="issn:0951-5666",
-        clusters=["digitale_kultur"],
-    ),
-    JournalConfig(
-        name="Learning, Media and Technology", short="LMT", type="openalex",
-        url="issn:1743-9884",
-        clusters=["digitale_kultur", "medienpaed"],
-    ),
-    JournalConfig(
-        name="Pedagogy, Culture & Society", short="PCS", type="openalex",
-        url="issn:1468-1366",
-        clusters=["erziehungswiss", "bildungstheorie"],
-    ),
-    JournalConfig(
-        name="Discourse: Studies in the Cultural Politics of Education",
-        short="Discourse", type="openalex",
-        url="issn:0159-6306",
-        clusters=["erziehungswiss"],
-    ),
-    JournalConfig(
-        name="European Educational Research Journal", short="EERJ", type="openalex",
-        url="issn:1474-9041",
-        clusters=["erziehungswiss"],
-    ),
-    JournalConfig(
-        name="Journal of Research on Technology in Education",
-        short="JRTE", type="openalex",
-        url="issn:1539-1523",
-        clusters=["erziehungswiss", "digitale_kultur"],
-    ),
-    JournalConfig(
-        name="Journal of Transformative Education", short="JTE", type="openalex",
-        url="issn:1552-7840",
-        clusters=["bildungstheorie", "resilienz"],
-    ),
-    JournalConfig(
-        name="The Journal of Environmental Education", short="JEE", type="openalex",
-        url="issn:0095-8964",
-        clusters=["resilienz"],
-    ),
-    JournalConfig(
-        name="Diaspora, Indigenous, and Minority Education",
-        short="DIME", type="openalex",
-        url="issn:1559-5692",
-        clusters=["erziehungswiss"],
-    ),
-    JournalConfig(
-        name="Digital Culture & Education", short="DCE", type="openalex",
-        url="issn:1836-8301",
-        clusters=["digitale_kultur"],
-    ),
-    JournalConfig(
-        name="Digital Culture & Society", short="DCS", type="openalex",
-        url="issn:2364-2122",
-        clusters=["digitale_kultur"],
-    ),
-    JournalConfig(
-        name="Journal of Aesthetic Education", short="JAE", type="openalex",
-        url="issn:0021-8510",
-        clusters=["bildungstheorie", "aesthetische_kulturelle_bildung"],
-    ),
-    JournalConfig(
-        name="Resilience: A Journal of the Environmental Humanities",
-        short="Resilience", type="openalex",
-        url="issn:2330-8117",
-        clusters=["resilienz"],
-    ),
+def _load_journals() -> list[JournalConfig]:
+    """Load journal configs from journals.json, apply cluster overrides."""
+    journals: list[JournalConfig] = []
 
-    # --- Deutschsprachige Journals via OpenAlex ---
-    JournalConfig(
-        name="Journal for Educational Research Online",
-        short="JERO", type="openalex",
-        url="issn:1866-6671",
-        clusters=["deutsche", "erziehungswiss"],
-    ),
-    JournalConfig(
-        name="merz | medien + erziehung", short="merz", type="openalex",
-        url="issn:0176-4918",
-        clusters=["deutsche", "medienpaed", "aesthetische_kulturelle_bildung"],
-    ),
+    if JOURNALS_JSON.exists():
+        data = json.loads(JOURNALS_JSON.read_text(encoding="utf-8"))
+        for j in data.get("journals", []):
+            journals.append(JournalConfig(
+                name=j["name"],
+                short=j["short"],
+                type=j["type"],
+                url=j["url"],
+                enabled=j.get("enabled", True),
+                clusters=j.get("clusters", []),
+            ))
+    else:
+        raise FileNotFoundError(f"journals.json nicht gefunden: {JOURNALS_JSON}")
 
-    # --- Sonderfälle (Scraper fehlen) ---
-    # zkmb — Zeitschrift Kunst Medien Bildung (issn:2193-2980, nicht in OpenAlex)
-    # e-flux Journal (issn:2164-1625, nicht in OpenAlex, stabile /journal/<nr>/ Struktur)
-]
+    # Apply cluster overrides from diskursraeume.json
+    if _JOURNAL_CLUSTERS:
+        short_to_journal = {j.short: j for j in journals}
+        for short, clusters in _JOURNAL_CLUSTERS.items():
+            if short in short_to_journal:
+                short_to_journal[short].clusters = list(clusters)
 
-# Apply cluster overrides from diskursraeume.json (if loaded)
-if _JOURNAL_CLUSTERS:
-    _short_to_journal = {j.short: j for j in JOURNALS}
-    for _short, _clusters in _JOURNAL_CLUSTERS.items():
-        if _short in _short_to_journal:
-            _short_to_journal[_short].clusters = list(_clusters)
+    return journals
+
+
+JOURNALS: list[JournalConfig] = _load_journals()

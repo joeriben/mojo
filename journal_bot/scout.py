@@ -86,13 +86,13 @@ _ISSN_RE = re.compile(r"\b(\d{4}-?\d{3}[\dXx])\b")
 _TRACKED_NAMES = {j.name.lower() for j in JOURNALS} | {j.short.lower() for j in JOURNALS}
 
 
-def parse_watchlist(path: Path) -> list[Candidate]:
-    """Parse the markdown watchlist into candidate journals.
+def parse_watchlist(path: Path) -> tuple[list[Candidate], list[str]]:
+    """Parse the markdown watchlist into candidate journals + tracked names.
 
-    Skips entries marked with ✓ (already tracked).
-    Extracts ISSNs from parenthetical notes where available.
+    Returns (candidates, tracked_names) where tracked_names are ✓-marked entries.
     """
     candidates: list[Candidate] = []
+    tracked_names: list[str] = []
     current_section = ""
 
     for line in path.read_text(encoding="utf-8").splitlines():
@@ -109,8 +109,18 @@ def parse_watchlist(path: Path) -> list[Candidate]:
 
         item = stripped[2:].strip()
 
-        # Skip tracked entries
+        # Collect tracked entries
         if item.startswith("✓"):
+            # Extract name from "✓ ZfE" or "✓ BJET - British Journal..."
+            tracked_name = item[1:].strip()
+            # Strip parenthetical notes
+            paren = re.search(r"\(([^)]+)\)\s*$", tracked_name)
+            if paren:
+                tracked_name = tracked_name[:paren.start()].strip().rstrip("-–—").strip()
+            dash = re.search(r"\s*[—–]\s*.+$", tracked_name)
+            if dash:
+                tracked_name = tracked_name[:dash.start()].strip()
+            tracked_names.append(tracked_name.strip(" ,;"))
             continue
 
         # Extract name and parenthetical note
@@ -158,7 +168,22 @@ def parse_watchlist(path: Path) -> list[Candidate]:
             section=current_section,
         ))
 
-    return candidates
+    # Deduplicate by normalized name, keeping the entry with the most info
+    seen: dict[str, int] = {}
+    deduped: list[Candidate] = []
+    for c in candidates:
+        key = c.name.lower().strip()
+        if key in seen:
+            # Keep the one with more metadata (ISSN, note)
+            idx = seen[key]
+            existing = deduped[idx]
+            if not existing.issn and c.issn:
+                deduped[idx] = c
+            continue
+        seen[key] = len(deduped)
+        deduped.append(c)
+
+    return deduped, tracked_names
 
 
 # ---------------------------------------------------------------- Name Expansion
@@ -943,7 +968,7 @@ Rufe das Tool `synthesis` auf — einmal pro Zeitschrift, in der Reihenfolge der
             ],
             tools=[synthesis_tool],
             temperature=0.3,
-            max_tokens=4000,
+            max_tokens=16000,
         )
     except Exception as e:
         if verbose:
@@ -967,24 +992,68 @@ Rufe das Tool `synthesis` auf — einmal pro Zeitschrift, in der Reihenfolge der
 
     # Parse tool calls — Opus may call synthesis once per journal
     msg = resp.choices[0].message
-    synthesis_results: dict[str, dict] = {}
+    synthesis_results: list[dict] = []
     for tc in (msg.tool_calls or []):
         if tc.function.name == "synthesis":
             args = json.loads(tc.function.arguments)
-            name = args.get("journal_name", "")
-            synthesis_results[name.lower().strip()] = args
+            synthesis_results.append(args)
 
-    # Match synthesis results to verdicts
+    def _normalize(s: str) -> str:
+        """Strip punctuation, articles, and common prefixes for matching."""
+        s = s.lower().strip()
+        # Remove common prefixes like "Int J of", "Journal of", etc.
+        for prefix in ("int j of ", "international journal of ",
+                       "journal of ", "zeitschrift f. ", "zeitschrift für "):
+            if s.startswith(prefix):
+                s = s[len(prefix):]
+        return re.sub(r"[^a-z0-9äöüß]+", " ", s).strip()
+
+    # Build lookup from synthesis results
+    syn_by_norm: dict[str, dict] = {}
+    syn_by_words: list[tuple[set[str], dict]] = []
+    for args in synthesis_results:
+        name = args.get("journal_name", "")
+        norm = _normalize(name)
+        syn_by_norm[norm] = args
+        syn_by_words.append((set(norm.split()), args))
+
+    # Match synthesis results to verdicts (used set tracks consumed results)
+    used: set[int] = set()
+
+    def _find_match(candidate_name: str) -> dict | None:
+        norm = _normalize(candidate_name)
+        # 1. Exact normalized match
+        if norm in syn_by_norm:
+            return syn_by_norm[norm]
+        # 2. Substring containment
+        for sn, args in syn_by_norm.items():
+            if sn in norm or norm in sn:
+                return args
+        # 3. Word-overlap match (≥60% of words shared both ways)
+        norm_words = set(norm.split())
+        best_score, best_args = 0.0, None
+        for i, (sw, args) in enumerate(syn_by_words):
+            if i in used:
+                continue
+            if not norm_words or not sw:
+                continue
+            overlap = len(norm_words & sw)
+            score = overlap / max(len(norm_words), len(sw))
+            if score > best_score and score >= 0.6:
+                best_score = score
+                best_args = args
+        return best_args
+
     for v in verdicts:
         if not v.lens_results:
             continue
-        key = v.candidate.name.lower().strip()
-        syn = synthesis_results.get(key)
-        if not syn:
-            # Try fuzzy match
-            for syn_key, syn_val in synthesis_results.items():
-                if syn_key in key or key in syn_key:
-                    syn = syn_val
+        syn = _find_match(v.candidate.name)
+        # Mark as used to avoid double-matching
+        if syn:
+            norm_syn = _normalize(syn.get("journal_name", ""))
+            for i, (sw, args) in enumerate(syn_by_words):
+                if _normalize(args.get("journal_name", "")) == norm_syn:
+                    used.add(i)
                     break
         if syn:
             v.synthesis_de = syn.get("synthesis_de", "")
@@ -1001,7 +1070,11 @@ Rufe das Tool `synthesis` auf — einmal pro Zeitschrift, in der Reihenfolge der
 # ---------------------------------------------------------------- Rendering
 
 
-def render_markdown(verdicts: list[ScoutVerdict], window_years: int = 3) -> str:
+def render_markdown(
+    verdicts: list[ScoutVerdict],
+    window_years: int = 3,
+    tracked_names: list[str] | None = None,
+) -> str:
     this_year = datetime.now().year
     start_year = this_year - window_years + 1
 
@@ -1018,10 +1091,12 @@ def render_markdown(verdicts: list[ScoutVerdict], window_years: int = 3) -> str:
                  f"Fenster: {start_year}-{this_year} · "
                  f"Kosten: ${total_cost:.2f}_")
     lines.append("")
+    n_tracked = len(tracked_names) if tracked_names else 0
     lines.append(f"**{len(aufnehmen)}** aufnehmen · "
                  f"**{len(beobachten)}** beobachten · "
                  f"**{len(nicht)}** nicht aufnehmen · "
-                 f"**{len(skipped)}** übersprungen")
+                 f"**{len(skipped)}** übersprungen · "
+                 f"**{n_tracked}** bereits getrackt")
     lines.append("")
     lines.append("_Linsen: A=Thematische Passung, B=Disziplinäre Beheimatung, "
                  "C=Latente Relevanz_")
@@ -1083,6 +1158,13 @@ def render_markdown(verdicts: list[ScoutVerdict], window_years: int = 3) -> str:
             lines.append(f"- **{v.candidate.name}**: {v.synthesis_de or '?'}")
         lines.append("")
 
+    if tracked_names:
+        lines.append("## Bereits getrackt")
+        lines.append("")
+        for name in sorted(tracked_names):
+            lines.append(f"- {name}")
+        lines.append("")
+
     lines.append("---")
     lines.append(f"_Kosten: ${total_cost:.2f} (3× Haiku + Opus-Synthese)_")
     return "\n".join(lines)
@@ -1102,7 +1184,7 @@ def run(
     out_dir = out_dir or DIGEST_DIR
 
     # 1. Parse watchlist
-    candidates = parse_watchlist(watchlist)
+    candidates, tracked_names = parse_watchlist(watchlist)
     if limit:
         candidates = candidates[:limit]
 
@@ -1135,9 +1217,30 @@ def run(
 
     # 4. Multi-lens LLM evaluation (3× Haiku per journal)
     evaluable = [p for p in probes if not p.error and p.sample_titles]
+    skipped_probes = [p for p in probes if p.error or not p.sample_titles]
     if verbose:
+        n_skip = len(skipped_probes)
         print(f"\n[scout] Multi-Linsen-Evaluation für {len(evaluable)} Journals "
-              f"({len(probes) - len(evaluable)} übersprungen)...")
+              f"({n_skip} übersprungen)...")
+        if skipped_probes:
+            # Group by reason
+            issn_fail = [p for p in skipped_probes if p.error and "ISSN" in p.error]
+            no_articles = [p for p in skipped_probes if not p.error and not p.sample_titles]
+            not_indexed = [p for p in skipped_probes if p.error and "nicht in OpenAlex" in p.error]
+            other = [p for p in skipped_probes
+                     if p not in issn_fail and p not in no_articles and p not in not_indexed]
+            if issn_fail:
+                print(f"[scout]   ISSN nicht aufgelöst ({len(issn_fail)}): "
+                      f"{', '.join(p.candidate.name for p in issn_fail)}")
+            if no_articles:
+                print(f"[scout]   Keine Artikel ({len(no_articles)}): "
+                      f"{', '.join(p.candidate.name for p in no_articles)}")
+            if not_indexed:
+                print(f"[scout]   Nicht in OpenAlex ({len(not_indexed)}): "
+                      f"{', '.join(p.candidate.name for p in not_indexed)}")
+            if other:
+                print(f"[scout]   Sonstige ({len(other)}): "
+                      f"{', '.join(p.candidate.name for p in other)}")
 
     client = build_client()
     verdicts: list[ScoutVerdict] = []
@@ -1173,7 +1276,7 @@ def run(
     total_cost = sum(v.total_cost_usd for v in verdicts)
 
     # 6. Output
-    md = render_markdown(verdicts, window_years)
+    md = render_markdown(verdicts, window_years, tracked_names=tracked_names)
 
     trends_dir = out_dir / "trends"
     trends_dir.mkdir(parents=True, exist_ok=True)

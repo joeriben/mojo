@@ -1,0 +1,201 @@
+{
+  "version": 2,
+  "journals": [
+    {
+      "name": "Zeitschrift für Erziehungswissenschaft",
+      "short": "ZfE",
+      "type": "rss",
+      "url": "https://link.springer.com/search.rss?facet-journal-id=11618&facet-content-type=Article",
+      "enabled": true
+    },
+    {
+      "name": "MedienPädagogik (medienpaed.com)",
+      "short": "MedienPaed",
+      "type": "ojs",
+      "url": "https://www.medienpaed.com/gateway/plugin/WebFeedGatewayPlugin/rss2",
+      "enabled": true
+    },
+    {
+      "name": "Postdigital Science and Education",
+      "short": "PDSE",
+      "type": "openalex",
+      "url": "issn:2524-485X",
+      "enabled": true
+    },
+    {
+      "name": "Educational Philosophy and Theory",
+      "short": "EPT",
+      "type": "openalex",
+      "url": "issn:0013-1857",
+      "enabled": true
+    },
+    {
+      "name": "Educational Theory",
+      "short": "EduTheory",
+      "type": "openalex",
+      "url": "issn:1741-5446",
+      "enabled": true
+    },
+    {
+      "name": "AI & Society",
+      "short": "AIandSoc",
+      "type": "openalex",
+      "url": "issn:0951-5666",
+      "enabled": true
+    },
+    {
+      "name": "Learning, Media and Technology",
+      "short": "LMT",
+      "type": "openalex",
+      "url": "issn:1743-9884",
+      "enabled": true
+    },
+    {
+      "name": "Pedagogy, Culture & Society",
+      "short": "PCS",
+      "type": "openalex",
+      "url": "issn:1468-1366",
+      "enabled": true
+    },
+    {
+      "name": "Discourse: Studies in the Cultural Politics of Education",
+      "short": "Discourse",
+      "type": "openalex",
+      "url": "issn:0159-6306",
+      "enabled": true
+    },
+    {
+      "name": "European Educational Research Journal",
+      "short": "EERJ",
+      "type": "openalex",
+      "url": "issn:1474-9041",
+      "enabled": true
+    },
+    {
+      "name": "Journal of Research on Technology in Education",
+      "short": "JRTE",
+      "type": "openalex",
+      "url": "issn:1539-1523",
+      "enabled": true
+    },
+    {
+      "name": "Journal of Transformative Education",
+      "short": "JTE",
+      "type": "openalex",
+      "url": "issn:1552-7840",
+      "enabled": true
+    },
+    {
+      "name": "The Journal of Environmental Education",
+      "short": "JEE",
+      "type": "openalex",
+      "url": "issn:0095-8964",
+      "enabled": true
+    },
+    {
+      "name": "Diaspora, Indigenous, and Minority Education",
+      "short": "DIME",
+      "type": "openalex",
+      "url": "issn:1559-5692",
+      "enabled": true
+    },
+    {
+      "name": "Digital Culture & Education",
+      "short": "DCE",
+      "type": "openalex",
+      "url": "issn:1836-8301",
+      "enabled": true
+    },
+    {
+      "name": "Digital Culture & Society",
+      "short": "DCS",
+      "type": "openalex",
+      "url": "issn:2364-2122",
+      "enabled": true
+    },
+    {
+      "name": "Journal of Aesthetic Education",
+      "short": "JAE",
+      "type": "openalex",
+      "url": "issn:0021-8510",
+      "enabled": true
+    },
+    {
+      "name": "Resilience: A Journal of the Environmental Humanities",
+      "short": "Resilience",
+      "type": "openalex",
+      "url": "issn:2330-8117",
+      "enabled": true
+    },
+    {
+      "name": "Journal for Educational Research Online",
+      "short": "JERO",
+      "type": "openalex",
+      "url": "issn:1866-6671",
+      "enabled": true
+    },
+    {
+      "name": "merz | medien + erziehung",
+      "short": "merz",
+      "type": "openalex",
+      "url": "issn:0176-4918",
+      "enabled": true
+    },
+    {
+      "name": "Zeitschrift für Pädagogik",
+      "short": "ZfPaed",
+      "type": "openalex",
+      "url": "issn:0044-3247",
+      "enabled": true
+    },
+    {
+      "name": "Ethics and Education",
+      "short": "EthicsEd",
+      "type": "openalex",
+      "url": "issn:1744-9642",
+      "enabled": true
+    },
+    {
+      "name": "Review of Education, Pedagogy, and Cultural Studies",
+      "short": "REPCS",
+      "type": "openalex",
+      "url": "issn:1071-4413",
+      "enabled": true
+    },
+    {
+      "name": "Studies in Art Education",
+      "short": "SAE",
+      "type": "openalex",
+      "url": "issn:0039-3541",
+      "enabled": true
+    },
+    {
+      "name": "British Journal of Educational Technology",
+      "short": "BJET",
+      "type": "openalex",
+      "url": "issn:1467-8535",
+      "enabled": true
+    },
+    {
+      "name": "Journal of Aesthetics and Culture",
+      "short": "JAC",
+      "type": "openalex",
+      "url": "issn:2000-4214",
+      "enabled": true
+    },
+    {
+      "name": "Big Data and Society",
+      "short": "BDS",
+      "type": "openalex",
+      "url": "issn:2053-9517",
+      "enabled": true
+    },
+    {
+      "name": "Science, Technology, and Human Values",
+      "short": "STHV",
+      "type": "openalex",
+      "url": "issn:0162-2439",
+      "enabled": true
+    }
+  ]
+}

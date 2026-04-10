@@ -240,6 +240,42 @@ def cmd_diskurs(args: argparse.Namespace) -> int:
     return 2
 
 
+def cmd_journal(args: argparse.Namespace) -> int:
+    from journal_bot import journals
+
+    action = args.action
+
+    if action == "list":
+        jlist = journals.list_journals()
+        for j in jlist:
+            status = "✓" if j.get("enabled", True) else "✗"
+            clusters = ", ".join(j.get("clusters", [])) or "(keine)"
+            issn = j["url"].replace("issn:", "") if j["url"].startswith("issn:") else j["url"]
+            print(f"  {status} {j['short']:12s} {j['name']}")
+            print(f"    {j['type']:8s} {issn}  → {clusters}")
+        print(f"\n{len(jlist)} Journals registriert.")
+        return 0
+
+    elif action == "add":
+        result = journals.add_journal(
+            name=args.name,
+            short=args.short,
+            issn=args.issn,
+            clusters=args.clusters or [],
+            journal_type=args.type,
+        )
+        print(result)
+        return 0
+
+    elif action == "remove":
+        result = journals.remove_journal(args.short)
+        print(result)
+        return 0
+
+    print(f"Unbekannte Aktion: {action}")
+    return 2
+
+
 def cmd_stats(args: argparse.Namespace) -> int:
     store = Store()
     s = store.stats()
@@ -381,6 +417,26 @@ def main(argv: list[str] | None = None) -> int:
     p_dua = diskurs_sub.add_parser("unassign", help="Journal aus Diskursraum entfernen")
     p_dua.add_argument("journal", help="Journal-Kürzel")
     p_dua.add_argument("cluster", help="Diskursraum-Schlüssel")
+
+    # --- journal ---
+    p_journal = sub.add_parser("journal",
+                                help="Journals verwalten (list, add, remove)")
+    p_journal.set_defaults(func=cmd_journal)
+    journal_sub = p_journal.add_subparsers(dest="action", required=True)
+
+    journal_sub.add_parser("list", help="Alle registrierten Journals auflisten")
+
+    p_ja = journal_sub.add_parser("add", help="Neues Journal hinzufügen")
+    p_ja.add_argument("short", help="Kurzname (z.B. SAE)")
+    p_ja.add_argument("--name", required=True, help="Voller Name")
+    p_ja.add_argument("--issn", required=True, help="ISSN (z.B. 0039-3541)")
+    p_ja.add_argument("--clusters", nargs="*", default=[],
+                       help="Diskursraum-Schlüssel (z.B. aesthetische_kulturelle_bildung)")
+    p_ja.add_argument("--type", default="openalex",
+                       help="Fetch-Typ (default: openalex)")
+
+    p_jr = journal_sub.add_parser("remove", help="Journal entfernen")
+    p_jr.add_argument("short", help="Kurzname des zu entfernenden Journals")
 
     p_stats = sub.add_parser("stats", help="Store-Statistik")
     p_stats.set_defaults(func=cmd_stats)
