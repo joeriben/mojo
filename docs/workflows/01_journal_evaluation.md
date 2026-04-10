@@ -11,75 +11,67 @@ Evaluiert Kandidaten-Journals aus der Watchlist und entscheidet, welche ins akti
 ## Voraussetzungen
 - `summaries.json` existiert (Haiku-Summaries der eigenen Publikationen)
 - `diskursraeume.json` existiert (Diskursraum-Definitionen)
+- `journals.json` existiert (Journal-Registry)
 - OpenRouter API-Key unter `~/.config/mojo/openrouter_key`
 
 ## Schritte
 
 ### 1. Watchlist prüfen
 ```bash
-# Watchlist-Datei anzeigen — ungetrackte Journals haben kein ✓
+# Watchlist-Datei — ungetrackte Journals haben kein ✓
 cat docs/journal_watchlist_full.md
 ```
 Entscheidungspunkt: Sind neue Kandidaten eingetragen? Wenn nein → Ende.
 
 ### 2. Diskursraum-Kontext aufbauen (optional, empfohlen)
 ```bash
-# Welche Diskursräume existieren, wie sind sie besetzt?
 mojo diskurs list
-
-# Für einen spezifischen Raum: Profil mit OpenAlex-Konzepten
-mojo diskurs profile <key>
-
-# Querschnitt-Konzepte über alle Räume (kein LLM)
-mojo diskurs crosscut
+mojo diskurs profile <key>       # für einen spezifischen Raum
+mojo diskurs crosscut             # Querschnitt-Konzepte (kein LLM)
 ```
-Output: Verständnis der aktuellen Diskursraum-Landschaft.
 
 ### 3. Scout-Lauf
 ```bash
-# Volllauf über alle ungetrackten Kandidaten
-mojo scout
-
-# Optional: Begrenzung auf N Journals (zum Testen)
-mojo scout --limit 5
+mojo scout                        # Volllauf über alle Kandidaten
+mojo scout --limit 5              # Begrenzung zum Testen
 ```
-- Kosten: ~$0.03/Journal (3× Haiku) + ~$1-2 Opus-Synthese (einmalig)
-- Dauer: ~2-10 Min. je nach Anzahl
+- Kosten: ~$0.03/Journal (3× Haiku) + ~$1–2 Opus-Synthese
 - Output: `~/Documents/Obsidian Vault/research/mojo/trends/scout_<datum>.md`
+- Prüfe: "Bereits getrackt"-Sektion muss alle ✓-Journals enthalten
 
 ### 4. Scout-Ergebnis auswerten
-Der Scout-Output hat drei Kategorien:
-- **Aufnehmen**: Journals mit starker Empfehlung → Schritt 5
-- **Beobachten**: Auf Watchlist belassen, gelegentlich prüfen
-- **Nicht aufnehmen**: Von Watchlist streichen (oder begründet behalten)
+Der Output hat 5 Sektionen — die Summe muss = Gesamtzahl Watchlist-Einträge sein:
+- **Aufnehmen** → Schritt 5
+- **Beobachten** → Watchlist belassen
+- **Nicht aufnehmen** → von Watchlist streichen oder begründet behalten
+- **Übersprungen** → ISSN-Probleme prüfen, ggf. manuell nachtragen
+- **Bereits getrackt** → Kontrolle, dass nichts fehlt
 
 Entscheidungspunkte:
-- Stimmen die vorgeschlagenen Diskursräume? (→ ggf. `mojo diskurs add` für neue Räume)
-- Gibt es Übersprungene wegen ISSN-Problemen? (→ manuelle ISSN-Recherche, ggf. Scraper nötig)
+- Stimmen die vorgeschlagenen Diskursräume? → ggf. `mojo diskurs add`
+- Gibt es Übersprungene wegen ISSN-Problemen? → manuelle Recherche
 
 ### 5. Journals aufnehmen
 Für jedes "aufnehmen"-Journal:
-
 ```bash
-# TODO: `mojo journal add` implementieren (siehe Workflow 02)
-# Vorerst manuell in settings.py:
-# 1. JournalConfig hinzufügen (Name, Short, ISSN, Typ=openalex, Cluster)
-# 2. Watchlist-Eintrag mit ✓ markieren
-# 3. Diskursraum-Zuordnung: mojo diskurs assign <short> <cluster1> <cluster2>
+mojo journal add <SHORT> \
+  --name "Voller Name" \
+  --issn "XXXX-XXXX" \
+  --clusters cluster1 cluster2
 ```
+Dann Watchlist-Eintrag mit ✓ markieren (manuell in `docs/journal_watchlist_full.md`).
 
 ### 6. Initiales Fetch
 ```bash
-# Artikel der neuen Journals in die DB laden
 mojo fetch
 ```
+Prüfe im Output, dass die neuen Journals Artikel liefern.
 
 ## Bekannte Einschränkungen
 - Journals ohne OpenAlex-Indexierung werden übersprungen (zkmb.de, e-flux → Scraper nötig)
 - ISSN-Resolution scheitert bei einigen kleinen Zeitschriften
-- Opus-Synthese braucht ausreichend `max_tokens` (aktuell 16000)
-- Duplicate-Einträge in der Watchlist werden dedupliziert
+- Watchlist-✓ muss manuell gesetzt werden (TODO: automatisieren)
 
 ## Kosten
-- Volllauf (50 Journals): ~$3-4
+- Volllauf (~50 Journals): ~$3
 - Begrenzter Lauf (5 Journals): ~$0.50
