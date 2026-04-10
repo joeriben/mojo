@@ -255,8 +255,8 @@ def _extract_url_hint(name: str, note: str) -> str:
 
 
 OPENALEX_SOURCES = "https://api.openalex.org/sources"
-POLITE_MAILTO = "journal-bot@localhost"
-USER_AGENT = f"journal-bot/0.1 (mailto:{POLITE_MAILTO})"
+POLITE_MAILTO = "mojo@localhost"
+USER_AGENT = f"mojo/0.1 (mailto:{POLITE_MAILTO})"
 _HEADERS = {"User-Agent": USER_AGENT, "Accept": "application/json"}
 
 
@@ -509,40 +509,42 @@ und Abstracts. Entscheide:
 Rufe das Tool `scout_verdict` auf."""
 
 
-SCOUT_TOOL = {
-    "type": "function",
-    "function": {
-        "name": "scout_verdict",
-        "description": "Gibt das Relevanz-Urteil für eine Zeitschrift ab.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "verdict": {
-                    "type": "string",
-                    "enum": ["relevant", "marginal", "irrelevant"],
-                    "description": "Relevanz-Einschätzung.",
+def _build_scout_tool() -> dict:
+    """Build the scout_verdict tool definition with dynamic cluster list."""
+    from journal_bot.settings import DISCOURSE_SPACES
+    cluster_list = ", ".join(DISCOURSE_SPACES.keys())
+    return {
+        "type": "function",
+        "function": {
+            "name": "scout_verdict",
+            "description": "Gibt das Relevanz-Urteil für eine Zeitschrift ab.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "verdict": {
+                        "type": "string",
+                        "enum": ["relevant", "marginal", "irrelevant"],
+                        "description": "Relevanz-Einschätzung.",
+                    },
+                    "reason_de": {
+                        "type": "string",
+                        "description": (
+                            "2-3 Sätze Begründung auf Deutsch. Konkret: welche "
+                            "thematischen Überschneidungen (oder deren Fehlen)."
+                        ),
+                    },
+                    "suggested_clusters": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": (
+                            f"Passende Diskursräume aus: {cluster_list}"
+                        ),
+                    },
                 },
-                "reason_de": {
-                    "type": "string",
-                    "description": (
-                        "2-3 Sätze Begründung auf Deutsch. Konkret: welche "
-                        "thematischen Überschneidungen (oder deren Fehlen)."
-                    ),
-                },
-                "suggested_clusters": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": (
-                        "Passende Diskursräume aus: deutsche, erziehungswiss, "
-                        "digitale_kultur, medienpaed, bildungstheorie, "
-                        "aesthetische_kulturelle_bildung, resilienz"
-                    ),
-                },
+                "required": ["verdict", "reason_de", "suggested_clusters"],
             },
-            "required": ["verdict", "reason_de", "suggested_clusters"],
         },
-    },
-}
+    }
 
 
 def evaluate_journal(
@@ -582,7 +584,7 @@ def evaluate_journal(
                 ]},
                 {"role": "user", "content": "\n".join(user_lines)},
             ],
-            tools=[SCOUT_TOOL],
+            tools=[_build_scout_tool()],
             tool_choice={"type": "function", "function": {"name": "scout_verdict"}},
             temperature=0.2,
         )

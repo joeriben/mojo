@@ -1,6 +1,6 @@
 """OpenRouter-Client mit interaktivem Key-Flow.
 
-Liest den Key aus ~/.config/journal-bot/openrouter_key. Existiert die Datei nicht,
+Liest den Key aus ~/.config/mojo/openrouter_key. Existiert die Datei nicht,
 wird einmalig im Terminal gefragt (getpass), Key wird dann mit chmod 600 gespeichert.
 """
 
@@ -52,7 +52,7 @@ def build_client() -> OpenAI:
         base_url=OPENROUTER_BASE_URL,
         api_key=_load_or_prompt_key(),
         default_headers={
-            "HTTP-Referer": "https://localhost/journal-bot",
-            "X-Title": "journal-bot",
+            "HTTP-Referer": "https://localhost/mojo",
+            "X-Title": "mojo",
         },
     )

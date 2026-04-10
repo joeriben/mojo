@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "discourse_spaces": {
+    "deutsche": {
+      "name": "Deutschsprachige Journals",
+      "description": "Journals mit primär deutscher Publikationssprache (cross-cutting).",
+      "created": "2026-04-10",
+      "modified": "2026-04-10"
+    },
+    "erziehungswiss": {
+      "name": "Erziehungswissenschaftliche Journals",
+      "description": "Empirische und theoretische Erziehungswissenschaft, Bildungsforschung.",
+      "created": "2026-04-10",
+      "modified": "2026-04-10"
+    },
+    "digitale_kultur": {
+      "name": "Digitale Kultur",
+      "description": "Diskursraum digitale/postdigitale Kultur, mit oder ohne Bildungsfokus.",
+      "created": "2026-04-10",
+      "modified": "2026-04-10"
+    },
+    "medienpaed": {
+      "name": "Medienpädagogik",
+      "description": "Medienpädagogische Fachzeitschriften.",
+      "created": "2026-04-10",
+      "modified": "2026-04-10"
+    },
+    "bildungstheorie": {
+      "name": "Bildungstheorie und -philosophie",
+      "description": "Theoretische und philosophische Auseinandersetzung mit Bildung / Education.",
+      "created": "2026-04-10",
+      "modified": "2026-04-10"
+    },
+    "aesthetische_kulturelle_bildung": {
+      "name": "Ästhetische und kulturelle Bildung",
+      "description": "Ästhetische Bildung, kulturelle Bildung, Kunstpädagogik, Kunst-Bildungs-Verhältnis.",
+      "created": "2026-04-10",
+      "modified": "2026-04-10"
+    },
+    "resilienz": {
+      "name": "Resilienz & Nachhaltigkeit / Environmental Humanities",
+      "description": "Kulturelle und ökologische Resilienz, Nachhaltigkeit, Umweltbildung, Transformation.",
+      "created": "2026-04-10",
+      "modified": "2026-04-10"
+    }
+  },
+  "journal_clusters": {
+    "ZfE": [
+      "deutsche",
+      "erziehungswiss"
+    ],
+    "MedienPaed": [
+      "deutsche",
+      "medienpaed",
+      "aesthetische_kulturelle_bildung"
+    ],
+    "PDSE": [
+      "digitale_kultur",
+      "medienpaed",
+      "bildungstheorie"
+    ],
+    "EPT": [
+      "bildungstheorie"
+    ],
+    "EduTheory": [
+      "bildungstheorie"
+    ],
+    "AIandSoc": [
+      "digitale_kultur"
+    ],
+    "LMT": [
+      "digitale_kultur",
+      "medienpaed"
+    ],
+    "PCS": [
+      "erziehungswiss",
+      "bildungstheorie"
+    ],
+    "Discourse": [
+      "erziehungswiss"
+    ],
+    "EERJ": [
+      "erziehungswiss"
+    ],
+    "JRTE": [
+      "erziehungswiss",
+      "digitale_kultur"
+    ],
+    "JTE": [
+      "bildungstheorie",
+      "resilienz"
+    ],
+    "JEE": [
+      "resilienz"
+    ],
+    "DIME": [
+      "erziehungswiss"
+    ],
+    "DCE": [
+      "digitale_kultur"
+    ],
+    "DCS": [
+      "digitale_kultur"
+    ],
+    "JAE": [
+      "bildungstheorie",
+      "aesthetische_kulturelle_bildung"
+    ],
+    "Resilience": [
+      "resilienz"
+    ],
+    "JERO": [
+      "deutsche",
+      "erziehungswiss"
+    ],
+    "merz": [
+      "deutsche",
+      "medienpaed",
+      "aesthetische_kulturelle_bildung"
+    ]
+  }
+}

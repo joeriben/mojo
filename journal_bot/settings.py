@@ -1,7 +1,8 @@
-"""Harte Konstanten für den Prototypen. Kein Config-File, keine Magie."""
+"""Harte Konstanten + Diskursraum-Laden aus diskursraeume.json."""
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -28,7 +29,7 @@ SUMMARIES_JSON = PROJECT_ROOT / "summaries.json"
 STATE_DB = PROJECT_ROOT / "seen.db"
 
 # --- Ausgabe ---
-DIGEST_DIR = Path("/Users/joerissen/Documents/Obsidian Vault/research/journal-bot")
+DIGEST_DIR = Path("/Users/joerissen/Documents/Obsidian Vault/research/mojo")
 
 # --- LLM (OpenRouter) ---
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
@@ -38,7 +39,7 @@ MODEL_SUMMARIZE = "anthropic/claude-haiku-4.5"
 MODEL_AGENT = "anthropic/claude-opus-4.6"
 
 # --- API-Key-Ablage (interaktiv abgefragt, nicht .env) ---
-KEY_FILE = Path.home() / ".config" / "journal-bot" / "openrouter_key"
+KEY_FILE = Path.home() / ".config" / "mojo" / "openrouter_key"
 
 
 # --- Diskursräume ---
@@ -79,6 +80,21 @@ DISCOURSE_SPACES: dict[str, dict[str, str]] = {
                        "Umweltbildung, Transformation.",
     },
 }
+
+
+# --- Diskursräume aus JSON laden (Vorrang vor Hardcoded-Defaults) ---
+DISKURSRAEUME_JSON = PROJECT_ROOT / "diskursraeume.json"
+_JOURNAL_CLUSTERS: dict[str, list[str]] = {}
+
+if DISKURSRAEUME_JSON.exists():
+    _dr_data = json.loads(DISKURSRAEUME_JSON.read_text(encoding="utf-8"))
+    # Override discourse space definitions
+    DISCOURSE_SPACES = {
+        k: {"name": v["name"], "description": v["description"]}
+        for k, v in _dr_data.get("discourse_spaces", {}).items()
+    }
+    _JOURNAL_CLUSTERS = _dr_data.get("journal_clusters", {})
+    del _dr_data
 
 
 def journals_in_cluster(cluster_key: str) -> list["JournalConfig"]:
@@ -213,3 +229,10 @@ JOURNALS: list[JournalConfig] = [
     # zkmb — Zeitschrift Kunst Medien Bildung (issn:2193-2980, nicht in OpenAlex)
     # e-flux Journal (issn:2164-1625, nicht in OpenAlex, stabile /journal/<nr>/ Struktur)
 ]
+
+# Apply cluster overrides from diskursraeume.json (if loaded)
+if _JOURNAL_CLUSTERS:
+    _short_to_journal = {j.short: j for j in JOURNALS}
+    for _short, _clusters in _JOURNAL_CLUSTERS.items():
+        if _short in _short_to_journal:
+            _short_to_journal[_short].clusters = list(_clusters)

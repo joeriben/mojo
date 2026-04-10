@@ -30,8 +30,8 @@ from journal_bot.settings import JournalConfig
 
 
 OPENALEX_BASE = "https://api.openalex.org/works"
-POLITE_MAILTO = "journal-bot@localhost"
-USER_AGENT = f"journal-bot/0.1 (mailto:{POLITE_MAILTO})"
+POLITE_MAILTO = "mojo@localhost"
+USER_AGENT = f"mojo/0.1 (mailto:{POLITE_MAILTO})"
 
 # Default-Fenster: 180 Tage. Hoch genug um langsamer publizierende Journals
 # (JAE, DIME, Resilience) zu erfassen.

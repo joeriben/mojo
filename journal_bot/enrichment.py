@@ -19,8 +19,8 @@ from journal_bot.settings import PROJECT_ROOT
 CACHE_DIR = PROJECT_ROOT / ".enrichment_cache"
 CACHE_DIR.mkdir(exist_ok=True)
 
-POLITE_MAILTO = "journal-bot@localhost"
-USER_AGENT = f"journal-bot/0.1 (mailto:{POLITE_MAILTO})"
+POLITE_MAILTO = "mojo@localhost"
+USER_AGENT = f"mojo/0.1 (mailto:{POLITE_MAILTO})"
 
 
 @dataclass

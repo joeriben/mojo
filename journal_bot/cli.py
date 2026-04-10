@@ -1,4 +1,4 @@
-"""journal-bot CLI.
+"""mojo CLI.
 
 Subcommands:
   ingest     — Zotero-Collection 'Benjamin's publications' nach corpus.json
@@ -78,7 +78,7 @@ def cmd_digest(args: argparse.Namespace) -> int:
     pending = store.find_unprocessed(limit=args.next, journals=journals_filter)
     if not pending:
         print("[digest] Keine ungeprozessierten Artikel im Store. "
-              "Tipp: journal-bot fetch laufen lassen.")
+              "Tipp: mojo fetch laufen lassen.")
         return 0
 
     print(f"[digest] Verarbeite {len(pending)} Artikel")
@@ -156,6 +156,88 @@ def cmd_coverage(args: argparse.Namespace) -> int:
         verbose=not args.quiet,
     )
     return 0
+
+
+def cmd_diskurs(args: argparse.Namespace) -> int:
+    from journal_bot import diskurs
+    from journal_bot.settings import available_clusters, journals_in_cluster
+
+    action = args.action
+
+    if action == "list":
+        store = Store()
+        stats = store.stats()
+        journal_article_counts = stats.get("by_journal", {})
+        print("Diskursräume:\n")
+        for key, meta, count in available_clusters():
+            js = journals_in_cluster(key)
+            art_count = sum(journal_article_counts.get(j.short, 0) for j in js)
+            print(f"  {key}")
+            print(f"    {meta['name']}  ({count} Journals, {art_count} Artikel)")
+            print(f"    {meta['description']}")
+            shorts = ", ".join(j.short for j in js)
+            print(f"    → {shorts}")
+            print()
+        return 0
+
+    if action == "add":
+        diskurs.add_space(args.key, args.name, args.desc)
+        print(f"[diskurs] Diskursraum '{args.key}' angelegt.")
+        return 0
+
+    if action == "rename":
+        updated = diskurs.rename_space(args.old, args.new)
+        print(f"[diskurs] '{args.old}' → '{args.new}' ({updated} Journal-Zuordnungen aktualisiert).")
+        return 0
+
+    if action == "remove":
+        affected = diskurs.remove_space(args.key)
+        if affected:
+            print(f"[diskurs] '{args.key}' entfernt. Betroffene Journals: {', '.join(affected)}")
+        else:
+            print(f"[diskurs] '{args.key}' entfernt (keine Journals betroffen).")
+        return 0
+
+    if action == "profile":
+        profile = diskurs.build_profile(args.key, window_years=args.window_years)
+        md = diskurs.render_profile(profile)
+        print(md)
+        return 0
+
+    if action == "suggest":
+        md = diskurs.suggest_new_spaces(
+            window_years=args.window_years,
+            verbose=not args.quiet,
+        )
+        print(md)
+        return 0
+
+    if action == "crosscut":
+        results = diskurs.find_cross_cutting_concepts(
+            window_years=args.window_years,
+        )
+        if not results:
+            print("Keine querschneidenden Konzepte gefunden.")
+            return 0
+        print(f"Querschnitt-Konzepte (in ≥3 Diskursräumen):\n")
+        for cc in results[:25]:
+            clusters = ", ".join(f"{c['key']}({c['score']})" for c in cc["clusters"])
+            print(f"  {cc['concept']:40s}  Σ{cc['total_score']:>6.1f}  "
+                  f"[{cc['cluster_count']} Räume]  {clusters}")
+        return 0
+
+    if action == "assign":
+        diskurs.assign_journal(args.journal, args.clusters)
+        print(f"[diskurs] {args.journal} → {', '.join(args.clusters)}")
+        return 0
+
+    if action == "unassign":
+        diskurs.unassign_journal(args.journal, args.cluster)
+        print(f"[diskurs] {args.journal} aus '{args.cluster}' entfernt.")
+        return 0
+
+    print(f"Unbekannte Aktion: {action}")
+    return 2
 
 
 def cmd_stats(args: argparse.Namespace) -> int:
@@ -257,6 +339,48 @@ def main(argv: list[str] | None = None) -> int:
                        help="Mindest-Zitationszahl (Default 3)")
     p_cov.add_argument("--quiet", action="store_true")
     p_cov.set_defaults(func=cmd_coverage)
+
+    # --- diskurs ---
+    p_diskurs = sub.add_parser("diskurs",
+                               help="Diskursräume verwalten (list, add, rename, remove, assign, unassign)")
+    p_diskurs.set_defaults(func=cmd_diskurs)
+    diskurs_sub = p_diskurs.add_subparsers(dest="action", required=True)
+
+    diskurs_sub.add_parser("list", help="Alle Diskursräume auflisten")
+
+    p_dp = diskurs_sub.add_parser("profile", help="Datengetriebenes Profil eines Diskursraums")
+    p_dp.add_argument("key", help="Diskursraum-Schlüssel")
+    p_dp.add_argument("--window-years", type=int, default=3,
+                       help="Zeitfenster in Jahren (Default 3)")
+
+    p_ds = diskurs_sub.add_parser("suggest",
+                                    help="LLM-gestützte Vorschläge für neue/geänderte Diskursräume")
+    p_ds.add_argument("--window-years", type=int, default=3)
+    p_ds.add_argument("--quiet", action="store_true")
+
+    p_dcc = diskurs_sub.add_parser("crosscut",
+                                    help="Querschnitt-Konzepte über alle Räume (kein LLM)")
+    p_dcc.add_argument("--window-years", type=int, default=3)
+
+    p_da = diskurs_sub.add_parser("add", help="Neuen Diskursraum anlegen")
+    p_da.add_argument("key", help="Eindeutiger Schlüssel (z.B. kulturelle_bildung)")
+    p_da.add_argument("--name", required=True, help="Anzeigename")
+    p_da.add_argument("--desc", required=True, help="Kurzbeschreibung")
+
+    p_dr = diskurs_sub.add_parser("rename", help="Diskursraum umbenennen")
+    p_dr.add_argument("old", help="Alter Schlüssel")
+    p_dr.add_argument("new", help="Neuer Schlüssel")
+
+    p_drm = diskurs_sub.add_parser("remove", help="Diskursraum entfernen")
+    p_drm.add_argument("key", help="Schlüssel des zu entfernenden Diskursraums")
+
+    p_das = diskurs_sub.add_parser("assign", help="Journal einem Diskursraum zuordnen")
+    p_das.add_argument("journal", help="Journal-Kürzel (z.B. ZfE)")
+    p_das.add_argument("clusters", nargs="+", help="Diskursraum-Schlüssel")
+
+    p_dua = diskurs_sub.add_parser("unassign", help="Journal aus Diskursraum entfernen")
+    p_dua.add_argument("journal", help="Journal-Kürzel")
+    p_dua.add_argument("cluster", help="Diskursraum-Schlüssel")
 
     p_stats = sub.add_parser("stats", help="Store-Statistik")
     p_stats.set_defaults(func=cmd_stats)

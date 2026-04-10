@@ -23,7 +23,7 @@ class HTMLFetcher:
         resp = httpx.get(
             self.jc.url,
             timeout=30,
-            headers={"User-Agent": "journal-bot/0.1 (personal research assistant)"},
+            headers={"User-Agent": "mojo/0.1 (personal research assistant)"},
             follow_redirects=True,
         )
         resp.raise_for_status()
