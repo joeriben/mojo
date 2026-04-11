@@ -50,10 +50,17 @@ def process_article(
     store: Store,
     verbose: bool = True,
     out_dir: Path = DIGEST_DIR,
+    model: str | None = None,
+    max_iterations: int | None = None,
 ) -> dict:
-    """Lässt den Opus-Agent über einen Store-Eintrag laufen, schreibt zurück, rendert Markdown."""
+    """Lässt den Agent über einen Store-Eintrag laufen, schreibt zurück, rendert Markdown."""
     article = _article_dict_from_stored(sa)
-    result = agent_mod.run_agent(article, verbose=verbose)
+    kwargs = {"verbose": verbose}
+    if model:
+        kwargs["model"] = model
+    if max_iterations is not None:
+        kwargs["max_iterations"] = max_iterations
+    result = agent_mod.run_agent(article, **kwargs)
 
     entry = result.get("entry")
     if entry:

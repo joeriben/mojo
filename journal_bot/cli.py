@@ -60,10 +60,24 @@ def cmd_fetch(args: argparse.Namespace) -> int:
     return 0
 
 
+def _is_junk_title(title: str) -> bool:
+    """Detect non-article entries: editorials, corrections, issue info."""
+    t = (title or "").strip().lower()
+    junk = [
+        "issue information", "correction", "erratum", "retraction",
+        "corrigendum", "table of contents", "editorial board",
+        "reviewer acknowledgement", "books received", "index",
+    ]
+    return any(t == j or t.startswith(j + ":") or t.startswith(j + " ") for j in junk)
+
+
 def cmd_digest(args: argparse.Namespace) -> int:
+    import json
     from journal_bot import agent as agent_mod
+    from journal_bot.citation_tracker import find_citations, load_authored_all
 
     store = Store()
+    model = getattr(args, "model", None) or "deepseek/deepseek-v3.2"
 
     if args.doi:
         result = digest.process_by_doi(
@@ -86,10 +100,47 @@ def cmd_digest(args: argparse.Namespace) -> int:
               "Tipp: mojo fetch laufen lassen.")
         return 0
 
-    print(f"[digest] {len(pending)} Artikel gefunden")
+    print(f"[digest] {len(pending)} Artikel gefunden (Modell: {model})")
+
+    # --- Phase 0: Müll-Filter + Auto-Escalation ---
+    junk = [sa for sa in pending if _is_junk_title(sa.title)]
+    if junk:
+        print(f"[digest] {len(junk)} Nicht-Artikel entfernt (Corrections, Issue Info etc.)")
+        pending = [sa for sa in pending if not _is_junk_title(sa.title)]
+
+    # Citation auto-pass: articles that cite Benjamin → skip screening
+    trigger_authors = ["macgilchrist", "jarke", "wendy chun", "wendy hui kyong"]
+    authored_all = load_authored_all()
+    auto_pass: list = []
+    screen_candidates: list = []
+
+    for sa in pending:
+        # Check citation hits
+        refs = sa.crossref_refs or []
+        citation_hits = find_citations(refs, authored_all) if refs else []
+
+        # Check trigger authors
+        authors_blob = " ".join(sa.authors).lower()
+        is_trigger = any(t in authors_blob for t in trigger_authors)
+
+        if citation_hits or is_trigger:
+            reason = []
+            if citation_hits:
+                reason.append(f"zitiert Benjamin ({len(citation_hits)}×)")
+            if is_trigger:
+                reason.append("Trigger-Autor*in")
+            auto_pass.append((sa, " + ".join(reason)))
+        else:
+            screen_candidates.append(sa)
+
+    if auto_pass:
+        print(f"\n[digest] Auto-Pass ({len(auto_pass)} Artikel):")
+        for sa, reason in auto_pass:
+            journal_name = sa.journal_full or sa.journal_short
+            print(f"  ★ {journal_name}: {sa.title[:60]} [{reason}]")
 
     # --- Phase 1: DeepSeek Batch-Screening ---
-    if not args.no_screen and len(pending) > 1:
+    if not args.no_screen and len(screen_candidates) > 1:
         screen_input = [
             {
                 "id": sa.id,
@@ -98,16 +149,17 @@ def cmd_digest(args: argparse.Namespace) -> int:
                 "abstract": sa.abstract,
                 "openalex_abstract": sa.openalex_abstract,
             }
-            for sa in pending
+            for sa in screen_candidates
         ]
         screen_results = agent_mod.batch_screen(
             screen_input, verbose=not args.quiet,
         )
 
-        passed = [sa for sa in pending if screen_results[sa.id]["verdict"] == "weitergeben"]
-        filtered = [sa for sa in pending if screen_results[sa.id]["verdict"] == "ignorieren"]
+        passed = [sa for sa in screen_candidates
+                  if screen_results[sa.id]["verdict"] == "weitergeben"]
+        filtered = [sa for sa in screen_candidates
+                    if screen_results[sa.id]["verdict"] == "ignorieren"]
 
-        # Aussortierte Titel zur Schnellsichtung anzeigen
         if filtered:
             print(f"\n[digest] Aussortiert ({len(filtered)} Artikel):")
             for sa in filtered:
@@ -119,30 +171,70 @@ def cmd_digest(args: argparse.Namespace) -> int:
 
         print(f"\n[digest] Screening: {len(passed)} weitergeben, "
               f"{len(filtered)} aussortiert")
-        pending = passed
     else:
-        screen_results = None
+        passed = screen_candidates
 
-    if not pending:
-        print("[digest] Alle Artikel im Screening aussortiert.")
-        return 0
+    # --- Split by tier ---
+    from journal_bot.settings import JOURNALS
+    tier_by_short = {j.short: j.tier for j in JOURNALS}
 
-    # --- Phase 2: Opus Deep Analysis ---
-    print(f"\n[digest] Opus-Analyse für {len(pending)} Artikel")
+    # Auto-pass always gets A-tier treatment
+    tier_a = [sa for sa, _ in auto_pass]
+    tier_b = []
+    for sa in passed:
+        tier = tier_by_short.get(sa.journal_short, "B")
+        if tier == "A":
+            tier_a.append(sa)
+        elif tier == "C":
+            pass  # C-tier: screening was enough, no agent
+        else:
+            tier_b.append(sa)
+
+    c_only = [sa for sa in passed if tier_by_short.get(sa.journal_short, "B") == "C"]
+    if c_only:
+        print(f"[digest] C-Tier: {len(c_only)} Artikel nur gescreent, kein Agent")
+
     total_cost = 0.0
-    for i, sa in enumerate(pending, 1):
-        journal_name = sa.journal_full or sa.journal_short
-        print(f"\n[digest] --- {i}/{len(pending)} --- {journal_name} · {sa.title[:80]}")
-        try:
-            result = digest.process_article(sa, store, verbose=not args.quiet)
-            cost = result["agent_result"].get("est_cost_usd", 0.0)
-            total_cost += cost
-            verdict = result["agent_result"].get("entry", {}).get("verdict", "?")
-            print(f"[digest] ✓ {verdict} · {result['markdown_path'].name}  (${cost:.3f})")
-        except Exception as e:
-            print(f"[digest] FEHLER bei {sa.id}: {e}")
 
-    print(f"\n[digest] Opus-Kosten: ${total_cost:.3f} für {len(pending)} Artikel")
+    # --- Phase 2a: A-Tier (Agent with tools) ---
+    if tier_a:
+        print(f"\n[digest] === A-Tier ({len(tier_a)} Artikel, {model}, mit Tools) ===")
+        for i, sa in enumerate(tier_a, 1):
+            journal_name = sa.journal_full or sa.journal_short
+            print(f"\n[digest] --- A {i}/{len(tier_a)} --- {journal_name} · {sa.title[:75]}")
+            try:
+                result = digest.process_article(
+                    sa, store, verbose=not args.quiet, model=model,
+                )
+                cost = result["agent_result"].get("est_cost_usd", 0.0)
+                total_cost += cost
+                verdict = result["agent_result"].get("entry", {}).get("verdict", "?")
+                print(f"[digest] ✓ {verdict} · {result['markdown_path'].name}  (${cost:.3f})")
+            except Exception as e:
+                print(f"[digest] FEHLER bei {sa.id}: {e}")
+
+    # --- Phase 2b: B-Tier (Agent without tools — single iteration) ---
+    if tier_b:
+        print(f"\n[digest] === B-Tier ({len(tier_b)} Artikel, {model}, ohne Tools) ===")
+        for i, sa in enumerate(tier_b, 1):
+            journal_name = sa.journal_full or sa.journal_short
+            print(f"\n[digest] --- B {i}/{len(tier_b)} --- {journal_name} · {sa.title[:75]}")
+            try:
+                result = digest.process_article(
+                    sa, store, verbose=not args.quiet, model=model,
+                    max_iterations=1,
+                )
+                cost = result["agent_result"].get("est_cost_usd", 0.0)
+                total_cost += cost
+                verdict = result["agent_result"].get("entry", {}).get("verdict", "?")
+                print(f"[digest] ✓ {verdict}  (${cost:.3f})")
+            except Exception as e:
+                print(f"[digest] FEHLER bei {sa.id}: {e}")
+
+    if not tier_a and not tier_b:
+        print("[digest] Keine Artikel für Agent-Analyse übrig.")
+
+    print(f"\n[digest] Gesamtkosten: ${total_cost:.3f}")
     return 0
 
 
@@ -383,6 +475,9 @@ def main(argv: list[str] | None = None) -> int:
                           help="Nur Artikel ab diesem Erscheinungsjahr (z.B. 2025)")
     p_digest.add_argument("--no-screen", action="store_true",
                           help="DeepSeek-Vorfilter überspringen (alle direkt zu Opus)")
+    p_digest.add_argument("--model", default=None,
+                          help="Agent-Modell (Default: deepseek/deepseek-v3.2, "
+                               "Alternativen: anthropic/claude-opus-4.6, anthropic/claude-sonnet-4.6)")
     p_digest.add_argument("--quiet", action="store_true")
     p_digest.set_defaults(func=cmd_digest)
 

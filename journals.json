@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "journals": [
     {
       "name": "Zeitschrift für Erziehungswissenschaft",
@@ -7,6 +7,7 @@
       "type": "rss",
       "url": "https://link.springer.com/search.rss?facet-journal-id=11618&facet-content-type=Article",
       "issn": "1862-5215",
+      "tier": "A",
       "enabled": true
     },
     {
@@ -15,6 +16,7 @@
       "type": "ojs",
       "url": "https://www.medienpaed.com/gateway/plugin/WebFeedGatewayPlugin/rss2",
       "issn": "1424-3636",
+      "tier": "A",
       "enabled": true
     },
     {
@@ -22,6 +24,7 @@
       "short": "PDSE",
       "type": "openalex",
       "url": "issn:2524-485X",
+      "tier": "A",
       "enabled": true
     },
     {
@@ -29,6 +32,7 @@
       "short": "EPT",
       "type": "openalex",
       "url": "issn:0013-1857",
+      "tier": "B",
       "enabled": true
     },
     {
@@ -36,6 +40,7 @@
       "short": "EduTheory",
       "type": "openalex",
       "url": "issn:1741-5446",
+      "tier": "B",
       "enabled": true
     },
     {
@@ -43,6 +48,7 @@
       "short": "AIandSoc",
       "type": "openalex",
       "url": "issn:0951-5666",
+      "tier": "C",
       "enabled": true
     },
     {
@@ -50,6 +56,7 @@
       "short": "LMT",
       "type": "openalex",
       "url": "issn:1743-9884",
+      "tier": "C",
       "enabled": true
     },
     {
@@ -57,6 +64,7 @@
       "short": "PCS",
       "type": "openalex",
       "url": "issn:1468-1366",
+      "tier": "C",
       "enabled": true
     },
     {
@@ -64,6 +72,7 @@
       "short": "Discourse",
       "type": "openalex",
       "url": "issn:0159-6306",
+      "tier": "B",
       "enabled": true
     },
     {
@@ -71,6 +80,7 @@
       "short": "EERJ",
       "type": "openalex",
       "url": "issn:1474-9041",
+      "tier": "B",
       "enabled": true
     },
     {
@@ -78,6 +88,7 @@
       "short": "JRTE",
       "type": "openalex",
       "url": "issn:1539-1523",
+      "tier": "C",
       "enabled": true
     },
     {
@@ -85,6 +96,7 @@
       "short": "JTE",
       "type": "openalex",
       "url": "issn:1552-7840",
+      "tier": "B",
       "enabled": true
     },
     {
@@ -92,6 +104,7 @@
       "short": "JEE",
       "type": "openalex",
       "url": "issn:0095-8964",
+      "tier": "C",
       "enabled": true
     },
     {
@@ -99,6 +112,7 @@
       "short": "DIME",
       "type": "openalex",
       "url": "issn:1559-5692",
+      "tier": "C",
       "enabled": true
     },
     {
@@ -106,6 +120,7 @@
       "short": "DCE",
       "type": "openalex",
       "url": "issn:1836-8301",
+      "tier": "A",
       "enabled": true
     },
     {
@@ -113,6 +128,7 @@
       "short": "DCS",
       "type": "openalex",
       "url": "issn:2364-2122",
+      "tier": "A",
       "enabled": true
     },
     {
@@ -120,6 +136,7 @@
       "short": "JAE",
       "type": "openalex",
       "url": "issn:0021-8510",
+      "tier": "A",
       "enabled": true
     },
     {
@@ -127,6 +144,7 @@
       "short": "Resilience",
       "type": "openalex",
       "url": "issn:2330-8117",
+      "tier": "B",
       "enabled": true
     },
     {
@@ -134,6 +152,7 @@
       "short": "JERO",
       "type": "openalex",
       "url": "issn:1866-6671",
+      "tier": "B",
       "enabled": true
     },
     {
@@ -141,6 +160,7 @@
       "short": "merz",
       "type": "openalex",
       "url": "issn:0176-4918",
+      "tier": "B",
       "enabled": true
     },
     {
@@ -148,6 +168,7 @@
       "short": "ZfPaed",
       "type": "openalex",
       "url": "issn:0044-3247",
+      "tier": "A",
       "enabled": true
     },
     {
@@ -155,6 +176,7 @@
       "short": "EthicsEd",
       "type": "openalex",
       "url": "issn:1744-9642",
+      "tier": "B",
       "enabled": true
     },
     {
@@ -162,6 +184,7 @@
       "short": "REPCS",
       "type": "openalex",
       "url": "issn:1071-4413",
+      "tier": "B",
       "enabled": true
     },
     {
@@ -169,6 +192,7 @@
       "short": "SAE",
       "type": "openalex",
       "url": "issn:0039-3541",
+      "tier": "A",
       "enabled": true
     },
     {
@@ -176,6 +200,7 @@
       "short": "BJET",
       "type": "openalex",
       "url": "issn:1467-8535",
+      "tier": "B",
       "enabled": true
     },
     {
@@ -183,6 +208,7 @@
       "short": "JAC",
       "type": "openalex",
       "url": "issn:2000-4214",
+      "tier": "B",
       "enabled": true
     },
     {
@@ -190,6 +216,7 @@
       "short": "BDS",
       "type": "openalex",
       "url": "issn:2053-9517",
+      "tier": "B",
       "enabled": true
     },
     {
@@ -197,6 +224,7 @@
       "short": "STHV",
       "type": "openalex",
       "url": "issn:0162-2439",
+      "tier": "B",
       "enabled": true
     }
   ]
