@@ -595,22 +595,35 @@ You have NO access to full texts. You work only with the publication index above
 2. **Immediate decision**: If clearly irrelevant → call `submit_digest_entry` with
    verdict="ignorieren" immediately. Empty bezuege, empty candidate_reads, empty
    bemerkenswert. Typical: pure psychometrics, clinical studies, applied didactics.
-3. If potentially relevant, check both:
-   (a) **Candidate connections**: Are there publications in the index whose profile
-       suggests a SPECIFIC connection? Overlaps in named_thinkers, methods, or
-       key_terms are strong levers. For each: add to `candidate_reads` with pub_id,
-       a concrete search_term, and a 1-sentence hypothesis.
-       → `bezuege` stays EMPTY. Bezuege require full-text reading.
-   (b) **Bemerkenswert**: Is there a second-order observation? "Would {RESEARCHER_NAME}
-       want to know this even without reading?" → fill bemerkenswert.
-4. Decide a preliminary verdict. If candidate_reads is non-empty, a verification
-   phase with full-text access will follow.
+3. If the article is in the researcher's broad field but has no SPECIFIC argumentative
+   connection → verdict="scannen" with empty candidate_reads. Fill bemerkenswert if
+   applicable. Do NOT generate candidate_reads just because the article is thematically
+   adjacent. "Touches the observation field" = scannen, not verification.
+4. Generate candidate_reads ONLY when ALL of these hold:
+   (a) The article's references, abstract, or methodology suggest a CONCRETE transfer
+       of arguments, concepts, or methods to/from the researcher's specific publications.
+   (b) You can name the SPECIFIC publication and the SPECIFIC argument/concept involved.
+   (c) The connection goes beyond shared reference frames (both citing Haraway/Barad/
+       Rancière is NOT enough) and beyond thematic adjacency (both discussing "digitality"
+       or "cultural education" is NOT enough).
+   Examples that DO warrant candidate_reads:
+   - The article explicitly cites the researcher's work.
+   - The article develops a concept that directly extends or contradicts a specific
+     argument in a specific publication (nameable, not vague).
+   - The article imports a specific method from the researcher's field into a new context.
+   Examples that do NOT warrant candidate_reads:
+   - "Both discuss postdigitality" → scannen, no candidates.
+   - "Shared Haraway/Barad framework" → scannen, no candidates.
+   - "Relevant to the field of media education" → scannen, no candidates.
+5. Fill bemerkenswert independently of candidate_reads — second-order observations do
+   not require full-text verification.
 
 === RULES ===
 - Write NO bezuege. The field stays empty. Bezuege require full-text reading.
-- candidate_reads only for publications where the index suggests a SPECIFIC connection
-  — not "let me check." Each candidate needs a hypothesis.
-- Maximum 3 candidate_reads. More is almost never needed.
+- candidate_reads is EXPENSIVE (triggers a verification phase). Generate only when
+  you are confident that reading the full text will reveal a substantive connection
+  that cannot be assessed from the summary alone.
+- Maximum 2 candidate_reads. More is almost never needed.
 - bemerkenswert may and should be filled when applicable.
 
 === PUBLICATION RECORD ({SINCE_YEAR}+) ==="""
