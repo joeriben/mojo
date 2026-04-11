@@ -17,7 +17,7 @@ from journal_bot.citation_tracker import find_citations, format_for_agent
 from journal_bot.enrichment import enrich
 from journal_bot.llm_client import build_client
 from journal_bot.settings import (
-    CORPUS_JSON, MODEL_AGENT, MODEL_SUMMARIZE, SUMMARIES_JSON,
+    CORPUS_JSON, MODEL_AGENT, MODEL_SUMMARIZE, SINCE_YEAR, SUMMARIES_JSON,
     RESEARCHER_AREAS, RESEARCHER_INSTITUTION, RESEARCHER_NAME,
     RESEARCHER_TRIAGE_TOPICS,
 )
@@ -26,74 +26,86 @@ from journal_bot.settings import (
 # ------------------------------------------------------------------ Prompt --
 
 
-SYSTEM_INTRO = f"""Du arbeitest als wissenschaftliche Mitarbeiterin von {RESEARCHER_NAME}
+SYSTEM_INTRO = f"""You are a research assistant for {RESEARCHER_NAME}
 ({RESEARCHER_INSTITUTION}).
-Arbeitsgebiete: {RESEARCHER_AREAS}.
+Research areas: {RESEARCHER_AREAS}.
 
-Deine Aufgabe: Du bekommst einen neu erschienenen Beitrag aus einer Zeitschrift gezeigt
-und sollst einen Digest-Eintrag schreiben, der {RESEARCHER_NAME} hilft zu entscheiden,
-ob der Beitrag gelesen werden soll, und warum bzw. warum nicht — und zwar NICHT generisch
-("relevant, weil Bildung"), sondern spezifisch in Bezug auf die eigenen publizierten
-Argumentationen.
+Your task: You receive a newly published journal article and must write a digest entry
+that helps {RESEARCHER_NAME} decide whether to read it, and why or why not — NOT
+generically ("relevant because education"), but specifically in relation to their own
+published arguments.
 
-Unten folgt der Publikationsstand ab 2018, aufbereitet als faktische Kurzprofile.
-Diese Kurzprofile sind ein Index, KEINE Interpretation — sie sagen Dir, WORUM es in den
-Texten geht, nicht, was VERTRETEN wird. Wenn Du eine konkrete Position zitieren willst,
-musst Du den Volltext mit `read_publication(pub_id)` tatsächlich lesen.
-Zitiere NIE aus den Kurzprofilen.
+Below is the publication record from {SINCE_YEAR} onwards, formatted as factual summaries.
+These summaries are a SEARCH INDEX, NOT interpretation — they tell you WHAT the texts
+are about, not what is ARGUED. To cite a specific position, you MUST read the full text
+via `read_publication(pub_id)`. NEVER cite from the summaries.
 """
 
 
 SYSTEM_OUTRO = f"""
 
-=== ZWEI ARTEN VON RELEVANZ ===
-Es geht nicht nur um Texte, die an das eigene Werk direkt anschließen ("inhaltliche
-Relevanz"), sondern auch um Beobachtungen zweiter Ordnung im **Beobachtungsfeld**
-("awareness"):
-- Jemand versucht eine theorieschwere Fragestellung mit computationalen/AI-Methoden.
-- Jemand importiert ein Konzept aus dem eigenen Feld in einen entfernten Kontext (oder umgekehrt).
-- Ein empirisches Projekt macht einen methodischen Move, der im Feld neu oder ungewöhnlich ist.
-- Ein Text aus einer angrenzenden Disziplin berührt Fragen, die für die eigene Forschung
-  phänomenal interessant sind, ohne dass der Text deswegen gelesen werden müsste.
+=== TWO TYPES OF RELEVANCE ===
+There are two distinct reasons an article matters:
 
-Solche Befunde gehören ins Feld `bemerkenswert`, NICHT ins Feld `bezuege`. Sie rechtfertigen
-in der Regel "scannen" oder "lesenswert", aber kein "ignorieren".
+1. **bezuege** (substantive connections): The article directly extends, contradicts,
+   imports from, or is imported into the researcher's published arguments. This requires
+   reading the full text to verify. Shared reference frames alone (e.g. both citing
+   Haraway or Barad) do NOT constitute a bezug.
 
-"ignorieren" ist für Texte reserviert, an denen **weder** ein inhaltlicher Anschluss **noch**
-eine bemerkenswerte methodisch-phänomenale Beobachtung zu machen ist.
+2. **bemerkenswert** (second-order observations): Something worth knowing even if the
+   article itself need not be read — e.g. someone applies computational methods to a
+   theory-heavy question, imports a concept across disciplinary boundaries, or makes
+   an unusual methodological move. These go in `bemerkenswert`, NOT in `bezuege`.
 
-=== VORGEHEN ===
-1. Lies den neuen Beitrag sorgfältig (Titel, Abstract, Referenzen).
-2. **Sofort-Entscheidung**: Wenn nach Schritt 1 klar ist, dass der Beitrag weder
-   inhaltliche Anschlüsse noch bemerkenswerte Beobachtungen bietet — rufe SOFORT
-   `submit_digest_entry` mit verdict="ignorieren" auf. Minimaler Output:
-   kernthese 1 Satz, leere bezuege, leere bemerkenswert. KEIN `read_publication`.
-   Das spart Zeit und Kosten. Typische Fälle: reine Psychometrie, klinische Studien,
-   angewandte Didaktik ohne theoretischen Anschluss, Berufsethik ohne Bildungsbezug.
-3. Wenn potenziell relevant, prüfe beides:
-   (a) Gibt es inhaltliche Anschlüsse an die publizierten Arbeiten? — dafür 2–4
-       Kandidaten aus der Publikationsliste wählen, Überschneidungen bei named_thinkers
-       sind ein starker Hebel. Lade die Kandidaten mit `read_publication(pub_id)` und
-       lies sie (ggf. mit `search_term` auf eine Stelle).
-   (b) Gibt es eine Beobachtung zweiter Ordnung? Stell Dir die Frage: "Würde
-       {RESEARCHER_NAME} das wissen wollen, selbst wenn der Text nicht gelesen wird?"
-       — methodisch, phänomenal, feldkonstitutiv, als Indikator für eine Entwicklung.
-4. Entscheide Verdict und fülle `bezuege` **und/oder** `bemerkenswert` entsprechend.
+"ignorieren" = neither substantive connections nor noteworthy observations.
 
-=== REGELN ===
-- Zitiere das Werk unter `bezuege` NUR, wenn Du den Volltext gelesen hast. Keine
-  Hallu-Zitationen, keine Rückgriffe auf die Summaries für die Begründung.
-- Wenn die gefundenen inhaltlichen Bezüge dünn sind, sag das klar ("nur schwaches topisches
-  Echo zu X, kein echter Anschluss"). Ehrliche dünne Verbindungen werden gegenüber
-  aufgeblasenen starken bevorzugt.
-- `bemerkenswert` ist der richtige Ort für "interessant zu wissen, dass jemand X mit Y
-  versucht". Hier brauchst Du die Volltexte nicht gelesen zu haben — es reicht, den neuen
-  Beitrag und den Kontext zu verstehen.
-- Sprache: Deutsch, akademisch, präzise, ohne Buzzwords und Floskeln. Keine Wertungen wie
-  "wichtig", "innovativ", "spannend" ohne Begründung.
-- Nimm Dir Zeit für 2–5 read_publication-Calls, wenn sie nötig sind. Kein Speed-Run.
+=== VERDICT CALIBRATION ===
+The threshold for "lesenswert" is HIGH. Most articles are "scannen" or "ignorieren".
 
-=== PUBLIKATIONSSTAND (2018+) ==="""
+**ignorieren** — even when shared references exist:
+  Shared Haraway/Barad/Rancière citations alone are NOT enough. If the only connection
+  is a shared theoretical frame without transfer of arguments, methods, or concepts
+  into or out of the researcher's own work → ignorieren.
+
+**scannen** — useful as background or phenomenal indicator:
+  The article touches the observation field and offers something worth noting
+  (bemerkenswert), but does not provide concrete resources for the researcher's own
+  argumentation. Typical: a foundational text on algorithmic opacity — phenomenally
+  relevant, useful background, but no direct contribution → scannen.
+
+**lesenswert** — ONLY when there is concrete resource transfer:
+  The article extends, contradicts, or imports something specific. There is a clearly
+  nameable gain: a new argument, a method, a counter-example, a conceptual resource.
+  Shared reference frames alone are NOT enough. "parallelisiert" alone is NOT enough.
+  Typical: an article explicitly cites the researcher's work and extends a concept
+  with new empirical cases → lesenswert.
+
+**pflichtlektuere** — central to current work, must read immediately.
+
+=== PROCEDURE ===
+1. Read the new article carefully (title, abstract, references).
+2. **Immediate decision**: If clearly irrelevant — call `submit_digest_entry` with
+   verdict="ignorieren" immediately. Minimal output: kernthese 1 sentence, empty
+   bezuege, empty bemerkenswert. NO `read_publication`. Typical: pure psychometrics,
+   clinical studies, applied didactics without theoretical connection.
+3. If potentially relevant, check both:
+   (a) Are there substantive connections to the published works? Pick 2–4 candidates
+       from the publication list, overlaps in named_thinkers are a strong lever.
+       Load candidates with `read_publication(pub_id)` (use `search_term` to target).
+   (b) Is there a second-order observation? Ask: "Would {RESEARCHER_NAME} want to
+       know this, even without reading the article?" → fill `bemerkenswert`.
+4. Decide verdict. Fill `bezuege` and/or `bemerkenswert` accordingly.
+
+=== RULES ===
+- Cite the researcher's work in `bezuege` ONLY after reading the full text. No
+  hallucinated citations, no reasoning from summaries.
+- If connections are thin, say so clearly ("weak topical echo, no real connection").
+  Honest thin connections are preferred over inflated strong ones.
+- `bemerkenswert` is for "interesting to know that someone does X with Y". No full
+  text reading needed — the new article and context suffice.
+- Take time for 2–5 read_publication calls when warranted. No speed runs.
+
+=== PUBLICATION RECORD ({SINCE_YEAR}+) ==="""
 
 
 def build_system_prompt(summaries: dict[str, dict], outro: str | None = None) -> str:
@@ -132,24 +144,24 @@ TOOLS = [
         "function": {
             "name": "read_publication",
             "description": (
-                "Lädt einen Ausschnitt aus einer Publikation des Forschers. "
-                "Nutze das, um konkrete Stellen und Argumentationen zu lesen, "
-                "bevor Du sie zitierst. Ein search_term schneidet um die erste "
-                "Fundstelle; ohne search_term bekommst Du den Anfang (~4k Wörter)."
+                "Load an excerpt from one of the researcher's publications. "
+                "Use this to read specific passages and arguments before citing "
+                "them. A search_term returns text around the first match; "
+                "without search_term you get the beginning (~4k words)."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "pub_id": {
                         "type": "string",
-                        "description": "Die pub_id aus der Publikationsliste im System-Prompt.",
+                        "description": "The pub_id from the publication list in the system prompt.",
                     },
                     "search_term": {
                         "type": "string",
                         "description": (
-                            "Optional. Begriff, Name oder kurze Phrase. Der Bot "
-                            "gibt den Textausschnitt um die erste Fundstelle zurück. "
-                            "Wenn der Begriff nicht vorkommt, bekommst Du den Anfang."
+                            "Optional. Term, name, or short phrase. Returns the "
+                            "text excerpt around the first match. If not found, "
+                            "returns the beginning of the text."
                         ),
                     },
                 },
@@ -162,8 +174,8 @@ TOOLS = [
         "function": {
             "name": "submit_digest_entry",
             "description": (
-                "Schließt den Lauf ab. Rufe das auf, wenn Du genug gelesen hast, "
-                "um einen strukturierten Digest-Eintrag zu liefern."
+                "Finalize the run. Call this when you have read enough to "
+                "produce a structured digest entry."
             ),
             "parameters": {
                 "type": "object",
@@ -171,15 +183,15 @@ TOOLS = [
                     "kernthese": {
                         "type": "string",
                         "description": (
-                            "2–3 Sätze, referierend: Was behandelt der neue Beitrag, "
-                            "was ist seine zentrale Aussage. Kein Urteil."
+                            "2–3 sentences, descriptive: What does the article "
+                            "address, what is its central claim. No judgment."
                         ),
                     },
                     "bezuege": {
                         "type": "array",
                         "description": (
-                            "Konkrete Bezüge zu Publikationen, die Du GELESEN hast. "
-                            "Leer, wenn Du keine substantiellen Bezüge findest."
+                            "Concrete connections to publications you have READ. "
+                            "Empty if no substantive connections found."
                         ),
                         "items": {
                             "type": "object",
@@ -187,14 +199,14 @@ TOOLS = [
                                 "pub_id": {"type": "string"},
                                 "pub_kurz": {
                                     "type": "string",
-                                    "description": "Kurzform: Autor + Jahr + Kurztitel",
+                                    "description": "Short form: Author + Year + Short Title",
                                 },
                                 "bezug": {
                                     "type": "string",
                                     "description": (
-                                        "2–4 Sätze: Wie verhält sich der neue Beitrag "
-                                        "zu dieser Publikation? Basiert auf dem Text, "
-                                        "den Du mit read_publication gelesen hast."
+                                        "2–4 sentences: How does the new article relate "
+                                        "to this publication? Based on the text you read "
+                                        "via read_publication."
                                     ),
                                 },
                                 "relation": {
@@ -214,17 +226,17 @@ TOOLS = [
                     "theoretisch_methodisch": {
                         "type": "string",
                         "description": (
-                            "1–3 Sätze: methodische und theoretische Einschätzung "
-                            "des neuen Beitrags. Referierend, keine Wertung."
+                            "1–3 sentences: methodological and theoretical "
+                            "assessment of the new article. Descriptive, no judgment."
                         ),
                     },
                     "bemerkenswert": {
                         "type": "array",
                         "description": (
-                            "Beobachtungen zweiter Ordnung, die der/die Forscher*in wissen möchte, "
-                            "auch wenn der Text selbst nicht lesenswert ist. Jede Beobachtung "
-                            "1–2 Sätze, knapp, konkret. Leer, wenn nichts Bemerkenswertes "
-                            "auffällt."
+                            "Second-order observations the researcher should know "
+                            "about, even if the article itself is not worth reading. "
+                            "Each 1–2 sentences, concise, concrete. Empty if nothing "
+                            "noteworthy."
                         ),
                         "items": {"type": "string"},
                     },
@@ -239,34 +251,33 @@ TOOLS = [
                     },
                     "verdict_begruendung": {
                         "type": "string",
-                        "description": "1–2 Sätze: warum dieses Verdict.",
+                        "description": "1–2 sentences: why this verdict.",
                     },
                     "candidate_reads": {
                         "type": "array",
                         "description": (
-                            "NUR in der Assessment-Phase: Publikationen, deren "
-                            "Volltext gelesen werden müsste, um bezuege zu "
-                            "verifizieren. Leer lassen wenn keine Verifikation "
-                            "nötig oder wenn Volltext bereits gelesen wurde."
+                            "Assessment phase only: publications whose full text "
+                            "should be read to verify bezuege. Leave empty when "
+                            "no verification needed or full text already read."
                         ),
                         "items": {
                             "type": "object",
                             "properties": {
                                 "pub_id": {
                                     "type": "string",
-                                    "description": "pub_id aus der Publikationsliste.",
+                                    "description": "pub_id from the publication list.",
                                 },
                                 "search_term": {
                                     "type": "string",
                                     "description": (
-                                        "Konkreter Begriff/Phrase, nach dem im "
-                                        "Volltext gesucht werden soll."
+                                        "Concrete term/phrase to search for "
+                                        "in the full text."
                                     ),
                                 },
                                 "hypothesis": {
                                     "type": "string",
                                     "description": (
-                                        "1 Satz: Welchen Bezug vermutest Du?"
+                                        "1 sentence: What connection do you hypothesize?"
                                     ),
                                 },
                             },
@@ -291,19 +302,19 @@ TOOLS = [
 # ----------------------------------------------------------------- Triage --
 
 _triage_topics = "\n".join(f"- {t}" for t in RESEARCHER_TRIAGE_TOPICS)
-TRIAGE_PROMPT = f"""Du bist ein Vorfilter für einen Forschungs-Digest.
+TRIAGE_PROMPT = f"""You are a pre-filter for a research digest.
 
-{RESEARCHER_NAME} ({RESEARCHER_INSTITUTION}) arbeitet zu:
+{RESEARCHER_NAME} ({RESEARCHER_INSTITUTION}) works on:
 {_triage_topics}
 
-Du bekommst Titel, Abstract und Journal eines neuen Beitrags.
-Entscheide: Könnte dieser Beitrag relevant sein?
+You receive title, abstract, and journal of a new article.
+Decide: Could this article be relevant?
 
-Antworte NUR mit einem JSON-Objekt:
-{{"triage": "relevant", "grund": "..."}} — wenn es inhaltliche oder methodische Berührungspunkte geben KÖNNTE (auch entfernte)
-{{"triage": "ignorieren", "grund": "..."}} — wenn der Beitrag offensichtlich thematisch keine Berührung hat
+Respond ONLY with a JSON object:
+{{"triage": "relevant", "grund": "..."}} — if there COULD be topical or methodological overlap (even distant)
+{{"triage": "ignorieren", "grund": "..."}} — if the article is obviously unrelated
 
-Im Zweifel: "relevant". Lieber einen irrelevanten Artikel durchlassen als einen relevanten verpassen."""
+When in doubt: "relevant". Better to let through an irrelevant article than to miss a relevant one."""
 
 
 def triage_article(
@@ -369,26 +380,26 @@ MODEL_SCREEN = "deepseek/deepseek-v3.2"
 
 SCREENING_SUFFIX = f"""
 
-=== SCREENING-MODUS ===
-Du bekommst jetzt eine LISTE von Artikeln (Titel, Journal, Abstract-Auszug).
-Für jeden Artikel: Entscheide, ob er potenziell relevant sein KÖNNTE
-und daher eine vollständige Analyse verdient.
+=== SCREENING MODE ===
+You now receive a LIST of articles (title, journal, abstract excerpt).
+For each article: decide whether it COULD be relevant and therefore deserves
+full analysis.
 
-Antworte mit GENAU einer Zeile pro Artikel im Format:
-[ID] weitergeben|ignorieren — Grund in ≤15 Worten
+Respond with EXACTLY one line per article in this format:
+[ID] weitergeben|ignorieren — reason in ≤15 words
 
-"weitergeben" wenn:
-- Inhaltliche Berührungspunkte mit den Themen/Positionen erkennbar
-- Methodisch/phänomenal bemerkenswert für das Beobachtungsfeld
-- Zitiert {RESEARCHER_NAME} oder zitiert Werke aus der Bibliothek
+"weitergeben" when:
+- Topical overlap with the researcher's themes/positions
+- Methodologically/phenomenally noteworthy for the observation field
+- Cites {RESEARCHER_NAME} or cites works from the bibliography
 
-"ignorieren" wenn:
-- Offensichtlich kein Bezug zur Forschung
-- Rein empirisch/angewandt ohne theoretischen Anschluss an die Themen
-- Thematisch in einem Feld ohne Berührung (z.B. reine Psychometrie, Pflegedidaktik)
+"ignorieren" when:
+- Obviously unrelated to the research
+- Purely empirical/applied without theoretical connection
+- Topically in a field without overlap (e.g. pure psychometrics, nursing didactics)
 
-Im Zweifel: weitergeben. Lieber einen irrelevanten durchlassen als einen relevanten verpassen.
-Keine Erklärung, keine Einleitung, nur die Zeilen."""
+When in doubt: weitergeben. Better to pass through than to miss.
+No explanation, no introduction, just the lines."""
 
 
 def batch_screen(
@@ -558,52 +569,51 @@ TOOLS_SUBMIT_ONLY = [t for t in TOOLS if t["function"]["name"] == "submit_digest
 
 ASSESSMENT_OUTRO = f"""
 
-=== ZWEI ARTEN VON RELEVANZ ===
-Es geht nicht nur um Texte, die an das eigene Werk direkt anschließen ("inhaltliche
-Relevanz"), sondern auch um Beobachtungen zweiter Ordnung im **Beobachtungsfeld**
-("awareness"):
-- Jemand versucht eine theorieschwere Fragestellung mit computationalen/AI-Methoden.
-- Jemand importiert ein Konzept aus dem eigenen Feld in einen entfernten Kontext (oder umgekehrt).
-- Ein empirisches Projekt macht einen methodischen Move, der im Feld neu oder ungewöhnlich ist.
-- Ein Text aus einer angrenzenden Disziplin berührt Fragen, die für die eigene Forschung
-  phänomenal interessant sind, ohne dass der Text deswegen gelesen werden müsste.
+=== TWO TYPES OF RELEVANCE ===
+1. **bezuege** (substantive connections): Direct extensions, contradictions, or imports
+   between the article and the researcher's published arguments. Shared reference frames
+   alone (both citing Haraway) do NOT constitute a bezug.
+2. **bemerkenswert** (second-order observations): Worth knowing even without reading —
+   unusual methods, cross-disciplinary imports, phenomenal indicators.
 
-Solche Befunde gehören ins Feld `bemerkenswert`, NICHT ins Feld `bezuege`. Sie rechtfertigen
-in der Regel "scannen" oder "lesenswert", aber kein "ignorieren".
+"ignorieren" = neither substantive connections nor noteworthy observations.
 
-"ignorieren" ist für Texte reserviert, an denen **weder** ein inhaltlicher Anschluss **noch**
-eine bemerkenswerte methodisch-phänomenale Beobachtung zu machen ist.
+=== VERDICT CALIBRATION ===
+The threshold for "lesenswert" is HIGH. Most articles are "scannen" or "ignorieren".
+- **ignorieren**: Shared Haraway/Barad/Rancière citations alone are NOT enough.
+  No transfer of arguments or concepts → ignorieren.
+- **scannen**: Touches the observation field, maybe something bemerkenswert, but no
+  concrete resource transfer for the researcher's own argumentation.
+- **lesenswert**: ONLY with concrete resource transfer — extends, contradicts, imports
+  something specific. "parallelisiert" alone is NEVER enough for lesenswert.
+- **pflichtlektuere**: Central to current work, must read immediately.
 
-=== VORGEHEN (ASSESSMENT-PHASE) ===
-Du hast KEINEN Zugriff auf Volltexte. Du arbeitest nur mit dem Publikationsindex oben.
+=== PROCEDURE (ASSESSMENT PHASE) ===
+You have NO access to full texts. You work only with the publication index above.
 
-1. Lies den neuen Beitrag sorgfältig (Titel, Abstract, Referenzen).
-2. **Sofort-Entscheidung**: Wenn nach Schritt 1 klar ist, dass der Beitrag weder
-   inhaltliche Anschlüsse noch bemerkenswerte Beobachtungen bietet — rufe SOFORT
-   `submit_digest_entry` mit verdict="ignorieren" auf. Leere bezuege, leere
-   candidate_reads, leere bemerkenswert. Typische Fälle: reine Psychometrie,
-   klinische Studien, angewandte Didaktik ohne theoretischen Anschluss.
-3. Wenn potenziell relevant, prüfe beides:
-   (a) **Kandidaten-Bezüge**: Gibt es im Index Publikationen, deren Kurzprofil einen
-       SPEZIFISCHEN Anschluss nahelegt? Überschneidungen bei named_thinkers, methods
-       oder key_terms sind starke Hebel. Für jede: Trage sie in `candidate_reads` ein
-       mit pub_id, einem konkreten search_term, und einer 1-Satz-Hypothese.
-       → `bezuege` bleibt LEER. Bezüge erfordern Volltext-Lektüre.
-   (b) **Bemerkenswert**: Gibt es eine Beobachtung zweiter Ordnung? "Würde
-       {RESEARCHER_NAME} das wissen wollen, selbst wenn der Text nicht gelesen wird?"
-       → bemerkenswert ausfüllen.
-4. Entscheide ein vorläufiges verdict. Wenn candidate_reads nicht leer ist, folgt
-   eine Verifikationsphase mit Volltext-Zugriff.
+1. Read the new article carefully (title, abstract, references).
+2. **Immediate decision**: If clearly irrelevant → call `submit_digest_entry` with
+   verdict="ignorieren" immediately. Empty bezuege, empty candidate_reads, empty
+   bemerkenswert. Typical: pure psychometrics, clinical studies, applied didactics.
+3. If potentially relevant, check both:
+   (a) **Candidate connections**: Are there publications in the index whose profile
+       suggests a SPECIFIC connection? Overlaps in named_thinkers, methods, or
+       key_terms are strong levers. For each: add to `candidate_reads` with pub_id,
+       a concrete search_term, and a 1-sentence hypothesis.
+       → `bezuege` stays EMPTY. Bezuege require full-text reading.
+   (b) **Bemerkenswert**: Is there a second-order observation? "Would {RESEARCHER_NAME}
+       want to know this even without reading?" → fill bemerkenswert.
+4. Decide a preliminary verdict. If candidate_reads is non-empty, a verification
+   phase with full-text access will follow.
 
-=== REGELN ===
-- Schreibe KEINE bezuege. Das Feld bleibt leer. Bezüge erfordern Volltext-Lektüre.
-- candidate_reads nur für Publikationen, bei denen der Index einen SPEZIFISCHEN
-  Anschluss nahelegt — nicht "mal schauen". Jede Kandidatur braucht eine Hypothese.
-- Maximal 3 candidate_reads. Mehr ist fast nie nötig.
-- bemerkenswert darf und soll gefüllt werden, wenn zutreffend.
-- Sprache: Deutsch, akademisch, präzise, ohne Buzzwords und Floskeln.
+=== RULES ===
+- Write NO bezuege. The field stays empty. Bezuege require full-text reading.
+- candidate_reads only for publications where the index suggests a SPECIFIC connection
+  — not "let me check." Each candidate needs a hypothesis.
+- Maximum 3 candidate_reads. More is almost never needed.
+- bemerkenswert may and should be filled when applicable.
 
-=== PUBLIKATIONSSTAND (2018+) ==="""
+=== PUBLICATION RECORD ({SINCE_YEAR}+) ==="""
 
 
 def run_agent(
@@ -861,33 +871,36 @@ def _format_new_article(article: dict, enrichment: dict) -> str:
 def _format_verification_context(assessment_entry: dict, candidates: list[dict]) -> str:
     """Build the verification context appended to the user message in Phase 2."""
     lines = [
-        "\n\n=== VERIFIKATION ===",
-        "Du hast eine Voreinschätzung zu diesem Artikel gemacht.",
-        "Deine Kandidaten-Bezüge:\n",
+        "\n\n=== VERIFICATION PHASE ===",
+        "You made a preliminary assessment of this article.",
+        "Your candidate connections:\n",
     ]
     for c in candidates:
         lines.append(f"- pub_id: {c['pub_id']}")
         lines.append(f"  search_term: {c.get('search_term', '')}")
-        lines.append(f"  Hypothese: {c.get('hypothesis', '')}")
+        lines.append(f"  hypothesis: {c.get('hypothesis', '')}")
     lines.append("")
-    lines.append("Deine Aufgabe:")
-    lines.append("1. Lies die identifizierten Publikationen mit "
-                 "read_publication(pub_id, search_term).")
-    lines.append("2. Verifiziere oder falsifiziere jede Hypothese am Volltext.")
-    lines.append("3. Schreibe bezuege NUR für bestätigte Verbindungen. Sei ehrlich")
-    lines.append("   wenn eine Hypothese sich nicht bestätigt — das ist ein valides Ergebnis.")
-    lines.append("4. Übernimm bemerkenswert und theoretisch_methodisch aus der Voreinschätzung,")
-    lines.append("   ergänze wenn der Volltext neue Einsichten liefert.")
-    lines.append("5. Korrigiere das verdict, wenn der Volltext Deine Einschätzung ändert.")
+    lines.append("Your task:")
+    lines.append("1. Read each candidate publication ONCE with read_publication(pub_id, search_term).")
+    lines.append("   Do NOT re-read the same publication with different search terms.")
+    lines.append("   If the search_term is not found, the beginning of the text is returned — use that.")
+    lines.append("2. After reading ALL candidates, call submit_digest_entry IMMEDIATELY.")
+    lines.append("3. Write bezuege ONLY for confirmed connections. Be honest if a")
+    lines.append("   hypothesis is not confirmed — that is a valid result.")
+    lines.append("4. Carry over bemerkenswert and theoretisch_methodisch from the")
+    lines.append("   preliminary assessment, supplement if the full text reveals more.")
+    lines.append("5. Correct the verdict if the full text changes your assessment.")
+    lines.append("6. CRITICAL: 'parallelisiert' alone is NOT enough for 'lesenswert'.")
+    lines.append("   Only 'erweitert', 'widerspricht', or 'importiert' justify 'lesenswert'.")
     lines.append("")
     if assessment_entry.get("kernthese"):
-        lines.append(f"Voreinschätzung — Kernthese: {assessment_entry['kernthese']}")
+        lines.append(f"Preliminary — kernthese: {assessment_entry['kernthese']}")
     if assessment_entry.get("bemerkenswert"):
-        lines.append("Voreinschätzung — Bemerkenswert: "
+        lines.append("Preliminary — bemerkenswert: "
                      + "; ".join(assessment_entry["bemerkenswert"]))
     if assessment_entry.get("verdict"):
-        lines.append(f"Voreinschätzung — Verdict: {assessment_entry['verdict']}")
-        lines.append(f"  Begründung: {assessment_entry.get('verdict_begruendung', '')}")
+        lines.append(f"Preliminary — verdict: {assessment_entry['verdict']}")
+        lines.append(f"  reasoning: {assessment_entry.get('verdict_begruendung', '')}")
     return "\n".join(lines)
 
 
@@ -942,7 +955,7 @@ def assess_then_verify(
         print(f"[assess] {len(candidates)} candidate_reads → Verifikation ({pubs})")
         print("[assess] === Phase 2: Verification (gezielte Volltext-Reads) ===")
 
-    max_iter_verify = min(max(len(candidates) + 2, 3), 6)
+    max_iter_verify = min(len(candidates) * 2 + 2, 10)
     verification = run_agent(
         new_article,
         corpus_path=corpus_path,
