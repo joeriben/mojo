@@ -178,8 +178,8 @@ def cmd_digest(args: argparse.Namespace) -> int:
     from journal_bot.settings import JOURNALS
     tier_by_short = {j.short: j.tier for j in JOURNALS}
 
-    # All articles get B-tier treatment (no read_publication, $0.009/Artikel)
-    # read_publication is reserved for on-demand escalation via UI
+    # All non-C articles go through assess_then_verify pipeline:
+    # Phase 1 (assessment) costs ~$0.009, Phase 2 (verification) only when needed
     to_analyze = [sa for sa, _ in auto_pass]
     for sa in passed:
         tier = tier_by_short.get(sa.journal_short, "B")
@@ -197,14 +197,14 @@ def cmd_digest(args: argparse.Namespace) -> int:
         return 0
 
     total_cost = 0.0
-    print(f"\n[digest] === Agent ({len(to_analyze)} Artikel, {model}, nur submit_digest_entry) ===")
+    print(f"\n[digest] === Agent ({len(to_analyze)} Artikel, {model}, assess→verify) ===")
     for i, sa in enumerate(to_analyze, 1):
         journal_name = sa.journal_full or sa.journal_short
         print(f"\n[digest] --- {i}/{len(to_analyze)} --- {journal_name} · {sa.title[:75]}")
         try:
             result = digest.process_article(
                 sa, store, verbose=not args.quiet, model=model,
-                max_iterations=2, allow_read=False,
+                mode="assess_verify",
             )
             cost = result["agent_result"].get("est_cost_usd", 0.0)
             total_cost += cost

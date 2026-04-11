@@ -20,6 +20,24 @@ class JournalConfig:
     tier: str = "B"                         # "A" | "B" | "C" — Analysetiefe
     clusters: list[str] = field(default_factory=list)  # Diskursraum-Zuordnung
 
+# --- Researcher profile (used in prompts — adapt for your own instance) ---
+RESEARCHER_NAME = "Benjamin Jörissen"
+RESEARCHER_INSTITUTION = "FAU Erlangen-Nürnberg, Lehrstuhl für Pädagogik mit Schwerpunkt kulturelle Bildung"
+RESEARCHER_AREAS = (
+    "ästhetische und kulturelle Bildung, Postdigitalität, generative KI "
+    "in Bildungskontexten, Cultural Resilience, digital-kulturelles Erbe, "
+    "New Materialisms"
+)
+RESEARCHER_TRIAGE_TOPICS = [
+    "Ästhetische und kulturelle Bildung, Kunstpädagogik",
+    "Postdigitalität, digitale Kultur, Medienbildung",
+    "Generative KI in Bildungskontexten",
+    "Cultural Resilience, Nachhaltigkeit, Anthropozän",
+    "New Materialisms (Barad, Haraway), Posthumanismus, STS",
+    "Bildungstheorie, Erziehungstheorie",
+    "Allgemeine Pädagogik",
+]
+
 # --- Zotero ---
 ZOTERO_STORAGE = Path("/Users/joerissen/FAUbox/Zotero/storage")
 ZOTERO_COLLECTION = "Benjamin's publications"

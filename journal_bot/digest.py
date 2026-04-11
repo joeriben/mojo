@@ -53,15 +53,27 @@ def process_article(
     model: str | None = None,
     max_iterations: int | None = None,
     allow_read: bool = True,
+    mode: str = "agent",
 ) -> dict:
-    """Lässt den Agent über einen Store-Eintrag laufen, schreibt zurück, rendert Markdown."""
+    """Lässt den Agent über einen Store-Eintrag laufen, schreibt zurück, rendert Markdown.
+
+    mode="agent": classic single-phase run_agent (allow_read controls tools).
+    mode="assess_verify": two-phase assessment → verification pipeline.
+    """
     article = _article_dict_from_stored(sa)
-    kwargs = {"verbose": verbose, "allow_read": allow_read}
-    if model:
-        kwargs["model"] = model
-    if max_iterations is not None:
-        kwargs["max_iterations"] = max_iterations
-    result = agent_mod.run_agent(article, **kwargs)
+
+    if mode == "assess_verify":
+        kwargs = {"verbose": verbose}
+        if model:
+            kwargs["model"] = model
+        result = agent_mod.assess_then_verify(article, **kwargs)
+    else:
+        kwargs = {"verbose": verbose, "allow_read": allow_read}
+        if model:
+            kwargs["model"] = model
+        if max_iterations is not None:
+            kwargs["max_iterations"] = max_iterations
+        result = agent_mod.run_agent(article, **kwargs)
 
     entry = result.get("entry")
     if entry:

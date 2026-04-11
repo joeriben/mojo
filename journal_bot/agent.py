@@ -18,41 +18,43 @@ from journal_bot.enrichment import enrich
 from journal_bot.llm_client import build_client
 from journal_bot.settings import (
     CORPUS_JSON, MODEL_AGENT, MODEL_SUMMARIZE, SUMMARIES_JSON,
+    RESEARCHER_AREAS, RESEARCHER_INSTITUTION, RESEARCHER_NAME,
+    RESEARCHER_TRIAGE_TOPICS,
 )
 
 
 # ------------------------------------------------------------------ Prompt --
 
 
-SYSTEM_INTRO = """Du arbeitest als wissenschaftliche Mitarbeiterin von Benjamin Jörissen
-(FAU Erlangen-Nürnberg, Lehrstuhl für Pädagogik mit Schwerpunkt kulturelle Bildung).
-Seine Arbeitsgebiete: ästhetische und kulturelle Bildung, Postdigitalität, generative KI
-in Bildungskontexten, Cultural Resilience, digital-kulturelles Erbe, New Materialisms.
+SYSTEM_INTRO = f"""Du arbeitest als wissenschaftliche Mitarbeiterin von {RESEARCHER_NAME}
+({RESEARCHER_INSTITUTION}).
+Arbeitsgebiete: {RESEARCHER_AREAS}.
 
 Deine Aufgabe: Du bekommst einen neu erschienenen Beitrag aus einer Zeitschrift gezeigt
-und sollst einen Digest-Eintrag schreiben, der Benjamin hilft zu entscheiden, ob er den
-Beitrag lesen soll, und warum bzw. warum nicht — und zwar NICHT generisch ("relevant, weil
-Bildung"), sondern spezifisch in Bezug auf seine eigenen publizierten Argumentationen.
+und sollst einen Digest-Eintrag schreiben, der {RESEARCHER_NAME} hilft zu entscheiden,
+ob der Beitrag gelesen werden soll, und warum bzw. warum nicht — und zwar NICHT generisch
+("relevant, weil Bildung"), sondern spezifisch in Bezug auf die eigenen publizierten
+Argumentationen.
 
-Unten folgt Benjamins Publikationsstand ab 2018, aufbereitet als faktische Kurzprofile.
-Diese Kurzprofile sind ein Index, KEINE Interpretation — sie sagen Dir, WORUM es in seinen
-Texten geht, nicht, was er VERTRITT. Wenn Du eine konkrete Position von Benjamin zitieren
-willst, musst Du den Volltext einer seiner Publikationen mit `read_publication(pub_id)`
-tatsächlich lesen. Zitiere ihn NIE aus den Kurzprofilen.
+Unten folgt der Publikationsstand ab 2018, aufbereitet als faktische Kurzprofile.
+Diese Kurzprofile sind ein Index, KEINE Interpretation — sie sagen Dir, WORUM es in den
+Texten geht, nicht, was VERTRETEN wird. Wenn Du eine konkrete Position zitieren willst,
+musst Du den Volltext mit `read_publication(pub_id)` tatsächlich lesen.
+Zitiere NIE aus den Kurzprofilen.
 """
 
 
-SYSTEM_OUTRO = """
+SYSTEM_OUTRO = f"""
 
 === ZWEI ARTEN VON RELEVANZ ===
-Benjamin interessiert sich nicht nur für Texte, die an sein eigenes Werk direkt anschließen
-("inhaltliche Relevanz"), sondern auch für Beobachtungen zweiter Ordnung in seinem
-**Beobachtungsfeld** ("awareness"):
+Es geht nicht nur um Texte, die an das eigene Werk direkt anschließen ("inhaltliche
+Relevanz"), sondern auch um Beobachtungen zweiter Ordnung im **Beobachtungsfeld**
+("awareness"):
 - Jemand versucht eine theorieschwere Fragestellung mit computationalen/AI-Methoden.
-- Jemand importiert ein Konzept aus Benjamins Feld in einen entfernten Kontext (oder umgekehrt).
+- Jemand importiert ein Konzept aus dem eigenen Feld in einen entfernten Kontext (oder umgekehrt).
 - Ein empirisches Projekt macht einen methodischen Move, der im Feld neu oder ungewöhnlich ist.
-- Ein Text aus einer angrenzenden Disziplin berührt Fragen, die für Benjamins Forschung
-  phänomenal interessant sind, ohne dass er den Text deswegen lesen müsste.
+- Ein Text aus einer angrenzenden Disziplin berührt Fragen, die für die eigene Forschung
+  phänomenal interessant sind, ohne dass der Text deswegen gelesen werden müsste.
 
 Solche Befunde gehören ins Feld `bemerkenswert`, NICHT ins Feld `bezuege`. Sie rechtfertigen
 in der Regel "scannen" oder "lesenswert", aber kein "ignorieren".
@@ -69,21 +71,21 @@ eine bemerkenswerte methodisch-phänomenale Beobachtung zu machen ist.
    Das spart Zeit und Kosten. Typische Fälle: reine Psychometrie, klinische Studien,
    angewandte Didaktik ohne theoretischen Anschluss, Berufsethik ohne Bildungsbezug.
 3. Wenn potenziell relevant, prüfe beides:
-   (a) Gibt es inhaltliche Anschlüsse an Benjamins publizierte Arbeiten? — dafür 2–4
+   (a) Gibt es inhaltliche Anschlüsse an die publizierten Arbeiten? — dafür 2–4
        Kandidaten aus der Publikationsliste wählen, Überschneidungen bei named_thinkers
        sind ein starker Hebel. Lade die Kandidaten mit `read_publication(pub_id)` und
        lies sie (ggf. mit `search_term` auf eine Stelle).
-   (b) Gibt es eine Beobachtung zweiter Ordnung? Stell Dir die Frage: "Würde Benjamin das
-       wissen wollen, selbst wenn er den Text nicht liest?" — methodisch, phänomenal,
-       feldkonstitutiv, als Indikator für eine Entwicklung.
+   (b) Gibt es eine Beobachtung zweiter Ordnung? Stell Dir die Frage: "Würde
+       {RESEARCHER_NAME} das wissen wollen, selbst wenn der Text nicht gelesen wird?"
+       — methodisch, phänomenal, feldkonstitutiv, als Indikator für eine Entwicklung.
 4. Entscheide Verdict und fülle `bezuege` **und/oder** `bemerkenswert` entsprechend.
 
 === REGELN ===
-- Zitiere Benjamins Werk unter `bezuege` NUR, wenn Du den Volltext gelesen hast. Keine
+- Zitiere das Werk unter `bezuege` NUR, wenn Du den Volltext gelesen hast. Keine
   Hallu-Zitationen, keine Rückgriffe auf die Summaries für die Begründung.
 - Wenn die gefundenen inhaltlichen Bezüge dünn sind, sag das klar ("nur schwaches topisches
-  Echo zu X, kein echter Anschluss"). Benjamin bevorzugt ehrliche dünne Verbindungen
-  gegenüber aufgeblasenen starken.
+  Echo zu X, kein echter Anschluss"). Ehrliche dünne Verbindungen werden gegenüber
+  aufgeblasenen starken bevorzugt.
 - `bemerkenswert` ist der richtige Ort für "interessant zu wissen, dass jemand X mit Y
   versucht". Hier brauchst Du die Volltexte nicht gelesen zu haben — es reicht, den neuen
   Beitrag und den Kontext zu verstehen.
@@ -91,11 +93,11 @@ eine bemerkenswerte methodisch-phänomenale Beobachtung zu machen ist.
   "wichtig", "innovativ", "spannend" ohne Begründung.
 - Nimm Dir Zeit für 2–5 read_publication-Calls, wenn sie nötig sind. Kein Speed-Run.
 
-=== BENJAMINS PUBLIKATIONSSTAND (2018+) ==="""
+=== PUBLIKATIONSSTAND (2018+) ==="""
 
 
-def build_system_prompt(summaries: dict[str, dict]) -> str:
-    lines = [SYSTEM_INTRO, SYSTEM_OUTRO, ""]
+def build_system_prompt(summaries: dict[str, dict], outro: str | None = None) -> str:
+    lines = [SYSTEM_INTRO, outro or SYSTEM_OUTRO, ""]
     # Sortiert nach Jahr absteigend — aktuelles zuerst
     sorted_pubs = sorted(
         summaries.items(),
@@ -130,7 +132,7 @@ TOOLS = [
         "function": {
             "name": "read_publication",
             "description": (
-                "Lädt einen Ausschnitt aus einer von Benjamins Publikationen. "
+                "Lädt einen Ausschnitt aus einer Publikation des Forschers. "
                 "Nutze das, um konkrete Stellen und Argumentationen zu lesen, "
                 "bevor Du sie zitierst. Ein search_term schneidet um die erste "
                 "Fundstelle; ohne search_term bekommst Du den Anfang (~4k Wörter)."
@@ -219,7 +221,7 @@ TOOLS = [
                     "bemerkenswert": {
                         "type": "array",
                         "description": (
-                            "Beobachtungen zweiter Ordnung, die Benjamin wissen möchte, "
+                            "Beobachtungen zweiter Ordnung, die der/die Forscher*in wissen möchte, "
                             "auch wenn der Text selbst nicht lesenswert ist. Jede Beobachtung "
                             "1–2 Sätze, knapp, konkret. Leer, wenn nichts Bemerkenswertes "
                             "auffällt."
@@ -239,6 +241,38 @@ TOOLS = [
                         "type": "string",
                         "description": "1–2 Sätze: warum dieses Verdict.",
                     },
+                    "candidate_reads": {
+                        "type": "array",
+                        "description": (
+                            "NUR in der Assessment-Phase: Publikationen, deren "
+                            "Volltext gelesen werden müsste, um bezuege zu "
+                            "verifizieren. Leer lassen wenn keine Verifikation "
+                            "nötig oder wenn Volltext bereits gelesen wurde."
+                        ),
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "pub_id": {
+                                    "type": "string",
+                                    "description": "pub_id aus der Publikationsliste.",
+                                },
+                                "search_term": {
+                                    "type": "string",
+                                    "description": (
+                                        "Konkreter Begriff/Phrase, nach dem im "
+                                        "Volltext gesucht werden soll."
+                                    ),
+                                },
+                                "hypothesis": {
+                                    "type": "string",
+                                    "description": (
+                                        "1 Satz: Welchen Bezug vermutest Du?"
+                                    ),
+                                },
+                            },
+                            "required": ["pub_id", "search_term", "hypothesis"],
+                        },
+                    },
                 },
                 "required": [
                     "kernthese",
@@ -256,23 +290,18 @@ TOOLS = [
 
 # ----------------------------------------------------------------- Triage --
 
-TRIAGE_PROMPT = """Du bist ein Vorfilter für einen Forschungs-Digest.
+_triage_topics = "\n".join(f"- {t}" for t in RESEARCHER_TRIAGE_TOPICS)
+TRIAGE_PROMPT = f"""Du bist ein Vorfilter für einen Forschungs-Digest.
 
-Benjamin Jörissen (FAU Erlangen-Nürnberg) arbeitet zu:
-- Ästhetische und kulturelle Bildung, Kunstpädagogik
-- Postdigitalität, digitale Kultur, Medienbildung
-- Generative KI in Bildungskontexten
-- Cultural Resilience, Nachhaltigkeit, Anthropozän
-- New Materialisms (Barad, Haraway), Posthumanismus, STS
-- Bildungstheorie, Erziehungstheorie
-- Allgemeine Pädagogik
+{RESEARCHER_NAME} ({RESEARCHER_INSTITUTION}) arbeitet zu:
+{_triage_topics}
 
 Du bekommst Titel, Abstract und Journal eines neuen Beitrags.
-Entscheide: Könnte dieser Beitrag für Benjamin relevant sein?
+Entscheide: Könnte dieser Beitrag relevant sein?
 
 Antworte NUR mit einem JSON-Objekt:
-{"triage": "relevant", "grund": "..."} — wenn es inhaltliche oder methodische Berührungspunkte geben KÖNNTE (auch entfernte)
-{"triage": "ignorieren", "grund": "..."} — wenn der Beitrag offensichtlich thematisch keine Berührung hat
+{{"triage": "relevant", "grund": "..."}} — wenn es inhaltliche oder methodische Berührungspunkte geben KÖNNTE (auch entfernte)
+{{"triage": "ignorieren", "grund": "..."}} — wenn der Beitrag offensichtlich thematisch keine Berührung hat
 
 Im Zweifel: "relevant". Lieber einen irrelevanten Artikel durchlassen als einen relevanten verpassen."""
 
@@ -338,24 +367,24 @@ def triage_article(
 
 MODEL_SCREEN = "deepseek/deepseek-v3.2"
 
-SCREENING_SUFFIX = """
+SCREENING_SUFFIX = f"""
 
 === SCREENING-MODUS ===
 Du bekommst jetzt eine LISTE von Artikeln (Titel, Journal, Abstract-Auszug).
-Für jeden Artikel: Entscheide, ob er für Benjamin potenziell relevant sein KÖNNTE
+Für jeden Artikel: Entscheide, ob er potenziell relevant sein KÖNNTE
 und daher eine vollständige Analyse verdient.
 
 Antworte mit GENAU einer Zeile pro Artikel im Format:
 [ID] weitergeben|ignorieren — Grund in ≤15 Worten
 
 "weitergeben" wenn:
-- Inhaltliche Berührungspunkte mit Benjamins Themen/Positionen erkennbar
-- Methodisch/phänomenal bemerkenswert für sein Beobachtungsfeld
-- Zitiert Benjamin oder zitiert Werke aus seiner Bibliothek
+- Inhaltliche Berührungspunkte mit den Themen/Positionen erkennbar
+- Methodisch/phänomenal bemerkenswert für das Beobachtungsfeld
+- Zitiert {RESEARCHER_NAME} oder zitiert Werke aus der Bibliothek
 
 "ignorieren" wenn:
-- Offensichtlich kein Bezug zu Benjamins Forschung
-- Rein empirisch/angewandt ohne theoretischen Anschluss an seine Themen
+- Offensichtlich kein Bezug zur Forschung
+- Rein empirisch/angewandt ohne theoretischen Anschluss an die Themen
 - Thematisch in einem Feld ohne Berührung (z.B. reine Psychometrie, Pflegedidaktik)
 
 Im Zweifel: weitergeben. Lieber einen irrelevanten durchlassen als einen relevanten verpassen.
@@ -524,6 +553,59 @@ def handle_read_publication(
 TOOLS_SUBMIT_ONLY = [t for t in TOOLS if t["function"]["name"] == "submit_digest_entry"]
 
 
+# ------------------------------------------------- Assessment-Phase Prompt --
+
+
+ASSESSMENT_OUTRO = f"""
+
+=== ZWEI ARTEN VON RELEVANZ ===
+Es geht nicht nur um Texte, die an das eigene Werk direkt anschließen ("inhaltliche
+Relevanz"), sondern auch um Beobachtungen zweiter Ordnung im **Beobachtungsfeld**
+("awareness"):
+- Jemand versucht eine theorieschwere Fragestellung mit computationalen/AI-Methoden.
+- Jemand importiert ein Konzept aus dem eigenen Feld in einen entfernten Kontext (oder umgekehrt).
+- Ein empirisches Projekt macht einen methodischen Move, der im Feld neu oder ungewöhnlich ist.
+- Ein Text aus einer angrenzenden Disziplin berührt Fragen, die für die eigene Forschung
+  phänomenal interessant sind, ohne dass der Text deswegen gelesen werden müsste.
+
+Solche Befunde gehören ins Feld `bemerkenswert`, NICHT ins Feld `bezuege`. Sie rechtfertigen
+in der Regel "scannen" oder "lesenswert", aber kein "ignorieren".
+
+"ignorieren" ist für Texte reserviert, an denen **weder** ein inhaltlicher Anschluss **noch**
+eine bemerkenswerte methodisch-phänomenale Beobachtung zu machen ist.
+
+=== VORGEHEN (ASSESSMENT-PHASE) ===
+Du hast KEINEN Zugriff auf Volltexte. Du arbeitest nur mit dem Publikationsindex oben.
+
+1. Lies den neuen Beitrag sorgfältig (Titel, Abstract, Referenzen).
+2. **Sofort-Entscheidung**: Wenn nach Schritt 1 klar ist, dass der Beitrag weder
+   inhaltliche Anschlüsse noch bemerkenswerte Beobachtungen bietet — rufe SOFORT
+   `submit_digest_entry` mit verdict="ignorieren" auf. Leere bezuege, leere
+   candidate_reads, leere bemerkenswert. Typische Fälle: reine Psychometrie,
+   klinische Studien, angewandte Didaktik ohne theoretischen Anschluss.
+3. Wenn potenziell relevant, prüfe beides:
+   (a) **Kandidaten-Bezüge**: Gibt es im Index Publikationen, deren Kurzprofil einen
+       SPEZIFISCHEN Anschluss nahelegt? Überschneidungen bei named_thinkers, methods
+       oder key_terms sind starke Hebel. Für jede: Trage sie in `candidate_reads` ein
+       mit pub_id, einem konkreten search_term, und einer 1-Satz-Hypothese.
+       → `bezuege` bleibt LEER. Bezüge erfordern Volltext-Lektüre.
+   (b) **Bemerkenswert**: Gibt es eine Beobachtung zweiter Ordnung? "Würde
+       {RESEARCHER_NAME} das wissen wollen, selbst wenn der Text nicht gelesen wird?"
+       → bemerkenswert ausfüllen.
+4. Entscheide ein vorläufiges verdict. Wenn candidate_reads nicht leer ist, folgt
+   eine Verifikationsphase mit Volltext-Zugriff.
+
+=== REGELN ===
+- Schreibe KEINE bezuege. Das Feld bleibt leer. Bezüge erfordern Volltext-Lektüre.
+- candidate_reads nur für Publikationen, bei denen der Index einen SPEZIFISCHEN
+  Anschluss nahelegt — nicht "mal schauen". Jede Kandidatur braucht eine Hypothese.
+- Maximal 3 candidate_reads. Mehr ist fast nie nötig.
+- bemerkenswert darf und soll gefüllt werden, wenn zutreffend.
+- Sprache: Deutsch, akademisch, präzise, ohne Buzzwords und Floskeln.
+
+=== PUBLIKATIONSSTAND (2018+) ==="""
+
+
 def run_agent(
     new_article: dict,
     corpus_path: Path = CORPUS_JSON,
@@ -532,20 +614,25 @@ def run_agent(
     max_iterations: int = 8,
     verbose: bool = True,
     allow_read: bool = True,
+    system_outro: str | None = None,
+    extra_user_content: str = "",
 ) -> dict:
     """new_article: dict mit title, authors, abstract, doi, url, journal.
 
-    allow_read=False disables read_publication tool (B-tier: assessment from
+    allow_read=False disables read_publication tool (assessment from
     summaries only, no fulltext verification).
+    system_outro: replaces the default SYSTEM_OUTRO in the system prompt.
+    extra_user_content: appended to the user message (e.g. verification context).
     """
     corpus_index = _load_corpus_index(corpus_path)
     authored_all = _load_authored_all(corpus_path)
     summaries_data = json.loads(summaries_path.read_text(encoding="utf-8"))
     summaries = summaries_data["summaries"]
 
-    system_prompt = build_system_prompt(summaries)
+    system_prompt = build_system_prompt(summaries, outro=system_outro)
     if verbose:
-        print(f"[agent] System-Prompt: ~{len(system_prompt)//4} Tokens "
+        phase = "assessment" if system_outro is ASSESSMENT_OUTRO else "full"
+        print(f"[agent] System-Prompt ({phase}): ~{len(system_prompt)//4} Tokens "
               f"({len(summaries)} Publikationen im Index)")
 
     doi = (new_article.get("doi") or "").strip()
@@ -570,6 +657,8 @@ def run_agent(
 
     citations_block = format_for_agent(citation_hits)
     user_content = _format_new_article(new_article, enrichment_data) + citations_block
+    if extra_user_content:
+        user_content += extra_user_content
     if verbose:
         print(f"[agent] User-Content: ~{len(user_content)//4} Tokens")
 
@@ -764,6 +853,125 @@ def _format_new_article(article: dict, enrichment: dict) -> str:
             parts.append(f"  · {year} {authors} — {title[:160]}")
 
     return "\n".join(parts)
+
+
+# ------------------------------------------------ Two-Phase: Assess → Verify
+
+
+def _format_verification_context(assessment_entry: dict, candidates: list[dict]) -> str:
+    """Build the verification context appended to the user message in Phase 2."""
+    lines = [
+        "\n\n=== VERIFIKATION ===",
+        "Du hast eine Voreinschätzung zu diesem Artikel gemacht.",
+        "Deine Kandidaten-Bezüge:\n",
+    ]
+    for c in candidates:
+        lines.append(f"- pub_id: {c['pub_id']}")
+        lines.append(f"  search_term: {c.get('search_term', '')}")
+        lines.append(f"  Hypothese: {c.get('hypothesis', '')}")
+    lines.append("")
+    lines.append("Deine Aufgabe:")
+    lines.append("1. Lies die identifizierten Publikationen mit "
+                 "read_publication(pub_id, search_term).")
+    lines.append("2. Verifiziere oder falsifiziere jede Hypothese am Volltext.")
+    lines.append("3. Schreibe bezuege NUR für bestätigte Verbindungen. Sei ehrlich")
+    lines.append("   wenn eine Hypothese sich nicht bestätigt — das ist ein valides Ergebnis.")
+    lines.append("4. Übernimm bemerkenswert und theoretisch_methodisch aus der Voreinschätzung,")
+    lines.append("   ergänze wenn der Volltext neue Einsichten liefert.")
+    lines.append("5. Korrigiere das verdict, wenn der Volltext Deine Einschätzung ändert.")
+    lines.append("")
+    if assessment_entry.get("kernthese"):
+        lines.append(f"Voreinschätzung — Kernthese: {assessment_entry['kernthese']}")
+    if assessment_entry.get("bemerkenswert"):
+        lines.append("Voreinschätzung — Bemerkenswert: "
+                     + "; ".join(assessment_entry["bemerkenswert"]))
+    if assessment_entry.get("verdict"):
+        lines.append(f"Voreinschätzung — Verdict: {assessment_entry['verdict']}")
+        lines.append(f"  Begründung: {assessment_entry.get('verdict_begruendung', '')}")
+    return "\n".join(lines)
+
+
+def assess_then_verify(
+    new_article: dict,
+    corpus_path: Path = CORPUS_JSON,
+    summaries_path: Path = SUMMARIES_JSON,
+    model: str = MODEL_AGENT,
+    verbose: bool = True,
+) -> dict:
+    """Two-phase pipeline: assessment from summaries, then targeted verification.
+
+    Phase 1 (Assessment): Agent works from the summary index only.
+      - Irrelevant articles → submit immediately, no fulltext reads.
+      - Relevant articles → identifies candidate_reads (pub_id + hypothesis).
+
+    Phase 2 (Verification): Only when candidate_reads is non-empty.
+      - Agent reads specifically identified publications.
+      - Verifies or refutes candidate connections.
+      - Produces final digest entry with honest, verified bezuege.
+    """
+    # --- Phase 1: Assessment ---
+    if verbose:
+        print("[assess] === Phase 1: Assessment (nur Index) ===")
+    assessment = run_agent(
+        new_article,
+        corpus_path=corpus_path,
+        summaries_path=summaries_path,
+        model=model,
+        max_iterations=1,
+        verbose=verbose,
+        allow_read=False,
+        system_outro=ASSESSMENT_OUTRO,
+    )
+
+    entry = assessment.get("entry") or {}
+    candidates = entry.get("candidate_reads") or []
+
+    if not candidates:
+        if verbose:
+            print(f"[assess] Keine candidate_reads → Assessment ist Endergebnis "
+                  f"(verdict={entry.get('verdict', '?')})")
+        # Clean up: remove candidate_reads from final entry, ensure bezuege present
+        entry.pop("candidate_reads", None)
+        if "bezuege" not in entry:
+            entry["bezuege"] = []
+        return assessment
+
+    # --- Phase 2: Verification ---
+    if verbose:
+        pubs = ", ".join(c["pub_id"] for c in candidates)
+        print(f"[assess] {len(candidates)} candidate_reads → Verifikation ({pubs})")
+        print("[assess] === Phase 2: Verification (gezielte Volltext-Reads) ===")
+
+    max_iter_verify = min(max(len(candidates) + 2, 3), 6)
+    verification = run_agent(
+        new_article,
+        corpus_path=corpus_path,
+        summaries_path=summaries_path,
+        model=model,
+        max_iterations=max_iter_verify,
+        verbose=verbose,
+        allow_read=True,
+        extra_user_content=_format_verification_context(entry, candidates),
+    )
+
+    # Combine costs from both phases
+    for key in ("tokens_in", "tokens_out", "tokens_cached_read",
+                "tokens_cache_write", "est_cost_usd"):
+        verification[key] = verification.get(key, 0) + assessment.get(key, 0)
+    verification["iterations"] = (
+        assessment.get("iterations", 0) + verification.get("iterations", 0)
+    )
+    verification["tool_calls"] = (
+        assessment.get("tool_calls", []) + verification.get("tool_calls", [])
+    )
+    # Stash assessment for transparency
+    verification["assessment"] = entry
+
+    # Clean up candidate_reads from final entry
+    final = verification.get("entry") or {}
+    final.pop("candidate_reads", None)
+
+    return verification
 
 
 # ------------------------------------------------------------- Rendering ---
