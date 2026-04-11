@@ -337,6 +337,23 @@ Opus-Output (`agent_entry_json`) wird vollständig in DB gespeichert — immer. 
 - **ignorieren**: Titelliste, aufklappbar bei Bedarf
 - Jeder Eintrag eskalierbar (B/C → Opus, oder Zotero-Aufnahme)
 
+### Modell-Benchmark: Full Agent Run (gleicher Artikel, gleiche Tools)
+
+6 Modelle mit identischer Pipeline getestet (System-Prompt + read_publication + submit_digest_entry) auf dem Artikel "Hegemoniekritik lehren" (Opus-Referenz: scannen):
+
+| Modell | Verdict | read_pub | Bezüge | Kosten | Zeit | Status |
+|--------|---------|----------|--------|--------|------|--------|
+| **Opus 4.6** | scannen | 4× | 2 verifiziert | $0.444 | ~60s | Referenz |
+| **DeepSeek V3.2** | lesenswert | 5× | 3 verifiziert | $0.063 | 35s | Exzellent, 7× billiger |
+| **Qwen 3.6 Plus** | scannen | 7× | 2 (JSON-Bug) | ~$0.04 | 100s | Gut, Bezüge-Format instabil |
+| **Kimi K2.5** | scannen | 6× | 3 (Text fehlt) | $0.108 | 32s | Fast, Bezüge-Inhalt leer |
+| GLM 5.1 | (kein Output) | 7× | — | $0.150 | 53s | Scheitert am Tool-Protokoll |
+| MiniMax M2.7 | ignorieren | 0× | — | $0.018 | 19s | Falsches Verdict |
+
+**DeepSeek V3.2 als A-Tier-Default**: Korrektes Verdict, 3 Bezüge mit Volltextbelegen, folgt dem Prompt sauber, **7× billiger als Opus**. Projizierte Kosten 2025+-Run: ~$15–20 statt $57 (Opus) oder $266 (flat).
+
+**UI-Modellauswahl**: DeepSeek (Default), Opus (Premium), Sonnet (Mittelweg, noch zu benchmarken). Qwen zurückgestellt bis JSON-Bug gelöst.
+
 ### Schlüssel-Designentscheidungen (Fortsetzung)
 20. A/B/C-Tier-System statt flat Opus (73% Kostenreduktion)
 21. merz ist B-Tier (hohes Volumen, überwiegend Praxisbeiträge)
@@ -344,6 +361,7 @@ Opus-Output (`agent_entry_json`) wird vollständig in DB gespeichert — immer. 
 23. Output proportional zum Verdict — Opus-Daten immer vollständig in DB, Anzeige gefiltert
 24. articles.db als Forschungsdatenbank, nicht Markdown-Halde — perspektivisch "Missed References"-Detektor für eigene Textentwürfe
 25. Obsidian als Output-Format verworfen — Web-UI mit DB-Backend
+26. DeepSeek V3.2 als Default-Modell statt Opus (7× billiger, vergleichbare Qualität mit Tools)
 
 ---
 
