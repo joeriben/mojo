@@ -178,61 +178,40 @@ def cmd_digest(args: argparse.Namespace) -> int:
     from journal_bot.settings import JOURNALS
     tier_by_short = {j.short: j.tier for j in JOURNALS}
 
-    # Auto-pass always gets A-tier treatment
-    tier_a = [sa for sa, _ in auto_pass]
-    tier_b = []
+    # All articles get B-tier treatment (no read_publication, $0.009/Artikel)
+    # read_publication is reserved for on-demand escalation via UI
+    to_analyze = [sa for sa, _ in auto_pass]
     for sa in passed:
         tier = tier_by_short.get(sa.journal_short, "B")
-        if tier == "A":
-            tier_a.append(sa)
-        elif tier == "C":
+        if tier == "C":
             pass  # C-tier: screening was enough, no agent
         else:
-            tier_b.append(sa)
+            to_analyze.append(sa)
 
     c_only = [sa for sa in passed if tier_by_short.get(sa.journal_short, "B") == "C"]
     if c_only:
         print(f"[digest] C-Tier: {len(c_only)} Artikel nur gescreent, kein Agent")
 
-    total_cost = 0.0
-
-    # --- Phase 2a: A-Tier (Agent with tools) ---
-    if tier_a:
-        print(f"\n[digest] === A-Tier ({len(tier_a)} Artikel, {model}, mit Tools) ===")
-        for i, sa in enumerate(tier_a, 1):
-            journal_name = sa.journal_full or sa.journal_short
-            print(f"\n[digest] --- A {i}/{len(tier_a)} --- {journal_name} · {sa.title[:75]}")
-            try:
-                result = digest.process_article(
-                    sa, store, verbose=not args.quiet, model=model,
-                )
-                cost = result["agent_result"].get("est_cost_usd", 0.0)
-                total_cost += cost
-                verdict = result["agent_result"].get("entry", {}).get("verdict", "?")
-                print(f"[digest] ✓ {verdict} · {result['markdown_path'].name}  (${cost:.3f})")
-            except Exception as e:
-                print(f"[digest] FEHLER bei {sa.id}: {e}")
-
-    # --- Phase 2b: B-Tier (Agent without tools — single iteration) ---
-    if tier_b:
-        print(f"\n[digest] === B-Tier ({len(tier_b)} Artikel, {model}, ohne Tools) ===")
-        for i, sa in enumerate(tier_b, 1):
-            journal_name = sa.journal_full or sa.journal_short
-            print(f"\n[digest] --- B {i}/{len(tier_b)} --- {journal_name} · {sa.title[:75]}")
-            try:
-                result = digest.process_article(
-                    sa, store, verbose=not args.quiet, model=model,
-                    max_iterations=2, allow_read=False,
-                )
-                cost = result["agent_result"].get("est_cost_usd", 0.0)
-                total_cost += cost
-                verdict = result["agent_result"].get("entry", {}).get("verdict", "?")
-                print(f"[digest] ✓ {verdict}  (${cost:.3f})")
-            except Exception as e:
-                print(f"[digest] FEHLER bei {sa.id}: {e}")
-
-    if not tier_a and not tier_b:
+    if not to_analyze:
         print("[digest] Keine Artikel für Agent-Analyse übrig.")
+        return 0
+
+    total_cost = 0.0
+    print(f"\n[digest] === Agent ({len(to_analyze)} Artikel, {model}, nur submit_digest_entry) ===")
+    for i, sa in enumerate(to_analyze, 1):
+        journal_name = sa.journal_full or sa.journal_short
+        print(f"\n[digest] --- {i}/{len(to_analyze)} --- {journal_name} · {sa.title[:75]}")
+        try:
+            result = digest.process_article(
+                sa, store, verbose=not args.quiet, model=model,
+                max_iterations=2, allow_read=False,
+            )
+            cost = result["agent_result"].get("est_cost_usd", 0.0)
+            total_cost += cost
+            verdict = result["agent_result"].get("entry", {}).get("verdict", "?")
+            print(f"[digest] ✓ {verdict}  (${cost:.3f})")
+        except Exception as e:
+            print(f"[digest] FEHLER bei {sa.id}: {e}")
 
     print(f"\n[digest] Gesamtkosten: ${total_cost:.3f}")
     return 0

@@ -363,76 +363,96 @@ Opus-Output (`agent_entry_json`) wird vollständig in DB gespeichert — immer. 
 25. Obsidian als Output-Format verworfen — Web-UI mit DB-Backend
 26. DeepSeek V3.2 als Default-Modell statt Opus (7× billiger, vergleichbare Qualität mit Tools)
 
+### Implementierung: Tier-System + Quick Wins + Modellwechsel
+
+Alles aus dem Handover der vorigen Phase in Code umgesetzt:
+
+1. **Tier-System** — `journals.json` v3 mit `tier`-Feld (A/B/C), `settings.py` lädt `JournalConfig.tier`, `cli.py` splittet Artikel nach Tier und wählt Verfahren automatisch
+2. **B-Tier Agent ohne Tools** — `allow_read=False` in `run_agent()` entfernt `read_publication` aus der Tool-Liste. B-Tier bekommt nur `submit_digest_entry`. Bug gefunden und gefixt: DeepSeek rief `read_publication` auf bei `max_iterations=1` → 41/52 Fehler in erster Tranche
+3. **Citation Auto-Pass + Trigger-Autoren** — Vorab-Scan vor Screening, Treffer → direkt A-Tier
+4. **Müll-Filter** — "Issue Information", "Correction", "Erratum" per Titel-Regex entfernt
+5. **DeepSeek V3.2 als Default-Modell** — `--model` Flag, Default `deepseek/deepseek-v3.2`
+6. **ARCHITECTURE.md** — Vollständige Systemarchitektur-Dokumentation
+7. **Workflow-Docs aktualisiert** — 03_woechentlicher_digest.md komplett neu, README aktualisiert
+
+### 2025+-Run (läuft)
+
+Erste 99 Artikel verarbeitet (vor Session-Absturz):
+- 49× ignorieren ($0.70), 44× scannen ($3.65), 6× lesenswert ($0.05)
+- Durchschnittskosten: **$0.044/Artikel** (besser als projiziert)
+- Run wird mit ~2.867 verbleibenden Artikeln fortgesetzt
+
+### Kosten der Session (bisherig)
+- Benchmarks (Sonnet, DeepSeek, deterministisch): ~$0.40
+- Modell-Benchmark (6 Modelle, Full Agent): ~$0.90
+- Testläufe (20 + 100 Artikel): ~$3.75
+- 2025+-Run erste Tranche (99 Artikel): ~$4.40
+- **Gesamt bisherig: ~$9.45**
+
 ---
 
 ## Handover für nächste Session
 
 ### Was steht
 - **28 Journals** aktiv getrackt, **17.465 Artikel** in articles.db (Backfill bis 2016)
-- **Digest-Pipeline v2**: DeepSeek-Screening → Opus-Analyse mit Short-Circuit
-- **95 Artikel** bisher bewertet (83 aus 2016 + 12 aus 2026)
-- **Tier-System** konzipiert (A/B/C), aber noch nicht in Code/Datenstruktur
-- **Escalation-Signale**: Citation-Tracker + Trigger-Autoren identifiziert (11 + 9 Artikel in 2025+)
-- **`signals.py`** + **`zotero_library.json`** vorhanden
+- **Digest-Pipeline v3**: Müll-Filter → Citation/Trigger Auto-Pass → DeepSeek-Screening → Tier-Agent (A mit Tools, B ohne Tools, C nur Screening)
+- **2025+-Run läuft** — 99 von 2.966 verarbeitet, ~2.867 in Verarbeitung
+- **DeepSeek V3.2 als Default** — 7× billiger als Opus, vergleichbare Qualität
+- **ARCHITECTURE.md** + aktualisierte Workflow-Docs vorhanden
+- **`signals.py`** + **`zotero_library.json`** vorhanden (nicht in Pipeline integriert)
 - **Scout, Diskursräume, Bibliometrie, Trends** — alles funktionsfähig
+
+### Kosten-Problem: read_publication ist der Treiber
+
+2025+-Run mit A-Tier (read_publication) gestartet, nach 99 Artikeln gestoppt:
+- **MedienPädagogik: $0.15/Artikel** statt projiziert $0.06 — DeepSeek macht 5-7 read_publication-Calls, jeder pumpt ~16k Zeichen in den wachsenden Kontext
+- B-Tier funktioniert wie projiziert: $0.009/Artikel
+- Hochrechnung: $120 für den Jahrgang statt projiziert $16 — **nicht akzeptabel**
+
+**Erkenntnis**: Nicht das Modell ist der Kostentreiber, sondern die Architektur. read_publication multipliziert Input-Tokens exponentiell über Iterationen. Selbst DeepSeek (10% von Opus-Tokenpreisen) kostet 50% von Opus wegen derselben Kontext-Explosion.
+
+**Lösung (teilweise implementiert in cli.py)**: read_publication gehört NICHT in den Batch-Run. Batch = alles ohne Tools ($0.009/Artikel). read_publication = on-demand per User-Click im UI, wenn ein konkreter Artikel vertieft werden soll.
 
 ### Was als nächstes zu tun ist
 
-**1. Tier-System in Datenstruktur bringen**
-- `journals.json` um `tier`-Feld erweitern (A/B/C)
-- Trigger-Autoren als Konfigurationsliste (erweiterbar)
-- `mojo digest` wertet Tier aus und wählt Verfahren automatisch
+**1. Batch-Run ohne read_publication abschließen**
+- cli.py ist bereits umgebaut: alle Artikel bekommen nur `submit_digest_entry` (kein read_publication)
+- Projizierte Kosten: ~2.867 × $0.009 = **~$26**
+- Workflow-Doc 03 aktualisieren (A/B-Tier-Unterscheidung entfällt für Batch)
+- Run starten: `mojo digest --next 3000 --since 2025`
 
-**2. B-Tier DeepSeek-Evaluation bauen**
-- Wie Batch-Screening, aber mit Kernthese + Verdict als Output (nicht nur weitergeben/ignorieren)
-- Ergebnis in `agent_entry_json` speichern (mit Marker `model: deepseek`)
-- Kein read_publication, keine Tools — rein textbasiert mit 40k Pub-Index
-
-**3. Citation-Tracker + Trigger-Autoren als Vorab-Scan**
-- Über alle unprocessed Artikel laufen lassen BEVOR Screening startet
-- Treffer → auto-escalate zu Opus, unabhängig vom Journal-Tier
-- Ergebnis in DB speichern (neues Feld oder Wiederverwendung von `citation_hits_json`)
-
-**4. UI-Prototyp** (lokale Web-App)
-- Strukturierte Ablage: Digest-Ergebnisse nach Diskursraum, Verdict, Trend
-- Verdict-proportionale Anzeige (aufklappbar)
+**2. UI-Prototyp** (lokale Web-App)
+- Strukturierte Ablage nach Diskursraum, Verdict
+- Volle Daten aufklappbar
+- **"Vertiefen"-Button**: Einzelartikel → Agent MIT read_publication (on demand, ~$0.15)
 - 1-Click-Zotero-Aufnahme (pyzotero, mojo-Unterordner)
-- Escalation-Button: B/C-Artikel → Opus
-- Aussortierte Titel sichtbar mit Grund
+- Aussortierte Titel sichtbar
 
-**5. Großer 2025+-Run** (~$57, ~2.954 Artikel)
-- Setzt 1–3 voraus, 4 wäre nice-to-have
-
-**6. Dialogischer Research-Agent** (perspektivisch)
+**3. Dialogischer Research-Agent**
 - Stub/Entwurf hochladen → Retrieval gegen DB
-- "Missed References"-Detektor: welche relevanten Bezüge fehlen im Entwurf?
+- "Missed References"-Detektor
 - Architektur-Vorlage: transact-qda
 
-**7. Trend-Analyse für aesthetische_kulturelle_bildung** — unerledigt
-```bash
-mojo trends --cluster aesthetische_kulturelle_bildung
-mojo biblio --cluster aesthetische_kulturelle_bildung
-```
+**4. Trend-Analyse für aesthetische_kulturelle_bildung** — unerledigt
 
-**8. Open-Source-Vorbereitung** — unerledigt, Pfade hardcoded
+**5. Open-Source-Vorbereitung** — unerledigt, Pfade hardcoded
 
 ### Bekannte Einschränkungen
-- **43% der 2025+ Artikel ohne Abstract** (v.a. AI & Society, EPT, JRTE). Titel-only-Evaluation ist dünn.
-- **25 Journals übersprungen** beim Scout (11× ISSN, 9× keine Artikel, 2× nicht in OpenAlex).
-- **Pfade hardcoded** (Zotero, Obsidian-Vault) — muss für Open Source abstrahiert werden.
-- **Trigger-Autoren-Matching** braucht Vollnamen (nicht nur Nachnamen) um False Positives zu vermeiden (z.B. "Chun" → koreanische Nachnamen).
+- **43% der 2025+ Artikel ohne Abstract** (v.a. AI & Society, EPT, JRTE)
+- **Trigger-Autoren-Matching** braucht Vollnamen (nicht nur Nachnamen)
+- **Qwen 3.6 Plus** zurückgestellt (JSON-Bug in bezuege)
+- **read_publication bei DeepSeek: $0.15/Artikel** statt $0.06 projiziert — nur on-demand sinnvoll
 
 ### Statistik dieser Session
 
 | Metrik | Wert |
 |--------|------|
-| OpenRouter-Kosten | ~$3.60 |
-| Artikel durch Opus verarbeitet | 12 (2026er MedienPaed) |
-| davon scannen | 6 |
-| davon ignorieren (Short-Circuit) | 3 |
-| Screening-Filterrate | 40% (8/20) |
-| Short-Circuit-Ersparnis/ignorieren | ~50% ($0.06 statt $0.12) |
-| Benchmarks durchgeführt | 4 (deterministisch, Sonnet, DeepSeek, Live) |
-| Citation-Hits (2025+) entdeckt | 11 Artikel zitieren Benjamin |
-| Trigger-Autoren-Hits (2025+) | 9 Artikel (MacGilchrist, Jarke, Chun) |
-| Projizierte Kosten 2025+-Run | ~$57 (mit Tier-System) vs. ~$266 (flat) |
+| OpenRouter-Kosten | ~$9.45 |
+| 2025+-Artikel verarbeitet | 99 (von 2.966) |
+| davon lesenswert | 6 |
+| davon scannen | 44 |
+| davon ignorieren | 49 |
+| Ø Kosten/Artikel (mit read_pub) | $0.044 |
+| Ø Kosten/Artikel (ohne read_pub) | $0.009 |
+| Modelle benchmarkt | 6 (Opus, DeepSeek, Qwen, Kimi, GLM, MiniMax) |
+| Commits | 8 |
