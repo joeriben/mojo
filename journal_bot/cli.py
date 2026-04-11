@@ -222,7 +222,7 @@ def cmd_digest(args: argparse.Namespace) -> int:
             try:
                 result = digest.process_article(
                     sa, store, verbose=not args.quiet, model=model,
-                    max_iterations=1,
+                    max_iterations=2, allow_read=False,
                 )
                 cost = result["agent_result"].get("est_cost_usd", 0.0)
                 total_cost += cost

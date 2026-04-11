@@ -521,6 +521,9 @@ def handle_read_publication(
     return header + fulltext[:16000] + (" …" if len(fulltext) > 16000 else "")
 
 
+TOOLS_SUBMIT_ONLY = [t for t in TOOLS if t["function"]["name"] == "submit_digest_entry"]
+
+
 def run_agent(
     new_article: dict,
     corpus_path: Path = CORPUS_JSON,
@@ -528,8 +531,13 @@ def run_agent(
     model: str = MODEL_AGENT,
     max_iterations: int = 8,
     verbose: bool = True,
+    allow_read: bool = True,
 ) -> dict:
-    """new_article: dict mit title, authors, abstract, doi, url, journal."""
+    """new_article: dict mit title, authors, abstract, doi, url, journal.
+
+    allow_read=False disables read_publication tool (B-tier: assessment from
+    summaries only, no fulltext verification).
+    """
     corpus_index = _load_corpus_index(corpus_path)
     authored_all = _load_authored_all(corpus_path)
     summaries_data = json.loads(summaries_path.read_text(encoding="utf-8"))
@@ -599,7 +607,7 @@ def run_agent(
             model=model,
             max_tokens=4000,
             messages=messages,
-            tools=TOOLS,
+            tools=TOOLS if allow_read else TOOLS_SUBMIT_ONLY,
         )
         usage = getattr(resp, "usage", None)
         if usage:

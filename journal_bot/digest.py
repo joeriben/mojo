@@ -52,10 +52,11 @@ def process_article(
     out_dir: Path = DIGEST_DIR,
     model: str | None = None,
     max_iterations: int | None = None,
+    allow_read: bool = True,
 ) -> dict:
     """Lässt den Agent über einen Store-Eintrag laufen, schreibt zurück, rendert Markdown."""
     article = _article_dict_from_stored(sa)
-    kwargs = {"verbose": verbose}
+    kwargs = {"verbose": verbose, "allow_read": allow_read}
     if model:
         kwargs["model"] = model
     if max_iterations is not None:
