@@ -312,6 +312,39 @@ DeepSeek V3.2 gewählt: 8× billiger als Sonnet, fast perfekter Recall (1 verpas
 - Digest-Testlauf (20 Artikel): $3.19
 - **Gesamt: ~$3.60** (davon ~$0 für deterministischen Benchmark)
 
+### Kosten-Strategie: A/B/C-Tier-System
+
+Flat Opus über alle 2.954 Artikel (2025+): ~$266 — zu teuer. Stattdessen differenzierter Analyseaufwand je nach Journal-Nähe zu Benjamins Forschung:
+
+| Tier | Verfahren | Journals | Artikel | Kosten |
+|------|-----------|----------|---------|--------|
+| **A** | DeepSeek-Screen → Opus | 7 (MedienPaed, ZfPäd, ZfE, PDSE, DCS, SAE, JAE) | 524 | ~$47 |
+| **B** | DeepSeek mit Pub-Index, kein Opus | 13 (merz, BDS, EPT, BJET, etc.) | 1.231 | ~$5 |
+| **C** | Nur Citation-Tracker + Keywords | 6 (AIandSoc, JRTE, LMT, etc.) | 1.199 | ~$0.23 |
+| Auto | Escalation zu Opus | Citation-Hits + Trigger-Autoren | ~18 | ~$4.50 |
+| | | **Gesamt** | **2.954** | **~$57** |
+
+**Escalation-Signale** (null LLM-Kosten, auto-pass zu Opus):
+- **Zitiert Benjamin**: 11 Artikel in 2025+ (citation_tracker gegen authored_all)
+- **Trigger-Autoren**: 9 Artikel (MacGilchrist 6×, Jarke 1×, Wendy Chun 1×, + Überlappung)
+- **User-Click**: Manuell aus dem UI (jeder B/C-Eintrag kann zu Opus eskaliert werden)
+
+### Output-Design: Sortierung nach Verdict, volle Daten immer verfügbar
+
+Opus-Output (`agent_entry_json`) wird vollständig in DB gespeichert — immer. Auch "scannen"-Einträge haben oft substanzielle Argumentationen (z.B. Rancière-Kontrast bei "Hegemoniekritik lehren"). Im UI:
+- **pflichtlektüre/lesenswert**: Prominent, voller Report, 1-Click Zotero
+- **scannen**: Voller Report verfügbar, Sortierung nach Diskursraum
+- **ignorieren**: Titelliste, aufklappbar bei Bedarf
+- Jeder Eintrag eskalierbar (B/C → Opus, oder Zotero-Aufnahme)
+
+### Schlüssel-Designentscheidungen (Fortsetzung)
+20. A/B/C-Tier-System statt flat Opus (73% Kostenreduktion)
+21. merz ist B-Tier (hohes Volumen, überwiegend Praxisbeiträge)
+22. Trigger-Autoren als kostenloser Escalation-Trigger neben Citation-Hits
+23. Output proportional zum Verdict — Opus-Daten immer vollständig in DB, Anzeige gefiltert
+24. articles.db als Forschungsdatenbank, nicht Markdown-Halde — perspektivisch "Missed References"-Detektor für eigene Textentwürfe
+25. Obsidian als Output-Format verworfen — Web-UI mit DB-Backend
+
 ---
 
 ## Handover für nächste Session
@@ -320,30 +353,56 @@ DeepSeek V3.2 gewählt: 8× billiger als Sonnet, fast perfekter Recall (1 verpas
 - **28 Journals** aktiv getrackt, **17.465 Artikel** in articles.db (Backfill bis 2016)
 - **Digest-Pipeline v2**: DeepSeek-Screening → Opus-Analyse mit Short-Circuit
 - **95 Artikel** bisher bewertet (83 aus 2016 + 12 aus 2026)
+- **Tier-System** konzipiert (A/B/C), aber noch nicht in Code/Datenstruktur
+- **Escalation-Signale**: Citation-Tracker + Trigger-Autoren identifiziert (11 + 9 Artikel in 2025+)
+- **`signals.py`** + **`zotero_library.json`** vorhanden
 - **Scout, Diskursräume, Bibliometrie, Trends** — alles funktionsfähig
-- **`signals.py`** + **`zotero_library.json`** vorhanden aber nicht in Pipeline integriert
 
 ### Was als nächstes zu tun ist
 
-**1. Output-Format überdenken** — Obsidian als zentrales Ausgabeformat ist problematisch (überkomplex, schlechte UX). Vor einem großen Run klären: Was ist das richtige Daten-/Anzeigeformat? Strukturierte Daten + leichtgewichtiger Viewer? HTML? Anderes?
+**1. Tier-System in Datenstruktur bringen**
+- `journals.json` um `tier`-Feld erweitern (A/B/C)
+- Trigger-Autoren als Konfigurationsliste (erweiterbar)
+- `mojo digest` wertet Tier aus und wählt Verfahren automatisch
 
-**2. Großer Digest-Lauf über 2025+ Artikel** — ~2.966 Artikel. Geschätzte Kosten: ~$1.50 Screening + ~$50–100 Opus. Braucht vorher Output-Format-Entscheidung.
+**2. B-Tier DeepSeek-Evaluation bauen**
+- Wie Batch-Screening, aber mit Kernthese + Verdict als Output (nicht nur weitergeben/ignorieren)
+- Ergebnis in `agent_entry_json` speichern (mit Marker `model: deepseek`)
+- Kein read_publication, keine Tools — rein textbasiert mit 40k Pub-Index
 
-**3. Trend-Analyse für aesthetische_kulturelle_bildung** — unerledigt
+**3. Citation-Tracker + Trigger-Autoren als Vorab-Scan**
+- Über alle unprocessed Artikel laufen lassen BEVOR Screening startet
+- Treffer → auto-escalate zu Opus, unabhängig vom Journal-Tier
+- Ergebnis in DB speichern (neues Feld oder Wiederverwendung von `citation_hits_json`)
+
+**4. UI-Prototyp** (lokale Web-App)
+- Strukturierte Ablage: Digest-Ergebnisse nach Diskursraum, Verdict, Trend
+- Verdict-proportionale Anzeige (aufklappbar)
+- 1-Click-Zotero-Aufnahme (pyzotero, mojo-Unterordner)
+- Escalation-Button: B/C-Artikel → Opus
+- Aussortierte Titel sichtbar mit Grund
+
+**5. Großer 2025+-Run** (~$57, ~2.954 Artikel)
+- Setzt 1–3 voraus, 4 wäre nice-to-have
+
+**6. Dialogischer Research-Agent** (perspektivisch)
+- Stub/Entwurf hochladen → Retrieval gegen DB
+- "Missed References"-Detektor: welche relevanten Bezüge fehlen im Entwurf?
+- Architektur-Vorlage: transact-qda
+
+**7. Trend-Analyse für aesthetische_kulturelle_bildung** — unerledigt
 ```bash
 mojo trends --cluster aesthetische_kulturelle_bildung
 mojo biblio --cluster aesthetische_kulturelle_bildung
 ```
 
-**4. Watchlist-✓ automatisieren** — unerledigt
-
-**5. Open-Source-Vorbereitung** — unerledigt, Pfade hardcoded
+**8. Open-Source-Vorbereitung** — unerledigt, Pfade hardcoded
 
 ### Bekannte Einschränkungen
-- **25 Journals übersprungen** beim Scout (11× ISSN, 9× keine Artikel, 2× nicht in OpenAlex). Für zkmb.de und e-flux sind Scraper nötig.
+- **43% der 2025+ Artikel ohne Abstract** (v.a. AI & Society, EPT, JRTE). Titel-only-Evaluation ist dünn.
+- **25 Journals übersprungen** beim Scout (11× ISSN, 9× keine Artikel, 2× nicht in OpenAlex).
 - **Pfade hardcoded** (Zotero, Obsidian-Vault) — muss für Open Source abstrahiert werden.
-- **Obsidian als Output** — UX-Kritik, Format muss überdacht werden.
-- **DeepSeek-Screening**: 39% Filter-Rate, 94% Recall — konservativ, Verbesserung möglich durch Prompt-Tuning oder Signale als Enrichment.
+- **Trigger-Autoren-Matching** braucht Vollnamen (nicht nur Nachnamen) um False Positives zu vermeiden (z.B. "Chun" → koreanische Nachnamen).
 
 ### Statistik dieser Session
 
@@ -356,3 +415,6 @@ mojo biblio --cluster aesthetische_kulturelle_bildung
 | Screening-Filterrate | 40% (8/20) |
 | Short-Circuit-Ersparnis/ignorieren | ~50% ($0.06 statt $0.12) |
 | Benchmarks durchgeführt | 4 (deterministisch, Sonnet, DeepSeek, Live) |
+| Citation-Hits (2025+) entdeckt | 11 Artikel zitieren Benjamin |
+| Trigger-Autoren-Hits (2025+) | 9 Artikel (MacGilchrist, Jarke, Chun) |
+| Projizierte Kosten 2025+-Run | ~$57 (mit Tier-System) vs. ~$266 (flat) |
