@@ -51,7 +51,7 @@ Entscheidungspunkte:
 - Stimmen die vorgeschlagenen Diskursräume? → ggf. `mojo diskurs add`
 - Gibt es Übersprungene wegen ISSN-Problemen? → manuelle Recherche
 
-### 5. Journals aufnehmen
+### 5. Journals aufnehmen + Tier zuordnen
 Für jedes "aufnehmen"-Journal:
 ```bash
 mojo journal add <SHORT> \
@@ -59,6 +59,13 @@ mojo journal add <SHORT> \
   --issn "XXXX-XXXX" \
   --clusters cluster1 cluster2
 ```
+Dann in `journals.json` das `tier`-Feld setzen:
+- **A**: Kern-Journals mit hoher Trefferwahrscheinlichkeit (Agent mit read_publication)
+- **B**: Relevantes Umfeld (Agent ohne Tools, Einschätzung aus Summaries)
+- **C**: Fernes Umfeld, hohes Volumen (nur Screening, kein Agent)
+
+Orientierung: Diskursraum-Multi-Membership (≥2 Räume → eher A), Datenqualität (Abstract-Abdeckung), Scout-Begründung.
+
 Dann Watchlist-Eintrag mit ✓ markieren (manuell in `docs/journal_watchlist_full.md`).
 
 ### 6. Initiales Fetch

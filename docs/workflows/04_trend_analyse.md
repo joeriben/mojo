@@ -43,7 +43,7 @@ mojo trends --cluster <key>
 - Kosten: ~$0.20 pro Raum (Opus)
 - Analysiert alle Artikel im Zeitfenster
 - Output: Konsolidierende Diskurse, Spannungen, methodische Beobachtungen, Absenzen
-- Ergebnis in: `~/Documents/Obsidian Vault/research/mojo/trends/trends_<key>_<datum>.md`
+- Ergebnis wird in der Konsole ausgegeben (perspektivisch: Web-UI)
 
 ### 4. Diskursraum-Profil als Kontext
 ```bash
