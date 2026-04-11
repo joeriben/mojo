@@ -102,11 +102,85 @@ def cmd_digest(args: argparse.Namespace) -> int:
 
     print(f"[digest] {len(pending)} Artikel gefunden (Modell: {model})")
 
-    # --- Phase 0: Müll-Filter + Auto-Escalation ---
+    # --- Phase 0: Müll-Filter + No-Data-Filter + Auto-Escalation ---
     junk = [sa for sa in pending if _is_junk_title(sa.title)]
     if junk:
         print(f"[digest] {len(junk)} Nicht-Artikel entfernt (Corrections, Issue Info etc.)")
         pending = [sa for sa in pending if not _is_junk_title(sa.title)]
+
+    # No-data filter: articles without any abstract
+    def _has_abstract(sa):
+        return bool((sa.abstract or "").strip() or (sa.openalex_abstract or "").strip())
+
+    no_data = [sa for sa in pending if not _has_abstract(sa)]
+    with_data = [sa for sa in pending if _has_abstract(sa)]
+
+    if no_data:
+        catchwords = agent_mod.build_catchwords()
+        cw_hits = []
+        cw_miss = []
+        for sa in no_data:
+            matches = agent_mod.title_matches_catchwords(sa.title, catchwords)
+            if matches:
+                cw_hits.append(sa)
+            else:
+                cw_miss.append(sa)
+
+        # No catchword match → ignorieren (zero cost)
+        for sa in cw_miss:
+            store.update_agent_result(
+                sa.id, verdict="ignorieren",
+                entry={"kernthese": "(kein Abstract verfügbar)",
+                       "bezuege": [], "bemerkenswert": [],
+                       "theoretisch_methodisch": "",
+                       "verdict": "ignorieren",
+                       "verdict_begruendung": "Kein Abstract, Titel ohne spezifischen Bezug."},
+                citation_hits=[], tokens_in=0, tokens_out=0,
+                tokens_cached_read=0, tokens_cache_write=0,
+                cost_usd=0.0, iterations=0,
+            )
+
+        # Catchword hits → Haiku triage on title alone
+        triage_scannen = []
+        triage_ignore = []
+        for sa in cw_hits:
+            result = agent_mod.triage_article(
+                {"title": sa.title, "journal": sa.journal_full or sa.journal_short,
+                 "abstract": ""},
+                verbose=False,
+            )
+            if result.get("triage") == "ignorieren":
+                triage_ignore.append(sa)
+                store.update_agent_result(
+                    sa.id, verdict="ignorieren",
+                    entry={"kernthese": "(kein Abstract, Triage: ignorieren)",
+                           "bezuege": [], "bemerkenswert": [],
+                           "theoretisch_methodisch": "",
+                           "verdict": "ignorieren",
+                           "verdict_begruendung": result.get("grund", "Triage: ignorieren")},
+                    citation_hits=[], tokens_in=0, tokens_out=0,
+                    tokens_cached_read=0, tokens_cache_write=0,
+                    cost_usd=result.get("cost_usd", 0.0), iterations=0,
+                )
+            else:
+                triage_scannen.append(sa)
+                store.update_agent_result(
+                    sa.id, verdict="scannen",
+                    entry={"kernthese": "(kein Abstract, Triage: relevant)",
+                           "bezuege": [], "bemerkenswert": [],
+                           "theoretisch_methodisch": "",
+                           "verdict": "scannen",
+                           "verdict_begruendung": result.get("grund", "Triage: relevant, kein Abstract für tiefere Analyse.")},
+                    citation_hits=[], tokens_in=0, tokens_out=0,
+                    tokens_cached_read=0, tokens_cache_write=0,
+                    cost_usd=result.get("cost_usd", 0.0), iterations=0,
+                )
+
+        print(f"\n[digest] Ohne Abstract: {len(no_data)} Artikel")
+        print(f"  → {len(cw_miss)} ohne Catchword-Hit → ignorieren (0 Kosten)")
+        print(f"  → {len(cw_hits)} mit Catchword-Hit → Haiku-Triage")
+        print(f"    → {len(triage_scannen)} scannen, {len(triage_ignore)} ignorieren")
+        pending = with_data
 
     # Citation auto-pass: articles that cite Benjamin → skip screening
     trigger_authors = ["macgilchrist", "jarke", "wendy chun", "wendy hui kyong"]

@@ -374,6 +374,55 @@ def triage_article(
     return result
 
 
+# ----------------------------------------------------- Title-Only Screening --
+
+
+def build_catchwords(summaries_path: Path = SUMMARIES_JSON) -> set[str]:
+    """Extract catchwords from summaries.json key_terms + named_thinkers + manual additions."""
+    import re as _re
+    data = json.loads(summaries_path.read_text(encoding="utf-8"))
+    raw = set()
+    for s in data["summaries"].values():
+        for t in s.get("key_terms") or []:
+            t = _re.sub(r"<[^>]+>", "", t).strip()
+            if t and len(t) > 2:
+                raw.add(t.lower())
+        for t in s.get("named_thinkers") or []:
+            t = _re.sub(r"<[^>]+>", "", t).strip()
+            if t and len(t) > 2:
+                raw.add(t.lower())
+
+    # English equivalents for core concepts
+    raw.update({
+        "aesthetic education", "cultural education", "media education",
+        "postdigital", "post-digital", "postdigitality",
+        "new materialism", "new materialisms", "agential realism",
+        "cultural resilience", "digital culture",
+        "algorithmic", "datafication", "computability",
+        "subjectivation", "subjectification",
+        "actor-network", "entanglement", "intra-action",
+        "posthuman", "posthumanism", "more-than-human",
+        "arts-based", "arts education", "art education",
+        "digital heritage", "intangible cultural heritage",
+        "generative ai", "generative ki",
+        "partition of the sensible", "distribution of the sensible",
+        "dissensus", "sympoiesis", "invisibilisation", "invisibility",
+    })
+
+    # Remove overly generic single words
+    generic = {"bildung", "erziehung", "kultur", "gesellschaft", "theorie",
+               "praxis", "forschung", "analyse", "methode", "perspektive",
+               "diskurs", "education", "theory", "research", "culture",
+               "practice", "analysis", "norm", "equity", "agency", "visibility"}
+    return {t for t in raw if not (len(t.split()) == 1 and t in generic)}
+
+
+def title_matches_catchwords(title: str, catchwords: set[str]) -> list[str]:
+    """Return list of catchwords found in title (case-insensitive)."""
+    t = (title or "").lower()
+    return [cw for cw in catchwords if cw in t]
+
+
 # ---------------------------------------------------------- Batch Screening --
 
 MODEL_SCREEN = "deepseek/deepseek-v3.2"
