@@ -16,7 +16,9 @@ from typing import Any
 from journal_bot.citation_tracker import find_citations, format_for_agent
 from journal_bot.enrichment import enrich
 from journal_bot.llm_client import build_client
-from journal_bot.settings import CORPUS_JSON, MODEL_AGENT, SUMMARIES_JSON
+from journal_bot.settings import (
+    CORPUS_JSON, MODEL_AGENT, MODEL_SUMMARIZE, SUMMARIES_JSON,
+)
 
 
 # ------------------------------------------------------------------ Prompt --
@@ -60,7 +62,13 @@ eine bemerkenswerte methodisch-phänomenale Beobachtung zu machen ist.
 
 === VORGEHEN ===
 1. Lies den neuen Beitrag sorgfältig (Titel, Abstract, Referenzen).
-2. Prüfe beides:
+2. **Sofort-Entscheidung**: Wenn nach Schritt 1 klar ist, dass der Beitrag weder
+   inhaltliche Anschlüsse noch bemerkenswerte Beobachtungen bietet — rufe SOFORT
+   `submit_digest_entry` mit verdict="ignorieren" auf. Minimaler Output:
+   kernthese 1 Satz, leere bezuege, leere bemerkenswert. KEIN `read_publication`.
+   Das spart Zeit und Kosten. Typische Fälle: reine Psychometrie, klinische Studien,
+   angewandte Didaktik ohne theoretischen Anschluss, Berufsethik ohne Bildungsbezug.
+3. Wenn potenziell relevant, prüfe beides:
    (a) Gibt es inhaltliche Anschlüsse an Benjamins publizierte Arbeiten? — dafür 2–4
        Kandidaten aus der Publikationsliste wählen, Überschneidungen bei named_thinkers
        sind ein starker Hebel. Lade die Kandidaten mit `read_publication(pub_id)` und
@@ -68,7 +76,7 @@ eine bemerkenswerte methodisch-phänomenale Beobachtung zu machen ist.
    (b) Gibt es eine Beobachtung zweiter Ordnung? Stell Dir die Frage: "Würde Benjamin das
        wissen wollen, selbst wenn er den Text nicht liest?" — methodisch, phänomenal,
        feldkonstitutiv, als Indikator für eine Entwicklung.
-3. Entscheide Verdict und fülle `bezuege` **und/oder** `bemerkenswert` entsprechend.
+4. Entscheide Verdict und fülle `bezuege` **und/oder** `bemerkenswert` entsprechend.
 
 === REGELN ===
 - Zitiere Benjamins Werk unter `bezuege` NUR, wenn Du den Volltext gelesen hast. Keine
@@ -246,6 +254,222 @@ TOOLS = [
 ]
 
 
+# ----------------------------------------------------------------- Triage --
+
+TRIAGE_PROMPT = """Du bist ein Vorfilter für einen Forschungs-Digest.
+
+Benjamin Jörissen (FAU Erlangen-Nürnberg) arbeitet zu:
+- Ästhetische und kulturelle Bildung, Kunstpädagogik
+- Postdigitalität, digitale Kultur, Medienbildung
+- Generative KI in Bildungskontexten
+- Cultural Resilience, Nachhaltigkeit, Anthropozän
+- New Materialisms (Barad, Haraway), Posthumanismus, STS
+- Bildungstheorie, Erziehungstheorie
+- Allgemeine Pädagogik
+
+Du bekommst Titel, Abstract und Journal eines neuen Beitrags.
+Entscheide: Könnte dieser Beitrag für Benjamin relevant sein?
+
+Antworte NUR mit einem JSON-Objekt:
+{"triage": "relevant", "grund": "..."} — wenn es inhaltliche oder methodische Berührungspunkte geben KÖNNTE (auch entfernte)
+{"triage": "ignorieren", "grund": "..."} — wenn der Beitrag offensichtlich thematisch keine Berührung hat
+
+Im Zweifel: "relevant". Lieber einen irrelevanten Artikel durchlassen als einen relevanten verpassen."""
+
+
+def triage_article(
+    article: dict,
+    model: str = MODEL_SUMMARIZE,
+    verbose: bool = True,
+) -> dict:
+    """Haiku-Vorfilter: entscheidet ob ein Artikel den Opus-Agenten braucht.
+
+    Returns dict with keys: triage ("relevant"|"ignorieren"), grund, cost_usd.
+    """
+    client = build_client()
+    user_msg = (
+        f"Journal: {article.get('journal', '')}\n"
+        f"Titel: {article.get('title', '')}\n"
+        f"Abstract: {(article.get('abstract') or '(kein Abstract)')[:2000]}"
+    )
+    resp = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": TRIAGE_PROMPT},
+            {"role": "user", "content": user_msg},
+        ],
+        max_tokens=200,
+        temperature=0.0,
+    )
+    raw = resp.choices[0].message.content.strip()
+    cost = 0.0
+    if resp.usage:
+        # Haiku pricing: ~$0.80/M input, $4/M output via OpenRouter
+        cost = (resp.usage.prompt_tokens / 1_000_000) * 0.80 + (
+            resp.usage.completion_tokens / 1_000_000
+        ) * 4.0
+
+    # Parse JSON from response
+    result = None
+    # Try 1: direct parse
+    try:
+        result = json.loads(raw)
+    except json.JSONDecodeError:
+        pass
+    # Try 2: extract between first { and last }
+    if result is None:
+        first = raw.find("{")
+        last = raw.rfind("}")
+        if first >= 0 and last > first:
+            try:
+                result = json.loads(raw[first:last + 1])
+            except json.JSONDecodeError:
+                pass
+    if result is None or not isinstance(result, dict):
+        result = {"triage": "relevant", "grund": f"(Triage-Parse-Fehler: {raw[:100]})"}
+
+    result["cost_usd"] = cost
+    if verbose:
+        print(f"[triage] {result['triage']} — {result.get('grund', '')[:80]}  (${cost:.4f})")
+    return result
+
+
+# ---------------------------------------------------------- Batch Screening --
+
+MODEL_SCREEN = "deepseek/deepseek-v3.2"
+
+SCREENING_SUFFIX = """
+
+=== SCREENING-MODUS ===
+Du bekommst jetzt eine LISTE von Artikeln (Titel, Journal, Abstract-Auszug).
+Für jeden Artikel: Entscheide, ob er für Benjamin potenziell relevant sein KÖNNTE
+und daher eine vollständige Analyse verdient.
+
+Antworte mit GENAU einer Zeile pro Artikel im Format:
+[ID] weitergeben|ignorieren — Grund in ≤15 Worten
+
+"weitergeben" wenn:
+- Inhaltliche Berührungspunkte mit Benjamins Themen/Positionen erkennbar
+- Methodisch/phänomenal bemerkenswert für sein Beobachtungsfeld
+- Zitiert Benjamin oder zitiert Werke aus seiner Bibliothek
+
+"ignorieren" wenn:
+- Offensichtlich kein Bezug zu Benjamins Forschung
+- Rein empirisch/angewandt ohne theoretischen Anschluss an seine Themen
+- Thematisch in einem Feld ohne Berührung (z.B. reine Psychometrie, Pflegedidaktik)
+
+Im Zweifel: weitergeben. Lieber einen irrelevanten durchlassen als einen relevanten verpassen.
+Keine Erklärung, keine Einleitung, nur die Zeilen."""
+
+
+def batch_screen(
+    articles: list[dict],
+    summaries_path: Path = SUMMARIES_JSON,
+    model: str = MODEL_SCREEN,
+    batch_size: int = 25,
+    verbose: bool = True,
+) -> dict[str, dict]:
+    """Batch screening: cheap model with cached system prompt, one verdict per article.
+
+    articles: list of dicts with keys: id, title, journal, abstract (or openalex_abstract).
+    Returns: dict of article_id -> {"verdict": "weitergeben"|"ignorieren", "grund": str}.
+    """
+    summaries_data = json.loads(summaries_path.read_text(encoding="utf-8"))
+    system_prompt = build_system_prompt(summaries_data["summaries"]) + SCREENING_SUFFIX
+
+    client = build_client()
+    all_results: dict[str, dict] = {}
+    total_cost = 0.0
+
+    for i in range(0, len(articles), batch_size):
+        batch = articles[i:i + batch_size]
+        batch_num = i // batch_size + 1
+
+        # Format batch
+        lines = []
+        for a in batch:
+            abstract = (a.get("openalex_abstract") or a.get("abstract") or "")[:500]
+            lines.append(
+                f"[{a['id'][:8]}] {a.get('journal', '')} | {a.get('title', '')}\n"
+                f"  Abstract: {abstract}\n"
+            )
+        user_msg = "\n".join(lines)
+
+        if verbose:
+            print(f"[screen] Batch {batch_num}: {len(batch)} Artikel, "
+                  f"~{len(user_msg) // 4} User-Tokens")
+
+        resp = client.chat.completions.create(
+            model=model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": system_prompt,
+                            "cache_control": {"type": "ephemeral"},
+                        }
+                    ],
+                },
+                {"role": "user", "content": user_msg},
+            ],
+            max_tokens=2000,
+            temperature=0.0,
+        )
+
+        raw = resp.choices[0].message.content or ""
+        usage = getattr(resp, "usage", None)
+        cost = 0.0
+        if usage:
+            usage_dump = usage.model_dump() if hasattr(usage, "model_dump") else {}
+            cost = usage_dump.get("cost") or 0.0
+        total_cost += cost
+
+        # Parse response
+        valid_ids = {a["id"]: a["id"][:8] for a in batch}
+        short_to_full = {v: k for k, v in valid_ids.items()}
+
+        for line in raw.strip().split("\n"):
+            line = line.strip()
+            if not line or not line.startswith("["):
+                continue
+            bracket_end = line.find("]")
+            if bracket_end < 0:
+                continue
+            short_id = line[1:bracket_end].strip()
+            rest = line[bracket_end + 1:].strip()
+
+            verdict = "weitergeben"  # default: pass through
+            if rest.startswith("ignorieren") or rest.startswith("ignor"):
+                verdict = "ignorieren"
+
+            full_id = short_to_full.get(short_id)
+            if full_id:
+                grund = rest.split("—", 1)[1].strip() if "—" in rest else rest[:80]
+                all_results[full_id] = {"verdict": verdict, "grund": grund}
+
+        parsed = sum(1 for a in batch if a["id"] in all_results)
+        if verbose:
+            print(f"[screen] → {parsed}/{len(batch)} geparst, ${cost:.4f}")
+
+    # Articles not in results default to "weitergeben"
+    for a in articles:
+        if a["id"] not in all_results:
+            all_results[a["id"]] = {
+                "verdict": "weitergeben",
+                "grund": "(nicht im Screening-Output, default: weitergeben)",
+            }
+
+    if verbose:
+        passed = sum(1 for r in all_results.values() if r["verdict"] == "weitergeben")
+        filtered = sum(1 for r in all_results.values() if r["verdict"] == "ignorieren")
+        print(f"[screen] Gesamt: {passed} weitergeben, {filtered} ignorieren, "
+              f"${total_cost:.4f}")
+
+    return all_results
+
+
 # ------------------------------------------------------------------ Runner --
 
 
@@ -317,7 +541,11 @@ def run_agent(
               f"({len(summaries)} Publikationen im Index)")
 
     doi = (new_article.get("doi") or "").strip()
-    enrichment_data = enrich(doi) if doi else {}
+
+    # Use pre-computed enrichment from store if available, else fetch
+    enrichment_data = new_article.get("enrichment") or {}
+    if not enrichment_data and doi:
+        enrichment_data = enrich(doi)
 
     # Citation-Tracker: Jörissen-Zitate in den Refs finden
     citation_hits = find_citations(
@@ -450,7 +678,13 @@ def run_agent(
                     {"role": "tool", "tool_call_id": tc.id, "content": result}
                 )
             elif name == "submit_digest_entry":
-                final_entry = args
+                # Guard against double-encoded JSON (string instead of dict)
+                if isinstance(args, str):
+                    try:
+                        args = json.loads(args)
+                    except json.JSONDecodeError:
+                        pass
+                final_entry = args if isinstance(args, dict) else None
                 tool_call_log.append({"tool": name})
                 messages.append(
                     {
@@ -575,7 +809,9 @@ def render_markdown(result: dict) -> str:
     lines.append("")
 
     # Zitationstreffer (wenn vorhanden) direkt nach dem Verdict sichtbar machen
-    citation_hits = result.get("citation_hits") or []
+    citation_hits = [
+        h for h in (result.get("citation_hits") or []) if isinstance(h, dict)
+    ]
     high = [h for h in citation_hits if h.get("confidence") == "high"]
     med = [h for h in citation_hits if h.get("confidence") == "medium"]
     low = [h for h in citation_hits if h.get("confidence") == "low"]

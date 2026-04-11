@@ -21,14 +21,27 @@ def _slug(s: str, n: int = 60) -> str:
 
 
 def _article_dict_from_stored(sa: StoredArticle) -> dict:
-    """Übersetzt StoredArticle in das dict, das run_agent erwartet."""
+    """Übersetzt StoredArticle in das dict, das run_agent erwartet.
+
+    Enrichment-Daten werden durchgereicht, damit run_agent sie nicht
+    nochmal von Crossref/OpenAlex holen muss.
+    """
     return {
         "title": sa.title,
         "authors": sa.authors,
-        "abstract": sa.openalex_abstract or sa.abstract,
+        "abstract": sa.abstract,
         "doi": sa.doi,
         "url": sa.url,
         "journal": sa.journal_full or sa.journal_short,
+        # Pre-computed enrichment from store (avoids duplicate API calls)
+        "enrichment": {
+            "openalex": {
+                "abstract": sa.openalex_abstract,
+                "concepts": sa.openalex_concepts,
+                "topics": sa.openalex_topics,
+            } if sa.openalex_abstract or sa.openalex_concepts else None,
+            "references_crossref": sa.crossref_refs,
+        } if sa.enrichment_status == "ok" else None,
     }
 
 
@@ -38,7 +51,7 @@ def process_article(
     verbose: bool = True,
     out_dir: Path = DIGEST_DIR,
 ) -> dict:
-    """Lässt den Agent über einen Store-Eintrag laufen, schreibt zurück, rendert Markdown."""
+    """Lässt den Opus-Agent über einen Store-Eintrag laufen, schreibt zurück, rendert Markdown."""
     article = _article_dict_from_stored(sa)
     result = agent_mod.run_agent(article, verbose=verbose)
 
@@ -127,4 +140,4 @@ def process_by_doi(doi: str, store: Store, journal: str = "", verbose: bool = Tr
         sa = _article_to_stored(art_for_enrich, enrichment)
         store.upsert_article(sa)
 
-    return process_article(sa, store, verbose=verbose)
+    return process_article(sa, store, verbose=verbose, skip_triage=True)

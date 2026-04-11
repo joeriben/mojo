@@ -61,6 +61,8 @@ def cmd_fetch(args: argparse.Namespace) -> int:
 
 
 def cmd_digest(args: argparse.Namespace) -> int:
+    from journal_bot import agent as agent_mod
+
     store = Store()
 
     if args.doi:
@@ -75,24 +77,72 @@ def cmd_digest(args: argparse.Namespace) -> int:
 
     # Batch-Modus: N ungeprozessierte Artikel aus dem Store
     journals_filter = args.journals.split(",") if args.journals else None
-    pending = store.find_unprocessed(limit=args.next, journals=journals_filter)
+    since_year = args.since if hasattr(args, "since") else None
+    pending = store.find_unprocessed(
+        limit=args.next, journals=journals_filter, since_year=since_year,
+    )
     if not pending:
         print("[digest] Keine ungeprozessierten Artikel im Store. "
               "Tipp: mojo fetch laufen lassen.")
         return 0
 
-    print(f"[digest] Verarbeite {len(pending)} Artikel")
+    print(f"[digest] {len(pending)} Artikel gefunden")
+
+    # --- Phase 1: DeepSeek Batch-Screening ---
+    if not args.no_screen and len(pending) > 1:
+        screen_input = [
+            {
+                "id": sa.id,
+                "title": sa.title,
+                "journal": sa.journal_full or sa.journal_short,
+                "abstract": sa.abstract,
+                "openalex_abstract": sa.openalex_abstract,
+            }
+            for sa in pending
+        ]
+        screen_results = agent_mod.batch_screen(
+            screen_input, verbose=not args.quiet,
+        )
+
+        passed = [sa for sa in pending if screen_results[sa.id]["verdict"] == "weitergeben"]
+        filtered = [sa for sa in pending if screen_results[sa.id]["verdict"] == "ignorieren"]
+
+        # Aussortierte Titel zur Schnellsichtung anzeigen
+        if filtered:
+            print(f"\n[digest] Aussortiert ({len(filtered)} Artikel):")
+            for sa in filtered:
+                grund = screen_results[sa.id].get("grund", "")[:60]
+                journal_name = sa.journal_full or sa.journal_short
+                print(f"  ⊘ {journal_name}: {sa.title[:65]}")
+                if grund:
+                    print(f"    → {grund}")
+
+        print(f"\n[digest] Screening: {len(passed)} weitergeben, "
+              f"{len(filtered)} aussortiert")
+        pending = passed
+    else:
+        screen_results = None
+
+    if not pending:
+        print("[digest] Alle Artikel im Screening aussortiert.")
+        return 0
+
+    # --- Phase 2: Opus Deep Analysis ---
+    print(f"\n[digest] Opus-Analyse für {len(pending)} Artikel")
     total_cost = 0.0
     for i, sa in enumerate(pending, 1):
-        print(f"\n[digest] --- {i}/{len(pending)} --- {sa.journal_short} · {sa.title[:80]}")
+        journal_name = sa.journal_full or sa.journal_short
+        print(f"\n[digest] --- {i}/{len(pending)} --- {journal_name} · {sa.title[:80]}")
         try:
             result = digest.process_article(sa, store, verbose=not args.quiet)
             cost = result["agent_result"].get("est_cost_usd", 0.0)
             total_cost += cost
-            print(f"[digest] ✓ {result['markdown_path'].name}  (${cost:.3f})")
+            verdict = result["agent_result"].get("entry", {}).get("verdict", "?")
+            print(f"[digest] ✓ {verdict} · {result['markdown_path'].name}  (${cost:.3f})")
         except Exception as e:
             print(f"[digest] FEHLER bei {sa.id}: {e}")
-    print(f"\n[digest] Gesamt: ${total_cost:.3f}")
+
+    print(f"\n[digest] Opus-Kosten: ${total_cost:.3f} für {len(pending)} Artikel")
     return 0
 
 
@@ -329,6 +379,10 @@ def main(argv: list[str] | None = None) -> int:
                           help="Batch: verarbeite N ungeprozessierte Artikel aus dem Store (Default 1)")
     p_digest.add_argument("--journals", default="",
                           help="Komma-Liste von Journal-Kürzeln zum Filtern (Batch)")
+    p_digest.add_argument("--since", type=int, default=None,
+                          help="Nur Artikel ab diesem Erscheinungsjahr (z.B. 2025)")
+    p_digest.add_argument("--no-screen", action="store_true",
+                          help="DeepSeek-Vorfilter überspringen (alle direkt zu Opus)")
     p_digest.add_argument("--quiet", action="store_true")
     p_digest.set_defaults(func=cmd_digest)
 
