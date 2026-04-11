@@ -197,41 +197,162 @@ bac1f28 docs: DEVLOG aktualisieren
 
 ---
 
+## Session 2026-04-11 — Erster Digest-Lauf (gescheitert)
+
+### Aufgabe
+Erster Digest-Lauf über die 8 neu aufgenommenen Journals (Handover-Punkt 1).
+
+### Ergebnis: $13.42 für 83 Artikel, 0 lesenswert
+
+**83 Artikel verarbeitet**, alle aus dem Jahr 2016 (Backfill-Artefakt):
+- 66× ignorieren, 17× scannen, 0× lesenswert, 0× pflichtlektuere
+- 40 aus Science, Technology, and Human Values ($6.71)
+- 25 aus Big Data & Society ($5.39)
+- je 3 aus den übrigen 6 Journals ($1.32)
+
+**Warum nur 2016er Artikel?** Parallele Session hat `mojo fetch --since 2016` laufen lassen → 17.465 Artikel im Store. `ORDER BY fetched_at DESC` liefert Backfill-Artikel zuerst.
+
+### Was gebaut wurde
+
+1. **Haiku-Triage** (`agent.py`, Funktion `triage_article`, Zeile ~260–328)
+   - Vorfilter: Haiku ($0.001) entscheidet ob Opus ($0.05–0.45) nötig ist
+   - Integriert in `digest.py` (`process_article`): bei Triage-"ignorieren" kein Opus-Call
+   - Filtert nur 14% (12/83) — muss überarbeitet werden
+
+2. **SQL-Filter-Fix** (`store.py`, Zeile 235)
+   - Fehlende Klammern in WHERE: `(agent_processed_at IS NULL OR agent_processed_at = '')`
+   - Funktioniert
+
+3. **render_markdown-Absicherung** (`agent.py`, `render_markdown`)
+   - `isinstance(h, dict)`-Filter für citation_hits + Guard gegen doppelt-encodiertes JSON
+   - Funktioniert
+
+4. **CLI-Ausgabe** (`cli.py`)
+   - Volle Journalnamen statt Shortcodes, Triage-Status sichtbar
+   - Funktioniert
+
+5. **Triage JSON-Parser** (`agent.py`, Zeile ~306–325)
+   - Drei Iterationen, aktuell: `raw.find("{")` bis `raw.rfind("}")`
+   - ~50% Parse-Fehler im letzten Batch, Fallback "relevant" macht Triage wirkungslos
+
+### 69 Obsidian-Dateien
+Geschrieben nach `/Users/joerissen/Documents/Obsidian Vault/research/mojo/`. Format: Verdict, Kernthese, Bezüge, Bemerkenswert, Kosten-Footer.
+
+### Kosten der Session
+- Digest-Batches (5×): $13.42
+- Davon durch Triage gespart: ~$0.20
+- **Gesamt: ~$13.42**
+
+### Offene Probleme
+1. **Triage filtert zu wenig** (14% statt ~50–70%)
+2. **Nur 2016er Artikel verarbeitet** (Sortierung nach `fetched_at`, kein `--year`-Flag)
+3. **Triage-Parser instabil** (~50% Parse-Fehler → Fallback auf Opus)
+4. **Kosten/Nutzen** ($13.42 für 0 lesenswerte Artikel)
+
+---
+
+## Session 2026-04-11b — Triage-Architektur neu gedacht
+
+### Ausgangslage
+Haiku-Triage aus Session 2026-04-11 war strukturell blind (14% Filterrate, kein Zugriff auf Enrichment-Daten oder Benjamins Publikationsindex). Aufgabe: Triage-Architektur grundlegend überdenken.
+
+### Analyse: Warum Haiku versagt
+1. **Haiku bekommt**: generische Stichpunkte + Titel + Abstract (500 Tokens)
+2. **Opus bekommt**: 53 Publikationsprofile + OpenAlex + Refs + Citations (40k+ Tokens)
+3. **Schlussfolgerung**: Die Unterscheidung "STS-Artikel relevant für Benjamin" vs. "STS-Artikel irrelevant" braucht Kenntnis seiner spezifischen Positionen — kein billiger Trick
+
+### Benchmark: Deterministische Signale (null LLM-Kosten)
+Vier Signale getestet (`journal_bot/signals.py`):
+- **a) Zitiert Benjamin**: citation_tracker gegen authored_all (160 Pubs) — 0 Hits (2016er Artikel zitieren kein 2018+-Werk)
+- **b) Named-Thinker-Overlap**: 328 Nachnamen aus summaries.json — 94% Recall, aber **73% False Positives** (generische Namen: "may", "law", "harvey" matchen überall in STS-Journals)
+- **c) Zotero-Bibliothek-Overlap**: 8008 Items exportiert, Title-Word-Matching gegen crossref_refs — bessere Precision, aber nur **47% Recall**
+- **d) Keywords im Titel**: 537 key_terms aus summaries.json — zu wenig Treffer in beiden Gruppen
+
+**Fazit**: Deterministische Signale können "STS-Artikel relevant" nicht von "STS-Artikel irrelevant" unterscheiden. Als standalone-Filter unbrauchbar — taugen nur als Enrichment-Input.
+
+### Benchmark: LLM-Batch-Screening (gecachter System-Prompt)
+Idee: Dasselbe 40k-Token-Publikationsindex wie Opus, aber Batch-Input (20 Artikel pro Call) und minimaler Output (1 Zeile pro Artikel). Getestet auf den 83 bereits bewerteten Artikeln:
+
+| Modell | Recall | Filter-Rate | Kosten | Verpasst |
+|--------|--------|-------------|--------|----------|
+| **Sonnet 4.6** | 65% | 82% | $0.33 | 6/17 scannen |
+| **DeepSeek V3.2** | 94% | 39% | $0.04 | 1/17 scannen |
+
+DeepSeek V3.2 gewählt: 8× billiger als Sonnet, fast perfekter Recall (1 verpasst), akzeptable Filterrate. Aussortierte Titel werden dem User zur Schnellsichtung angezeigt.
+
+### Pipeline-Umbau
+
+**Neue Architektur**: `mojo digest --next N --since 2025`
+1. **DeepSeek Batch-Screening** (~$0.008/Batch à 25 Artikel, filtert ~40% Rauschen)
+2. **Opus Deep Analysis** nur für durchgelassene Artikel
+3. **Opus Short-Circuit**: Sofort-Entscheidung bei offensichtlichem "ignorieren" (1 Iteration, kein read_publication)
+
+**Weitere Fixes:**
+- `find_unprocessed` sortiert jetzt `year DESC` statt `fetched_at DESC`
+- `--since` Flag: `mojo digest --next 50 --since 2025`
+- `--no-screen` Flag: DeepSeek-Vorfilter überspringen
+- Enrichment aus Store wiederverwendet statt doppeltem Crossref/OpenAlex-Call
+
+### Erster erfolgreicher Digest-Lauf (2026er MedienPädagogik)
+20 Artikel, davon 8 im Screening aussortiert, 12 durch Opus:
+- 6× scannen (u.a. "Dream Machine" — zitiert Benjamin!, "Hegemoniekritik lehren" — substanzieller Kontrast zu Rancière-Ansatz)
+- 3× ignorieren (Short-Circuit: $0.055–0.069 statt vorher $0.117)
+- **Gesamt: $3.19** (vs. geschätzt ~$3.98 ohne Screening/Short-Circuit)
+
+### Schlüssel-Designentscheidungen
+15. Triage braucht Benjamins Publikationsindex — kein billiger Shortcut möglich
+16. DeepSeek V3.2 statt Sonnet/Haiku für Screening (Recall > Filter-Rate > Kosten)
+17. Short-Circuit im Opus-Prompt statt separatem Triage-Step (halbiert "ignorieren"-Kosten)
+18. Aussortierte Titel werden angezeigt — User-Sichtung als Sicherheitsnetz
+19. Deterministische Signale nicht in Pipeline integriert (zu wenig Trennschärfe)
+
+### Kosten der Session
+- Sonnet-Benchmark: $0.33
+- DeepSeek-Benchmark: $0.04
+- Digest-Testlauf (20 Artikel): $3.19
+- **Gesamt: ~$3.60** (davon ~$0 für deterministischen Benchmark)
+
+---
+
 ## Handover für nächste Session
 
 ### Was steht
-- **28 Journals** aktiv getrackt (20 original + 8 neu), ~1.800 Artikel in articles.db
-- **Diskursraum `aesthetische_kulturelle_bildung`** hat jetzt 6 Journals (vorher 3)
-- **Scout** funktioniert fehlerfrei über die gesamte Watchlist (49 Journals, $2.53)
-- **`mojo journal add/list/remove`** CLI steht
-- **4 Workflow-Scripts** dokumentiert unter `docs/workflows/`
-- **journals.json** als Agent-editierbare Datenquelle für Journal-Konfiguration
+- **28 Journals** aktiv getrackt, **17.465 Artikel** in articles.db (Backfill bis 2016)
+- **Digest-Pipeline v2**: DeepSeek-Screening → Opus-Analyse mit Short-Circuit
+- **95 Artikel** bisher bewertet (83 aus 2016 + 12 aus 2026)
+- **Scout, Diskursräume, Bibliometrie, Trends** — alles funktionsfähig
+- **`signals.py`** + **`zotero_library.json`** vorhanden aber nicht in Pipeline integriert
 
 ### Was als nächstes zu tun ist
 
-**1. Erster Digest-Lauf über die neuen Journals**
-```bash
-mojo digest --next 20 --journals ZfPaed,EthicsEd,SAE,JAC
-```
-Die 8 neuen Journals haben ~200 unverarbeitete Artikel. Agent-Bewertung mit Opus testen, Ergebnisse prüfen.
+**1. Output-Format überdenken** — Obsidian als zentrales Ausgabeformat ist problematisch (überkomplex, schlechte UX). Vor einem großen Run klären: Was ist das richtige Daten-/Anzeigeformat? Strukturierte Daten + leichtgewichtiger Viewer? HTML? Anderes?
 
-**2. Trend-Analyse für aesthetische_kulturelle_bildung**
+**2. Großer Digest-Lauf über 2025+ Artikel** — ~2.966 Artikel. Geschätzte Kosten: ~$1.50 Screening + ~$50–100 Opus. Braucht vorher Output-Format-Entscheidung.
+
+**3. Trend-Analyse für aesthetische_kulturelle_bildung** — unerledigt
 ```bash
 mojo trends --cluster aesthetische_kulturelle_bildung
 mojo biblio --cluster aesthetische_kulturelle_bildung
 ```
-Der Raum hat jetzt genug Substanz (6 Journals). Erste LLM-Trendanalyse + bibliometrische Analyse.
 
-**3. Watchlist-✓ automatisieren**
-Aktuell muss man nach `mojo journal add` die Watchlist manuell editieren. Könnte `journal add` automatisch das ✓ setzen.
+**4. Watchlist-✓ automatisieren** — unerledigt
 
-**4. Open-Source-Vorbereitung**
-- Pfade abstrahieren (aktuell Hardcoded: Zotero-Pfad, Obsidian-Vault)
-- API-Key-Management generalisieren
-- README für externe Nutzer
+**5. Open-Source-Vorbereitung** — unerledigt, Pfade hardcoded
 
 ### Bekannte Einschränkungen
-- **25 Journals übersprungen** beim Scout (11× ISSN, 9× keine Artikel, 2× nicht in OpenAlex). Für wichtige Journals (zkmb.de, e-flux) sind Scraper nötig.
-- **`mojo diskurs suggest`** live getestet ($0.01) — Vorschläge sind plausibel aber noch nicht umgesetzt.
-- **Vierteljahresschrift** auf "beobachten" — als Testfall für späteres UI vorgemerkt.
-- **Digest** noch nicht auf den 8 neuen Journals gelaufen — Verdicts stehen aus.
+- **25 Journals übersprungen** beim Scout (11× ISSN, 9× keine Artikel, 2× nicht in OpenAlex). Für zkmb.de und e-flux sind Scraper nötig.
+- **Pfade hardcoded** (Zotero, Obsidian-Vault) — muss für Open Source abstrahiert werden.
+- **Obsidian als Output** — UX-Kritik, Format muss überdacht werden.
+- **DeepSeek-Screening**: 39% Filter-Rate, 94% Recall — konservativ, Verbesserung möglich durch Prompt-Tuning oder Signale als Enrichment.
+
+### Statistik dieser Session
+
+| Metrik | Wert |
+|--------|------|
+| OpenRouter-Kosten | ~$3.60 |
+| Artikel durch Opus verarbeitet | 12 (2026er MedienPaed) |
+| davon scannen | 6 |
+| davon ignorieren (Short-Circuit) | 3 |
+| Screening-Filterrate | 40% (8/20) |
+| Short-Circuit-Ersparnis/ignorieren | ~50% ($0.06 statt $0.12) |
+| Benchmarks durchgeführt | 4 (deterministisch, Sonnet, DeepSeek, Live) |
