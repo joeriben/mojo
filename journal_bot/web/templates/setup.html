@@ -7,8 +7,7 @@
 <div class="tab-bar">
   <button class="tab active" onclick="switchTab('profil', this)">Profil</button>
   <button class="tab" onclick="switchTab('zotero', this)">Zotero & Corpus</button>
-  <button class="tab" onclick="switchTab('matrix', this)">Journal-Matrix</button>
-  <button class="tab" onclick="switchTab('diskurs', this)">Diskursräume</button>
+  <button class="tab" onclick="switchTab('matrix', this)">Journals & Diskursräume</button>
   <button class="tab" onclick="switchTab('system', this)">System</button>
 </div>
 
@@ -107,161 +106,69 @@
   </div>
 </div>
 
-<!-- ═══════════════════════ TAB: Journal-Matrix ═══════════════════════ -->
+<!-- ═══════════════════════ TAB: Journals & Diskursräume ═══════════════════════ -->
 <div id="tab-matrix" class="tab-content">
+
+  <!-- ---- Diskursräume verwalten ---- -->
   <div class="card">
-    <h2 style="margin-top:0;">
-      Journal-Matrix
-      <span class="section-count">({{ journals|length }} Journals × {{ spaces|length }} Diskursräume)</span>
-    </h2>
-    <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
-      Tier bestimmt die Analysetiefe: <span class="badge badge-tier-a">A</span> Opus + Tools
-      · <span class="badge badge-tier-b">B</span> Opus ohne Tools
-      · <span class="badge badge-tier-c">C</span> Nur Screening.
-      Diskursraum-Zuordnung bestimmt Trend-/Biblio-Analysen.
+    <h2 style="margin-top:0;">Diskursräume</h2>
+    <p style="font-size:.85rem; color:var(--muted); margin-bottom:.75rem;">
+      Klick auf einen Diskursraum zum Bearbeiten. Änderungen hier aktualisieren automatisch die Matrix unten.
     </p>
 
-    <form id="matrix-form">
-      <div style="overflow-x:auto;">
-        <table class="matrix-table">
-          <thead>
-            <tr>
-              <th class="matrix-journal-col" style="text-align:left;">Journal</th>
-              <th class="matrix-count-col" style="text-align:right;" title="Artikel in DB">Artikel</th>
-              <th class="matrix-tier-col" colspan="3">Tier</th>
-              {% for key, meta in spaces %}
-              <th class="matrix-cluster-col">
-                <span class="cluster-header" title="{{ meta.description }}">{{ meta.name[:20] }}</span>
-              </th>
-              {% endfor %}
-            </tr>
-          </thead>
-          <tbody>
-            {% for j in journals %}
-            <tr{% if not j.enabled %} class="journal-disabled"{% endif %}>
-              <td class="matrix-journal-col">
-                <span class="journal-name">{{ j.name }}</span>
-                <span class="journal-short">{{ j.short }}</span>
-              </td>
-              <td class="matrix-count-col" style="text-align:right; color:var(--muted);">
-                {{ journal_counts.get(j.short, 0) }}
-              </td>
-              <td class="matrix-tier-cell">
-                <label class="tier-radio{% if j.tier == 'A' %} tier-active tier-a{% endif %}">
-                  <input type="radio" name="tier_{{ j.short }}" value="A"
-                         {% if j.tier == 'A' %}checked{% endif %}
-                         onchange="markDirty()"> A
-                </label>
-              </td>
-              <td class="matrix-tier-cell">
-                <label class="tier-radio{% if j.tier == 'B' %} tier-active tier-b{% endif %}">
-                  <input type="radio" name="tier_{{ j.short }}" value="B"
-                         {% if j.tier == 'B' %}checked{% endif %}
-                         onchange="markDirty()"> B
-                </label>
-              </td>
-              <td class="matrix-tier-cell">
-                <label class="tier-radio{% if j.tier == 'C' %} tier-active tier-c{% endif %}">
-                  <input type="radio" name="tier_{{ j.short }}" value="C"
-                         {% if j.tier == 'C' %}checked{% endif %}
-                         onchange="markDirty()"> C
-                </label>
-              </td>
-              {% for key, meta in spaces %}
-              <td class="matrix-cluster-cell">
-                <input type="checkbox" name="cluster_{{ j.short }}" value="{{ key }}"
-                       {% if key in j.clusters %}checked{% endif %}
-                       onchange="markDirty()">
-              </td>
-              {% endfor %}
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-
-      <div class="matrix-actions">
-        <button type="button" class="btn btn-primary" onclick="saveMatrix()" id="save-matrix-btn" disabled>
-          Änderungen speichern
-        </button>
-        <span id="matrix-status" style="margin-left:.5rem; font-size:.85rem;"></span>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- ═══════════════════════ TAB: Diskursräume ═══════════════════════ -->
-<div id="tab-diskurs" class="tab-content">
-  <div class="card">
-    <h2 style="margin-top:0;">Diskursräume verwalten</h2>
-    <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
-      Diskursräume gruppieren Journals für Trend- und Biblio-Analysen.
-      Journal-Zuordnung erfolgt in der Matrix.
-    </p>
-
-    <div id="diskurs-list">
+    <div id="diskurs-chips" class="diskurs-chips">
       {% for key, meta in spaces %}
-      <div class="diskurs-edit-card" id="diskurs-{{ key }}">
-        <div class="diskurs-edit-header">
+      <div class="diskurs-chip" id="chip-{{ key }}">
+        <div class="chip-display" onclick="toggleChipEdit('{{ key }}')">
           <strong>{{ meta.name }}</strong>
-          <code style="font-size:.75rem; color:var(--muted);">{{ key }}</code>
-          <span style="font-size:.8rem; color:var(--muted); margin-left:auto;">
-            {{ space_journal_counts.get(key, 0) }} Journals
-          </span>
+          <span class="chip-count">{{ space_journal_counts.get(key, 0) }} J.</span>
         </div>
-        <form class="diskurs-edit-form"
-              hx-post="/api/setup/diskursraum/{{ key }}"
-              hx-target="#diskurs-{{ key }}"
-              hx-swap="outerHTML">
-          <div style="display:flex; gap:.5rem; margin-bottom:.5rem;">
-            <input type="text" name="name" value="{{ meta.name }}" class="form-input"
-                   style="max-width:300px;" placeholder="Name">
-          </div>
-          <div style="display:flex; gap:.5rem; align-items:flex-start;">
-            <textarea name="description" class="form-input" rows="2"
-                      style="max-width:500px;">{{ meta.description }}</textarea>
-          </div>
-          <div style="display:flex; gap:.5rem; margin-top:.5rem;">
-            <button type="submit" class="btn btn-primary" style="font-size:.8rem;">Speichern</button>
-            <button type="button" class="btn" style="font-size:.8rem; color:var(--pflichtlektuere);"
-                    hx-delete="/api/setup/diskursraum/{{ key }}"
-                    hx-target="#diskurs-{{ key }}"
-                    hx-swap="outerHTML"
-                    hx-confirm="Diskursraum '{{ meta.name }}' wirklich löschen? Journals werden nicht gelöscht, nur die Zuordnung.">
-              Löschen
-            </button>
-          </div>
-        </form>
+        <div class="chip-edit" id="chip-edit-{{ key }}" style="display:none;">
+          <form onsubmit="saveDiskursraum('{{ key }}', this); return false;">
+            <input type="text" name="name" value="{{ meta.name }}" class="form-input chip-input"
+                   placeholder="Name">
+            <input type="text" name="description" value="{{ meta.description }}"
+                   class="form-input chip-input" placeholder="Beschreibung" style="margin-top:4px;">
+            <div style="display:flex; gap:4px; margin-top:4px;">
+              <button type="submit" class="btn btn-primary" style="font-size:.75rem; padding:2px 8px;">OK</button>
+              <button type="button" class="btn" style="font-size:.75rem; padding:2px 8px;"
+                      onclick="toggleChipEdit('{{ key }}')">Abbrechen</button>
+              <button type="button" class="btn" style="font-size:.75rem; padding:2px 8px; color:var(--pflichtlektuere); margin-left:auto;"
+                      onclick="if(confirm('Diskursraum «{{ meta.name }}» löschen?')) deleteDiskursraum('{{ key }}')">
+                Löschen</button>
+            </div>
+          </form>
+        </div>
       </div>
       {% endfor %}
-    </div>
-
-    <div class="card" style="margin-top:1rem; border-style:dashed;">
-      <h3 style="margin-top:0;">Neuer Diskursraum</h3>
-      <form hx-post="/api/setup/diskursraum/_new"
-            hx-target="#diskurs-list"
-            hx-swap="beforeend"
-            hx-on::after-request="if(event.detail.successful) this.reset()">
-        <div style="display:flex; gap:.5rem; flex-wrap:wrap; align-items:flex-end;">
-          <div class="form-group" style="margin-bottom:0;">
-            <label>Schlüssel</label>
-            <input type="text" name="key" class="form-input" style="max-width:180px;"
-                   placeholder="z.B. posthumanismus" pattern="[a-z_]+" required>
-          </div>
-          <div class="form-group" style="margin-bottom:0;">
-            <label>Name</label>
-            <input type="text" name="name" class="form-input" style="max-width:250px;"
-                   placeholder="Anzeigename" required>
-          </div>
-          <div class="form-group" style="margin-bottom:0; flex:1;">
-            <label>Beschreibung</label>
-            <input type="text" name="description" class="form-input"
-                   placeholder="Kurzbeschreibung des Diskursraums">
-          </div>
-          <button type="submit" class="btn btn-primary">Hinzufügen</button>
+      <div class="diskurs-chip diskurs-chip-add" id="chip-add">
+        <div class="chip-display" onclick="toggleChipEdit('_add')">
+          <strong>+ Neu</strong>
         </div>
-      </form>
+        <div class="chip-edit" id="chip-edit-_add" style="display:none;">
+          <form onsubmit="addDiskursraum(this); return false;">
+            <input type="text" name="key" class="form-input chip-input"
+                   placeholder="Schlüssel (z.B. posthumanismus)" pattern="[a-z_]+" required>
+            <input type="text" name="name" class="form-input chip-input"
+                   placeholder="Anzeigename" required style="margin-top:4px;">
+            <input type="text" name="description" class="form-input chip-input"
+                   placeholder="Beschreibung" style="margin-top:4px;">
+            <div style="display:flex; gap:4px; margin-top:4px;">
+              <button type="submit" class="btn btn-primary" style="font-size:.75rem; padding:2px 8px;">Anlegen</button>
+              <button type="button" class="btn" style="font-size:.75rem; padding:2px 8px;"
+                      onclick="toggleChipEdit('_add')">Abbrechen</button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
+    <div id="diskurs-status" style="font-size:.85rem; margin-top:.5rem;"></div>
+  </div>
+
+  <!-- ---- Matrix (wird per HTMX bei Diskursraum-Änderung neu geladen) ---- -->
+  <div class="card" id="matrix-card"
+       hx-get="/api/setup/matrix-fragment" hx-trigger="diskurs-changed from:body" hx-swap="innerHTML">
+    {% include "_matrix_table.html" %}
   </div>
 </div>
 
@@ -382,12 +289,19 @@
   .matrix-actions { margin-top: 1rem; display: flex; align-items: center; }
   .matrix-actions .btn:disabled { opacity: .4; cursor: default; }
 
-  /* Diskursraum cards */
-  .diskurs-edit-card { border: 1px solid var(--border); border-radius: 6px;
-                       padding: .75rem 1rem; margin-bottom: .75rem;
-                       background: var(--card-bg); }
-  .diskurs-edit-header { display: flex; align-items: baseline; gap: .5rem; margin-bottom: .5rem; }
-  .diskurs-edit-form .form-input { font-size: .85rem; }
+  /* Diskursraum chips */
+  .diskurs-chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .diskurs-chip { border: 1px solid var(--border); border-radius: 6px;
+                  background: var(--card-bg); min-width: 120px; }
+  .diskurs-chip .chip-display { padding: 6px 12px; cursor: pointer;
+                                 display: flex; align-items: baseline; gap: .5rem; }
+  .diskurs-chip .chip-display:hover { background: #f5f5f3; border-radius: 6px; }
+  .diskurs-chip .chip-display strong { font-size: .85rem; }
+  .chip-count { font-size: .7rem; color: var(--muted); }
+  .chip-edit { padding: 8px 12px; border-top: 1px solid var(--border); }
+  .chip-input { font-size: .8rem !important; padding: 3px 6px !important; max-width: 250px !important; }
+  .diskurs-chip-add { border-style: dashed; }
+  .diskurs-chip-add .chip-display strong { color: var(--accent); }
 </style>
 
 <script>
@@ -408,18 +322,83 @@ function switchTab(name, btn) {
   }
 })();
 
-// ---- Matrix: tier radio visual feedback ----
-document.querySelectorAll('.tier-radio input[type="radio"]').forEach(function(radio) {
-  radio.addEventListener('change', function() {
-    // Clear siblings in same row
-    var row = this.closest('tr');
-    row.querySelectorAll('.tier-radio').forEach(function(label) {
-      label.classList.remove('tier-active', 'tier-a', 'tier-b', 'tier-c');
+// ---- Diskursraum chip editing ----
+function toggleChipEdit(key) {
+  var edit = document.getElementById('chip-edit-' + key);
+  if (!edit) return;
+  var isOpen = edit.style.display !== 'none';
+  // Close all open editors first
+  document.querySelectorAll('.chip-edit').forEach(function(el) { el.style.display = 'none'; });
+  if (!isOpen) edit.style.display = 'block';
+}
+
+function showDiskursStatus(msg, ok) {
+  var el = document.getElementById('diskurs-status');
+  el.textContent = msg;
+  el.style.color = ok ? 'var(--lesenswert)' : 'var(--pflichtlektuere)';
+  if (ok) setTimeout(function() { el.textContent = ''; }, 3000);
+}
+
+function saveDiskursraum(key, form) {
+  var fd = new FormData(form);
+  fetch('/api/setup/diskursraum/' + key, { method: 'POST', body: fd })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok) {
+        // Update chip label
+        var chip = document.querySelector('#chip-' + key + ' .chip-display strong');
+        if (chip) chip.textContent = fd.get('name');
+        toggleChipEdit(key);
+        showDiskursStatus('✓ «' + fd.get('name') + '» gespeichert', true);
+        // Trigger matrix reload
+        document.body.dispatchEvent(new Event('diskurs-changed'));
+      } else {
+        showDiskursStatus(data.error || 'Fehler', false);
+      }
     });
-    var label = this.parentElement;
-    label.classList.add('tier-active', 'tier-' + this.value.toLowerCase());
+}
+
+function deleteDiskursraum(key) {
+  fetch('/api/setup/diskursraum/' + key, { method: 'DELETE' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok) {
+        var chip = document.getElementById('chip-' + key);
+        if (chip) chip.remove();
+        showDiskursStatus('✓ Gelöscht', true);
+        document.body.dispatchEvent(new Event('diskurs-changed'));
+      } else {
+        showDiskursStatus(data.error || 'Fehler', false);
+      }
+    });
+}
+
+function addDiskursraum(form) {
+  var fd = new FormData(form);
+  fetch('/api/setup/diskursraum/_new', { method: 'POST', body: fd })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok) {
+        form.reset();
+        toggleChipEdit('_add');
+        showDiskursStatus('✓ «' + data.name + '» angelegt', true);
+        // Reload entire page to get new chip + matrix column
+        window.location.reload();
+      } else {
+        showDiskursStatus(data.error || 'Fehler', false);
+      }
+    });
+}
+
+// ---- Matrix: tier radio visual feedback ----
+function updateTierVisual(radio) {
+  var row = radio.closest('tr');
+  row.querySelectorAll('.tier-radio').forEach(function(label) {
+    label.classList.remove('tier-active', 'tier-a', 'tier-b', 'tier-c');
   });
-});
+  var label = radio.parentElement;
+  label.classList.add('tier-active', 'tier-' + radio.value.toLowerCase());
+}
 
 let matrixDirty = false;
 function markDirty() {

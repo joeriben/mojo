@@ -1,0 +1,76 @@
+<h2 style="margin-top:0;">
+  Journal-Matrix
+  <span class="section-count">({{ journals|length }} Journals × {{ spaces|length }} Diskursräume)</span>
+</h2>
+<p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
+  Tier: <span class="badge badge-tier-a">A</span> Opus + Tools
+  · <span class="badge badge-tier-b">B</span> Opus ohne Tools
+  · <span class="badge badge-tier-c">C</span> Nur Screening
+</p>
+
+<form id="matrix-form">
+  <div style="overflow-x:auto;">
+    <table class="matrix-table">
+      <thead>
+        <tr>
+          <th class="matrix-journal-col" style="text-align:left;">Journal</th>
+          <th class="matrix-count-col" style="text-align:right;" title="Artikel in DB">Artikel</th>
+          <th class="matrix-tier-col" colspan="3">Tier</th>
+          {% for key, meta in spaces %}
+          <th class="matrix-cluster-col">
+            <span class="cluster-header" title="{{ meta.description }}">{{ meta.name }}</span>
+          </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for j in journals %}
+        <tr{% if not j.enabled %} class="journal-disabled"{% endif %}>
+          <td class="matrix-journal-col">
+            <span class="journal-name">{{ j.name }}</span>
+            <span class="journal-short">{{ j.short }}</span>
+          </td>
+          <td class="matrix-count-col" style="text-align:right; color:var(--muted);">
+            {{ journal_counts.get(j.short, 0) }}
+          </td>
+          <td class="matrix-tier-cell">
+            <label class="tier-radio{% if j.tier == 'A' %} tier-active tier-a{% endif %}">
+              <input type="radio" name="tier_{{ j.short }}" value="A"
+                     {% if j.tier == 'A' %}checked{% endif %}
+                     onchange="markDirty(); updateTierVisual(this)"> A
+            </label>
+          </td>
+          <td class="matrix-tier-cell">
+            <label class="tier-radio{% if j.tier == 'B' %} tier-active tier-b{% endif %}">
+              <input type="radio" name="tier_{{ j.short }}" value="B"
+                     {% if j.tier == 'B' %}checked{% endif %}
+                     onchange="markDirty(); updateTierVisual(this)"> B
+            </label>
+          </td>
+          <td class="matrix-tier-cell">
+            <label class="tier-radio{% if j.tier == 'C' %} tier-active tier-c{% endif %}">
+              <input type="radio" name="tier_{{ j.short }}" value="C"
+                     {% if j.tier == 'C' %}checked{% endif %}
+                     onchange="markDirty(); updateTierVisual(this)"> C
+            </label>
+          </td>
+          {% for key, meta in spaces %}
+          <td class="matrix-cluster-cell">
+            <input type="checkbox" name="cluster_{{ j.short }}" value="{{ key }}"
+                   {% if key in j.clusters %}checked{% endif %}
+                   onchange="markDirty()">
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="matrix-actions">
+    <button type="button" class="btn btn-primary" onclick="saveMatrix()" id="save-matrix-btn" disabled>
+      Matrix speichern
+    </button>
+    <span id="matrix-status" style="margin-left:.5rem; font-size:.85rem;"></span>
+  </div>
+</form>

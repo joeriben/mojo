@@ -991,21 +991,19 @@ def api_setup_matrix():
 
 @app.route("/api/setup/diskursraum/_new", methods=["POST"])
 def api_setup_diskursraum_new():
-    """HTMX: Create a new discourse space."""
-    import re
+    """Create a new discourse space. Returns JSON."""
+    import re as re_mod
     data = request.form
     key = data.get("key", "").strip().lower()
     name = data.get("name", "").strip()
     description = data.get("description", "").strip()
 
     if not key or not name:
-        return '<div class="diskurs-edit-card" style="color:var(--pflichtlektuere);">Schlüssel und Name sind Pflicht.</div>'
-
-    if not re.match(r'^[a-z_]+$', key):
-        return '<div class="diskurs-edit-card" style="color:var(--pflichtlektuere);">Schlüssel: nur Kleinbuchstaben und Unterstriche.</div>'
-
+        return jsonify({"ok": False, "error": "Schlüssel und Name sind Pflicht."})
+    if not re_mod.match(r'^[a-z_]+$', key):
+        return jsonify({"ok": False, "error": "Schlüssel: nur Kleinbuchstaben und _"})
     if key in DISCOURSE_SPACES:
-        return f'<div class="diskurs-edit-card" style="color:var(--pflichtlektuere);">Diskursraum "{key}" existiert bereits.</div>'
+        return jsonify({"ok": False, "error": f"«{key}» existiert bereits."})
 
     today = datetime.now().strftime("%Y-%m-%d")
     DISCOURSE_SPACES[key] = {
@@ -1015,21 +1013,14 @@ def api_setup_diskursraum_new():
         "modified": today,
     }
     _save_diskursraeume_json()
-
-    # Return the new card
-    return render_template_string(
-        DISKURSRAUM_CARD_TEMPLATE,
-        key=key,
-        meta=DISCOURSE_SPACES[key],
-        count=0,
-    )
+    return jsonify({"ok": True, "key": key, "name": name})
 
 
 @app.route("/api/setup/diskursraum/<key>", methods=["POST"])
 def api_setup_diskursraum_update(key: str):
-    """HTMX: Update discourse space name/description."""
+    """Update discourse space name/description. Returns JSON."""
     if key not in DISCOURSE_SPACES:
-        abort(404)
+        return jsonify({"ok": False, "error": "Nicht gefunden."}), 404
 
     name = request.form.get("name", "").strip()
     description = request.form.get("description", "").strip()
@@ -1039,75 +1030,43 @@ def api_setup_diskursraum_update(key: str):
     if description is not None:
         DISCOURSE_SPACES[key]["description"] = description
     DISCOURSE_SPACES[key]["modified"] = datetime.now().strftime("%Y-%m-%d")
-
     _save_diskursraeume_json()
 
-    count = len(journals_in_cluster(key))
-    return render_template_string(
-        DISKURSRAUM_CARD_TEMPLATE,
-        key=key,
-        meta=DISCOURSE_SPACES[key],
-        count=count,
-    )
+    return jsonify({"ok": True, "key": key, "name": DISCOURSE_SPACES[key]["name"]})
 
 
 @app.route("/api/setup/diskursraum/<key>", methods=["DELETE"])
 def api_setup_diskursraum_delete(key: str):
-    """HTMX: Delete a discourse space."""
+    """Delete a discourse space. Returns JSON."""
     if key not in DISCOURSE_SPACES:
-        abort(404)
+        return jsonify({"ok": False, "error": "Nicht gefunden."}), 404
 
     name = DISCOURSE_SPACES[key]["name"]
     del DISCOURSE_SPACES[key]
 
-    # Remove from all journal cluster assignments
     for j in JOURNALS:
         if key in j.clusters:
             j.clusters.remove(key)
 
     _save_diskursraeume_json()
-
-    return (
-        f'<div class="diskurs-edit-card" style="border-color:var(--muted); opacity:.6;">'
-        f'<em>„{html_mod.escape(name)}" gelöscht.</em></div>'
-    )
+    return jsonify({"ok": True, "name": name})
 
 
-# Template for rendering a single diskursraum card (used by create + update)
-DISKURSRAUM_CARD_TEMPLATE = """
-<div class="diskurs-edit-card" id="diskurs-{{ key }}">
-  <div class="diskurs-edit-header">
-    <strong>{{ meta.name }}</strong>
-    <code style="font-size:.75rem; color:var(--muted);">{{ key }}</code>
-    <span style="font-size:.8rem; color:var(--muted); margin-left:auto;">
-      {{ count }} Journals
-    </span>
-  </div>
-  <form class="diskurs-edit-form"
-        hx-post="/api/setup/diskursraum/{{ key }}"
-        hx-target="#diskurs-{{ key }}"
-        hx-swap="outerHTML">
-    <div style="display:flex; gap:.5rem; margin-bottom:.5rem;">
-      <input type="text" name="name" value="{{ meta.name }}" class="form-input"
-             style="max-width:300px;" placeholder="Name">
-    </div>
-    <div style="display:flex; gap:.5rem; align-items:flex-start;">
-      <textarea name="description" class="form-input" rows="2"
-                style="max-width:500px;">{{ meta.description }}</textarea>
-    </div>
-    <div style="display:flex; gap:.5rem; margin-top:.5rem;">
-      <button type="submit" class="btn btn-primary" style="font-size:.8rem;">Speichern</button>
-      <button type="button" class="btn" style="font-size:.8rem; color:var(--pflichtlektuere);"
-              hx-delete="/api/setup/diskursraum/{{ key }}"
-              hx-target="#diskurs-{{ key }}"
-              hx-swap="outerHTML"
-              hx-confirm="Diskursraum '{{ meta.name }}' wirklich löschen?">
-        Löschen
-      </button>
-    </div>
-  </form>
-</div>
-"""
+def _matrix_context() -> dict:
+    """Shared context for rendering the matrix fragment."""
+    store = _store()
+    db_stats = store.stats()
+    return {
+        "journals": JOURNALS,
+        "journal_counts": db_stats.get("by_journal", {}),
+        "spaces": list(DISCOURSE_SPACES.items()),
+    }
+
+
+@app.route("/api/setup/matrix-fragment")
+def api_setup_matrix_fragment():
+    """HTMX: Return just the matrix table HTML (for reload after diskurs changes)."""
+    return render_template("_matrix_table.html", **_matrix_context())
 
 
 # ============================================================= Backup ===
