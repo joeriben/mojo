@@ -3,19 +3,49 @@
 from __future__ import annotations
 
 import contextlib
+import csv
 import html as html_mod
 import io
 import json
-from flask import Flask, render_template, request, abort, jsonify
+import os
+import shutil
+from datetime import datetime
+from pathlib import Path
+from flask import Flask, render_template, request, abort, jsonify, send_file, session, Response
 
-from journal_bot.store import Store
-from journal_bot.settings import DISCOURSE_SPACES, JOURNALS, journals_in_cluster
+from journal_bot.store import Store, ARTICLES_DB
+from journal_bot.settings import (
+    CORPUS_JSON,
+    DISCOURSE_SPACES,
+    JOURNALS,
+    KEY_FILE,
+    RESEARCHER_AREAS,
+    RESEARCHER_INSTITUTION,
+    RESEARCHER_NAME,
+    RESEARCHER_TRIAGE_TOPICS,
+    SUMMARIES_JSON,
+    ZOTERO_COLLECTION,
+    ZOTERO_STORAGE,
+    journals_in_cluster,
+)
 
 app = Flask(
     __name__,
     template_folder="templates",
     static_folder="static",
 )
+app.secret_key = os.urandom(24)  # For session (agent chat context)
+
+
+# --------------------------------------------------------- Jinja filters ---
+
+@app.template_filter("format_number")
+def format_number_filter(value):
+    """Format number with locale-style thousands separator."""
+    try:
+        return f"{int(value):,}".replace(",", ".")
+    except (ValueError, TypeError):
+        return str(value)
 
 VERDICT_ORDER = ["pflichtlektuere", "lesenswert", "scannen", "ignorieren"]
 VERDICT_LABEL = {
@@ -728,6 +758,357 @@ def api_diskurs_profile(cluster_key: str):
         )
 
     return f'<div class="card">{_md_to_html(md)}</div>'
+
+
+# ================================================================ Setup ===
+
+
+def _get_profile() -> dict:
+    """Read researcher profile (settings.py defaults, no file override yet)."""
+    return {
+        "name": RESEARCHER_NAME,
+        "institution": RESEARCHER_INSTITUTION,
+        "areas": RESEARCHER_AREAS,
+        "triage_topics": list(RESEARCHER_TRIAGE_TOPICS),
+        "zotero_collection": ZOTERO_COLLECTION,
+        "zotero_storage": str(ZOTERO_STORAGE),
+    }
+
+
+def _file_status(path: Path, count_key: str | None = None) -> dict:
+    """Get status of a JSON data file."""
+    if not path.exists():
+        return {"exists": False, "count": 0, "size_kb": 0, "modified": ""}
+    stat = path.stat()
+    count = 0
+    if count_key:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if count_key == "publications":
+                # corpus.json: {"publications": [...]}
+                count = len(data.get("publications", []))
+            elif count_key == "summaries":
+                # summaries.json: {"summaries": {...}, "model": ...}
+                count = len(data.get("summaries", {}))
+            elif isinstance(data, dict):
+                count = len(data)
+            elif isinstance(data, list):
+                count = len(data)
+        except Exception:
+            pass
+    return {
+        "exists": True,
+        "count": count,
+        "size_kb": round(stat.st_size / 1024),
+        "modified": datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M"),
+    }
+
+
+@app.route("/setup")
+def setup():
+    """Setup page with profile, Zotero, journals, system tabs."""
+    store = _store()
+    db_stats = store.stats()
+
+    # DB file size
+    db_size_mb = "?"
+    if ARTICLES_DB.exists():
+        db_size_mb = round(ARTICLES_DB.stat().st_size / (1024 * 1024))
+
+    # Journal article counts
+    journal_counts = db_stats.get("by_journal", {})
+
+    # API key status
+    api_key_status = {"exists": False, "masked": ""}
+    if KEY_FILE.exists():
+        key = KEY_FILE.read_text().strip()
+        if key:
+            api_key_status = {
+                "exists": True,
+                "masked": key[:7] + "…" + key[-4:] if len(key) > 12 else "***",
+            }
+
+    return render_template(
+        "setup.html",
+        profile=_get_profile(),
+        corpus_status=_file_status(CORPUS_JSON, count_key="publications"),
+        summaries_status=_file_status(SUMMARIES_JSON, count_key="summaries"),
+        journals=JOURNALS,
+        journal_counts=journal_counts,
+        db_stats=db_stats,
+        db_size_mb=db_size_mb,
+        api_key_status=api_key_status,
+        verdict_label=VERDICT_LABEL,
+    )
+
+
+@app.route("/api/setup/profile", methods=["POST"])
+def api_setup_profile():
+    """HTMX: Save researcher profile (currently read-only, shows confirmation)."""
+    # Profile is in settings.py — changing it requires code change.
+    # For now, acknowledge the form submission.
+    return '<span style="color:var(--lesenswert);">✓ Profil ist aktuell in settings.py definiert (read-only)</span>'
+
+
+@app.route("/api/setup/ingest", methods=["POST"])
+def api_setup_ingest():
+    """HTMX: Run Zotero ingest (corpus.json update)."""
+    from journal_bot import corpus
+    esc = html_mod.escape
+    buf = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(buf):
+            corpus.ingest(
+                collection_name=ZOTERO_COLLECTION,
+                output=CORPUS_JSON,
+            )
+        output = buf.getvalue()
+        return (
+            f'<div style="color:var(--lesenswert); font-size:.85rem;">'
+            f'✓ Corpus aktualisiert</div>'
+            f'<pre style="font-size:.8rem; margin-top:.5rem; white-space:pre-wrap;">'
+            f'{esc(output[-1000:])}</pre>'
+        )
+    except Exception as e:
+        return (
+            f'<div style="color:var(--pflichtlektuere); font-size:.85rem;">'
+            f'Fehler: {esc(str(e))}</div>'
+            f'<pre style="font-size:.8rem; margin-top:.5rem; white-space:pre-wrap;">'
+            f'{esc(buf.getvalue()[-500:])}</pre>'
+        )
+
+
+@app.route("/api/setup/summarize", methods=["POST"])
+def api_setup_summarize():
+    """HTMX: Run summarize (summaries.json update)."""
+    from journal_bot import summarize
+    esc = html_mod.escape
+    buf = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(buf):
+            summarize.run(corpus_path=CORPUS_JSON, output_path=SUMMARIES_JSON)
+        output = buf.getvalue()
+        return (
+            f'<div style="color:var(--lesenswert); font-size:.85rem;">'
+            f'✓ Summaries aktualisiert</div>'
+            f'<pre style="font-size:.8rem; margin-top:.5rem; white-space:pre-wrap;">'
+            f'{esc(output[-1000:])}</pre>'
+        )
+    except Exception as e:
+        return (
+            f'<div style="color:var(--pflichtlektuere); font-size:.85rem;">'
+            f'Fehler: {esc(str(e))}</div>'
+        )
+
+
+# ============================================================= Backup ===
+
+
+@app.route("/api/backup/db")
+def api_backup_db():
+    """Download articles.db as backup."""
+    if not ARTICLES_DB.exists():
+        abort(404)
+    # Copy to temp to avoid locking issues
+    import tempfile
+    tmp = Path(tempfile.mktemp(suffix=".db"))
+    shutil.copy2(ARTICLES_DB, tmp)
+    ts = datetime.now().strftime("%Y%m%d_%H%M")
+    return send_file(
+        tmp,
+        as_attachment=True,
+        download_name=f"mojo_backup_{ts}.db",
+        mimetype="application/x-sqlite3",
+    )
+
+
+@app.route("/api/export/json")
+def api_export_json():
+    """Export all articles as JSON (metadata + verdicts, no full agent_entry)."""
+    store = _store()
+    with store._conn() as c:
+        rows = c.execute(
+            "SELECT id, journal_short, journal_full, title, authors_json, "
+            "doi, url, year, agent_verdict, user_verdict, user_memo, cost_usd, "
+            "fetched_at, agent_processed_at "
+            "FROM articles ORDER BY year DESC, fetched_at DESC"
+        ).fetchall()
+
+    articles = []
+    for r in rows:
+        articles.append({
+            "id": r["id"],
+            "journal": r["journal_full"] or r["journal_short"],
+            "title": r["title"],
+            "authors": json.loads(r["authors_json"]) if r["authors_json"] else [],
+            "doi": r["doi"],
+            "url": r["url"],
+            "year": r["year"],
+            "agent_verdict": r["agent_verdict"],
+            "user_verdict": r["user_verdict"],
+            "user_memo": r["user_memo"],
+            "cost_usd": r["cost_usd"],
+            "fetched_at": r["fetched_at"],
+            "processed_at": r["agent_processed_at"],
+        })
+
+    ts = datetime.now().strftime("%Y%m%d_%H%M")
+    output = json.dumps(articles, ensure_ascii=False, indent=2)
+    return Response(
+        output,
+        mimetype="application/json",
+        headers={"Content-Disposition": f"attachment; filename=mojo_export_{ts}.json"},
+    )
+
+
+@app.route("/api/export/csv")
+def api_export_csv():
+    """Export all articles as CSV."""
+    store = _store()
+    with store._conn() as c:
+        rows = c.execute(
+            "SELECT id, journal_short, journal_full, title, authors_json, "
+            "doi, url, year, agent_verdict, user_verdict, user_memo, cost_usd, "
+            "fetched_at, agent_processed_at "
+            "FROM articles ORDER BY year DESC, fetched_at DESC"
+        ).fetchall()
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow([
+        "id", "journal", "title", "authors", "doi", "url", "year",
+        "agent_verdict", "user_verdict", "user_memo", "cost_usd",
+        "fetched_at", "processed_at",
+    ])
+    for r in rows:
+        authors = ", ".join(json.loads(r["authors_json"])) if r["authors_json"] else ""
+        writer.writerow([
+            r["id"],
+            r["journal_full"] or r["journal_short"],
+            r["title"],
+            authors,
+            r["doi"],
+            r["url"],
+            r["year"],
+            r["agent_verdict"],
+            r["user_verdict"],
+            r["user_memo"],
+            r["cost_usd"],
+            r["fetched_at"],
+            r["agent_processed_at"],
+        ])
+
+    ts = datetime.now().strftime("%Y%m%d_%H%M")
+    return Response(
+        buf.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=mojo_export_{ts}.csv"},
+    )
+
+
+# ============================================================== Agent ===
+
+
+@app.route("/agent")
+def agent_page():
+    """Research agent chat page."""
+    store = _store()
+    stats = store.stats()
+
+    # Count corpus publications
+    corpus_count = 0
+    if CORPUS_JSON.exists():
+        try:
+            data = json.loads(CORPUS_JSON.read_text(encoding="utf-8"))
+            corpus_count = len(data.get("publications", []))
+        except Exception:
+            pass
+
+    return render_template(
+        "agent.html",
+        db_article_count=stats["total"],
+        corpus_count=corpus_count,
+        context_set=bool(session.get("agent_context")),
+        context_preview=(session.get("agent_context", "")[:200] + "…")
+            if session.get("agent_context") else "",
+        context_chars=len(session.get("agent_context", "")),
+        messages=session.get("agent_messages", []),
+    )
+
+
+@app.route("/api/agent/context", methods=["POST", "DELETE"])
+def api_agent_context():
+    """Set or clear the agent's text context."""
+    if request.method == "DELETE":
+        session.pop("agent_context", None)
+        return jsonify({"ok": True})
+
+    data = request.get_json(force=True)
+    text = data.get("text", "").strip()
+    session["agent_context"] = text
+    return jsonify({"ok": True, "chars": len(text)})
+
+
+@app.route("/api/agent/chat", methods=["POST"])
+def api_agent_chat():
+    """Process a chat message with the research agent."""
+    import markdown
+    from journal_bot.research_agent import chat as agent_chat
+
+    data = request.get_json(force=True)
+    message = data.get("message", "").strip()
+    history = data.get("history", [])
+
+    if not message:
+        return jsonify({"error": "Keine Nachricht."}), 400
+
+    user_context = session.get("agent_context")
+
+    try:
+        result = agent_chat(
+            message=message,
+            history=history,
+            user_context=user_context,
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    # Convert markdown to HTML
+    try:
+        html_content = markdown.markdown(
+            result["content"],
+            extensions=["tables", "fenced_code"],
+        )
+    except Exception:
+        html_content = html_mod.escape(result["content"]).replace("\n", "<br>")
+
+    # Store in session for page reload
+    msgs = session.get("agent_messages", [])
+    msgs.append({"role": "user", "content": message})
+    msgs.append({
+        "role": "assistant",
+        "content": result["content"],
+        "content_html": html_content,
+    })
+    # Keep last 40 messages
+    session["agent_messages"] = msgs[-40:]
+
+    return jsonify({
+        "content": result["content"],
+        "html": html_content,
+        "tokens_used": result["tokens_used"],
+        "cost_usd": result["cost_usd"],
+    })
+
+
+@app.route("/api/agent/clear", methods=["POST"])
+def api_agent_clear():
+    """Clear agent chat history."""
+    session.pop("agent_messages", None)
+    return jsonify({"ok": True})
+
+
+# ============================================================== Main ===
 
 
 def main():

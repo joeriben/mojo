@@ -170,6 +170,8 @@
     <a href="/review" {% if request.path == "/review" %}class="active"{% endif %}>Review</a>
     <a href="/diskurs" {% if request.path.startswith("/diskurs") %}class="active"{% endif %}>Diskursräume</a>
     <a href="/overrides" {% if request.path == "/overrides" %}class="active"{% endif %}>Overrides</a>
+    <a href="/agent" {% if request.path == "/agent" %}class="active"{% endif %}>Agent</a>
+    <a href="/setup" {% if request.path == "/setup" %}class="active"{% endif %}>Setup</a>
     <form action="/search" method="get" style="margin-left:auto; display:flex; gap:.3rem;">
       <input type="text" name="q" placeholder="Suche…" value="{{ request.args.get('q', '') }}"
              style="font-size:.85rem; padding:3px 8px; border:1px solid var(--border);
