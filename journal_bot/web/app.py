@@ -179,9 +179,17 @@ def diskursraum(cluster_key: str | None = None):
                         f"GROUP BY agent_verdict",
                         shorts,
                     ).fetchall())
+                    cites_count = c.execute(
+                        f"SELECT COUNT(*) FROM articles "
+                        f"WHERE journal_short IN ({placeholders}) "
+                        f"AND citation_hits_json IS NOT NULL "
+                        f"AND citation_hits_json != '[]' AND citation_hits_json != ''",
+                        shorts,
+                    ).fetchone()[0]
                 else:
                     total = 0
                     verdicts = {}
+                    cites_count = 0
             spaces.append({
                 "key": key,
                 "name": meta["name"],
@@ -189,6 +197,7 @@ def diskursraum(cluster_key: str | None = None):
                 "journals": js,
                 "total": total,
                 "verdicts": verdicts,
+                "cites_count": cites_count,
             })
         return render_template("diskurs_list.html", spaces=spaces)
 

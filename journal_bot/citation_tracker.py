@@ -18,12 +18,79 @@ import re
 from dataclasses import dataclass, asdict
 from pathlib import Path
 
-from journal_bot.settings import CORPUS_JSON
+from journal_bot.settings import CORPUS_JSON, RESEARCHER_NAME
 
 
-JOERISSEN_RE = re.compile(r"j[oö]rissen", re.IGNORECASE)
 YEAR_RE = re.compile(r"\b(19|20)\d{2}\b")
 CONFIDENCE_RANK = {"low": 0, "medium": 1, "high": 2}
+
+
+def _parse_researcher_name(name: str) -> tuple[str, str, str]:
+    """Parse 'Benjamin Jörissen' → (first_name, last_name, initial)."""
+    parts = name.strip().split()
+    first = parts[0] if len(parts) >= 2 else ""
+    last = parts[-1] if parts else "UNKNOWN"
+    return first, last, first[0].upper() if first else ""
+
+
+def _build_name_patterns(first: str, last: str) -> list[re.Pattern]:
+    """Build the 4 canonical name patterns as regexes.
+
+    Matches exactly:  Benjamin Jörissen | B. Jörissen | Jörissen, Benjamin | Jörissen, B.
+    """
+    ln = last.replace("ö", "[oö]").replace("ä", "[aä]").replace("ü", "[uü]")
+    fn = re.escape(first)
+    ini = re.escape(first[0]) if first else "[A-Z]"
+    return [
+        re.compile(fn + r"\s+" + ln, re.IGNORECASE),           # Benjamin Jörissen
+        re.compile(ini + r"\.\s*" + ln, re.IGNORECASE),        # B. Jörissen
+        re.compile(ln + r",\s*" + fn, re.IGNORECASE),          # Jörissen, Benjamin
+        re.compile(ln + r",\s*" + ini + r"\.", re.IGNORECASE), # Jörissen, B.
+    ]
+
+
+def _build_wrong_name_re(last: str) -> re.Pattern:
+    """Matches any name-like token adjacent to last name — used to detect namesakes.
+
+    Catches: X. Lastname, Lastname, X., Firstname Lastname, Lastname, Firstname
+    """
+    ln = last.replace("ö", "[oö]").replace("ä", "[aä]").replace("ü", "[uü]")
+    pat = (
+        r"(?:[A-Z][a-zà-ÿ]*\.?\s+" + ln
+        + r"|" + ln + r",?\s*[A-Z][a-zà-ÿ]*)"
+    )
+    return re.compile(pat, re.IGNORECASE)
+
+
+def _text_is_researcher_citation(ref: dict, right_patterns: list[re.Pattern],
+                                  wrong_re: re.Pattern, last_name_re: re.Pattern) -> bool:
+    """Check if reference cites the researcher, not a namesake.
+
+    Logic:
+    1. Last name must appear in the text
+    2. If any of the 4 canonical name forms match → accept
+    3. If last name appears with a different initial → reject
+    4. Last name alone (no initial) → accept (ambiguous, benefit of doubt)
+    """
+    blob = " ".join([
+        ref.get("raw", "") or "",
+        " ".join(ref.get("authors", []) or []),
+    ])
+    if not last_name_re.search(blob):
+        return False
+
+    # Check if any canonical form matches → definite yes
+    for pat in right_patterns:
+        if pat.search(blob):
+            return True
+
+    # Check if a wrong-initial form exists → definite no
+    if wrong_re.search(blob):
+        return False
+
+    # Last name alone, no initial → accept
+    return True
+
 
 # Stopwörter für die Titel-Disambiguierung (DE + EN)
 _STOP = {
@@ -69,14 +136,6 @@ def _year_from_ref(ref: dict) -> int | None:
     return int(m.group(0)) if m else None
 
 
-def _text_mentions_joerissen(ref: dict) -> bool:
-    blob = " ".join([
-        ref.get("raw", "") or "",
-        " ".join(ref.get("authors", []) or []),
-    ])
-    return bool(JOERISSEN_RE.search(blob))
-
-
 def find_citations(
     references: list[dict],
     authored_all: list[dict],
@@ -86,6 +145,13 @@ def find_citations(
     """
     if not references or not authored_all:
         return []
+
+    # Build researcher name matcher
+    first_name, last_name, initial = _parse_researcher_name(RESEARCHER_NAME)
+    ln_pattern = last_name.replace("ö", "[oö]").replace("ä", "[aä]").replace("ü", "[uü]")
+    last_name_re = re.compile(ln_pattern, re.IGNORECASE)
+    right_patterns = _build_name_patterns(first_name, last_name)
+    wrong_re = _build_wrong_name_re(last_name)
 
     # Index: DOI → Publikation
     by_doi: dict[str, dict] = {}
@@ -131,8 +197,8 @@ def find_citations(
             add(_mk_hit(by_doi[ref_doi], match_type="doi", confidence="high", ref=ref))
             continue
 
-        # --- 2. Jörissen-Erwähnung + Jahr ---
-        if not _text_mentions_joerissen(ref):
+        # --- 2. Researcher name mention + year ---
+        if not _text_is_researcher_citation(ref, right_patterns, wrong_re, last_name_re):
             continue
 
         year = _year_from_ref(ref)

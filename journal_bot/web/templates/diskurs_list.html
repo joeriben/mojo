@@ -14,6 +14,7 @@
       {% if s.verdicts %}
       · {{ s.verdicts.get("lesenswert", 0) + s.verdicts.get("pflichtlektuere", 0) }} lesenswert
       {% endif %}
+      {% if s.cites_count %}<br><strong>{{ s.cites_count }} zitieren Dich</strong>{% endif %}
     </div>
     {% if s.total > 0 %}
     {% set les = s.verdicts.get("lesenswert", 0) + s.verdicts.get("pflichtlektuere", 0) %}
