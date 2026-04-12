@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import title_link %}
 {% block title %}MOJO — Review{% endblock %}
 {% block content %}
 
@@ -35,7 +36,7 @@
     <span class="art-year">{{ a.year }}</span>
   </div>
   <h3 style="color:var(--fg); font-size:1rem; margin:.4rem 0;">
-    <a href="/article/{{ a.id }}">{{ a.title }}</a>
+    {{ title_link(a) }}
   </h3>
   {% if a.agent_entry %}
   <p style="font-size:.9rem; margin-bottom:.3rem;">{{ a.agent_entry.kernthese[:250] }}{% if a.agent_entry.kernthese|length > 250 %}…{% endif %}</p>

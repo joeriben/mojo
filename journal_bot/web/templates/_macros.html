@@ -1,0 +1,7 @@
+{# Reusable macros #}
+
+{% macro title_link(a) %}
+<a href="/article/{{ a.id }}" class="art-title"
+   hx-get="/api/tooltip/{{ a.id }}" hx-trigger="mouseenter once" hx-target="find .tooltip"
+   hx-swap="innerHTML">{{ a.title }}<span class="tooltip"></span></a>
+{% endmacro %}

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import title_link %}
 {% block title %}MOJO — {{ meta.name }}{% endblock %}
 {% block content %}
 
@@ -33,7 +34,7 @@
   <div class="art-row">
     <span class="badge badge-{{ a.agent_verdict }}">{{ verdict_label.get(a.agent_verdict, a.agent_verdict) }}</span>
     <span class="art-journal">{{ a.journal_full }}</span>
-    <a href="/article/{{ a.id }}" class="art-title">{{ a.title }}</a>
+    {{ title_link(a) }}
     <span class="art-year">{{ a.year }}</span>
   </div>
   {% endfor %}
@@ -89,7 +90,7 @@
   {% for a in with_notes + without_notes %}
   <div class="art-row">
     <span class="art-journal">{{ a.journal_full }}</span>
-    <a href="/article/{{ a.id }}" class="art-title">{{ a.title }}</a>
+    {{ title_link(a) }}
     <span class="art-year">{{ a.year }}</span>
   </div>
   {% endfor %}
@@ -104,7 +105,7 @@
   {% for a in ignorieren %}
   <div class="art-row">
     <span class="art-journal">{{ a.journal_full }}</span>
-    <a href="/article/{{ a.id }}" class="art-title">{{ a.title }}</a>
+    {{ title_link(a) }}
     <span class="art-year">{{ a.year }}</span>
   </div>
   {% endfor %}

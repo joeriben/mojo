@@ -119,6 +119,20 @@
     .memo-form { margin-left: .5rem; }
     .override-indicator { font-size: .7rem; color: var(--scannen); font-weight: 600; }
 
+    /* Tooltip */
+    .art-title { position: relative; }
+    .art-title .tooltip {
+      display: none; position: absolute; left: 0; top: 100%;
+      z-index: 100; width: 420px; max-width: 90vw;
+      background: #fff; border: 1px solid var(--border); border-radius: 6px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.12); padding: .75rem 1rem;
+      font-size: .85rem; line-height: 1.5; color: var(--fg);
+      pointer-events: none;
+    }
+    .art-title:hover .tooltip:not(:empty) { display: block; }
+    .tooltip-verdict { font-weight: 600; margin-bottom: .3rem; }
+    .tooltip-kernthese { color: var(--muted); }
+
     /* Toggle */
     details summary { cursor: pointer; user-select: none; }
     details summary::-webkit-details-marker { display: none; }

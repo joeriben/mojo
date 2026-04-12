@@ -225,6 +225,24 @@ def diskursraum(cluster_key: str | None = None):
     )
 
 
+@app.route("/api/tooltip/<article_id>")
+def api_tooltip(article_id: str):
+    """HTMX endpoint: lazy-load tooltip content on hover."""
+    store = _store()
+    a = store.get(article_id)
+    if not a or not a.agent_entry:
+        return ""
+    if isinstance(a.agent_entry, str):
+        a.agent_entry = json.loads(a.agent_entry)
+    e = a.agent_entry
+    parts = []
+    if e.get("verdict_begruendung"):
+        parts.append(f'<div class="tooltip-verdict">{e["verdict_begruendung"][:300]}</div>')
+    if e.get("kernthese"):
+        parts.append(f'<div class="tooltip-kernthese">{e["kernthese"][:400]}</div>')
+    return "".join(parts)
+
+
 @app.route("/api/verdict", methods=["POST"])
 def api_set_verdict():
     """HTMX endpoint: set user verdict override."""

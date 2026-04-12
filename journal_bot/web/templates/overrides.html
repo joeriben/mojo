@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import title_link %}
 {% block title %}MOJO — Overrides{% endblock %}
 {% block content %}
 
@@ -67,7 +68,7 @@
   <div class="art-row">
     <span class="badge badge-{{ a.effective_verdict }}">{{ verdict_label.get(a.effective_verdict, a.effective_verdict) }}</span>
     <span class="art-journal">{{ a.journal_full }}</span>
-    <a href="/article/{{ a.id }}" class="art-title">{{ a.title }}</a>
+    {{ title_link(a) }}
     <span class="art-year">{{ a.year }}</span>
   </div>
   {% endfor %}
