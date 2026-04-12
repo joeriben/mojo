@@ -7,6 +7,8 @@ Subcommands:
                (einmalig, ~3€)
   fetch      — Feeds → OpenAlex/Crossref-Enrichment → articles.db
                (wöchentlich, keine LLM-Kosten)
+  backfill   — Fehlende Abstracts aus Crossref-Cache/Playwright/Zotero nachziehen
+               (einmalig oder nach fetch, keine LLM-Kosten)
   digest     — Agent-Lauf (Opus) über Store-Einträge oder ad-hoc via --doi
                (Kosten ~$0.50–$1 pro Artikel dank Caching)
   trends     — Aggregat-Trendanalyse aus articles.db nach Obsidian
@@ -21,7 +23,7 @@ import json
 import sys
 from pathlib import Path
 
-from journal_bot import corpus, digest, fetch, summarize
+from journal_bot import abstract_backfill, corpus, digest, fetch, summarize
 from journal_bot.settings import (
     CORPUS_JSON,
     DIGEST_DIR,
@@ -501,6 +503,19 @@ def cmd_web(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_backfill(args: argparse.Namespace) -> int:
+    store = Store()
+    abstract_backfill.run(
+        store=store,
+        limit=args.limit,
+        journal=args.journal or None,
+        dry_run=args.dry_run,
+        verbose=not args.quiet,
+        delay=args.delay,
+    )
+    return 0
+
+
 def cmd_stats(args: argparse.Namespace) -> int:
     store = Store()
     s = store.stats()
@@ -671,6 +686,19 @@ def main(argv: list[str] | None = None) -> int:
 
     p_jr = journal_sub.add_parser("remove", help="Journal entfernen")
     p_jr.add_argument("short", help="Kurzname des zu entfernenden Journals")
+
+    p_backfill = sub.add_parser("backfill",
+                                help="Fehlende Abstracts nachziehen (Crossref/Playwright/Zotero)")
+    p_backfill.add_argument("--limit", type=int, default=None,
+                            help="Max. Anzahl Artikel (zum Testen)")
+    p_backfill.add_argument("--journal", default="",
+                            help="Nur dieses Journal (Kürzel, z.B. EPT)")
+    p_backfill.add_argument("--dry-run", action="store_true",
+                            help="Nur prüfen, nicht schreiben")
+    p_backfill.add_argument("--delay", type=float, default=2.0,
+                            help="Sekunden zwischen externen Requests (Default 2)")
+    p_backfill.add_argument("--quiet", action="store_true")
+    p_backfill.set_defaults(func=cmd_backfill)
 
     p_stats = sub.add_parser("stats", help="Store-Statistik")
     p_stats.set_defaults(func=cmd_stats)

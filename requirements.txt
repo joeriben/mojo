@@ -6,3 +6,7 @@ python-dotenv>=1.0
 pyzotero>=1.5.20
 tomli>=2.0; python_version < "3.11"
 pypdf>=4.0
+
+# Optional: abstract backfill (mojo backfill)
+# curl_cffi>=0.9        # HTTP with browser TLS fingerprint (Cloudflare bypass)
+# playwright>=1.40      # Headless browser fallback (run: playwright install chromium)

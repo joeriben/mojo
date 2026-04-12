@@ -12,6 +12,7 @@ profile.md
 *.key
 .env
 .enrichment_cache/
+.backfill_cache/
 
 # OS
 .DS_Store
