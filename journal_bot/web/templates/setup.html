@@ -7,7 +7,8 @@
 <div class="tab-bar">
   <button class="tab active" onclick="switchTab('profil', this)">Profil</button>
   <button class="tab" onclick="switchTab('zotero', this)">Zotero & Corpus</button>
-  <button class="tab" onclick="switchTab('journals', this)">Journals</button>
+  <button class="tab" onclick="switchTab('matrix', this)">Journal-Matrix</button>
+  <button class="tab" onclick="switchTab('diskurs', this)">Diskursräume</button>
   <button class="tab" onclick="switchTab('system', this)">System</button>
 </div>
 
@@ -106,34 +107,161 @@
   </div>
 </div>
 
-<!-- ═══════════════════════ TAB: Journals ═══════════════════════ -->
-<div id="tab-journals" class="tab-content">
+<!-- ═══════════════════════ TAB: Journal-Matrix ═══════════════════════ -->
+<div id="tab-matrix" class="tab-content">
   <div class="card">
-    <h2 style="margin-top:0;">Journal-Watchlist <span class="section-count">({{ journals|length }})</span></h2>
-    <table class="stats-table" style="width:100%;">
-      <thead>
-        <tr>
-          <th style="text-align:left;">Journal</th>
-          <th>Kürzel</th>
-          <th>Tier</th>
-          <th>Typ</th>
-          <th style="text-align:right;">Artikel</th>
-          <th>Diskursräume</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for j in journals %}
-        <tr{% if not j.enabled %} style="opacity:.5;"{% endif %}>
-          <td style="text-align:left;">{{ j.name }}</td>
-          <td><code>{{ j.short }}</code></td>
-          <td><span class="badge badge-tier-{{ j.tier|lower }}">{{ j.tier }}</span></td>
-          <td style="font-size:.8rem; color:var(--muted);">{{ j.type }}</td>
-          <td style="text-align:right;">{{ journal_counts.get(j.short, 0) }}</td>
-          <td style="font-size:.8rem;">{{ j.clusters|join(', ') }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <h2 style="margin-top:0;">
+      Journal-Matrix
+      <span class="section-count">({{ journals|length }} Journals × {{ spaces|length }} Diskursräume)</span>
+    </h2>
+    <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
+      Tier bestimmt die Analysetiefe: <span class="badge badge-tier-a">A</span> Opus + Tools
+      · <span class="badge badge-tier-b">B</span> Opus ohne Tools
+      · <span class="badge badge-tier-c">C</span> Nur Screening.
+      Diskursraum-Zuordnung bestimmt Trend-/Biblio-Analysen.
+    </p>
+
+    <form id="matrix-form">
+      <div style="overflow-x:auto;">
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <th class="matrix-journal-col" style="text-align:left;">Journal</th>
+              <th class="matrix-count-col" style="text-align:right;">n</th>
+              <th class="matrix-tier-col" colspan="3">Tier</th>
+              {% for key, meta in spaces %}
+              <th class="matrix-cluster-col">
+                <span class="cluster-header" title="{{ meta.description }}">{{ meta.name[:20] }}</span>
+              </th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for j in journals %}
+            <tr{% if not j.enabled %} class="journal-disabled"{% endif %}>
+              <td class="matrix-journal-col">
+                <span class="journal-name">{{ j.name }}</span>
+                <span class="journal-short">{{ j.short }}</span>
+              </td>
+              <td class="matrix-count-col" style="text-align:right; color:var(--muted);">
+                {{ journal_counts.get(j.short, 0) }}
+              </td>
+              <td class="matrix-tier-cell">
+                <label class="tier-radio{% if j.tier == 'A' %} tier-active tier-a{% endif %}">
+                  <input type="radio" name="tier_{{ j.short }}" value="A"
+                         {% if j.tier == 'A' %}checked{% endif %}
+                         onchange="markDirty()"> A
+                </label>
+              </td>
+              <td class="matrix-tier-cell">
+                <label class="tier-radio{% if j.tier == 'B' %} tier-active tier-b{% endif %}">
+                  <input type="radio" name="tier_{{ j.short }}" value="B"
+                         {% if j.tier == 'B' %}checked{% endif %}
+                         onchange="markDirty()"> B
+                </label>
+              </td>
+              <td class="matrix-tier-cell">
+                <label class="tier-radio{% if j.tier == 'C' %} tier-active tier-c{% endif %}">
+                  <input type="radio" name="tier_{{ j.short }}" value="C"
+                         {% if j.tier == 'C' %}checked{% endif %}
+                         onchange="markDirty()"> C
+                </label>
+              </td>
+              {% for key, meta in spaces %}
+              <td class="matrix-cluster-cell">
+                <input type="checkbox" name="cluster_{{ j.short }}" value="{{ key }}"
+                       {% if key in j.clusters %}checked{% endif %}
+                       onchange="markDirty()">
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="matrix-actions">
+        <button type="button" class="btn btn-primary" onclick="saveMatrix()" id="save-matrix-btn" disabled>
+          Änderungen speichern
+        </button>
+        <span id="matrix-status" style="margin-left:.5rem; font-size:.85rem;"></span>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════ TAB: Diskursräume ═══════════════════════ -->
+<div id="tab-diskurs" class="tab-content">
+  <div class="card">
+    <h2 style="margin-top:0;">Diskursräume verwalten</h2>
+    <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
+      Diskursräume gruppieren Journals für Trend- und Biblio-Analysen.
+      Journal-Zuordnung erfolgt in der Matrix.
+    </p>
+
+    <div id="diskurs-list">
+      {% for key, meta in spaces %}
+      <div class="diskurs-edit-card" id="diskurs-{{ key }}">
+        <div class="diskurs-edit-header">
+          <strong>{{ meta.name }}</strong>
+          <code style="font-size:.75rem; color:var(--muted);">{{ key }}</code>
+          <span style="font-size:.8rem; color:var(--muted); margin-left:auto;">
+            {{ space_journal_counts.get(key, 0) }} Journals
+          </span>
+        </div>
+        <form class="diskurs-edit-form"
+              hx-post="/api/setup/diskursraum/{{ key }}"
+              hx-target="#diskurs-{{ key }}"
+              hx-swap="outerHTML">
+          <div style="display:flex; gap:.5rem; margin-bottom:.5rem;">
+            <input type="text" name="name" value="{{ meta.name }}" class="form-input"
+                   style="max-width:300px;" placeholder="Name">
+          </div>
+          <div style="display:flex; gap:.5rem; align-items:flex-start;">
+            <textarea name="description" class="form-input" rows="2"
+                      style="max-width:500px;">{{ meta.description }}</textarea>
+          </div>
+          <div style="display:flex; gap:.5rem; margin-top:.5rem;">
+            <button type="submit" class="btn btn-primary" style="font-size:.8rem;">Speichern</button>
+            <button type="button" class="btn" style="font-size:.8rem; color:var(--pflichtlektuere);"
+                    hx-delete="/api/setup/diskursraum/{{ key }}"
+                    hx-target="#diskurs-{{ key }}"
+                    hx-swap="outerHTML"
+                    hx-confirm="Diskursraum '{{ meta.name }}' wirklich löschen? Journals werden nicht gelöscht, nur die Zuordnung.">
+              Löschen
+            </button>
+          </div>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="card" style="margin-top:1rem; border-style:dashed;">
+      <h3 style="margin-top:0;">Neuer Diskursraum</h3>
+      <form hx-post="/api/setup/diskursraum/_new"
+            hx-target="#diskurs-list"
+            hx-swap="beforeend"
+            hx-on::after-request="if(event.detail.successful) this.reset()">
+        <div style="display:flex; gap:.5rem; flex-wrap:wrap; align-items:flex-end;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Schlüssel</label>
+            <input type="text" name="key" class="form-input" style="max-width:180px;"
+                   placeholder="z.B. posthumanismus" pattern="[a-z_]+" required>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Name</label>
+            <input type="text" name="name" class="form-input" style="max-width:250px;"
+                   placeholder="Anzeigename" required>
+          </div>
+          <div class="form-group" style="margin-bottom:0; flex:1;">
+            <label>Beschreibung</label>
+            <input type="text" name="description" class="form-input"
+                   placeholder="Kurzbeschreibung des Diskursraums">
+          </div>
+          <button type="submit" class="btn btn-primary">Hinzufügen</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 
@@ -219,6 +347,47 @@
   .badge-tier-a { background: var(--pflichtlektuere); color: #fff; }
   .badge-tier-b { background: var(--scannen); color: #fff; }
   .badge-tier-c { background: var(--ignorieren); color: #fff; }
+
+  /* Matrix table */
+  .matrix-table { border-collapse: collapse; font-size: .82rem; width: 100%; }
+  .matrix-table th, .matrix-table td { padding: 4px 6px; border-bottom: 1px solid #eee; }
+  .matrix-table thead th { font-size: .7rem; text-transform: uppercase; letter-spacing: .03em;
+                            color: var(--muted); border-bottom: 2px solid var(--border);
+                            padding-bottom: 6px; white-space: nowrap; position: sticky; top: 0;
+                            background: var(--card-bg); z-index: 1; }
+  .matrix-journal-col { min-width: 200px; }
+  .matrix-count-col { width: 40px; }
+  .matrix-tier-cell { text-align: center; width: 32px; }
+  .matrix-cluster-cell { text-align: center; width: 28px; }
+  .matrix-cluster-col { writing-mode: vertical-lr; text-orientation: mixed;
+                         transform: rotate(180deg); max-width: 30px;
+                         font-size: .65rem !important; padding: 6px 2px !important; }
+  .cluster-header { cursor: help; }
+
+  .journal-name { display: block; line-height: 1.2; }
+  .journal-short { font-size: .7rem; color: var(--muted); }
+  .journal-disabled { opacity: .4; }
+
+  .tier-radio { display: inline-block; font-size: .7rem; font-weight: 700;
+                padding: 1px 4px; border-radius: 3px; cursor: pointer;
+                border: 1px solid transparent; }
+  .tier-radio input { display: none; }
+  .tier-radio:hover { border-color: var(--border); }
+  .tier-active.tier-a { background: var(--pflichtlektuere); color: #fff; }
+  .tier-active.tier-b { background: var(--scannen); color: #fff; }
+  .tier-active.tier-c { background: var(--ignorieren); color: #fff; }
+
+  .matrix-cluster-cell input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer;
+                                                  accent-color: var(--accent); }
+  .matrix-actions { margin-top: 1rem; display: flex; align-items: center; }
+  .matrix-actions .btn:disabled { opacity: .4; cursor: default; }
+
+  /* Diskursraum cards */
+  .diskurs-edit-card { border: 1px solid var(--border); border-radius: 6px;
+                       padding: .75rem 1rem; margin-bottom: .75rem;
+                       background: var(--card-bg); }
+  .diskurs-edit-header { display: flex; align-items: baseline; gap: .5rem; margin-bottom: .5rem; }
+  .diskurs-edit-form .form-input { font-size: .85rem; }
 </style>
 
 <script>
@@ -238,5 +407,68 @@ function switchTab(name, btn) {
     if (btn) switchTab(tab, btn);
   }
 })();
+
+// ---- Matrix: tier radio visual feedback ----
+document.querySelectorAll('.tier-radio input[type="radio"]').forEach(function(radio) {
+  radio.addEventListener('change', function() {
+    // Clear siblings in same row
+    var row = this.closest('tr');
+    row.querySelectorAll('.tier-radio').forEach(function(label) {
+      label.classList.remove('tier-active', 'tier-a', 'tier-b', 'tier-c');
+    });
+    var label = this.parentElement;
+    label.classList.add('tier-active', 'tier-' + this.value.toLowerCase());
+  });
+});
+
+let matrixDirty = false;
+function markDirty() {
+  matrixDirty = true;
+  document.getElementById('save-matrix-btn').disabled = false;
+  document.getElementById('matrix-status').textContent = '';
+}
+
+function saveMatrix() {
+  var form = document.getElementById('matrix-form');
+  var data = {journals: {}};
+
+  // Collect all journal shorts from radio names
+  form.querySelectorAll('input[type="radio"]:checked').forEach(function(radio) {
+    var short = radio.name.replace('tier_', '');
+    if (!data.journals[short]) data.journals[short] = {tier: '', clusters: []};
+    data.journals[short].tier = radio.value;
+  });
+
+  // Collect cluster checkboxes
+  form.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+    var short = cb.name.replace('cluster_', '');
+    if (!data.journals[short]) data.journals[short] = {tier: 'B', clusters: []};
+    if (cb.checked) data.journals[short].clusters.push(cb.value);
+  });
+
+  document.getElementById('save-matrix-btn').disabled = true;
+  document.getElementById('matrix-status').textContent = 'Speichern…';
+  document.getElementById('matrix-status').style.color = 'var(--muted)';
+
+  fetch('/api/setup/matrix', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(data)
+  }).then(function(r) { return r.json(); }).then(function(result) {
+    if (result.ok) {
+      matrixDirty = false;
+      document.getElementById('matrix-status').textContent = result.message;
+      document.getElementById('matrix-status').style.color = 'var(--lesenswert)';
+    } else {
+      document.getElementById('save-matrix-btn').disabled = false;
+      document.getElementById('matrix-status').textContent = 'Fehler: ' + (result.error || 'unbekannt');
+      document.getElementById('matrix-status').style.color = 'var(--pflichtlektuere)';
+    }
+  }).catch(function(err) {
+    document.getElementById('save-matrix-btn').disabled = false;
+    document.getElementById('matrix-status').textContent = 'Fehler: ' + err;
+    document.getElementById('matrix-status').style.color = 'var(--pflichtlektuere)';
+  });
+}
 </script>
 {% endblock %}

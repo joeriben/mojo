@@ -11,13 +11,18 @@ import os
 import shutil
 from datetime import datetime
 from pathlib import Path
-from flask import Flask, render_template, request, abort, jsonify, send_file, session, Response
+from flask import (
+    Flask, render_template, render_template_string, request,
+    abort, jsonify, send_file, session, Response,
+)
 
 from journal_bot.store import Store, ARTICLES_DB
 from journal_bot.settings import (
     CORPUS_JSON,
     DISCOURSE_SPACES,
+    DISKURSRAEUME_JSON,
     JOURNALS,
+    JOURNALS_JSON,
     KEY_FILE,
     RESEARCHER_AREAS,
     RESEARCHER_INSTITUTION,
@@ -828,6 +833,14 @@ def setup():
                 "masked": key[:7] + "…" + key[-4:] if len(key) > 12 else "***",
             }
 
+    # Discourse spaces as ordered list of (key, meta) tuples
+    spaces = list(DISCOURSE_SPACES.items())
+
+    # Count journals per discourse space
+    space_journal_counts = {
+        key: len(journals_in_cluster(key)) for key in DISCOURSE_SPACES
+    }
+
     return render_template(
         "setup.html",
         profile=_get_profile(),
@@ -835,6 +848,8 @@ def setup():
         summaries_status=_file_status(SUMMARIES_JSON, count_key="summaries"),
         journals=JOURNALS,
         journal_counts=journal_counts,
+        spaces=spaces,
+        space_journal_counts=space_journal_counts,
         db_stats=db_stats,
         db_size_mb=db_size_mb,
         api_key_status=api_key_status,
@@ -899,6 +914,194 @@ def api_setup_summarize():
             f'<div style="color:var(--pflichtlektuere); font-size:.85rem;">'
             f'Fehler: {esc(str(e))}</div>'
         )
+
+
+# ========================================================= Matrix API ===
+
+
+def _save_journals_json() -> None:
+    """Write current JOURNALS state back to journals.json."""
+    data = json.loads(JOURNALS_JSON.read_text(encoding="utf-8"))
+    journal_by_short = {j["short"]: j for j in data.get("journals", [])}
+    for j in JOURNALS:
+        if j.short in journal_by_short:
+            journal_by_short[j.short]["tier"] = j.tier
+    data["journals"] = list(journal_by_short.values())
+    JOURNALS_JSON.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+
+
+def _save_diskursraeume_json() -> None:
+    """Write current DISCOURSE_SPACES + cluster assignments to diskursraeume.json."""
+    today = datetime.now().strftime("%Y-%m-%d")
+    dr_data = {
+        "version": 1,
+        "discourse_spaces": {},
+        "journal_clusters": {},
+    }
+    for key, meta in DISCOURSE_SPACES.items():
+        dr_data["discourse_spaces"][key] = {
+            "name": meta["name"],
+            "description": meta["description"],
+            "created": meta.get("created", today),
+            "modified": today,
+        }
+    for j in JOURNALS:
+        if j.clusters:
+            dr_data["journal_clusters"][j.short] = list(j.clusters)
+    DISKURSRAEUME_JSON.write_text(
+        json.dumps(dr_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+
+
+@app.route("/api/setup/matrix", methods=["POST"])
+def api_setup_matrix():
+    """Save journal tier + cluster assignments from the matrix form."""
+    data = request.get_json(force=True)
+    journal_map = data.get("journals", {})
+
+    changes = 0
+    short_to_journal = {j.short: j for j in JOURNALS}
+    for short, vals in journal_map.items():
+        j = short_to_journal.get(short)
+        if not j:
+            continue
+        new_tier = vals.get("tier", j.tier)
+        new_clusters = vals.get("clusters", list(j.clusters))
+        if new_tier != j.tier:
+            j.tier = new_tier
+            changes += 1
+        if sorted(new_clusters) != sorted(j.clusters):
+            j.clusters = new_clusters
+            changes += 1
+
+    if changes:
+        _save_journals_json()
+        _save_diskursraeume_json()
+
+    return jsonify({"ok": True, "message": f"✓ {changes} Änderungen gespeichert"})
+
+
+@app.route("/api/setup/diskursraum/_new", methods=["POST"])
+def api_setup_diskursraum_new():
+    """HTMX: Create a new discourse space."""
+    import re
+    data = request.form
+    key = data.get("key", "").strip().lower()
+    name = data.get("name", "").strip()
+    description = data.get("description", "").strip()
+
+    if not key or not name:
+        return '<div class="diskurs-edit-card" style="color:var(--pflichtlektuere);">Schlüssel und Name sind Pflicht.</div>'
+
+    if not re.match(r'^[a-z_]+$', key):
+        return '<div class="diskurs-edit-card" style="color:var(--pflichtlektuere);">Schlüssel: nur Kleinbuchstaben und Unterstriche.</div>'
+
+    if key in DISCOURSE_SPACES:
+        return f'<div class="diskurs-edit-card" style="color:var(--pflichtlektuere);">Diskursraum "{key}" existiert bereits.</div>'
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    DISCOURSE_SPACES[key] = {
+        "name": name,
+        "description": description,
+        "created": today,
+        "modified": today,
+    }
+    _save_diskursraeume_json()
+
+    # Return the new card
+    return render_template_string(
+        DISKURSRAUM_CARD_TEMPLATE,
+        key=key,
+        meta=DISCOURSE_SPACES[key],
+        count=0,
+    )
+
+
+@app.route("/api/setup/diskursraum/<key>", methods=["POST"])
+def api_setup_diskursraum_update(key: str):
+    """HTMX: Update discourse space name/description."""
+    if key not in DISCOURSE_SPACES:
+        abort(404)
+
+    name = request.form.get("name", "").strip()
+    description = request.form.get("description", "").strip()
+
+    if name:
+        DISCOURSE_SPACES[key]["name"] = name
+    if description is not None:
+        DISCOURSE_SPACES[key]["description"] = description
+    DISCOURSE_SPACES[key]["modified"] = datetime.now().strftime("%Y-%m-%d")
+
+    _save_diskursraeume_json()
+
+    count = len(journals_in_cluster(key))
+    return render_template_string(
+        DISKURSRAUM_CARD_TEMPLATE,
+        key=key,
+        meta=DISCOURSE_SPACES[key],
+        count=count,
+    )
+
+
+@app.route("/api/setup/diskursraum/<key>", methods=["DELETE"])
+def api_setup_diskursraum_delete(key: str):
+    """HTMX: Delete a discourse space."""
+    if key not in DISCOURSE_SPACES:
+        abort(404)
+
+    name = DISCOURSE_SPACES[key]["name"]
+    del DISCOURSE_SPACES[key]
+
+    # Remove from all journal cluster assignments
+    for j in JOURNALS:
+        if key in j.clusters:
+            j.clusters.remove(key)
+
+    _save_diskursraeume_json()
+
+    return (
+        f'<div class="diskurs-edit-card" style="border-color:var(--muted); opacity:.6;">'
+        f'<em>„{html_mod.escape(name)}" gelöscht.</em></div>'
+    )
+
+
+# Template for rendering a single diskursraum card (used by create + update)
+DISKURSRAUM_CARD_TEMPLATE = """
+<div class="diskurs-edit-card" id="diskurs-{{ key }}">
+  <div class="diskurs-edit-header">
+    <strong>{{ meta.name }}</strong>
+    <code style="font-size:.75rem; color:var(--muted);">{{ key }}</code>
+    <span style="font-size:.8rem; color:var(--muted); margin-left:auto;">
+      {{ count }} Journals
+    </span>
+  </div>
+  <form class="diskurs-edit-form"
+        hx-post="/api/setup/diskursraum/{{ key }}"
+        hx-target="#diskurs-{{ key }}"
+        hx-swap="outerHTML">
+    <div style="display:flex; gap:.5rem; margin-bottom:.5rem;">
+      <input type="text" name="name" value="{{ meta.name }}" class="form-input"
+             style="max-width:300px;" placeholder="Name">
+    </div>
+    <div style="display:flex; gap:.5rem; align-items:flex-start;">
+      <textarea name="description" class="form-input" rows="2"
+                style="max-width:500px;">{{ meta.description }}</textarea>
+    </div>
+    <div style="display:flex; gap:.5rem; margin-top:.5rem;">
+      <button type="submit" class="btn btn-primary" style="font-size:.8rem;">Speichern</button>
+      <button type="button" class="btn" style="font-size:.8rem; color:var(--pflichtlektuere);"
+              hx-delete="/api/setup/diskursraum/{{ key }}"
+              hx-target="#diskurs-{{ key }}"
+              hx-swap="outerHTML"
+              hx-confirm="Diskursraum '{{ meta.name }}' wirklich löschen?">
+        Löschen
+      </button>
+    </div>
+  </form>
+</div>
+"""
 
 
 # ============================================================= Backup ===
