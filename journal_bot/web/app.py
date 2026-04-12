@@ -549,6 +549,66 @@ def overrides():
     )
 
 
+def _md_to_html(text: str) -> str:
+    """Convert markdown text to HTML, rendering tables properly."""
+    esc = html_mod.escape
+    lines = text.split("\n")
+    out: list[str] = []
+    i = 0
+    while i < len(lines):
+        # Detect markdown table: line with |, followed by separator |---|
+        if ("|" in lines[i]
+                and i + 1 < len(lines)
+                and "|" in lines[i + 1]
+                and set(lines[i + 1].replace("|", "").strip()) <= {"-", ":", " "}):
+            # Parse header
+            headers = [c.strip() for c in lines[i].split("|")]
+            headers = [h for h in headers if h]  # remove empty from leading/trailing |
+            out.append('<div style="overflow-x:auto;"><table class="md-table"><thead><tr>')
+            for h in headers:
+                out.append(f"<th>{esc(h)}</th>")
+            out.append("</tr></thead><tbody>")
+            i += 2  # skip header + separator
+            while i < len(lines) and "|" in lines[i] and lines[i].strip():
+                cells = [c.strip() for c in lines[i].split("|")]
+                cells = [c for c in cells if c or cells.index(c) not in (0, len(cells) - 1)]
+                # Handle leading/trailing empty from |...|
+                raw = lines[i].strip()
+                if raw.startswith("|"):
+                    cells = [c.strip() for c in raw[1:].split("|")]
+                    if cells and cells[-1] == "":
+                        cells = cells[:-1]
+                out.append("<tr>")
+                for c in cells:
+                    out.append(f"<td>{esc(c)}</td>")
+                out.append("</tr>")
+                i += 1
+            out.append("</tbody></table></div>")
+        elif lines[i].startswith("# "):
+            out.append(f"<h3>{esc(lines[i][2:])}</h3>")
+            i += 1
+        elif lines[i].startswith("## "):
+            out.append(f"<h4>{esc(lines[i][3:])}</h4>")
+            i += 1
+        elif lines[i].startswith("_") and lines[i].endswith("_"):
+            out.append(f"<p style='color:var(--muted); font-size:.85rem;'><em>{esc(lines[i][1:-1])}</em></p>")
+            i += 1
+        elif lines[i].startswith("[biblio]") or lines[i].startswith("[trends]"):
+            # Log lines → skip in rendered output
+            i += 1
+        elif lines[i].strip() == "":
+            i += 1
+        else:
+            # Collect consecutive non-special lines as <pre>
+            pre_lines = []
+            while i < len(lines) and lines[i].strip() and "|" not in lines[i] and not lines[i].startswith("#") and not lines[i].startswith("[biblio]") and not lines[i].startswith("[trends]"):
+                pre_lines.append(lines[i])
+                i += 1
+            if pre_lines:
+                out.append(f'<pre style="white-space:pre-wrap; font-size:.85rem; line-height:1.5;">{esc(chr(10).join(pre_lines))}</pre>')
+    return "\n".join(out)
+
+
 @app.route("/api/diskurs/trends/<cluster_key>", methods=["POST"])
 def api_diskurs_trends(cluster_key: str):
     """HTMX endpoint: run LLM trend analysis for a discourse space."""
@@ -582,20 +642,15 @@ def api_diskurs_trends(cluster_key: str):
             f'{result.get("count", 0)} Artikel analysiert · ${cost:.3f}'
             f'{" · " + esc(path) if path else ""}</p>'
         )
-    parts.append(
-        f'<pre style="white-space:pre-wrap; font-size:.85rem; '
-        f'line-height:1.5; margin-top:.5rem;">{esc(output)}</pre>'
-    )
-    # If the trend analysis wrote a markdown file, show its content
+    # If the trend analysis wrote a markdown file, render it
     if path:
         try:
             from pathlib import Path
             md_content = Path(path).read_text(encoding="utf-8")
             parts.append(
-                f'<details style="margin-top:.75rem;">'
+                f'<details style="margin-top:.75rem;" open>'
                 f'<summary><strong>Vollständiges Dossier</strong></summary>'
-                f'<pre style="white-space:pre-wrap; font-size:.85rem; '
-                f'line-height:1.5; margin-top:.5rem;">{esc(md_content)}</pre>'
+                f'<div style="margin-top:.5rem;">{_md_to_html(md_content)}</div>'
                 f'</details>'
             )
         except Exception:
@@ -634,19 +689,12 @@ def api_diskurs_biblio(cluster_key: str):
         f'{" · Höchste Zitation: " + str(result.get("top_cited", 0)) if result.get("top_cited") else ""}'
         f'</p>'
     )
-    parts.append(
-        f'<pre style="white-space:pre-wrap; font-size:.85rem; '
-        f'line-height:1.5; margin-top:.5rem;">{esc(output)}</pre>'
-    )
-    # Show the full markdown report
+    # Render the markdown report with proper tables
     if path:
         try:
             from pathlib import Path
             md_content = Path(path).read_text(encoding="utf-8")
-            parts.append(
-                f'<pre style="white-space:pre-wrap; font-size:.85rem; '
-                f'line-height:1.5; margin-top:.75rem;">{esc(md_content)}</pre>'
-            )
+            parts.append(f'<div style="margin-top:.5rem;">{_md_to_html(md_content)}</div>')
         except Exception:
             pass
     parts.append('</div>')
@@ -670,12 +718,7 @@ def api_diskurs_profile(cluster_key: str):
             f'<strong>Fehler:</strong> {html_mod.escape(str(e))}</div>'
         )
 
-    return (
-        f'<div class="card">'
-        f'<pre style="white-space:pre-wrap; font-size:.85rem; '
-        f'line-height:1.5;">{html_mod.escape(md)}</pre>'
-        f'</div>'
-    )
+    return f'<div class="card">{_md_to_html(md)}</div>'
 
 
 def main():

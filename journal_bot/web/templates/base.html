@@ -121,6 +121,16 @@
     .memo-form { margin-left: .5rem; }
     .override-indicator { font-size: .7rem; color: var(--scannen); font-weight: 600; }
 
+    /* Markdown tables */
+    .md-table { border-collapse: collapse; font-size: .82rem; width: 100%;
+                margin: .5rem 0; }
+    .md-table th, .md-table td { padding: 4px 8px; border: 1px solid var(--border);
+                                  text-align: left; white-space: nowrap; }
+    .md-table th { background: #f5f5f3; font-weight: 600; font-size: .75rem;
+                   text-transform: uppercase; letter-spacing: .02em; }
+    .md-table tr:hover { background: #f9f9f7; }
+    .md-table td:nth-child(-n+3) { text-align: right; }
+
     /* Tooltip */
     .art-title { position: relative; }
     .art-title .tooltip {

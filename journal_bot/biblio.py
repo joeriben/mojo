@@ -30,13 +30,14 @@ class CitedWork:
     key: str           # Normalisierter composite key
     raw_samples: list[str]  # Originalzeilen (für Anzeige)
     first_author: str
-    title_fragment: str
-    year: str          # Erscheinungsjahr der zitierten Arbeit (wenn bekannt)
+    title_fragment: str     # 4-Wort-Normalisierung (für Matching)
+    year: str               # Erscheinungsjahr der zitierten Arbeit
     doi: str
-    count: int         # Wie oft insgesamt zitiert (Roh-Zählung)
-    unique_citers: int # Anzahl VERSCHIEDENER zitierender Erst-Autor*innen
-    citing_authors: list[str]  # Liste der zitierenden Autor*innen (normalisiert, unique)
+    count: int              # Wie oft insgesamt zitiert (Roh-Zählung)
+    unique_citers: int      # Anzahl VERSCHIEDENER zitierender Erst-Autor*innen
+    citing_authors: list[str]   # zitierenden Autor*innen (normalisiert, unique)
     citing_years: dict[int, int]  # {Jahr_des_zitierenden_Artikels: Anzahl}
+    title_full: str = ""    # Voller extrahierter Titel (für Anzeige)
 
 
 # ---------------------------------------------------------------- Normalisierung
@@ -146,8 +147,8 @@ def _parse_refs(article: StoredArticle) -> list[dict]:
     return refs if isinstance(refs, list) else []
 
 
-def _extract_ref_identity(ref: dict) -> tuple[str, str, str, str]:
-    """Gibt (composite_key, first_author, title_fragment, year) zurück."""
+def _extract_ref_identity(ref: dict) -> tuple[str, str, str, str, str]:
+    """Gibt (composite_key, first_author, title_fragment, year, title_full) zurück."""
     authors = ref.get("authors") or []
     first_author = authors[0] if authors else ""
     title = ref.get("title") or ""
@@ -169,8 +170,11 @@ def _extract_ref_identity(ref: dict) -> tuple[str, str, str, str]:
         if m:
             year = m.group(0)
 
+    # Clean up full title for display
+    title_full = re.sub(r"\s+", " ", title).strip().rstrip(".,;")
+
     key = _make_ref_key(first_author, title)
-    return key, _normalize_author(first_author), _normalize_title(title), str(year)
+    return key, _normalize_author(first_author), _normalize_title(title), str(year), title_full
 
 
 def analyze(
@@ -210,7 +214,7 @@ def analyze(
         citing_author = _normalize_author(art.authors[0]) if art.authors else ""
         refs = _parse_refs(art)
         for ref in refs:
-            key, first_author, title_frag, ref_year = _extract_ref_identity(ref)
+            key, first_author, title_frag, ref_year, title_full = _extract_ref_identity(ref)
             if not key or len(key) < 5:
                 continue
 
@@ -224,6 +228,7 @@ def analyze(
                 ref_meta[key] = {
                     "first_author": first_author,
                     "title_fragment": title_frag,
+                    "title_full": title_full,
                     "year": ref_year,
                     "doi": ref.get("doi", ""),
                 }
@@ -254,6 +259,7 @@ def analyze(
             raw_samples=ref_samples.get(key, []),
             first_author=meta.get("first_author", ""),
             title_fragment=meta.get("title_fragment", ""),
+            title_full=meta.get("title_full", ""),
             year=meta.get("year", ""),
             doi=meta.get("doi", ""),
             count=count,
@@ -322,16 +328,17 @@ def render_markdown(
         return "\n".join(lines)
 
     # Tabelle: Sortierung nach unique_citers (robuster als Rohzahl)
-    lines.append("| # | Aut. | Zit. | Trend | Erst-Autor | Titel (Kurzform) | Jahr | Zitiert in Jahren |")
-    lines.append("|---|------|------|-------|------------|------------------|------|-------------------|")
+    lines.append("| # | Aut. | Zit. | Trend | Erst-Autor | Titel | Jahr | Zitiert in Jahren |")
+    lines.append("|---|------|------|-------|------------|-------|------|-------------------|")
     for i, r in enumerate(results, 1):
         trend = _trend_label(r.citing_years, total_count=r.count)
         years_str = ", ".join(
             f"{y}({n})" for y, n in sorted(r.citing_years.items())
         )
+        title_display = r.title_full or r.title_fragment
         lines.append(
             f"| {i} | {r.unique_citers} | {r.count} | {trend} | {r.first_author} | "
-            f"{r.title_fragment[:50]} | {r.year} | {years_str} |"
+            f"{title_display} | {r.year} | {years_str} |"
         )
 
     lines.append("")
