@@ -64,7 +64,11 @@ CREATE TABLE IF NOT EXISTS articles (
     -- User override (null = agrees with agent)
     user_verdict        TEXT,
     user_memo           TEXT,
-    user_verdict_at     TEXT
+    user_verdict_at     TEXT,
+
+    -- Workflow
+    archived_at         TEXT,
+    zotero_key          TEXT          -- Zotero item key after export
 );
 
 CREATE INDEX IF NOT EXISTS idx_articles_journal     ON articles(journal_short);
@@ -83,6 +87,12 @@ MIGRATIONS = [
     """,
     """
     ALTER TABLE articles ADD COLUMN user_verdict_at TEXT;
+    """,
+    """
+    ALTER TABLE articles ADD COLUMN archived_at TEXT;
+    """,
+    """
+    ALTER TABLE articles ADD COLUMN zotero_key TEXT;
     """,
 ]
 
@@ -132,9 +142,17 @@ class StoredArticle:
     user_memo: str = ""
     user_verdict_at: str = ""
 
+    # Workflow
+    archived_at: str = ""
+    zotero_key: str = ""
+
     @property
     def effective_verdict(self) -> str:
         return self.user_verdict or self.agent_verdict
+
+    @property
+    def is_archived(self) -> bool:
+        return bool(self.archived_at)
 
 
 class Store:
@@ -256,6 +274,21 @@ class Store:
                     iterations,
                     article_id,
                 ),
+            )
+
+    def set_archived(self, article_id: str, archived: bool = True) -> None:
+        ts = datetime.now(timezone.utc).isoformat() if archived else None
+        with self._conn() as c:
+            c.execute(
+                "UPDATE articles SET archived_at = ? WHERE id = ?",
+                (ts, article_id),
+            )
+
+    def set_zotero_key(self, article_id: str, zotero_key: str) -> None:
+        with self._conn() as c:
+            c.execute(
+                "UPDATE articles SET zotero_key = ? WHERE id = ?",
+                (zotero_key, article_id),
             )
 
     def set_user_verdict(
@@ -411,4 +444,6 @@ def _row_to_article(row: sqlite3.Row) -> StoredArticle:
         user_verdict=row["user_verdict"] or "",
         user_memo=row["user_memo"] or "",
         user_verdict_at=row["user_verdict_at"] or "",
+        archived_at=row["archived_at"] or "",
+        zotero_key=row["zotero_key"] or "",
     )

@@ -1,0 +1,19 @@
+<span id="archive-{{ a.id }}">
+{% if a.is_archived %}
+<button class="btn" style="opacity:.6;"
+        hx-post="/api/archive/{{ a.id }}"
+        hx-target="#archive-{{ a.id }}"
+        hx-swap="outerHTML"
+        title="Aus Archiv holen">
+  Archiviert ✓
+</button>
+{% else %}
+<button class="btn"
+        hx-post="/api/archive/{{ a.id }}"
+        hx-target="#archive-{{ a.id }}"
+        hx-swap="outerHTML"
+        title="Archivieren (aus Digest ausblenden)">
+  Archivieren
+</button>
+{% endif %}
+</span>

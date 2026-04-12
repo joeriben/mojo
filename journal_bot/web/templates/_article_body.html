@@ -1,0 +1,152 @@
+{# Article detail body — used standalone and as HTMX swap target #}
+
+{% if a.agent_entry %}
+{% set e = a.agent_entry %}
+
+<!-- Verdict -->
+<div class="detail-section">
+  {% include "_verdict_controls.html" %}
+  <p style="margin-top:.4rem;">{{ e.verdict_begruendung }}</p>
+</div>
+
+<!-- Zitiert Dich -->
+{% if a.citation_hits %}
+<div class="cite-section detail-section">
+  <h3>Zitiert Dich</h3>
+  {% for h in a.citation_hits %}
+  <div style="font-size:.9rem; margin-top:.3rem;">
+    {% if h.confidence == "high" %}
+    <strong>{{ ", ".join(h.pub_authors[:2]) or "?" }}</strong> ({{ h.pub_year }}):
+    {{ h.pub_title[:120] }} <code>{{ h.pub_id }}</code>
+    {% elif h.confidence == "medium" %}
+    <em>(wahrscheinlich)</em> <strong>{{ ", ".join(h.pub_authors[:2]) or "?" }}</strong> ({{ h.pub_year }}):
+    {{ h.pub_title[:120] }} <code>{{ h.pub_id }}</code>
+    {% else %}
+    <em>(unspezifische Erwähnung)</em> <code>{{ h.pub_id }}</code>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Kernthese -->
+<div class="detail-section">
+  <h3>Kernthese</h3>
+  <p>{{ e.kernthese }}</p>
+</div>
+
+<!-- Bezüge -->
+<div class="detail-section">
+  <h3>Bezüge zu Deinem Werk</h3>
+  {% if e.bezuege %}
+  {% for b in e.bezuege %}
+  <div class="bezug">
+    <strong>{{ b.pub_kurz }}</strong> <code>{{ b.pub_id }}</code>
+    <span class="bezug-rel">{{ relation_label.get(b.relation, b.relation) }}</span>
+    <p style="margin-top:.2rem; font-size:.9rem;">{{ b.bezug }}</p>
+  </div>
+  {% endfor %}
+  {% else %}
+  <p style="color:var(--muted);">Keine substantiellen Bezüge gefunden.</p>
+  {% endif %}
+</div>
+
+<!-- Bemerkenswert -->
+{% if e.bemerkenswert %}
+<div class="detail-section">
+  <h3>Bemerkenswert</h3>
+  <ul style="padding-left:1.2rem; font-size:.9rem;">
+    {% for note in e.bemerkenswert %}
+    <li>{{ note }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<!-- Methodisch/Theoretisch -->
+{% if e.theoretisch_methodisch %}
+<div class="detail-section">
+  <h3>Methodisch / Theoretisch</h3>
+  <p style="font-size:.9rem;">{{ e.theoretisch_methodisch }}</p>
+</div>
+{% endif %}
+
+{% else %}
+<p style="color:var(--muted); margin-top:1rem;">(Kein Agent-Ergebnis vorhanden.)</p>
+{% endif %}
+
+<!-- Meta footer -->
+<div class="meta-footer">
+  {{ a.iterations }} Iterationen ·
+  {{ a.tokens_in|default(0) }} in / {{ a.tokens_out|default(0) }} out
+  {% if a.tokens_cached_read %} · Cache: {{ a.tokens_cached_read }} read{% endif %}
+  {% if a.cost_usd %} · ${{ "%.3f"|format(a.cost_usd) }}{% endif %}
+</div>
+
+<!-- Actions -->
+<div class="actions" style="margin-top:1rem;">
+  {% if not a.agent_entry or a.cost_usd < 0.02 or (a.agent_entry and a.agent_entry.kernthese is defined and a.agent_entry.kernthese[:1] == "(") or (a.agent_entry and not a.agent_entry.get("bezuege")) %}
+  <button class="btn btn-primary"
+          hx-post="/api/deepen/{{ a.id }}"
+          hx-target="#article-content"
+          hx-swap="innerHTML"
+          hx-indicator="#deepen-spinner"
+          title="Vertiefte Opus-Analyse (~$0.05)">
+    Vertiefen
+  </button>
+  <span id="deepen-spinner" class="htmx-indicator" style="font-size:.8rem; color:var(--muted);">Analyse läuft…</span>
+  {% endif %}
+  {% if a.doi %}<a href="https://doi.org/{{ a.doi }}" target="_blank" class="btn">DOI öffnen</a>{% endif %}
+  {% if a.url %}<a href="{{ a.url }}" target="_blank" class="btn">URL</a>{% endif %}
+  <span id="obsidian-{{ a.id }}">
+    <button class="btn"
+            hx-post="/api/obsidian/{{ a.id }}"
+            hx-target="#obsidian-{{ a.id }}"
+            hx-swap="outerHTML"
+            title="Als Markdown in Obsidian-Vault exportieren">
+      → Obsidian
+    </button>
+  </span>
+  {% if not a.zotero_key %}
+  <span id="zotero-{{ a.id }}">
+    <button class="btn"
+            hx-post="/api/zotero/{{ a.id }}"
+            hx-target="#zotero-{{ a.id }}"
+            hx-swap="outerHTML"
+            title="In Zotero-Collection 'mojo' exportieren">
+      → Zotero
+    </button>
+  </span>
+  {% else %}
+  <span style="color:var(--lesenswert); font-size:.85rem;">In Zotero (<code>{{ a.zotero_key }}</code>)</span>
+  {% endif %}
+  {% include "_archive_button.html" %}
+</div>
+
+{% if a.agent_entry and a.agent_entry._previous is defined %}
+{% set prev = a.agent_entry._previous %}
+<details style="margin-top:1.5rem;">
+  <summary><h3 style="display:inline; color:var(--muted);">Vorherige Analyse (vor Vertiefung)</h3></summary>
+  <div style="opacity:.7; margin-top:.5rem; padding-left:.75rem; border-left:3px solid var(--border);">
+    <p style="font-size:.85rem;"><strong>Verdict:</strong> {{ verdict_label.get(prev.verdict, prev.verdict or '?') }} — {{ prev.verdict_begruendung or '' }}</p>
+    {% if prev.kernthese %}
+    <p style="font-size:.85rem; margin-top:.4rem;"><strong>Kernthese:</strong> {{ prev.kernthese }}</p>
+    {% endif %}
+    {% if prev.bezuege %}
+    <div style="margin-top:.4rem;">
+      <strong style="font-size:.85rem;">Bezüge:</strong>
+      {% for b in prev.bezuege %}
+      <div class="bezug" style="font-size:.85rem;">
+        <strong>{{ b.pub_kurz }}</strong> <code>{{ b.pub_id }}</code>
+        <span class="bezug-rel">{{ relation_label.get(b.relation, b.relation) }}</span>
+        <p style="margin-top:.1rem;">{{ b.bezug }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if prev.theoretisch_methodisch %}
+    <p style="font-size:.85rem; margin-top:.4rem;"><strong>Methodisch:</strong> {{ prev.theoretisch_methodisch }}</p>
+    {% endif %}
+  </div>
+</details>
+{% endif %}

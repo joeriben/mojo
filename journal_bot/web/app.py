@@ -49,7 +49,7 @@ def digest():
     from datetime import date
     store = _store()
     # Default to current year if no filters set at all
-    has_any_filter = any(request.args.get(k) for k in ("year", "cluster", "journal", "verdict"))
+    has_any_filter = any(request.args.get(k) for k in ("year", "cluster", "journal", "verdict", "archived"))
     year = request.args.get("year", type=int)
     if year is None and not has_any_filter:
         year = date.today().year
@@ -76,6 +76,11 @@ def digest():
         if a.agent_entry and isinstance(a.agent_entry, str):
             a.agent_entry = json.loads(a.agent_entry)
         a.journal_full = a.journal_full or _journal_full_name(a.journal_short)
+
+    # Hide archived unless explicitly requested
+    show_archived = request.args.get("archived") == "1"
+    if not show_archived:
+        articles = [a for a in articles if not a.is_archived]
 
     # Additional verdict filter (uses effective verdict)
     if verdict_filter:
@@ -258,8 +263,19 @@ def api_set_verdict():
     if not a:
         abort(404)
 
-    # Empty verdict = reset to agent verdict
+    # Check if this is an upgrade to lesenswert that needs deepening
+    old_effective = a.effective_verdict
+    is_upgrade_to_lesenswert = (
+        verdict in ("lesenswert", "pflichtlektuere")
+        and old_effective not in ("lesenswert", "pflichtlektuere")
+        and _needs_deepening(a)
+    )
+
     store.set_user_verdict(article_id, verdict=verdict, memo=memo)
+
+    # Auto-deepen on upgrade to lesenswert
+    if is_upgrade_to_lesenswert:
+        _run_deepen(article_id, store)
 
     # Re-fetch to get updated state
     a = store.get(article_id)
@@ -272,6 +288,141 @@ def api_set_verdict():
         a=a,
         verdict_label=VERDICT_LABEL,
     )
+
+
+def _needs_deepening(a) -> bool:
+    """Check if article has only a shallow analysis."""
+    if not a.agent_entry:
+        return True
+    e = a.agent_entry if isinstance(a.agent_entry, dict) else json.loads(a.agent_entry)
+    # Shallow indicators: no bezuege, placeholder kernthese, zero iterations
+    kernthese = e.get("kernthese", "")
+    if kernthese.startswith("(") and kernthese.endswith(")"):
+        return True  # placeholder like "(Screening: ignorieren)"
+    if not e.get("bezuege") and a.iterations == 0:
+        return True
+    return False
+
+
+def _run_deepen(article_id: str, store: Store) -> None:
+    """Run full assess_then_verify for an article, update DB.
+
+    Stashes the previous agent_entry as _previous inside the new entry
+    so the UI can show both for comparison.
+    """
+    from journal_bot.digest import process_article
+    a = store.get(article_id)
+    if not a:
+        return
+
+    # Save old entry for comparison
+    old_entry = a.agent_entry
+    if isinstance(old_entry, str):
+        old_entry = json.loads(old_entry)
+
+    try:
+        process_article(a, store, verbose=False, mode="assess_verify")
+    except Exception as e:
+        print(f"[web] Vertiefen fehlgeschlagen für {article_id}: {e}")
+        return
+
+    # Stash old entry inside new one
+    if old_entry:
+        a = store.get(article_id)
+        new_entry = a.agent_entry
+        if isinstance(new_entry, str):
+            new_entry = json.loads(new_entry)
+        if new_entry and new_entry != old_entry:
+            new_entry["_previous"] = old_entry
+            with store._conn() as c:
+                c.execute(
+                    "UPDATE articles SET agent_entry_json = ? WHERE id = ?",
+                    (json.dumps(new_entry, ensure_ascii=False), article_id),
+                )
+
+
+@app.route("/api/deepen/<article_id>", methods=["POST"])
+def api_deepen(article_id: str):
+    """HTMX endpoint: run full analysis on demand."""
+    store = _store()
+    a = store.get(article_id)
+    if not a:
+        abort(404)
+
+    _run_deepen(article_id, store)
+
+    # Re-fetch
+    a = store.get(article_id)
+    if a.agent_entry and isinstance(a.agent_entry, str):
+        a.agent_entry = json.loads(a.agent_entry)
+    a.journal_full = a.journal_full or _journal_full_name(a.journal_short)
+
+    return render_template(
+        "_article_body.html",
+        a=a,
+        verdict_label=VERDICT_LABEL,
+        relation_label=RELATION_LABEL,
+    )
+
+
+@app.route("/api/zotero/<article_id>", methods=["POST"])
+def api_zotero(article_id: str):
+    """HTMX endpoint: export article to Zotero."""
+    from journal_bot.zotero_export import export_to_zotero
+    store = _store()
+    a = store.get(article_id)
+    if not a:
+        abort(404)
+    try:
+        zotero_key = export_to_zotero(article_id, store)
+        return (
+            f'<span style="color:var(--lesenswert); font-size:.85rem;">'
+            f'In Zotero (<code>{zotero_key}</code>)</span>'
+        )
+    except Exception as e:
+        # Keep the button so user can retry after fixing the issue
+        return (
+            f'<span id="zotero-{article_id}">'
+            f'<span style="color:var(--pflichtlektuere); font-size:.85rem;">{e}</span> '
+            f'<button class="btn" style="margin-left:.3rem;"'
+            f' hx-post="/api/zotero/{article_id}"'
+            f' hx-target="#zotero-{article_id}"'
+            f' hx-swap="outerHTML">Nochmal</button>'
+            f'</span>'
+        )
+
+
+@app.route("/api/obsidian/<article_id>", methods=["POST"])
+def api_obsidian(article_id: str):
+    """HTMX endpoint: export article as Obsidian Markdown."""
+    from journal_bot.obsidian_export import export_to_obsidian
+    store = _store()
+    a = store.get(article_id)
+    if not a:
+        abort(404)
+    try:
+        path = export_to_obsidian(article_id, store)
+        return (
+            f'<span style="color:var(--lesenswert); font-size:.85rem;">'
+            f'Obsidian ({path.name})</span>'
+        )
+    except Exception as e:
+        return (
+            f'<span style="color:var(--pflichtlektuere); font-size:.85rem;">'
+            f'Fehler: {e}</span>'
+        )
+
+
+@app.route("/api/archive/<article_id>", methods=["POST"])
+def api_archive(article_id: str):
+    """HTMX endpoint: archive article (mark as done)."""
+    store = _store()
+    a = store.get(article_id)
+    if not a:
+        abort(404)
+    store.set_archived(article_id, archived=not a.is_archived)
+    a = store.get(article_id)
+    return render_template("_archive_button.html", a=a)
 
 
 @app.route("/review")
