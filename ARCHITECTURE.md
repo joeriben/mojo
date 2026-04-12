@@ -7,10 +7,10 @@ Ein persönlicher Forschungsassistent, der wöchentlich wissenschaftliche Zeitsc
 ## Drei Phasen
 
 ```
-1. INGEST          2. DIGEST              3. EXPLORE (geplant)
-Zotero → corpus    fetch → screen →       Upload Stub →
-Haiku → summaries  agent → store          Retrieval gegen DB
-(einmalig)         (wöchentlich)          (on demand)
+1. INGEST          2. DIGEST              3. REVIEW            4. EXPLORE (geplant)
+Zotero → corpus    fetch → screen →       UI: confirm/override Upload Stub →
+Haiku → summaries  agent → store          Vertiefen, Export    Retrieval gegen DB
+(einmalig)         (wöchentlich)          Zotero, Obsidian     (on demand)
 ```
 
 ---
@@ -139,7 +139,16 @@ articles (
     agent_processed_at, agent_verdict, agent_entry_json,
     citation_hits_json,
     tokens_in, tokens_out, tokens_cached_read, tokens_cache_write,
-    cost_usd, iterations
+    cost_usd, iterations,
+
+    -- User Review
+    user_verdict,       -- NULL = agrees with agent
+    user_memo,          -- Freitext-Begründung
+    user_verdict_at,
+
+    -- Workflow
+    archived_at,        -- aus Digest ausgeblendet
+    zotero_key          -- Zotero item key nach Export
 )
 ```
 
@@ -189,8 +198,17 @@ articles (
 | `corpus.py` | Zotero-Ingest → corpus.json |
 | `summarize.py` | Haiku-Summaries → summaries.json |
 | `journals.py` | Journal add/remove/list CLI |
-| `output.py` | Markdown-Rendering (wird durch Web-UI ersetzt) |
+| `output.py` | Markdown-Rendering (Legacy, wird durch Web-UI ersetzt) |
 | `state.py` | Legacy seen.db (wird nicht mehr genutzt) |
+| `zotero_export.py` | Export → Zotero via Connector-API |
+| `obsidian_export.py` | Export → Obsidian Markdown mit Frontmatter |
+
+### Web-UI
+
+| Modul | Funktion |
+|-------|----------|
+| `web/app.py` | Flask-App, alle Routes + HTMX-Endpoints |
+| `web/templates/` | Jinja2-Templates (Digest, Artikel, Diskurs, Review, Overrides, Suche) |
 
 ---
 
@@ -216,14 +234,59 @@ System-Prompt wird via OpenRouter `cache_control: ephemeral` gecacht (5-Min-TTL)
 
 ---
 
-## Geplant (Phase 3)
+## Phase 3: Review (Web-UI)
 
-### Web-UI (ersetzt Obsidian)
-- Strukturierte Ablage nach Diskursraum, Verdict, Trend
-- Volle Opus-Daten immer verfügbar (aufklappbar)
-- 1-Click Zotero-Aufnahme (pyzotero, mojo-Unterordner)
-- Escalation-Button: B/C → Opus
-- Aussortierte Titel sichtbar
+### Stack
+Flask + Jinja2 + HTMX. Kein JS-Framework, kein Build-Step. SQLite direkt. `localhost:5555`.
+
+### Ansichten
+
+| Route | Funktion |
+|-------|----------|
+| `/` | **Digest**: Lesenswert aufgeklappt, Zitiert-Dich, Scannen kompakt, Ignorieren zugeklappt. Filter: Jahr, Diskursraum, Journal, Verdict |
+| `/article/<id>` | **Artikeldetail**: Verdict-Controls, Kernthese, Bezüge, Bemerkenswert, Meta-Footer, Aktionen |
+| `/review` | **Review-Queue**: Unbestätigte Artikel (user_verdict IS NULL), sortiert nach Relevanz |
+| `/overrides` | **Overrides**: Upgrades vs. Downgrades mit Memo → Input für Prompt-Optimierung |
+| `/diskurs` | **Diskursräume**: Übersicht mit Verdict-Balken |
+| `/diskurs/<key>` | **Diskursraum-Detail**: Journals, Analysen (Profil, Biblio, Trends) |
+| `/search?q=` | **Suche**: Titel-Volltextsuche, max 100 Treffer |
+
+### User-Verdict-System
+
+```
+effective_verdict = user_verdict ?? agent_verdict
+
+Aktionen:
+  OK       → user_verdict = agent_verdict (bestätigt, ✓ im Badge)
+  Override → user_verdict = neues Verdict (altes durchgestrichen)
+  Memo     → user_memo (Freitext, für spätere Revision/Prompt-Tuning)
+  Reset    → user_verdict = NULL (zurück in Review-Queue)
+```
+
+### Vertiefen (On-Demand)
+
+```
+Shallow-Artikel (cost < $0.02 oder keine Bezüge)
+        ↓ Button "Vertiefen" oder Auto bei Upgrade auf Lesenswert
+    assess_then_verify (Opus, ~$0.05)
+        ↓
+    Neues agent_entry_json (altes als _previous gestasht)
+```
+
+### Export
+
+| Aktion | Mechanismus | Ziel |
+|--------|-------------|------|
+| **→ Zotero** | Connector-API (`/connector/saveItems`), Item + Child-Note | Collection "mojo" |
+| **→ Obsidian** | Markdown + YAML-Frontmatter | `DIGEST_DIR/<verdict>/slug.md` |
+| **Archivieren** | Toggle `archived_at` | Artikel aus Digest ausblenden |
+
+### Hover-Tooltips
+Lazy-loaded per HTMX (`mouseenter once` → `/api/tooltip/<id>`). Zeigt Verdict-Begründung + Kernthese ohne Klick.
+
+---
+
+## Geplant (Phase 4)
 
 ### Dialogischer Research-Agent
 - Stub/Entwurf hochladen → Frage stellen → Retrieval gegen DB

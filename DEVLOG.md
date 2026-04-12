@@ -485,57 +485,114 @@ dfe2fba docs: UI-Entwurf — Flask/HTMX-Prototyp, drei Ansichten
 
 ---
 
+---
+
+## Session 2026-04-12b — Web-UI + Runs 2024/2026
+
+### Gebaut
+
+1. **Web-UI Prototyp** (Flask + Jinja2 + HTMX, Port 5555)
+   - **Digest-Ansicht**: Lesenswert aufgeklappt, Zitiert-Dich-Sektion, Scannen kompakt, Ignorieren zugeklappt. Filter: Jahr, Diskursraum, Journal, Verdict. Default: aktuelles Jahr.
+   - **Artikeldetail**: Verdict + Begründung, Kernthese, Bezüge, Bemerkenswert, Methodisch/Theoretisch, Meta-Footer.
+   - **Diskursraum-Ansicht**: Übersicht mit Verdict-Balken, Detail mit Journals, Analyse-Buttons.
+   - **Suche**: Titel-Volltextsuche in der Navbar.
+
+2. **User-Verdict-System**
+   - Confirm (OK) / Override (→ Lesenswert, → Scannen, → Ignorieren) per HTMX
+   - Memo-Feld für Begründung
+   - DB: `user_verdict`, `user_memo`, `user_verdict_at` (Auto-Migration)
+   - `effective_verdict` Property (User > Agent)
+   - **Review-Queue** (`/review`): nur unbestätigte Artikel
+   - **Overrides-Ansicht** (`/overrides`): Upgrades vs. Downgrades für Prompt-Optimierung
+
+3. **Hover-Tooltips**: Lazy-loaded per HTMX (`mouseenter once`), zeigt Verdict-Begründung + Kernthese.
+
+4. **Vertiefen-Button**: Löst `assess_then_verify` aus für Shallow-Artikel. Automatisch bei Upgrade auf Lesenswert. Vorherige Analyse als `_previous` gestasht (aufklappbar zum Vergleich).
+
+5. **Zotero-Export**: Via Connector-API (`/connector/saveItems`), Item + eingebettete Child-Note in Collection "mojo". Prüft ob Zotero läuft, ob Collection existiert.
+
+6. **Obsidian-Export**: Markdown mit YAML-Frontmatter, sortiert nach Verdict-Ordner. Einzelartikel-Button.
+
+7. **Archivieren**: Toggle, blendet Artikel aus Digest aus. `?archived=1` zum Einblenden.
+
+8. **Diskursraum-Analysen**: Drei HTMX-Buttons auf Diskursraum-Detail:
+   - Diskurs-Profil (kostenlos, datengetrieben)
+   - Bibliometrie (kostenlos, Zitationsanalyse)
+   - Trend-Analyse (~$1–3, LLM-Call mit Bestätigungsdialog)
+
+### Bugfixes
+- `assess_then_verify`: Fallback auf Assessment-Entry wenn Verification ohne `submit_digest_entry` endet
+- `cli.py`: `.get("entry") or {}` statt `.get("entry", {})` für None-Safety
+
+### Runs
+- **2026**: 708 Artikel, alle fertig (2 lesenswert, 236 scannen, 457 ignorieren, 13 Müll)
+- **2025 offene**: 31 Artikel fertig (30 Müll/Corrections, 1 scannen)
+- **2024**: 1802/1944 verarbeitet (läuft noch im Hintergrund)
+
+### Commits dieser Session
+```
+5f6f83e feat: Web-UI Prototyp (Flask+HTMX) + fix verification fallback
+b4d072e feat: User-Verdict-System (confirm/override/memo)
+9920a98 feat: lazy-loaded hover tooltips + title_link macro
+a45a39a feat: Zotero-Export, Obsidian-Export, Archivieren
+ac16130 feat: Suche + Trend/Biblio/Profil in Diskursraum-UI
+```
+
+---
+
 ## Handover für nächste Session
 
 ### Was steht
-- **28 Journals** aktiv getrackt, **17.465 Artikel** in articles.db (Backfill bis 2016)
-- **Digest-Pipeline v4**: No-Data-Filter → Müll-Filter → Citation/Trigger Auto-Pass → DeepSeek-Screening → Assessment → bedingte Verification
-- **2025+-Run abgeschlossen** — 2.935 Artikel, $8.30, 7 lesenswert
-- **Alle Prompts auf Englisch**, Opus-kalibrierte Verdict-Schwellen
-- **Researcher-Profil** in settings.py (Open-Source-fähig)
-- **UI-Entwurf** genehmigt (docs/ui_entwurf.md)
+- **28 Journals** aktiv getrackt, **17.465 Artikel** in articles.db
+- **4.821 verarbeitet** (2016: 83, 2024: 1802, 2025: 2241, 2026: 695), 14 lesenswert, 1513 scannen
+- **Web-UI** voll funktional: Digest, Artikeldetail, Diskursräume, Review-Queue, Overrides, Suche
+- **User-Verdict-System**: Confirm/Override/Memo, effective_verdict, Overrides-Export
+- **Export**: Zotero (Connector-API + Child-Note), Obsidian (Markdown + Frontmatter), Archivieren
+- **Vertiefen**: On-demand Opus-Analyse, automatisch bei Upgrade auf Lesenswert
+- **Diskursraum-Analysen**: Profil, Bibliometrie, Trend-Analyse in der UI
+- **Gesamtkosten DB**: $27.50
 
 ### Was als nächstes zu tun ist
 
-**1. Runs für 2024 und 2026 starten**
-- 2024: 1.944 Artikel, projiziert ~$5
-- 2026: 708 Artikel, projiziert ~$2
-- 31 offene 2025er nachverarbeiten
-- `mojo digest --next 2000 --since 2024` (filtert auf year=2024)
-- `mojo digest --next 1000 --since 2026`
+**1. 2024er-Run abschließen**
+- 142 Artikel noch offen (1802/1944 fertig)
+- Läuft im Hintergrund, ggf. Reste manuell nachschieben
 
-**2. UI-Prototyp bauen** (Flask + Jinja2 + HTMX)
-
-Drei Ansichten:
-- **Digest**: Lesenswert aufgeklappt → Zitiert-dich-Sektion → Scannen kompakt → Ignorieren zugeklappt. Filter: Jahr, Diskursraum, Journal, Verdict.
-- **Artikeldetail**: Verdict + Begründung, Kernthese, Bezüge (mit Relationstyp), Bemerkenswert, Meta-Footer. Aktionen: Vertiefen (Opus on-demand ~$0.05), Zotero-1-Click, DOI-Link.
-- **Diskursraum**: Journals + Artikelzahlen, Verdict-Verteilung, Trend/Biblio startbar.
-
-Stack: Flask + Jinja2 + HTMX, SQLite direkt, localhost:5000. Kein JS-Framework. Entwurf: `docs/ui_entwurf.md`.
+**2. Review-Workflow testen**
+- Lesenswert-Artikel in der UI durchgehen, OK/Override/Memo
+- Erste Overrides sammeln → Prompt-Optimierung ableiten
 
 **3. Trend-Analyse für aesthetische_kulturelle_bildung**
 - Biblio (kostenlos) bereits gelaufen
-- LLM-Trend-Analyse noch ausstehend
+- LLM-Trend-Analyse jetzt per UI-Button startbar
 
-**4. Dialogischer Research-Agent** (Phase 2)
+**4. Dialogischer Research-Agent** (Phase 3)
 - Stub/Entwurf hochladen → Retrieval gegen DB → "Missed References"
 - Architektur-Vorlage: transact-qda
 
 **5. Open-Source-Vorbereitung**
 - Pfade teilweise hardcoded (Zotero, Obsidian)
 - Researcher-Profil bereits extrahiert (settings.py)
+- Obsidian-Pfad als Setting (statt hardcoded DIGEST_DIR)
+
+**6. UI-Polish**
+- Obsidian-Mirror-All-Button (Settings-Seite mit Pfad-Konfiguration)
+- Markdown-Rendering für Trend/Biblio-Ergebnisse (statt `<pre>`)
 
 ### Bekannte Einschränkungen
-- **31 offene 2025er** (vermutlich Edge Cases im Screening)
 - **Trigger-Autoren-Matching** braucht Vollnamen (nicht nur Nachnamen)
-- **Catchword-Liste** enthält einige XML-Artefakte aus summaries.json (funktioniert, nicht schön)
-- **`--since` filtert ≥, nicht =** — für 2024-only-Run muss ggf. nachgefiltert werden
+- **Catchword-Liste** enthält einige XML-Artefakte aus summaries.json
+- **`--since` filtert ≥, nicht =** — für year-only-Runs ggf. nachfiltern
+- **Zotero-Export** braucht manuell angelegte Collection "mojo"
+- **trends.run() / biblio.run()** geben teils Result-Dicts zurück, teils nicht — API-Endpoints brauchen ggf. Error-Handling-Anpassung
 
 ### Kosten dieser Session
 
 | Posten | Kosten |
 |--------|--------|
-| 2025+-Run (2.935 Artikel) | $8.30 |
-| Testläufe (div. Iterationen, ~100 Artikel) | ~$3.00 |
-| Screening-Kosten (DeepSeek Batch) | ~$0.50 |
-| **Gesamt** | **~$12** |
+| Vorherige Sessions | ~$12.00 |
+| 2024-Run (1802 Artikel, läuft) | ~$4.50 |
+| 2026-Run (708 Artikel) | ~$0.06 |
+| 2025-Nachverarbeitung | ~$0.06 |
+| Vertiefungs-Tests | ~$0.50 |
+| **DB-Gesamtkosten** | **$27.50** |
