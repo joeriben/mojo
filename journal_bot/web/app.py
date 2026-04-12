@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
+import html as html_mod
+import io
 import json
 from flask import Flask, render_template, request, abort, jsonify
 
@@ -224,6 +227,37 @@ def diskursraum(cluster_key: str | None = None):
         articles=articles,
         by_verdict=by_verdict,
         cites_you=cites_you,
+        verdict_label=VERDICT_LABEL,
+        relation_label=RELATION_LABEL,
+        total=len(articles),
+    )
+
+
+@app.route("/search")
+def search():
+    """Title search across all articles."""
+    q = request.args.get("q", "").strip()
+    articles = []
+    if q:
+        store = _store()
+        pattern = f"%{q}%"
+        with store._conn() as c:
+            rows = c.execute(
+                "SELECT * FROM articles WHERE title LIKE ? "
+                "ORDER BY year DESC, fetched_at DESC LIMIT 100",
+                (pattern,),
+            ).fetchall()
+        from journal_bot.store import _row_to_article
+        articles = [_row_to_article(r) for r in rows]
+        for a in articles:
+            if a.agent_entry and isinstance(a.agent_entry, str):
+                a.agent_entry = json.loads(a.agent_entry)
+            a.journal_full = a.journal_full or _journal_full_name(a.journal_short)
+
+    return render_template(
+        "search.html",
+        articles=articles,
+        q=q,
         verdict_label=VERDICT_LABEL,
         relation_label=RELATION_LABEL,
         total=len(articles),
@@ -512,6 +546,135 @@ def overrides():
         confirms=confirms,
         verdict_label=VERDICT_LABEL,
         total=len(articles),
+    )
+
+
+@app.route("/api/diskurs/trends/<cluster_key>", methods=["POST"])
+def api_diskurs_trends(cluster_key: str):
+    """HTMX endpoint: run LLM trend analysis for a discourse space."""
+    if cluster_key not in DISCOURSE_SPACES:
+        abort(404)
+
+    from journal_bot import trends
+
+    esc = html_mod.escape
+    buf = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(buf):
+            result = trends.run(cluster=cluster_key, verbose=True)
+    except Exception as e:
+        return (
+            f'<div class="card" style="border-color:var(--pflichtlektuere);">'
+            f'<strong>Fehler:</strong> {esc(str(e))}</div>'
+        )
+
+    output = buf.getvalue()
+    status = result.get("status", "")
+    cost = result.get("cost_usd", 0)
+    path = result.get("path", "")
+
+    cluster_name = esc(DISCOURSE_SPACES[cluster_key]["name"])
+    parts = [f'<div class="card">']
+    parts.append(f'<h3 style="margin-bottom:.5rem;">Trend-Analyse — {cluster_name}</h3>')
+    if status == "ok":
+        parts.append(
+            f'<p style="font-size:.85rem; color:var(--muted);">'
+            f'{result.get("count", 0)} Artikel analysiert · ${cost:.3f}'
+            f'{" · " + esc(path) if path else ""}</p>'
+        )
+    parts.append(
+        f'<pre style="white-space:pre-wrap; font-size:.85rem; '
+        f'line-height:1.5; margin-top:.5rem;">{esc(output)}</pre>'
+    )
+    # If the trend analysis wrote a markdown file, show its content
+    if path:
+        try:
+            from pathlib import Path
+            md_content = Path(path).read_text(encoding="utf-8")
+            parts.append(
+                f'<details style="margin-top:.75rem;">'
+                f'<summary><strong>Vollständiges Dossier</strong></summary>'
+                f'<pre style="white-space:pre-wrap; font-size:.85rem; '
+                f'line-height:1.5; margin-top:.5rem;">{esc(md_content)}</pre>'
+                f'</details>'
+            )
+        except Exception:
+            pass
+    parts.append('</div>')
+    return "\n".join(parts)
+
+
+@app.route("/api/diskurs/biblio/<cluster_key>", methods=["POST"])
+def api_diskurs_biblio(cluster_key: str):
+    """HTMX endpoint: run bibliometric analysis for a discourse space."""
+    if cluster_key not in DISCOURSE_SPACES:
+        abort(404)
+
+    from journal_bot import biblio
+
+    esc = html_mod.escape
+    buf = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(buf):
+            result = biblio.run(cluster=cluster_key, verbose=True)
+    except Exception as e:
+        return (
+            f'<div class="card" style="border-color:var(--pflichtlektuere);">'
+            f'<strong>Fehler:</strong> {esc(str(e))}</div>'
+        )
+    output = buf.getvalue()
+    path = result.get("path", "")
+
+    cluster_name = esc(DISCOURSE_SPACES[cluster_key]["name"])
+    parts = [f'<div class="card">']
+    parts.append(f'<h3 style="margin-bottom:.5rem;">Bibliometrie — {cluster_name}</h3>')
+    parts.append(
+        f'<p style="font-size:.85rem; color:var(--muted);">'
+        f'{result.get("count", 0)} meistzitierte Werke'
+        f'{" · Höchste Zitation: " + str(result.get("top_cited", 0)) if result.get("top_cited") else ""}'
+        f'</p>'
+    )
+    parts.append(
+        f'<pre style="white-space:pre-wrap; font-size:.85rem; '
+        f'line-height:1.5; margin-top:.5rem;">{esc(output)}</pre>'
+    )
+    # Show the full markdown report
+    if path:
+        try:
+            from pathlib import Path
+            md_content = Path(path).read_text(encoding="utf-8")
+            parts.append(
+                f'<pre style="white-space:pre-wrap; font-size:.85rem; '
+                f'line-height:1.5; margin-top:.75rem;">{esc(md_content)}</pre>'
+            )
+        except Exception:
+            pass
+    parts.append('</div>')
+    return "\n".join(parts)
+
+
+@app.route("/api/diskurs/profile/<cluster_key>", methods=["POST"])
+def api_diskurs_profile(cluster_key: str):
+    """HTMX endpoint: build and render discourse space profile."""
+    if cluster_key not in DISCOURSE_SPACES:
+        abort(404)
+
+    from journal_bot.diskurs import build_profile, render_profile
+
+    try:
+        profile = build_profile(cluster_key)
+        md = render_profile(profile)
+    except Exception as e:
+        return (
+            f'<div class="card" style="border-color:var(--pflichtlektuere);">'
+            f'<strong>Fehler:</strong> {html_mod.escape(str(e))}</div>'
+        )
+
+    return (
+        f'<div class="card">'
+        f'<pre style="white-space:pre-wrap; font-size:.85rem; '
+        f'line-height:1.5;">{html_mod.escape(md)}</pre>'
+        f'</div>'
     )
 
 

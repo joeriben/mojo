@@ -26,6 +26,50 @@
   <span style="color:var(--muted);">Total: {{ total }}</span>
 </div>
 
+<!-- Analyse-Buttons -->
+<div style="display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1.5rem;">
+  <button class="btn btn-primary"
+          hx-post="/api/diskurs/profile/{{ key }}"
+          hx-target="#diskurs-profile-result"
+          hx-swap="innerHTML"
+          hx-indicator="#profile-spinner">
+    Diskurs-Profil
+  </button>
+  <span id="profile-spinner" class="htmx-indicator" style="font-size:.85rem; color:var(--muted);">
+    Profil wird erstellt&hellip;
+  </span>
+
+  <button class="btn"
+          style="background:var(--lesenswert); color:#fff; border-color:var(--lesenswert);"
+          hx-post="/api/diskurs/biblio/{{ key }}"
+          hx-target="#diskurs-biblio-result"
+          hx-swap="innerHTML"
+          hx-indicator="#biblio-spinner">
+    Bibliometrie (kostenlos)
+  </button>
+  <span id="biblio-spinner" class="htmx-indicator" style="font-size:.85rem; color:var(--muted);">
+    Analyse l&auml;uft&hellip;
+  </span>
+
+  <button class="btn"
+          style="background:var(--scannen); color:#fff; border-color:var(--scannen);"
+          hx-post="/api/diskurs/trends/{{ key }}"
+          hx-target="#diskurs-trends-result"
+          hx-swap="innerHTML"
+          hx-indicator="#trends-spinner"
+          hx-confirm="Trend-Analyse kostet ~$1-3 (LLM-Call). Fortfahren?">
+    Trend-Analyse (~$1-3)
+  </button>
+  <span id="trends-spinner" class="htmx-indicator" style="font-size:.85rem; color:var(--muted);">
+    Analyse l&auml;uft (LLM-Call)&hellip;
+  </span>
+</div>
+
+<!-- Result areas -->
+<div id="diskurs-profile-result" style="margin-bottom:1rem;"></div>
+<div id="diskurs-biblio-result" style="margin-bottom:1rem;"></div>
+<div id="diskurs-trends-result" style="margin-bottom:1rem;"></div>
+
 <!-- Zitiert Dich -->
 {% if cites_you %}
 <div class="cite-section">

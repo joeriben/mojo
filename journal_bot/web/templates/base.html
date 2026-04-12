@@ -160,6 +160,15 @@
     <a href="/review" {% if request.path == "/review" %}class="active"{% endif %}>Review</a>
     <a href="/diskurs" {% if request.path.startswith("/diskurs") %}class="active"{% endif %}>Diskursräume</a>
     <a href="/overrides" {% if request.path == "/overrides" %}class="active"{% endif %}>Overrides</a>
+    <form action="/search" method="get" style="margin-left:auto; display:flex; gap:.3rem;">
+      <input type="text" name="q" placeholder="Suche…" value="{{ request.args.get('q', '') }}"
+             style="font-size:.85rem; padding:3px 8px; border:1px solid var(--border);
+                    border-radius:4px; width:180px;">
+      <button type="submit" style="font-size:.85rem; padding:3px 10px; border:none;
+              border-radius:4px; background:var(--accent); color:#fff; cursor:pointer;">
+        Suche
+      </button>
+    </form>
   </nav>
   {% block content %}{% endblock %}
 </body>

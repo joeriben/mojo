@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_macros.html" import title_link %}
+{% block title %}MOJO — Suche{% endblock %}
+{% block content %}
+
+<h1 style="font-size:1.3rem; margin-bottom:.75rem;">
+  Suche
+  {% if q %}
+  <span class="section-count">— {{ total }} Ergebnis{{ "se" if total != 1 }} für „{{ q }}"</span>
+  {% endif %}
+</h1>
+
+{% if not q %}
+<p style="color:var(--muted);">Suchbegriff eingeben, um Artikel nach Titel zu durchsuchen.</p>
+{% elif not articles %}
+<p style="color:var(--muted);">Keine Treffer für „{{ q }}".</p>
+{% else %}
+{% for a in articles %}
+<div class="art-row">
+  {% if a.effective_verdict %}
+  {% include "_verdict_controls.html" %}
+  {% endif %}
+  <span class="art-journal">{{ a.journal_full }}</span>
+  {{ title_link(a) }}
+  <span class="art-year">{{ a.year or "" }}</span>
+</div>
+{% endfor %}
+{% if total == 100 %}
+<p style="color:var(--muted); font-size:.85rem; margin-top:.75rem;">
+  Ergebnisse auf 100 begrenzt — Suchbegriff verfeinern.
+</p>
+{% endif %}
+{% endif %}
+
+{% endblock %}
