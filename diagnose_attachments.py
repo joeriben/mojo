@@ -9,8 +9,10 @@ from pathlib import Path
 
 from pyzotero import zotero
 
-COLLECTION_NAME = "Benjamin's publications"
-ZOTERO_STORAGE = Path.home() / "Zotero" / "storage"
+from journal_bot.settings import ZOTERO_COLLECTION, ZOTERO_STORAGE as _ZOTERO_STORAGE
+
+COLLECTION_NAME = ZOTERO_COLLECTION
+ZOTERO_STORAGE = _ZOTERO_STORAGE
 
 
 def main() -> None:

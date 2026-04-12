@@ -5,8 +5,8 @@ Architektur (3 Linsen + Opus-Synthese):
   2. ISSN via OpenAlex Sources API auflösen (wenn nicht in Watchlist)
   3. 3 Jahre Artikel pro Journal via OpenAlex holen (kein LLM)
   4. Drei Haiku-Linsen pro Journal (parallel):
-     A) Thematische Passung — Überlappung mit Benjamins Forschungsthemen
-     B) Disziplinäre Beheimatungen — Zugehörigkeit zu Benjamins 5 diskursiven Räumen
+     A) Thematische Passung — Überlappung mit den Forschungsthemen des Researchers
+     B) Disziplinäre Beheimatungen — Zugehörigkeit zu den 5 diskursiven Räumen des Researchers
      C) Latente Relevanz — periphere Diskurse die im Blickfeld bleiben sollten
   5. Opus-Synthese: kartiert Spannungen zwischen den Linsen, empfiehlt
   6. Ausgabe: multiperspektivische Bewertung nach Obsidian
@@ -26,7 +26,10 @@ from pathlib import Path
 import httpx
 
 from journal_bot.llm_client import build_client
-from journal_bot.settings import JOURNALS, MODEL_AGENT, MODEL_SUMMARIZE, SUMMARIES_JSON
+from journal_bot.settings import (
+    JOURNALS, MODEL_AGENT, MODEL_SUMMARIZE, RESEARCHER_AREAS,
+    RESEARCHER_INSTITUTION, RESEARCHER_NAME, SUMMARIES_JSON,
+)
 
 
 # ---------------------------------------------------------------- Typen
@@ -540,7 +543,7 @@ def _build_sample_block(probe: ProbeResult) -> str:
     return "\n".join(lines)
 
 
-# --- Beheimatungen (from Benjamin, 2026-04-10) ---
+# --- Beheimatungen (from researcher, 2026-04-10) ---
 
 BEHEIMATUNGEN = [
     ("Allgemeine Pädagogik / Bildungstheorie",
@@ -564,20 +567,19 @@ BEHEIMATUNGEN = [
 # ---------------------------------------------------------------- Linse A: Thematisch
 
 
-LENS_A_SYSTEM = """Du bist ein wissenschaftlicher Evaluator. Du bewertest die THEMATISCHE
-PASSUNG einer Zeitschrift zu Benjamin Jörissens konkreten Forschungsthemen.
+LENS_A_SYSTEM = f"""Du bist ein wissenschaftlicher Evaluator. Du bewertest die THEMATISCHE
+PASSUNG einer Zeitschrift zu {RESEARCHER_NAME}s konkreten Forschungsthemen.
 
-Benjamins Arbeitsgebiete: ästhetische und kulturelle Bildung, Postdigitalität, generative KI
-in Bildungskontexten, Cultural Resilience, digital-kulturelles Erbe, New Materialisms,
+{RESEARCHER_NAME}s Arbeitsgebiete: {RESEARCHER_AREAS},
 Bildungstheorie, qualitative Methoden (insb. postqualitative Ansätze).
 
-Unten folgt Benjamins Publikationsstand als Kurzprofile.
+Unten folgt {RESEARCHER_NAME}s Publikationsstand als Kurzprofile.
 
-{profile}
+{{profile}}
 
 === AUFGABE ===
 Bewerte NUR die thematische Passung: Wie viele der Stichproben-Artikel behandeln Themen,
-die an Benjamins konkrete Arbeitsgebiete anschließen? Zähle präzise.
+die an {RESEARCHER_NAME}s konkrete Arbeitsgebiete anschließen? Zähle präzise.
 
 Rufe das Tool `lens_a_verdict` auf."""
 
@@ -623,9 +625,9 @@ def _build_lens_b_system() -> str:
         for i, (name, desc) in enumerate(BEHEIMATUNGEN)
     )
     return f"""Du bist ein wissenschaftlicher Evaluator. Du bewertest die DISZIPLINÄRE
-ZUGEHÖRIGKEIT einer Zeitschrift zu Benjamin Jörissens diskursiven Beheimatungen.
+ZUGEHÖRIGKEIT einer Zeitschrift zu {RESEARCHER_NAME}s diskursiven Beheimatungen.
 
-Benjamin verortet sich in folgenden disziplinären Räumen:
+{RESEARCHER_NAME} verortet sich in folgenden disziplinären Räumen:
 
 {beh_block}
 
@@ -635,7 +637,7 @@ disziplinären Communities? Nicht ob einzelne Artikel thematisch passen, sondern
 Zeitschrift ALS GANZES zur Infrastruktur eines dieser Diskursfelder gehört.
 
 Beispiel: Die ZfPäd ist ein zentrales Organ der Allgemeinen Pädagogik, auch wenn einzelne
-Hefte sich mit Themen befassen die Benjamin nicht bearbeitet.
+Hefte sich mit Themen befassen die {RESEARCHER_NAME} nicht bearbeitet.
 
 Rufe das Tool `lens_b_verdict` auf."""
 
@@ -677,23 +679,22 @@ LENS_B_TOOL = {
 # ---------------------------------------------------------------- Linse C: Latente Relevanz
 
 
-LENS_C_SYSTEM = """Du bist ein wissenschaftlicher Evaluator. Du bewertest die LATENTE RELEVANZ
-einer Zeitschrift für Benjamin Jörissen — d.h. Diskurse die Benjamin nicht aktiv bearbeitet,
+LENS_C_SYSTEM = f"""Du bist ein wissenschaftlicher Evaluator. Du bewertest die LATENTE RELEVANZ
+einer Zeitschrift für {RESEARCHER_NAME} — d.h. Diskurse die {RESEARCHER_NAME} nicht aktiv bearbeitet,
 aber im Blickfeld haben sollte.
 
-Benjamins Arbeitsgebiete: ästhetische und kulturelle Bildung, Postdigitalität, generative KI
-in Bildungskontexten, Cultural Resilience, digital-kulturelles Erbe, New Materialisms,
+{RESEARCHER_NAME}s Arbeitsgebiete: {RESEARCHER_AREAS},
 Bildungstheorie, qualitative Methoden (insb. postqualitative Ansätze).
 
 === AUFGABE ===
-Prüfe die Stichprobe auf Diskurse die Benjamin NICHT bearbeitet, die aber trotzdem sein
-Denken herausfordern, erweitern oder kontextualisieren könnten.
+Prüfe die Stichprobe auf Diskurse die {RESEARCHER_NAME} NICHT bearbeitet, die aber trotzdem
+das Denken herausfordern, erweitern oder kontextualisieren könnten.
 
 FILTER: Nicht alles Periphere ist relevant. Eyetracking in der Unterrichtsforschung oder
 PISA-Ranking-Analysen wären NICHT latent relevant. Aber z.B.:
-- Neue methodische Zugänge die seine Methoden ergänzen könnten
-- Debatten in angrenzenden Feldern die seine Grundannahmen berühren
-- Gegenstände die er nicht bearbeitet aber die seine Theorie testen würden
+- Neue methodische Zugänge die die eigenen Methoden ergänzen könnten
+- Debatten in angrenzenden Feldern die die Grundannahmen berühren
+- Gegenstände die nicht bearbeitet werden aber die die Theorie testen würden
 
 Rufe das Tool `lens_c_verdict` auf."""
 
@@ -709,7 +710,7 @@ LENS_C_TOOL = {
                 "latente_relevanz": {
                     "type": "string",
                     "enum": ["hoch", "mittel", "niedrig"],
-                    "description": "hoch: mehrere Diskurse die Benjamins Denken produktiv herausfordern. mittel: vereinzelt. niedrig: nichts Relevantes.",
+                    "description": f"hoch: mehrere Diskurse die {RESEARCHER_NAME}s Denken produktiv herausfordern. mittel: vereinzelt. niedrig: nichts Relevantes.",
                 },
                 "topics_de": {
                     "type": "array",
@@ -718,7 +719,7 @@ LENS_C_TOOL = {
                 },
                 "reason_de": {
                     "type": "string",
-                    "description": "2-3 Sätze: Welche angrenzenden Diskurse? Warum könnten sie Benjamins Arbeit bereichern?",
+                    "description": f"2-3 Sätze: Welche angrenzenden Diskurse? Warum könnten sie {RESEARCHER_NAME}s Arbeit bereichern?",
                 },
             },
             "required": ["latente_relevanz", "topics_de", "reason_de"],
@@ -899,11 +900,11 @@ def synthesize_with_opus(
         if v.lens_results  # skip errored journals
     )
 
-    system = f"""Du bist Forschungsberater für Benjamin Jörissen (FAU, Allgemeine Pädagogik).
+    system = f"""Du bist Forschungsberater für {RESEARCHER_NAME} ({RESEARCHER_INSTITUTION}).
 
 Du bekommst für jede Kandidaten-Zeitschrift drei Bewertungs-Perspektiven:
-- **Linse A** (Thematisch): Direkte Überlappung mit Benjamins Forschungsthemen
-- **Linse B** (Disziplinär): Zugehörigkeit zu Benjamins diskursiven Beheimatungen
+- **Linse A** (Thematisch): Direkte Überlappung mit {RESEARCHER_NAME}s Forschungsthemen
+- **Linse B** (Disziplinär): Zugehörigkeit zu {RESEARCHER_NAME}s diskursiven Beheimatungen
 - **Linse C** (Latent): Periphere Diskurse die im Blickfeld bleiben sollten
 
 Deine Aufgabe: Synthetisiere die drei Perspektiven. Das Interessante sind die SPANNUNGEN:

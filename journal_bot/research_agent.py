@@ -1,7 +1,7 @@
 """Research Agent — Missed-References-Detektor für Textentwürfe.
 
 Der User lädt einen Text/Stub hoch. Der Agent durchsucht die MOJO-DB
-(17k+ Artikel) und Benjamins Corpus (160 Publikationen) nach:
+(17k+ Artikel) und den Forscher-Corpus (160 Publikationen) nach:
 - fehlenden Referenzen
 - relevanten Artikeln
 - Gegenargumenten

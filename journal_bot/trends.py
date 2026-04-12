@@ -6,7 +6,7 @@ schickt sie an Opus mit einem strukturierten Trend-Analyse-Auftrag,
 schreibt Dossier nach Obsidian.
 
 Kein Halluzinations-Risiko im Stil von Bezügen-zur-eigenen-Arbeit: Der Agent
-sieht NUR die gefetchten Artikel, nicht Benjamins Werk. Zweck ist die
+sieht NUR die gefetchten Artikel, nicht das Werk des Forschers. Zweck ist die
 Beobachtung des Feldes, nicht die Verortung des einzelnen Beitrags.
 """
 
@@ -22,6 +22,7 @@ from journal_bot.settings import (
     DIGEST_DIR,
     DISCOURSE_SPACES,
     MODEL_AGENT,
+    RESEARCHER_NAME,
     journals_in_cluster,
 )
 from journal_bot.store import Store, StoredArticle

@@ -1,7 +1,7 @@
-"""Corpus-Ingest aus Zotero-Collection 'Benjamin's publications'.
+"""Corpus-Ingest aus der konfigurierten Zotero-Collection (ZOTERO_COLLECTION).
 
 Liest die Collection via lokaler Zotero-HTTP-API (Zotero muss laufen),
-extrahiert PDF-Volltexte aus FAUbox-Storage, schreibt corpus.json.
+extrahiert PDF-Volltexte aus Zotero-Storage, schreibt corpus.json.
 
 Kein LLM-Call. Reine Mechanik.
 """

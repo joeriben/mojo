@@ -1,9 +1,9 @@
 """Deterministic relevance signals — zero LLM cost.
 
 Computes a signal profile for each article using already-stored metadata:
-  a) cites_benjamin  — article cites Benjamin's publications (via citation_tracker)
-  b) zotero_overlap  — article refs cite items from Benjamin's Zotero library (by title)
-  c) keyword_hits    — article title contains key terms from Benjamin's summaries
+  a) cites_researcher — article cites the researcher's publications (via citation_tracker)
+  b) zotero_overlap   — article refs cite items from the researcher's Zotero library (by title)
+  c) keyword_hits     — article title contains key terms from the researcher's summaries
 
 All signals operate on data already present in articles.db + summaries.json + zotero_library.json.
 """
@@ -125,18 +125,18 @@ def _build_zotero_word_index(library: list[ZoteroItem]) -> dict[str, list[Zotero
 class SignalProfile:
     """Deterministic relevance signals for one article."""
     article_id: str
-    cites_benjamin: list[dict] = field(default_factory=list)
+    cites_researcher: list[dict] = field(default_factory=list)
     zotero_overlap: list[str] = field(default_factory=list)  # matched Zotero titles
     keyword_hits: list[str] = field(default_factory=list)
 
     @property
     def has_any_signal(self) -> bool:
-        return bool(self.cites_benjamin or self.zotero_overlap or self.keyword_hits)
+        return bool(self.cites_researcher or self.zotero_overlap or self.keyword_hits)
 
     @property
     def signal_count(self) -> int:
         return sum([
-            bool(self.cites_benjamin),
+            bool(self.cites_researcher),
             bool(self.zotero_overlap),
             bool(self.keyword_hits),
         ])
@@ -144,8 +144,8 @@ class SignalProfile:
     @property
     def summary(self) -> str:
         parts = []
-        if self.cites_benjamin:
-            parts.append(f"cites_benjamin({len(self.cites_benjamin)})")
+        if self.cites_researcher:
+            parts.append(f"cites_researcher({len(self.cites_researcher)})")
         if self.zotero_overlap:
             n = len(self.zotero_overlap)
             sample = "; ".join(self.zotero_overlap[:3])
@@ -158,11 +158,11 @@ class SignalProfile:
         return asdict(self)
 
 
-def signal_cites_benjamin(
+def signal_cites_researcher(
     crossref_refs: list[dict],
     authored_all: list[dict] | None = None,
 ) -> list[dict]:
-    """Signal a: Does this article cite Benjamin's publications?"""
+    """Signal a: Does this article cite the researcher's publications?"""
     if authored_all is None:
         authored_all = load_authored_all()
     hits = find_citations(crossref_refs, authored_all)
@@ -175,7 +175,7 @@ def signal_zotero_overlap(
     zotero_word_index: dict[str, list[ZoteroItem]] | None = None,
     min_word_overlap: int = 3,
 ) -> list[str]:
-    """Signal b: Which refs cite works from Benjamin's Zotero library?
+    """Signal b: Which refs cite works from the researcher's Zotero library?
 
     Matching strategy:
       1. DOI exact match (if ref has DOI and it's in Zotero)
@@ -231,7 +231,7 @@ def signal_keyword_hits(
     title: str,
     key_terms: set[str] | None = None,
 ) -> list[str]:
-    """Signal c: Which of Benjamin's key terms appear in the article title?"""
+    """Signal c: Which of the researcher's key terms appear in the article title?"""
     if key_terms is None:
         key_terms = load_key_terms()
     title_lower = (title or "").lower()
@@ -265,7 +265,7 @@ def compute_signals(
 
     return SignalProfile(
         article_id=article_id,
-        cites_benjamin=signal_cites_benjamin(refs, authored_all),
+        cites_researcher=signal_cites_researcher(refs, authored_all),
         zotero_overlap=signal_zotero_overlap(
             refs, zotero_doi_index, zotero_word_index,
         ),

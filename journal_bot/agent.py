@@ -1,9 +1,9 @@
 """Agent-Loop mit Tool-Use über OpenRouter (Claude Opus 4.6).
 
 Der Agent:
-  - bekommt im System-Prompt alle 53 Haiku-Summaries als Benjamins Werkstand
+  - bekommt im System-Prompt alle Haiku-Summaries als Werkstand des/der Forscher*in
   - bekommt im User-Turn den neuen Beitrag + Enrichment (OpenAlex abstract, refs)
-  - darf via read_publication() konkrete Stellen aus Benjamins Volltexten lesen
+  - darf via read_publication() konkrete Stellen aus den Volltexten lesen
   - schließt mit submit_digest_entry() ab, liefert strukturierten Digest-Eintrag
 """
 
@@ -714,7 +714,7 @@ def run_agent(
     if not enrichment_data and doi:
         enrichment_data = enrich(doi)
 
-    # Citation-Tracker: Jörissen-Zitate in den Refs finden
+    # Citation-Tracker: researcher citations in references
     citation_hits = find_citations(
         enrichment_data.get("references_crossref") or [],
         authored_all,
@@ -725,7 +725,7 @@ def run_agent(
             print(f"[agent] Zitationstreffer: {len(citation_hits)} "
                   f"(davon {high} mit hoher Confidence)")
         else:
-            print(f"[agent] Keine Jörissen-Zitate in den Refs")
+            print(f"[agent] Keine Forscher-Zitate in den Refs")
 
     citations_block = format_for_agent(citation_hits)
     user_content = _format_new_article(new_article, enrichment_data) + citations_block
@@ -1134,7 +1134,7 @@ def render_markdown(result: dict) -> str:
                 )
         if low:
             lines.append(
-                f"- _(unspezifische Jörissen-Erwähnung in {len(low)} Ref(s) "
+                f"- _(unspezifische Namens-Erwähnung in {len(low)} Ref(s) "
                 f"ohne Jahr/Titel-Match)_"
             )
         lines.append("")

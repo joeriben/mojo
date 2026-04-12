@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -20,7 +21,9 @@ class JournalConfig:
     tier: str = "B"                         # "A" | "B" | "C" — Analysetiefe
     clusters: list[str] = field(default_factory=list)  # Diskursraum-Zuordnung
 
-# --- Researcher profile (used in prompts — adapt for your own instance) ---
+# --- Researcher profile (adapt for your own instance) ---
+# These constants personalise all LLM prompts, citation tracking, and UI.
+# Change them once here — the rest of the codebase reads from these.
 RESEARCHER_NAME = "Benjamin Jörissen"
 RESEARCHER_INSTITUTION = "FAU Erlangen-Nürnberg, Lehrstuhl für Pädagogik mit Schwerpunkt kulturelle Bildung"
 RESEARCHER_AREAS = (
@@ -39,8 +42,11 @@ RESEARCHER_TRIAGE_TOPICS = [
 ]
 
 # --- Zotero ---
-ZOTERO_STORAGE = Path("/Users/joerissen/FAUbox/Zotero/storage")
-ZOTERO_COLLECTION = "Benjamin's publications"
+# Override via environment: MOJO_ZOTERO_STORAGE, MOJO_ZOTERO_COLLECTION
+ZOTERO_STORAGE = Path(
+    os.environ.get("MOJO_ZOTERO_STORAGE", str(Path.home() / "Zotero" / "storage"))
+)
+ZOTERO_COLLECTION = os.environ.get("MOJO_ZOTERO_COLLECTION", "My publications")
 SINCE_YEAR = 2018
 
 # --- Projekt-Dateien ---
@@ -49,7 +55,10 @@ SUMMARIES_JSON = PROJECT_ROOT / "summaries.json"
 STATE_DB = PROJECT_ROOT / "seen.db"
 
 # --- Ausgabe ---
-DIGEST_DIR = Path("/Users/joerissen/Documents/Obsidian Vault/research/mojo")
+# Override via environment: MOJO_DIGEST_DIR
+DIGEST_DIR = Path(
+    os.environ.get("MOJO_DIGEST_DIR", str(PROJECT_ROOT / "output"))
+)
 
 # --- LLM (OpenRouter) ---
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
@@ -63,7 +72,7 @@ KEY_FILE = Path.home() / ".config" / "mojo" / "openrouter_key"
 
 
 # --- Diskursräume ---
-# Kategorien nach Benjamin: "deutsche, erziehungswiss, digitale_kultur (mit/ohne Erz.),
+# Kategorien: "deutsche, erziehungswiss, digitale_kultur (mit/ohne Erz.),
 # medienpäd, bildungstheorie, resilienz". Ein Journal kann zu mehreren Räumen gehören.
 # Zuordnungen unten sind editierbar.
 

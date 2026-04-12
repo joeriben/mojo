@@ -1,12 +1,12 @@
 """Citation-Tracker.
 
 Prüft, ob ein neuer Beitrag (via Crossref-Refs) Publikationen aus der
-'Benjamin's publications'-Collection zitiert.
+konfigurierten Zotero-Collection (ZOTERO_COLLECTION) zitiert.
 
 Matching-Strategien (in Reihenfolge abnehmender Zuverlässigkeit):
   1. DOI-exact match: höchste Zuverlässigkeit
-  2. Autorname 'Jörissen' + Jahr im Raw-Reference-String
-  3. Autorname 'Jörissen' ohne Jahr (Fallback, niedrigere Confidence)
+  2. Researcher last name (from RESEARCHER_NAME) + year in raw reference string
+  3. Researcher last name without year (fallback, lower confidence)
 
 Arbeitet gegen authored_all aus corpus.json (alle Publikationen, auch prä-2018).
 """
@@ -26,7 +26,7 @@ CONFIDENCE_RANK = {"low": 0, "medium": 1, "high": 2}
 
 
 def _parse_researcher_name(name: str) -> tuple[str, str, str]:
-    """Parse 'Benjamin Jörissen' → (first_name, last_name, initial)."""
+    """Parse 'Firstname Lastname' → (first_name, last_name, initial)."""
     parts = name.strip().split()
     first = parts[0] if len(parts) >= 2 else ""
     last = parts[-1] if parts else "UNKNOWN"
@@ -36,16 +36,16 @@ def _parse_researcher_name(name: str) -> tuple[str, str, str]:
 def _build_name_patterns(first: str, last: str) -> list[re.Pattern]:
     """Build the 4 canonical name patterns as regexes.
 
-    Matches exactly:  Benjamin Jörissen | B. Jörissen | Jörissen, Benjamin | Jörissen, B.
+    Matches exactly:  Firstname Lastname | F. Lastname | Lastname, Firstname | Lastname, F.
     """
     ln = last.replace("ö", "[oö]").replace("ä", "[aä]").replace("ü", "[uü]")
     fn = re.escape(first)
     ini = re.escape(first[0]) if first else "[A-Z]"
     return [
-        re.compile(fn + r"\s+" + ln, re.IGNORECASE),           # Benjamin Jörissen
-        re.compile(ini + r"\.\s*" + ln, re.IGNORECASE),        # B. Jörissen
-        re.compile(ln + r",\s*" + fn, re.IGNORECASE),          # Jörissen, Benjamin
-        re.compile(ln + r",\s*" + ini + r"\.", re.IGNORECASE), # Jörissen, B.
+        re.compile(fn + r"\s+" + ln, re.IGNORECASE),           # Firstname Lastname
+        re.compile(ini + r"\.\s*" + ln, re.IGNORECASE),        # F. Lastname
+        re.compile(ln + r",\s*" + fn, re.IGNORECASE),          # Lastname, Firstname
+        re.compile(ln + r",\s*" + ini + r"\.", re.IGNORECASE), # Lastname, F.
     ]
 
 
@@ -116,7 +116,7 @@ def _title_words(title: str) -> set[str]:
 class CitationHit:
     match_type: str            # "doi" | "author_year" | "author_only"
     confidence: str            # "high" | "medium" | "low"
-    pub_id: str | None         # matched Benjamin publication key, oder None
+    pub_id: str | None         # matched researcher publication key, or None
     pub_title: str             # Titel der gematchten Publikation
     pub_year: int | None
     pub_authors: list[str]
@@ -141,7 +141,7 @@ def find_citations(
     authored_all: list[dict],
 ) -> list[CitationHit]:
     """references: Liste von dicts wie in enrichment.references_crossref.
-    authored_all: Liste der Benjamin-Publikationen (aus corpus.json['authored_all']).
+    authored_all: Liste der Forscher-Publikationen (aus corpus.json['authored_all']).
     """
     if not references or not authored_all:
         return []
@@ -203,7 +203,7 @@ def find_citations(
 
         year = _year_from_ref(ref)
         if year is None or year not in by_year:
-            # Jörissen erwähnt, aber kein Jahr gefunden → low confidence, kein pub_id
+            # Researcher name found but no year → low confidence, no pub_id
             add(CitationHit(
                 match_type="author_only",
                 confidence="low",
@@ -218,8 +218,8 @@ def find_citations(
 
         candidates = by_year[year]
 
-        # --- 2a. Titel-Disambiguierung: distinktive Wörter aus Kandidaten-Titeln
-        #         gegen den Raw-Text abgleichen ---
+        # --- 2a. Title disambiguation: distinctive words from candidate titles
+        #         matched against the raw text ---
         scored: list[tuple[int, dict]] = []
         for pub in candidates:
             pub_words = _title_words(pub.get("title", ""))
@@ -230,7 +230,7 @@ def find_citations(
                 scored.append((overlap, pub))
 
         if scored:
-            # Nimm nur den / die best-scorenden Kandidaten (gleicher Top-Score)
+            # Take only the best-scoring candidate(s) (same top score)
             scored.sort(key=lambda x: x[0], reverse=True)
             top_score = scored[0][0]
             winners = [p for s, p in scored if s == top_score]
@@ -243,12 +243,12 @@ def find_citations(
                                 confidence="medium", ref=ref))
             continue
 
-        # --- 2b. Kein Titel-Overlap: nur Jörissen + Jahr ---
+        # --- 2b. No title overlap: researcher name + year only ---
         if len(candidates) == 1:
             add(_mk_hit(candidates[0], match_type="author_year",
                         confidence="high", ref=ref))
         else:
-            # mehrdeutig — alle Kandidaten mit medium (Agent entscheidet)
+            # ambiguous — all candidates with medium confidence (agent decides)
             for pub in candidates:
                 add(_mk_hit(pub, match_type="author_year",
                             confidence="medium", ref=ref))
@@ -267,8 +267,8 @@ def format_for_agent(hits: list[CitationHit]) -> str:
         return ""
     lines = ["", "=== ZITATIONSTREFFER ===",
              "Der neue Beitrag zitiert im Literaturverzeichnis Publikationen aus",
-             "Benjamins Werk. Dies ist ein **sehr starkes Relevanzsignal** — jemand",
-             "setzt sich mit seinen Arbeiten explizit auseinander.", ""]
+             "dem Werk des/der Forscher*in. Dies ist ein **sehr starkes Relevanzsignal** — jemand",
+             "setzt sich mit diesen Arbeiten explizit auseinander.", ""]
     high = [h for h in hits if h.confidence == "high"]
     med = [h for h in hits if h.confidence == "medium"]
     low = [h for h in hits if h.confidence == "low"]
@@ -292,7 +292,7 @@ def format_for_agent(hits: list[CitationHit]) -> str:
             )
         lines.append("")
     if low:
-        lines.append(f"Unspezifische Jörissen-Erwähnungen ({len(low)}, Jahr fehlt/unklar):")
+        lines.append(f"Unspezifische Namens-Erwähnungen ({len(low)}, Jahr fehlt/unklar):")
         for h in low:
             lines.append(f"  · {h.ref_raw[:180]}")
         lines.append("")

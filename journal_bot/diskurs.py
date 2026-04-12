@@ -13,7 +13,14 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from pathlib import Path
 
-from journal_bot.settings import JOURNALS, PROJECT_ROOT, SUMMARIES_JSON
+from journal_bot.settings import (
+    JOURNALS,
+    PROJECT_ROOT,
+    RESEARCHER_AREAS,
+    RESEARCHER_INSTITUTION,
+    RESEARCHER_NAME,
+    SUMMARIES_JSON,
+)
 
 DISKURSRAEUME_JSON = PROJECT_ROOT / "diskursraeume.json"
 
@@ -303,7 +310,7 @@ def build_profile(
             cross_cluster.append((other_key, other_meta["name"], len(shared)))
     cross_cluster.sort(key=lambda x: x[2], reverse=True)
 
-    # 6. Key term overlap with Benjamin's publications
+    # 6. Key term overlap with researcher's publications
     key_term_overlap: list[tuple[str, int]] = []
     if SUMMARIES_JSON.exists():
         sdata = json.loads(SUMMARIES_JSON.read_text(encoding="utf-8"))
@@ -385,7 +392,7 @@ def render_profile(profile: DiskursProfile) -> str:
 
     # Key term overlap
     if profile.key_term_overlap:
-        lines.append("## Überlappung mit Benjamins Key Terms")
+        lines.append(f"## Überlappung mit {RESEARCHER_NAME}s Key Terms")
         lines.append("")
         for term, count in profile.key_term_overlap:
             lines.append(f"  {term}: {count} Artikel")
@@ -535,9 +542,8 @@ def suggest_new_spaces(
         key_terms_block = "\n".join(f"  {t}: {c}×" for t, c in top_terms)
 
     # Phase 3: LLM synthesis
-    system = """Du bist Forschungsberater für Benjamin Jörissen (FAU Erlangen-Nürnberg).
-Benjamin arbeitet an: ästhetische und kulturelle Bildung, Postdigitalität, generative KI
-in Bildungskontexten, Cultural Resilience, digital-kulturelles Erbe, New Materialisms,
+    system = f"""Du bist Forschungsberater für {RESEARCHER_NAME} ({RESEARCHER_INSTITUTION}).
+{RESEARCHER_NAME} arbeitet an: {RESEARCHER_AREAS},
 Bildungstheorie, qualitative Methoden (postqualitative Ansätze).
 
 Du bekommst eine Analyse seiner Journal-Monitoring-Diskursräume und sollst vorschlagen,
@@ -558,7 +564,7 @@ Querschnitt-Konzepte (erscheinen in ≥3 Diskursräumen):
 
 {chr(10).join(cross_lines) if cross_lines else "(keine gefunden)"}
 
-Benjamins häufigste Key Terms (aus 53 Publikationen):
+{RESEARCHER_NAME}s häufigste Key Terms (aus 53 Publikationen):
 
 {key_terms_block or "(nicht verfügbar)"}
 

@@ -1,5 +1,5 @@
 """Einmaliger Prüfbefehl gegen die lokale Zotero-API.
-Liest die Collection 'Benjamin's publications' (oder einen per Arg übergebenen Namen),
+Liest die konfigurierte Zotero-Collection (oder einen per Arg übergebenen Namen),
 zeigt Größe/PDF-Abdeckung/Volltext-Volumen — macht KEINE Änderung, kein LLM-Call.
 
     .venv/bin/python inspect_zotero.py
@@ -17,8 +17,10 @@ try:
 except ImportError:
     pypdf = None
 
-COLLECTION_NAME = sys.argv[1] if len(sys.argv) > 1 else "Benjamin's publications"
-ZOTERO_STORAGE = Path("/Users/joerissen/FAUbox/Zotero/storage")
+from journal_bot.settings import ZOTERO_COLLECTION, ZOTERO_STORAGE as _ZOTERO_STORAGE
+
+COLLECTION_NAME = sys.argv[1] if len(sys.argv) > 1 else ZOTERO_COLLECTION
+ZOTERO_STORAGE = _ZOTERO_STORAGE
 
 
 def main() -> int:

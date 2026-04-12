@@ -1,10 +1,10 @@
 """Bibliometrische Trend-Analyse auf Basis der Crossref-Referenzlisten.
 
-Methode (nach Benjamin):
+Methode:
   1. Alle Referenzlisten eines Diskursraums/Zeitfensters sammeln
   2. Normalisierung: Erst-Autor-Nachname + Titel-Kernwörter → composite key
   3. Häufigkeitsranking (wie oft wird diese Referenz zitiert?)
-  4. Top 10–15% nehmen
+  4. Top 10-15% nehmen
   5. Jahresverteilung: in welchen Jahren (der ZITIERENDEN Artikel) wird zitiert?
   6. Trend-Statement: steigend / Peak / fallend
 

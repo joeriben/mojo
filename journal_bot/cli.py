@@ -1,7 +1,7 @@
 """mojo CLI.
 
 Subcommands:
-  ingest     — Zotero-Collection 'Benjamin's publications' nach corpus.json
+  ingest     — Zotero-Collection (ZOTERO_COLLECTION) nach corpus.json
                (einmalig oder bei Änderung, keine LLM-Kosten)
   summarize  — Corpus mit Haiku zu faktischen Kurzprofilen (summaries.json)
                (einmalig, ~3€)
@@ -184,7 +184,7 @@ def cmd_digest(args: argparse.Namespace) -> int:
         print(f"    → {len(triage_scannen)} scannen, {len(triage_ignore)} ignorieren")
         pending = with_data
 
-    # Citation auto-pass: articles that cite Benjamin → skip screening
+    # Citation auto-pass: articles that cite the researcher → skip screening
     trigger_authors = ["macgilchrist", "jarke", "wendy chun", "wendy hui kyong"]
     authored_all = load_authored_all()
     auto_pass: list = []
@@ -202,7 +202,7 @@ def cmd_digest(args: argparse.Namespace) -> int:
         if citation_hits or is_trigger:
             reason = []
             if citation_hits:
-                reason.append(f"zitiert Benjamin ({len(citation_hits)}×)")
+                reason.append(f"zitiert Forscher*in ({len(citation_hits)}×)")
             if is_trigger:
                 reason.append("Trigger-Autor*in")
             auto_pass.append((sa, " + ".join(reason)))

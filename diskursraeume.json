@@ -4,44 +4,44 @@
     "deutsche": {
       "name": "Deutschsprachige Journals",
       "description": "Journals mit primär deutscher Publikationssprache (cross-cutting).",
-      "created": "2026-04-10",
-      "modified": "2026-04-10"
+      "created": "2026-04-13",
+      "modified": "2026-04-13"
     },
     "erziehungswiss": {
       "name": "Erziehungswissenschaftliche Journals",
       "description": "Empirische und theoretische Erziehungswissenschaft, Bildungsforschung.",
-      "created": "2026-04-10",
-      "modified": "2026-04-10"
+      "created": "2026-04-13",
+      "modified": "2026-04-13"
     },
     "digitale_kultur": {
       "name": "Digitale Kultur",
       "description": "Diskursraum digitale/postdigitale Kultur, mit oder ohne Bildungsfokus.",
-      "created": "2026-04-10",
-      "modified": "2026-04-10"
+      "created": "2026-04-13",
+      "modified": "2026-04-13"
     },
     "medienpaed": {
       "name": "Medienpädagogik",
       "description": "Medienpädagogische Fachzeitschriften.",
-      "created": "2026-04-10",
-      "modified": "2026-04-10"
+      "created": "2026-04-13",
+      "modified": "2026-04-13"
     },
     "bildungstheorie": {
       "name": "Bildungstheorie und -philosophie",
       "description": "Theoretische und philosophische Auseinandersetzung mit Bildung / Education.",
-      "created": "2026-04-10",
-      "modified": "2026-04-10"
+      "created": "2026-04-13",
+      "modified": "2026-04-13"
     },
     "aesthetische_kulturelle_bildung": {
       "name": "Ästhetische und kulturelle Bildung",
       "description": "Ästhetische Bildung, kulturelle Bildung, Kunstpädagogik, Kunst-Bildungs-Verhältnis.",
-      "created": "2026-04-10",
-      "modified": "2026-04-10"
+      "created": "2026-04-13",
+      "modified": "2026-04-13"
     },
     "resilienz": {
       "name": "Resilienz & Nachhaltigkeit / Environmental Humanities",
       "description": "Kulturelle und ökologische Resilienz, Nachhaltigkeit, Umweltbildung, Transformation.",
-      "created": "2026-04-10",
-      "modified": "2026-04-10"
+      "created": "2026-04-13",
+      "modified": "2026-04-13"
     }
   },
   "journal_clusters": {
@@ -51,13 +51,11 @@
     ],
     "MedienPaed": [
       "deutsche",
-      "medienpaed",
-      "aesthetische_kulturelle_bildung"
+      "medienpaed"
     ],
     "PDSE": [
       "digitale_kultur",
-      "medienpaed",
-      "bildungstheorie"
+      "medienpaed"
     ],
     "EPT": [
       "bildungstheorie"
@@ -115,8 +113,7 @@
     ],
     "merz": [
       "deutsche",
-      "medienpaed",
-      "aesthetische_kulturelle_bildung"
+      "medienpaed"
     ],
     "ZfPaed": [
       "deutsche",
