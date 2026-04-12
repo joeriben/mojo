@@ -59,6 +59,8 @@ class BackfillStats:
     filled_curl: int = 0
     filled_playwright: int = 0
     filled_zotero: int = 0
+    refs_scraped: int = 0
+    verdicts_reset: int = 0
     still_missing: int = 0
     errors: list[str] = field(default_factory=list)
 
@@ -195,10 +197,68 @@ def _resolve_doi_url(doi: str) -> str:
         return f"https://doi.org/{doi}"
 
 
-def _try_curl_cffi(doi: str, verbose: bool = False) -> str:
-    """Fetch publisher page with browser TLS fingerprint, extract abstract."""
+def _extract_refs_from_html(raw_html: str) -> list[dict]:
+    """Extract references from publisher HTML (T&F, Springer, generic)."""
+    refs: list[dict] = []
+
+    # T&F: <li id="CIT0001">...</li>
+    items = re.findall(r'<li[^>]*id="CIT\d+"[^>]*>(.*?)</li>', raw_html, re.S)
+    # Springer: <li id="ref-CR1">...</li>
+    if not items:
+        items = re.findall(r'<li[^>]*id="ref-CR\d+"[^>]*>(.*?)</li>', raw_html, re.S)
+    # Generic: <ul class="references"><li>...</li>
+    if not items:
+        m = re.search(
+            r'class="[^"]*references[^"]*"[^>]*>(.*?)</(?:ul|ol)>',
+            raw_html, re.S,
+        )
+        if m:
+            items = re.findall(r'<li[^>]*>(.*?)</li>', m.group(1), re.S)
+
+    for item in items:
+        doi_m = re.search(r'doi\.org/(10\.\d{4,}/[^\s"<>&]+)', item)
+        # Strip extra-links and other chrome
+        clean = re.sub(r'<div[^>]*class="extra-links".*?</div>', '', item, flags=re.S)
+        clean = re.sub(r'<[^>]+>', '', clean)
+        clean = html_mod.unescape(clean).strip()
+        clean = re.sub(r'\s+', ' ', clean)
+        if len(clean) > 20:
+            refs.append({
+                "unstructured": clean,
+                "DOI": doi_m.group(1) if doi_m else "",
+            })
+
+    return refs
+
+
+def _fetch_tf_refs(doi: str, verbose: bool = False) -> list[dict]:
+    """Fetch references from Taylor & Francis /doi/ref/ endpoint."""
     if not _curl_cffi_available():
-        return ""
+        return []
+
+    from curl_cffi import requests
+
+    url = f"https://www.tandfonline.com/doi/ref/{doi}"
+    for browser in ("chrome124", "safari17_2_ios"):
+        try:
+            r = requests.get(url, impersonate=browser, timeout=20)
+            if r.status_code == 200 and "just a moment" not in r.text[:500].lower():
+                refs = _extract_refs_from_html(r.text)
+                if refs and verbose:
+                    print(f"    [refs] {len(refs)} Referenzen von T&F")
+                return refs
+        except Exception:
+            continue
+    return []
+
+
+def _try_curl_cffi(doi: str, verbose: bool = False) -> tuple[str, list[dict]]:
+    """Fetch publisher page, extract abstract + references.
+
+    Returns (abstract, refs) tuple.
+    """
+    if not _curl_cffi_available():
+        return "", []
 
     from curl_cffi import requests
 
@@ -206,18 +266,30 @@ def _try_curl_cffi(doi: str, verbose: bool = False) -> str:
     if verbose:
         print(f"    [curl] {url}")
 
-    # Try impersonation targets (chrome124 works for Cloudflare as of 2026)
+    abstract = ""
+    refs: list[dict] = []
+    is_tf = "tandfonline.com" in url
+
     for browser in ("chrome124", "safari17_2_ios"):
         try:
             r = requests.get(url, impersonate=browser, timeout=20)
             if r.status_code == 200 and "just a moment" not in r.text[:500].lower():
-                abstract = _extract_abstract_from_html(r.text)
+                if not abstract:
+                    abstract = _extract_abstract_from_html(r.text)
+                # Extract refs from the page (Springer, generic — NOT T&F,
+                # whose refs are on a separate endpoint)
+                if not refs and not is_tf:
+                    refs = _extract_refs_from_html(r.text)
                 if abstract:
-                    return abstract
+                    break
         except Exception:
             continue
 
-    return ""
+    # T&F: refs are on a dedicated /doi/ref/ endpoint
+    if not refs and is_tf:
+        refs = _fetch_tf_refs(doi, verbose=verbose)
+
+    return abstract, refs
 
 
 # ---------------------------------------------------------------- Tier 3: Playwright
@@ -403,6 +475,70 @@ def _update_abstract(store: Store, article_id: str, abstract: str) -> None:
     conn.close()
 
 
+def _update_refs(store: Store, article_id: str, refs: list[dict]) -> bool:
+    """Write scraped references to crossref_refs (only if currently empty).
+
+    Returns True if refs were written.
+    """
+    if not refs:
+        return False
+    import sqlite3
+    conn = sqlite3.connect(store.path)
+    row = conn.execute(
+        "SELECT crossref_refs FROM articles WHERE id = ?", (article_id,)
+    ).fetchone()
+    existing = row[0] if row else ""
+    if existing and existing != "[]":
+        conn.close()
+        return False
+    conn.execute(
+        "UPDATE articles SET crossref_refs = ? WHERE id = ?",
+        (json.dumps(refs, ensure_ascii=False), article_id),
+    )
+    conn.commit()
+    conn.close()
+    return True
+
+
+def reset_stale_verdicts(store: Store, verbose: bool = True) -> int:
+    """Reset agent verdicts for articles that were processed without abstract
+    but now have one (after backfill). Returns count of reset articles."""
+    import sqlite3
+    conn = sqlite3.connect(store.path)
+    # Find articles: have abstract now, but agent_entry says "kein Abstract"
+    rows = conn.execute("""
+        SELECT id, title FROM articles
+        WHERE agent_processed_at IS NOT NULL
+          AND (abstract IS NOT NULL AND abstract != '')
+          AND agent_entry_json LIKE '%kein Abstract%'
+    """).fetchall()
+
+    if not rows:
+        conn.close()
+        return 0
+
+    ids = [r[0] for r in rows]
+    placeholders = ",".join("?" * len(ids))
+    conn.execute(
+        f"""UPDATE articles SET
+            agent_processed_at = NULL,
+            agent_verdict = NULL,
+            agent_entry_json = NULL,
+            citation_hits_json = NULL,
+            tokens_in = NULL, tokens_out = NULL,
+            tokens_cached_read = NULL, tokens_cache_write = NULL,
+            cost_usd = NULL, iterations = NULL
+        WHERE id IN ({placeholders})""",
+        ids,
+    )
+    conn.commit()
+    conn.close()
+
+    if verbose:
+        print(f"[backfill] {len(ids)} Artikel-Verdicts zurückgesetzt (hatten 'kein Abstract')")
+    return len(ids)
+
+
 def run(
     store: Store | None = None,
     limit: int | None = None,
@@ -483,8 +619,9 @@ def run(
                         stats.filled_crossref += 1
 
                 # Tier 2: curl_cffi (fast, handles Cloudflare)
+                refs: list[dict] = []
                 if not abstract and curl_ok:
-                    abstract = _try_curl_cffi(doi, verbose=verbose)
+                    abstract, refs = _try_curl_cffi(doi, verbose=verbose)
                     if abstract:
                         source = "curl"
                         stats.filled_curl += 1
@@ -511,6 +648,11 @@ def run(
                     print(f"  ✓ [{source}] {len(abstract)} Zeichen")
                 if not dry_run:
                     _update_abstract(store, row["id"], abstract)
+                    # Write refs if we got them and crossref_refs is empty
+                    if refs and _update_refs(store, row["id"], refs):
+                        stats.refs_scraped += 1
+                        if verbose:
+                            print(f"  + {len(refs)} Referenzen geschrieben")
             else:
                 stats.still_missing += 1
                 if verbose:
@@ -524,6 +666,10 @@ def run(
         if scraper:
             scraper.stop()
 
+    # Reset verdicts for articles that now have abstracts
+    if not dry_run:
+        stats.verdicts_reset = reset_stale_verdicts(store, verbose=verbose)
+
     if verbose:
         total_filled = (stats.filled_crossref + stats.filled_curl
                         + stats.filled_playwright + stats.filled_zotero)
@@ -535,6 +681,8 @@ def run(
         print(f"Playwright:        {stats.filled_playwright}")
         print(f"Zotero:            {stats.filled_zotero}")
         print(f"Gesamt gefüllt:    {total_filled}")
+        print(f"Refs nachgeladen:  {stats.refs_scraped}")
+        print(f"Verdicts reset:    {stats.verdicts_reset}")
         print(f"Noch fehlend:      {stats.still_missing}")
 
     return stats
