@@ -391,68 +391,151 @@ Erste 99 Artikel verarbeitet (vor Session-Absturz):
 
 ---
 
+## Session 2026-04-12 — Zweiphasige Architektur, Prompt-Kalibrierung, 2025+-Run
+
+### Kernproblem der vorigen Session
+Die "Lösung" `allow_read=False` für alle Batch-Artikel war epistemisch falsch: Sie verwischte die Unterscheidung, WANN und WARUM Benjamins Publikationen zur Analyse herangezogen werden. Summaries sind ein Suchindex (was behandelt der Text?), Volltexte liefern Argumente (was wird vertreten?). Ohne Volltext keine echten bezuege — aber Volltext für alle ist zu teuer.
+
+### Zweiphasige Agent-Architektur (Assessment → Verification)
+
+**Phase 1 — Assessment** (DeepSeek, ~$0.009/Artikel):
+Agent arbeitet nur mit dem Suchindex. Drei Ausgänge:
+- Irrelevant → sofort ignorieren
+- Thematisch nah ohne konkreten Argumenttransfer → scannen (kein read_publication)
+- Spezifische Hypothese über Verbindung → candidate_reads (pub_id + search_term + Hypothese)
+
+**Phase 2 — Verification** (DeepSeek, ~$0.05/Artikel, nur wenn candidate_reads ≠ []):
+Agent liest gezielt die identifizierten Publikationen, verifiziert/falsifiziert Hypothesen.
+
+Implementiert in `agent.py`: `assess_then_verify()` orchestriert beide Phasen, `run_agent()` erhält `system_outro` und `extra_user_content` Parameter.
+
+### Drei Iterationen der Prompt-Kalibrierung
+
+**Iteration 1: Deutsche Prompts, keine Kalibrierung**
+- 558 Artikel, **18% lesenswert** — untragbar
+- DeepSeek markierte jede thematische Parallele als lesenswert
+- Verification-Rate: 37%
+
+**Iteration 2: Englische Prompts + Opus-kalibrierte Verdict-Schwellen**
+- Alle Prompts auf Englisch umgeschrieben (DeepSeek optimiert für EN/CN)
+- Verdict-Kalibrierung aus 83 Opus-verarbeiteten Artikeln:
+  - geteilte Referenzrahmen allein = ignorieren
+  - Hintergrundliteratur ohne Argumenttransfer = scannen
+  - "parallelisiert" allein reicht NICHT für lesenswert
+  - lesenswert NUR bei erweitert/widerspricht/importiert
+- Ergebnis: lesenswert runter, aber **Verification-Rate 70%** — Assessment zu großzügig bei candidate_reads
+
+**Iteration 3: Geschärfte Assessment-Schwelle**
+- candidate_reads nur noch bei konkretem Argumenttransfer, nicht thematischer Nähe
+- Explizite Beispiele im Prompt (was rechtfertigt candidates, was nicht)
+- Maximum 2 statt 3 candidates
+- **Verification-Rate: 5%**, lesenswert: 0.4%
+
+### No-Abstract-Filter
+
+43% der 2025+-Artikel (1.284) haben kein Abstract. LLM-Bewertung auf Basis eines Titels allein ist Geldverschwendung.
+
+Flow (vor Screening, quer zu A/B/C-Tiers):
+1. Catchword-Match auf Titel (~500 Terms aus summaries.json key_terms + named_thinkers + englische Äquivalente)
+2. Kein Match (78%) → sofort ignorieren ($0)
+3. Match (22%) → Haiku-Triage nur mit Forschungsprofil (kein Publikationsindex) → scannen oder ignorieren (~$0.0001/Artikel)
+
+### Researcher-Profil extrahiert
+
+Alle Prompts parametrisiert über `settings.py`:
+- `RESEARCHER_NAME`, `RESEARCHER_INSTITUTION`, `RESEARCHER_AREAS`, `RESEARCHER_TRIAGE_TOPICS`
+- Kein hardcodierter "Benjamin" mehr in agent.py
+
+### Persistence-Fix
+
+Screening-ignorieren und C-Tier-Pass-Through wurden nicht in die DB geschrieben → 1.048 Artikel in Limbo. Gefixt: alle Pfade schreiben jetzt Verdicts in articles.db.
+
+### 2025+-Run abgeschlossen
+
+| Metrik | Wert |
+|--------|------|
+| Artikel verarbeitet | 2.935 / 2.966 |
+| Kosten | **$8.30** |
+| Ø Kosten/Artikel | $0.0028 |
+| ignorieren | 1.953 (66.5%) |
+| scannen | 975 (33.2%) |
+| lesenswert | 7 (0.2%) |
+| Verification-Rate | 5% der Agent-Artikel |
+
+Vergleich mit früheren Runs:
+| Run | Kosten | lesenswert | Ø/Artikel |
+|-----|--------|-----------|-----------|
+| Flat Opus (83 Art., 2016) | $13.42 | 0% | $0.162 |
+| DeepSeek dt. Prompts (558) | ~$13.74 | 18% | $0.025 |
+| **Assess→Verify EN (2.935)** | **$8.30** | **0.2%** | **$0.003** |
+
+### Baselines gesichert
+- `baseline_99_old_pipeline.json` — alte Pipeline (flat, kein assess/verify)
+- `baseline_558_german_prompts.json` — deutsche Prompts, 18% lesenswert
+
+### Commits dieser Session
+```
+5436cb0 feat: zweiphasige Agent-Architektur (Assessment → Verification)
+d6a9cb8 fix: English prompts + Opus-calibrated verdict thresholds for DeepSeek
+9d38109 fix: sharpen assessment-phase candidate_reads threshold
+18927fb feat: title-only screening for articles without abstract
+f25d174 fix: persist screening-ignorieren and C-tier verdicts to DB
+dfe2fba docs: UI-Entwurf — Flask/HTMX-Prototyp, drei Ansichten
+```
+
+---
+
 ## Handover für nächste Session
 
 ### Was steht
 - **28 Journals** aktiv getrackt, **17.465 Artikel** in articles.db (Backfill bis 2016)
-- **Digest-Pipeline v3**: Müll-Filter → Citation/Trigger Auto-Pass → DeepSeek-Screening → Tier-Agent (A mit Tools, B ohne Tools, C nur Screening)
-- **2025+-Run läuft** — 99 von 2.966 verarbeitet, ~2.867 in Verarbeitung
-- **DeepSeek V3.2 als Default** — 7× billiger als Opus, vergleichbare Qualität
-- **ARCHITECTURE.md** + aktualisierte Workflow-Docs vorhanden
-- **`signals.py`** + **`zotero_library.json`** vorhanden (nicht in Pipeline integriert)
-- **Scout, Diskursräume, Bibliometrie, Trends** — alles funktionsfähig
-
-### Kosten-Problem: read_publication ist der Treiber
-
-2025+-Run mit A-Tier (read_publication) gestartet, nach 99 Artikeln gestoppt:
-- **MedienPädagogik: $0.15/Artikel** statt projiziert $0.06 — DeepSeek macht 5-7 read_publication-Calls, jeder pumpt ~16k Zeichen in den wachsenden Kontext
-- B-Tier funktioniert wie projiziert: $0.009/Artikel
-- Hochrechnung: $120 für den Jahrgang statt projiziert $16 — **nicht akzeptabel**
-
-**Erkenntnis**: Nicht das Modell ist der Kostentreiber, sondern die Architektur. read_publication multipliziert Input-Tokens exponentiell über Iterationen. Selbst DeepSeek (10% von Opus-Tokenpreisen) kostet 50% von Opus wegen derselben Kontext-Explosion.
-
-**Lösung (teilweise implementiert in cli.py)**: read_publication gehört NICHT in den Batch-Run. Batch = alles ohne Tools ($0.009/Artikel). read_publication = on-demand per User-Click im UI, wenn ein konkreter Artikel vertieft werden soll.
+- **Digest-Pipeline v4**: No-Data-Filter → Müll-Filter → Citation/Trigger Auto-Pass → DeepSeek-Screening → Assessment → bedingte Verification
+- **2025+-Run abgeschlossen** — 2.935 Artikel, $8.30, 7 lesenswert
+- **Alle Prompts auf Englisch**, Opus-kalibrierte Verdict-Schwellen
+- **Researcher-Profil** in settings.py (Open-Source-fähig)
+- **UI-Entwurf** genehmigt (docs/ui_entwurf.md)
 
 ### Was als nächstes zu tun ist
 
-**1. Batch-Run ohne read_publication abschließen**
-- cli.py ist bereits umgebaut: alle Artikel bekommen nur `submit_digest_entry` (kein read_publication)
-- Projizierte Kosten: ~2.867 × $0.009 = **~$26**
-- Workflow-Doc 03 aktualisieren (A/B-Tier-Unterscheidung entfällt für Batch)
-- Run starten: `mojo digest --next 3000 --since 2025`
+**1. Runs für 2024 und 2026 starten**
+- 2024: 1.944 Artikel, projiziert ~$5
+- 2026: 708 Artikel, projiziert ~$2
+- 31 offene 2025er nachverarbeiten
+- `mojo digest --next 2000 --since 2024` (filtert auf year=2024)
+- `mojo digest --next 1000 --since 2026`
 
-**2. UI-Prototyp** (lokale Web-App)
-- Strukturierte Ablage nach Diskursraum, Verdict
-- Volle Daten aufklappbar
-- **"Vertiefen"-Button**: Einzelartikel → Agent MIT read_publication (on demand, ~$0.15)
-- 1-Click-Zotero-Aufnahme (pyzotero, mojo-Unterordner)
-- Aussortierte Titel sichtbar
+**2. UI-Prototyp bauen** (Flask + Jinja2 + HTMX)
 
-**3. Dialogischer Research-Agent**
-- Stub/Entwurf hochladen → Retrieval gegen DB
-- "Missed References"-Detektor
+Drei Ansichten:
+- **Digest**: Lesenswert aufgeklappt → Zitiert-dich-Sektion → Scannen kompakt → Ignorieren zugeklappt. Filter: Jahr, Diskursraum, Journal, Verdict.
+- **Artikeldetail**: Verdict + Begründung, Kernthese, Bezüge (mit Relationstyp), Bemerkenswert, Meta-Footer. Aktionen: Vertiefen (Opus on-demand ~$0.05), Zotero-1-Click, DOI-Link.
+- **Diskursraum**: Journals + Artikelzahlen, Verdict-Verteilung, Trend/Biblio startbar.
+
+Stack: Flask + Jinja2 + HTMX, SQLite direkt, localhost:5000. Kein JS-Framework. Entwurf: `docs/ui_entwurf.md`.
+
+**3. Trend-Analyse für aesthetische_kulturelle_bildung**
+- Biblio (kostenlos) bereits gelaufen
+- LLM-Trend-Analyse noch ausstehend
+
+**4. Dialogischer Research-Agent** (Phase 2)
+- Stub/Entwurf hochladen → Retrieval gegen DB → "Missed References"
 - Architektur-Vorlage: transact-qda
 
-**4. Trend-Analyse für aesthetische_kulturelle_bildung** — unerledigt
-
-**5. Open-Source-Vorbereitung** — unerledigt, Pfade hardcoded
+**5. Open-Source-Vorbereitung**
+- Pfade teilweise hardcoded (Zotero, Obsidian)
+- Researcher-Profil bereits extrahiert (settings.py)
 
 ### Bekannte Einschränkungen
-- **43% der 2025+ Artikel ohne Abstract** (v.a. AI & Society, EPT, JRTE)
+- **31 offene 2025er** (vermutlich Edge Cases im Screening)
 - **Trigger-Autoren-Matching** braucht Vollnamen (nicht nur Nachnamen)
-- **Qwen 3.6 Plus** zurückgestellt (JSON-Bug in bezuege)
-- **read_publication bei DeepSeek: $0.15/Artikel** statt $0.06 projiziert — nur on-demand sinnvoll
+- **Catchword-Liste** enthält einige XML-Artefakte aus summaries.json (funktioniert, nicht schön)
+- **`--since` filtert ≥, nicht =** — für 2024-only-Run muss ggf. nachgefiltert werden
 
-### Statistik dieser Session
+### Kosten dieser Session
 
-| Metrik | Wert |
-|--------|------|
-| OpenRouter-Kosten | ~$9.45 |
-| 2025+-Artikel verarbeitet | 99 (von 2.966) |
-| davon lesenswert | 6 |
-| davon scannen | 44 |
-| davon ignorieren | 49 |
-| Ø Kosten/Artikel (mit read_pub) | $0.044 |
-| Ø Kosten/Artikel (ohne read_pub) | $0.009 |
-| Modelle benchmarkt | 6 (Opus, DeepSeek, Qwen, Kimi, GLM, MiniMax) |
-| Commits | 8 |
+| Posten | Kosten |
+|--------|--------|
+| 2025+-Run (2.935 Artikel) | $8.30 |
+| Testläufe (div. Iterationen, ~100 Artikel) | ~$3.00 |
+| Screening-Kosten (DeepSeek Batch) | ~$0.50 |
+| **Gesamt** | **~$12** |
