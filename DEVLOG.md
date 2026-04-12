@@ -554,9 +554,9 @@ ac16130 feat: Suche + Trend/Biblio/Profil in Diskursraum-UI
 
 ### Was als nächstes zu tun ist
 
-**1. 2024er-Run abschließen**
-- 142 Artikel noch offen (1802/1944 fertig)
-- Läuft im Hintergrund, ggf. Reste manuell nachschieben
+**1. ~~2024er-Run~~ erledigt**
+- 1920/1944 verarbeitet, 24 Junk (Corrections) ohne Verdict
+- 7 lesenswert, 583 scannen, 1330 ignorieren, $6.10
 
 **2. Review-Workflow testen**
 - Lesenswert-Artikel in der UI durchgehen, OK/Override/Memo
@@ -586,13 +586,17 @@ ac16130 feat: Suche + Trend/Biblio/Profil in Diskursraum-UI
 - **Zotero-Export** braucht manuell angelegte Collection "mojo"
 - **trends.run() / biblio.run()** geben teils Result-Dicts zurück, teils nicht — API-Endpoints brauchen ggf. Error-Handling-Anpassung
 
+### Auch erledigt (nach DEVLOG-Eintrag)
+- **Citation-Tracker Vornamen-Fix**: Matcht jetzt nur kanonische Namensformen (Benjamin/B. Jörissen), rejected Namesakes (J. Jörissen etc.). 1 Falsch-Positiv in DB korrigiert.
+- **Biblio volle Titel**: `title_full` statt 4-Wort-Fragment. Markdown-Tabellen als HTML gerendert.
+
 ### Kosten dieser Session
 
 | Posten | Kosten |
 |--------|--------|
 | Vorherige Sessions | ~$12.00 |
-| 2024-Run (1802 Artikel, läuft) | ~$4.50 |
+| 2024-Run (1920 Artikel) | ~$6.10 |
 | 2026-Run (708 Artikel) | ~$0.06 |
 | 2025-Nachverarbeitung | ~$0.06 |
 | Vertiefungs-Tests | ~$0.50 |
-| **DB-Gesamtkosten** | **$27.50** |
+| **DB-Gesamtkosten** | **~$28** |
