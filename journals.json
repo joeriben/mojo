@@ -118,8 +118,9 @@
     {
       "name": "Digital Culture & Education",
       "short": "DCE",
-      "type": "openalex",
-      "url": "issn:1836-8301",
+      "type": "dce",
+      "url": "https://www.digitalcultureandeducation.com/browse-journal",
+      "issn": "1836-8301",
       "tier": "A",
       "enabled": true
     },
