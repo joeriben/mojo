@@ -39,7 +39,13 @@ app = Flask(
     template_folder="templates",
     static_folder="static",
 )
-app.secret_key = os.urandom(24)  # For session (agent chat context)
+app.secret_key = os.urandom(24)  # For session (lightweight state only)
+
+# Server-side agent state (single-user tool, no cookie size limits)
+_agent_state: dict = {
+    "context": "",       # Uploaded text (can be 50k+ chars)
+    "messages": [],      # Chat history
+}
 
 
 # --------------------------------------------------------- Jinja filters ---
@@ -1227,15 +1233,15 @@ def agent_page():
         except Exception:
             pass
 
+    ctx = _agent_state["context"]
     return render_template(
         "agent.html",
         db_article_count=stats["total"],
         corpus_count=corpus_count,
-        context_set=bool(session.get("agent_context")),
-        context_preview=(session.get("agent_context", "")[:200] + "…")
-            if session.get("agent_context") else "",
-        context_chars=len(session.get("agent_context", "")),
-        messages=session.get("agent_messages", []),
+        context_set=bool(ctx),
+        context_preview=(ctx[:200] + "…") if ctx else "",
+        context_chars=len(ctx),
+        messages=_agent_state["messages"],
     )
 
 
@@ -1243,12 +1249,12 @@ def agent_page():
 def api_agent_context():
     """Set or clear the agent's text context."""
     if request.method == "DELETE":
-        session.pop("agent_context", None)
+        _agent_state["context"] = ""
         return jsonify({"ok": True})
 
     data = request.get_json(force=True)
     text = data.get("text", "").strip()
-    session["agent_context"] = text
+    _agent_state["context"] = text
     return jsonify({"ok": True, "chars": len(text)})
 
 
@@ -1265,7 +1271,7 @@ def api_agent_chat():
     if not message:
         return jsonify({"error": "Keine Nachricht."}), 400
 
-    user_context = session.get("agent_context")
+    user_context = _agent_state["context"] or None
 
     try:
         result = agent_chat(
@@ -1285,8 +1291,8 @@ def api_agent_chat():
     except Exception:
         html_content = html_mod.escape(result["content"]).replace("\n", "<br>")
 
-    # Store in session for page reload
-    msgs = session.get("agent_messages", [])
+    # Store server-side for page reload
+    msgs = _agent_state["messages"]
     msgs.append({"role": "user", "content": message})
     msgs.append({
         "role": "assistant",
@@ -1294,7 +1300,7 @@ def api_agent_chat():
         "content_html": html_content,
     })
     # Keep last 40 messages
-    session["agent_messages"] = msgs[-40:]
+    _agent_state["messages"] = msgs[-40:]
 
     return jsonify({
         "content": result["content"],
@@ -1307,7 +1313,8 @@ def api_agent_chat():
 @app.route("/api/agent/clear", methods=["POST"])
 def api_agent_clear():
     """Clear agent chat history."""
-    session.pop("agent_messages", None)
+    _agent_state["messages"] = []
+    _agent_state["context"] = ""
     return jsonify({"ok": True})
 
 
