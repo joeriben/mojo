@@ -242,6 +242,17 @@ def cmd_digest(args: argparse.Namespace) -> int:
                 print(f"  ⊘ {journal_name}: {sa.title[:65]}")
                 if grund:
                     print(f"    → {grund}")
+                store.update_agent_result(
+                    sa.id, verdict="ignorieren",
+                    entry={"kernthese": "(Screening: ignorieren)",
+                           "bezuege": [], "bemerkenswert": [],
+                           "theoretisch_methodisch": "",
+                           "verdict": "ignorieren",
+                           "verdict_begruendung": f"Screening: {grund}"},
+                    citation_hits=[], tokens_in=0, tokens_out=0,
+                    tokens_cached_read=0, tokens_cache_write=0,
+                    cost_usd=0.0, iterations=0,
+                )
 
         print(f"\n[digest] Screening: {len(passed)} weitergeben, "
               f"{len(filtered)} aussortiert")
@@ -265,6 +276,18 @@ def cmd_digest(args: argparse.Namespace) -> int:
     c_only = [sa for sa in passed if tier_by_short.get(sa.journal_short, "B") == "C"]
     if c_only:
         print(f"[digest] C-Tier: {len(c_only)} Artikel nur gescreent, kein Agent")
+        for sa in c_only:
+            store.update_agent_result(
+                sa.id, verdict="scannen",
+                entry={"kernthese": "(C-Tier: nur Screening, kein Agent)",
+                       "bezuege": [], "bemerkenswert": [],
+                       "theoretisch_methodisch": "",
+                       "verdict": "scannen",
+                       "verdict_begruendung": "C-Tier: Screening-Pass, keine Agent-Analyse."},
+                citation_hits=[], tokens_in=0, tokens_out=0,
+                tokens_cached_read=0, tokens_cache_write=0,
+                cost_usd=0.0, iterations=0,
+            )
 
     if not to_analyze:
         print("[digest] Keine Artikel für Agent-Analyse übrig.")
