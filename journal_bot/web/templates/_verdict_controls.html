@@ -1,0 +1,79 @@
+{# HTMX partial: inline verdict override controls #}
+<div class="verdict-controls" id="vc-{{ a.id }}">
+  <div style="display:flex; gap:.4rem; align-items:center; flex-wrap:wrap;">
+    {# Current effective verdict badge #}
+    <span class="badge badge-{{ a.effective_verdict }}">
+      {{ verdict_label.get(a.effective_verdict, a.effective_verdict) }}
+    </span>
+
+    {% if a.user_verdict and a.user_verdict == a.agent_verdict %}
+    {# Confirmed: checkmark, no strikethrough #}
+    <span class="ack-check" title="Bestätigt">&#10003;</span>
+    {% elif a.user_verdict and a.user_verdict != a.agent_verdict %}
+    {# Override: show old verdict struck through #}
+    <span style="font-size:.75rem; color:var(--muted); text-decoration:line-through;">
+      {{ verdict_label.get(a.agent_verdict, a.agent_verdict) }}
+    </span>
+    {% endif %}
+
+    {# Confirm button (only if not yet reviewed) #}
+    {% if not a.user_verdict %}
+    <button class="btn btn-verdict btn-confirm"
+            hx-post="/api/verdict"
+            hx-vals='{"article_id": "{{ a.id }}", "verdict": "{{ a.agent_verdict }}"}'
+            hx-target="#vc-{{ a.id }}"
+            hx-swap="outerHTML"
+            title="Bestätigen (Agent-Verdict OK)">
+      OK
+    </button>
+    {% endif %}
+
+    {# Override buttons #}
+    {% set verdicts = ["lesenswert", "scannen", "ignorieren"] %}
+    {% for v in verdicts %}
+    {% if v != a.effective_verdict %}
+    <button class="btn btn-verdict btn-verdict-{{ v }}"
+            hx-post="/api/verdict"
+            hx-vals='{"article_id": "{{ a.id }}", "verdict": "{{ v }}"}'
+            hx-target="#vc-{{ a.id }}"
+            hx-swap="outerHTML"
+            title="→ {{ verdict_label[v] }}">
+      → {{ verdict_label[v] }}
+    </button>
+    {% endif %}
+    {% endfor %}
+
+    {# Reset to agent verdict #}
+    {% if a.user_verdict %}
+    <button class="btn btn-verdict-reset"
+            hx-post="/api/verdict"
+            hx-vals='{"article_id": "{{ a.id }}", "verdict": ""}'
+            hx-target="#vc-{{ a.id }}"
+            hx-swap="outerHTML"
+            title="Zurücksetzen (unreviewed)">
+      ✕
+    </button>
+    {% endif %}
+
+    {# Memo toggle #}
+    <button class="btn btn-memo-toggle" onclick="this.nextElementSibling.classList.toggle('hidden')"
+            title="Memo">
+      ✎
+    </button>
+    <form class="memo-form hidden" style="display:inline;"
+          hx-post="/api/verdict"
+          hx-target="#vc-{{ a.id }}"
+          hx-swap="outerHTML">
+      <input type="hidden" name="article_id" value="{{ a.id }}">
+      <input type="hidden" name="verdict" value="{{ a.effective_verdict }}">
+      <input type="text" name="memo" value="{{ a.user_memo or '' }}"
+             placeholder="Memo…" style="font-size:.8rem; padding:2px 6px; width:220px;">
+      <button type="submit" class="btn" style="font-size:.75rem;">Speichern</button>
+    </form>
+  </div>
+  {% if a.user_memo %}
+  <div style="font-size:.8rem; color:var(--muted); margin-top:.2rem; font-style:italic;">
+    {{ a.user_memo }}
+  </div>
+  {% endif %}
+</div>

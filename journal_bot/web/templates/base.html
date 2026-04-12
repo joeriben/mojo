@@ -102,6 +102,23 @@
     .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
     .btn-primary:hover { opacity: .85; }
 
+    /* Verdict controls */
+    .btn-verdict { font-size: .7rem; padding: 2px 6px; opacity: .6; }
+    .btn-verdict:hover { opacity: 1; }
+    .btn-verdict-lesenswert:hover { border-color: var(--lesenswert); color: var(--lesenswert); }
+    .btn-verdict-scannen:hover { border-color: var(--scannen); color: var(--scannen); }
+    .btn-verdict-ignorieren:hover { border-color: var(--ignorieren); color: var(--ignorieren); }
+    .btn-confirm { border-color: var(--lesenswert); color: var(--lesenswert); opacity: .7; }
+    .btn-confirm:hover { opacity: 1; background: var(--lesenswert); color: #fff; }
+    .ack-check { color: var(--lesenswert); font-size: .9rem; font-weight: 700; }
+    .btn-verdict-reset { font-size: .7rem; padding: 2px 6px; opacity: .5; }
+    .btn-verdict-reset:hover { opacity: 1; color: var(--pflichtlektuere); }
+    .btn-memo-toggle { font-size: .8rem; padding: 2px 6px; opacity: .5; }
+    .btn-memo-toggle:hover { opacity: 1; }
+    .hidden { display: none !important; }
+    .memo-form { margin-left: .5rem; }
+    .override-indicator { font-size: .7rem; color: var(--scannen); font-weight: 600; }
+
     /* Toggle */
     details summary { cursor: pointer; user-select: none; }
     details summary::-webkit-details-marker { display: none; }
@@ -124,7 +141,9 @@
   <nav>
     <span class="brand">MOJO</span>
     <a href="/" {% if request.path == "/" %}class="active"{% endif %}>Digest</a>
+    <a href="/review" {% if request.path == "/review" %}class="active"{% endif %}>Review</a>
     <a href="/diskurs" {% if request.path.startswith("/diskurs") %}class="active"{% endif %}>Diskursräume</a>
+    <a href="/overrides" {% if request.path == "/overrides" %}class="active"{% endif %}>Overrides</a>
   </nav>
   {% block content %}{% endblock %}
 </body>

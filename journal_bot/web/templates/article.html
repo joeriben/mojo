@@ -18,7 +18,7 @@
 
 <!-- Verdict -->
 <div class="detail-section">
-  <span class="badge badge-{{ a.agent_verdict }}">{{ verdict_label.get(a.agent_verdict, a.agent_verdict) }}</span>
+  {% include "_verdict_controls.html" %}
   <p style="margin-top:.4rem;">{{ e.verdict_begruendung }}</p>
 </div>
 

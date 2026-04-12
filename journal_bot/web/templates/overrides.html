@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}MOJO — Overrides{% endblock %}
+{% block content %}
+
+<h1 style="font-size:1.3rem; margin-bottom:.75rem;">
+  Overrides <span class="section-count">({{ total }} Korrekturen)</span>
+</h1>
+
+<div style="display:flex; gap:1.5rem; margin-bottom:1.5rem; font-size:.9rem;">
+  <span style="color:var(--lesenswert);">{{ upgrades|length }} Upgrades (Agent zu streng)</span>
+  <span style="color:var(--pflichtlektuere);">{{ downgrades|length }} Downgrades (Agent zu großzügig)</span>
+  <span style="color:var(--muted);">{{ confirms|length }} Bestätigt</span>
+</div>
+
+{% if upgrades %}
+<h2>Upgrades <span class="section-count">(Agent zu streng)</span></h2>
+{% for a in upgrades %}
+<div class="card">
+  <div style="display:flex; gap:.5rem; align-items:center;">
+    <span class="badge badge-{{ a.agent_verdict }}" style="opacity:.5; text-decoration:line-through;">{{ verdict_label.get(a.agent_verdict, a.agent_verdict) }}</span>
+    <span style="color:var(--muted);">→</span>
+    <span class="badge badge-{{ a.user_verdict }}">{{ verdict_label.get(a.user_verdict, a.user_verdict) }}</span>
+    <span class="art-journal">{{ a.journal_full }}</span>
+    <span class="art-year">{{ a.year }}</span>
+  </div>
+  <h3 style="color:var(--fg); font-size:.95rem; margin:.3rem 0;">
+    <a href="/article/{{ a.id }}">{{ a.title }}</a>
+  </h3>
+  {% if a.user_memo %}
+  <p style="font-size:.85rem; font-style:italic; color:var(--muted);">{{ a.user_memo }}</p>
+  {% endif %}
+  {% if a.agent_entry and a.agent_entry.verdict_begruendung %}
+  <p style="font-size:.8rem; color:var(--muted);">Agent: {{ a.agent_entry.verdict_begruendung[:200] }}</p>
+  {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+{% if downgrades %}
+<h2>Downgrades <span class="section-count">(Agent zu großzügig)</span></h2>
+{% for a in downgrades %}
+<div class="card">
+  <div style="display:flex; gap:.5rem; align-items:center;">
+    <span class="badge badge-{{ a.agent_verdict }}" style="opacity:.5; text-decoration:line-through;">{{ verdict_label.get(a.agent_verdict, a.agent_verdict) }}</span>
+    <span style="color:var(--muted);">→</span>
+    <span class="badge badge-{{ a.user_verdict }}">{{ verdict_label.get(a.user_verdict, a.user_verdict) }}</span>
+    <span class="art-journal">{{ a.journal_full }}</span>
+    <span class="art-year">{{ a.year }}</span>
+  </div>
+  <h3 style="color:var(--fg); font-size:.95rem; margin:.3rem 0;">
+    <a href="/article/{{ a.id }}">{{ a.title }}</a>
+  </h3>
+  {% if a.user_memo %}
+  <p style="font-size:.85rem; font-style:italic; color:var(--muted);">{{ a.user_memo }}</p>
+  {% endif %}
+  {% if a.agent_entry and a.agent_entry.verdict_begruendung %}
+  <p style="font-size:.8rem; color:var(--muted);">Agent: {{ a.agent_entry.verdict_begruendung[:200] }}</p>
+  {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+{% if confirms %}
+<details>
+  <summary><h2 style="display:inline;">Bestätigt <span class="section-count">({{ confirms|length }})</span></h2></summary>
+  {% for a in confirms %}
+  <div class="art-row">
+    <span class="badge badge-{{ a.effective_verdict }}">{{ verdict_label.get(a.effective_verdict, a.effective_verdict) }}</span>
+    <span class="art-journal">{{ a.journal_full }}</span>
+    <a href="/article/{{ a.id }}" class="art-title">{{ a.title }}</a>
+    <span class="art-year">{{ a.year }}</span>
+  </div>
+  {% endfor %}
+</details>
+{% endif %}
+
+{% if not articles %}
+<p style="color:var(--muted); margin-top:2rem;">Noch keine User-Overrides vorhanden.</p>
+{% endif %}
+
+{% endblock %}

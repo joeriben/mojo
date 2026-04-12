@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from flask import Flask, render_template, request, abort
+from flask import Flask, render_template, request, abort, jsonify
 
 from journal_bot.store import Store
 from journal_bot.settings import DISCOURSE_SPACES, JOURNALS, journals_in_cluster
@@ -77,17 +77,17 @@ def digest():
             a.agent_entry = json.loads(a.agent_entry)
         a.journal_full = a.journal_full or _journal_full_name(a.journal_short)
 
-    # Additional verdict filter
+    # Additional verdict filter (uses effective verdict)
     if verdict_filter:
-        articles = [a for a in articles if a.agent_verdict == verdict_filter]
+        articles = [a for a in articles if a.effective_verdict == verdict_filter]
 
     # Citation hits across all verdicts
     cites_you = [a for a in articles if a.citation_hits]
 
-    # Group by verdict
+    # Group by effective verdict
     by_verdict = {}
     for v in VERDICT_ORDER:
-        by_verdict[v] = [a for a in articles if a.agent_verdict == v]
+        by_verdict[v] = [a for a in articles if a.effective_verdict == v]
 
     # Available years for filter (always show all, not just filtered)
     with store._conn() as c:
@@ -200,7 +200,7 @@ def diskursraum(cluster_key: str | None = None):
 
     by_verdict = {}
     for v in VERDICT_ORDER:
-        by_verdict[v] = [a for a in articles if a.agent_verdict == v]
+        by_verdict[v] = [a for a in articles if a.effective_verdict == v]
 
     cites_you = [a for a in articles if a.citation_hits]
 
@@ -221,6 +221,127 @@ def diskursraum(cluster_key: str | None = None):
         cites_you=cites_you,
         verdict_label=VERDICT_LABEL,
         relation_label=RELATION_LABEL,
+        total=len(articles),
+    )
+
+
+@app.route("/api/verdict", methods=["POST"])
+def api_set_verdict():
+    """HTMX endpoint: set user verdict override."""
+    store = _store()
+    article_id = request.form.get("article_id", "")
+    verdict = request.form.get("verdict", "")
+    memo = request.form.get("memo", "")
+
+    if not article_id:
+        abort(400)
+
+    a = store.get(article_id)
+    if not a:
+        abort(404)
+
+    # Empty verdict = reset to agent verdict
+    store.set_user_verdict(article_id, verdict=verdict, memo=memo)
+
+    # Re-fetch to get updated state
+    a = store.get(article_id)
+    if a.agent_entry and isinstance(a.agent_entry, str):
+        a.agent_entry = json.loads(a.agent_entry)
+    a.journal_full = a.journal_full or _journal_full_name(a.journal_short)
+
+    return render_template(
+        "_verdict_controls.html",
+        a=a,
+        verdict_label=VERDICT_LABEL,
+    )
+
+
+@app.route("/review")
+def review():
+    """Review queue: articles not yet user-confirmed."""
+    store = _store()
+    year = request.args.get("year", type=int)
+    verdict_filter = request.args.get("verdict", "")
+
+    with store._conn() as c:
+        sql = (
+            "SELECT * FROM articles "
+            "WHERE agent_verdict IS NOT NULL AND user_verdict IS NULL "
+            "AND agent_verdict IN ('lesenswert', 'scannen', 'pflichtlektuere') "
+        )
+        params: list = []
+        if year:
+            sql += " AND year = ?"
+            params.append(year)
+        if verdict_filter:
+            sql += " AND agent_verdict = ?"
+            params.append(verdict_filter)
+        sql += " ORDER BY CASE agent_verdict "
+        sql += "   WHEN 'pflichtlektuere' THEN 0 "
+        sql += "   WHEN 'lesenswert' THEN 1 "
+        sql += "   WHEN 'scannen' THEN 2 "
+        sql += " END, year DESC"
+        rows = c.execute(sql, params).fetchall()
+
+    from journal_bot.store import _row_to_article
+    articles = [_row_to_article(r) for r in rows]
+    for a in articles:
+        if a.agent_entry and isinstance(a.agent_entry, str):
+            a.agent_entry = json.loads(a.agent_entry)
+        a.journal_full = a.journal_full or _journal_full_name(a.journal_short)
+
+    # Available years
+    with store._conn() as c:
+        year_rows = c.execute(
+            "SELECT DISTINCT year FROM articles WHERE agent_verdict IS NOT NULL "
+            "ORDER BY year DESC"
+        ).fetchall()
+        all_years = [r[0] for r in year_rows if r[0]]
+
+    return render_template(
+        "review.html",
+        articles=articles,
+        verdict_label=VERDICT_LABEL,
+        relation_label=RELATION_LABEL,
+        all_years=all_years,
+        filters={"year": year, "verdict": verdict_filter},
+        total=len(articles),
+    )
+
+
+@app.route("/overrides")
+def overrides():
+    """All user overrides for prompt optimization analysis."""
+    store = _store()
+    with store._conn() as c:
+        rows = c.execute(
+            "SELECT * FROM articles WHERE user_verdict IS NOT NULL "
+            "ORDER BY user_verdict_at DESC"
+        ).fetchall()
+
+    from journal_bot.store import _row_to_article
+    articles = [_row_to_article(r) for r in rows]
+    for a in articles:
+        if a.agent_entry and isinstance(a.agent_entry, str):
+            a.agent_entry = json.loads(a.agent_entry)
+        a.journal_full = a.journal_full or _journal_full_name(a.journal_short)
+
+    # Group by direction
+    upgrades = [a for a in articles
+                if VERDICT_ORDER.index(a.user_verdict) < VERDICT_ORDER.index(a.agent_verdict)
+                if a.user_verdict in VERDICT_ORDER and a.agent_verdict in VERDICT_ORDER]
+    downgrades = [a for a in articles
+                  if VERDICT_ORDER.index(a.user_verdict) > VERDICT_ORDER.index(a.agent_verdict)
+                  if a.user_verdict in VERDICT_ORDER and a.agent_verdict in VERDICT_ORDER]
+    confirms = [a for a in articles if a.user_verdict == a.agent_verdict]
+
+    return render_template(
+        "overrides.html",
+        articles=articles,
+        upgrades=upgrades,
+        downgrades=downgrades,
+        confirms=confirms,
+        verdict_label=VERDICT_LABEL,
         total=len(articles),
     )
 

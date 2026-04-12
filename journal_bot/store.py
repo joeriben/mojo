@@ -59,7 +59,12 @@ CREATE TABLE IF NOT EXISTS articles (
     tokens_cached_read  INTEGER,
     tokens_cache_write  INTEGER,
     cost_usd            REAL,
-    iterations          INTEGER
+    iterations          INTEGER,
+
+    -- User override (null = agrees with agent)
+    user_verdict        TEXT,
+    user_memo           TEXT,
+    user_verdict_at     TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_articles_journal     ON articles(journal_short);
@@ -67,6 +72,19 @@ CREATE INDEX IF NOT EXISTS idx_articles_year        ON articles(year);
 CREATE INDEX IF NOT EXISTS idx_articles_processed   ON articles(agent_processed_at);
 CREATE INDEX IF NOT EXISTS idx_articles_fetched_at  ON articles(fetched_at);
 """
+
+MIGRATIONS = [
+    # Add user verdict columns (idempotent)
+    """
+    ALTER TABLE articles ADD COLUMN user_verdict TEXT;
+    """,
+    """
+    ALTER TABLE articles ADD COLUMN user_memo TEXT;
+    """,
+    """
+    ALTER TABLE articles ADD COLUMN user_verdict_at TEXT;
+    """,
+]
 
 
 def make_article_id(doi: str | None, url: str | None, title: str) -> str:
@@ -109,6 +127,15 @@ class StoredArticle:
     cost_usd: float = 0.0
     iterations: int = 0
 
+    # User override
+    user_verdict: str = ""
+    user_memo: str = ""
+    user_verdict_at: str = ""
+
+    @property
+    def effective_verdict(self) -> str:
+        return self.user_verdict or self.agent_verdict
+
 
 class Store:
     def __init__(self, path: Path = ARTICLES_DB) -> None:
@@ -116,6 +143,17 @@ class Store:
         path.parent.mkdir(parents=True, exist_ok=True)
         with self._conn() as c:
             c.executescript(SCHEMA)
+            self._migrate(c)
+
+    @staticmethod
+    def _migrate(conn: sqlite3.Connection) -> None:
+        existing = {
+            row[1] for row in conn.execute("PRAGMA table_info(articles)").fetchall()
+        }
+        for stmt in MIGRATIONS:
+            col = stmt.strip().split()[-2].rstrip(";")  # extract column name
+            if col not in existing:
+                conn.execute(stmt)
 
     @contextmanager
     def _conn(self) -> Iterator[sqlite3.Connection]:
@@ -216,6 +254,30 @@ class Store:
                     tokens_cache_write,
                     cost_usd,
                     iterations,
+                    article_id,
+                ),
+            )
+
+    def set_user_verdict(
+        self,
+        article_id: str,
+        *,
+        verdict: str,
+        memo: str = "",
+    ) -> None:
+        with self._conn() as c:
+            c.execute(
+                """
+                UPDATE articles SET
+                    user_verdict = ?,
+                    user_memo = ?,
+                    user_verdict_at = ?
+                WHERE id = ?
+                """,
+                (
+                    verdict or None,  # NULL = reset to agent verdict
+                    memo or None,
+                    datetime.now(timezone.utc).isoformat() if verdict else None,
                     article_id,
                 ),
             )
@@ -346,4 +408,7 @@ def _row_to_article(row: sqlite3.Row) -> StoredArticle:
         tokens_cache_write=row["tokens_cache_write"] or 0,
         cost_usd=row["cost_usd"] or 0.0,
         iterations=row["iterations"] or 0,
+        user_verdict=row["user_verdict"] or "",
+        user_memo=row["user_memo"] or "",
+        user_verdict_at=row["user_verdict_at"] or "",
     )

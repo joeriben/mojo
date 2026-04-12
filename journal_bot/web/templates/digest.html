@@ -42,7 +42,8 @@
   <h2>Zitiert Dich <span class="section-count">({{ cites_you|length }})</span></h2>
   {% for a in cites_you %}
   <div class="art-row">
-    <span class="badge badge-{{ a.agent_verdict }}">{{ verdict_label.get(a.agent_verdict, a.agent_verdict) }}</span>
+    <span class="badge badge-{{ a.effective_verdict }}">{{ verdict_label.get(a.effective_verdict, a.effective_verdict) }}</span>
+    {% if a.user_verdict %}<span class="override-indicator">&#9998;</span>{% endif %}
     <span class="art-journal">{{ a.journal_full }}</span>
     <a href="/article/{{ a.id }}" class="art-title">{{ a.title }}</a>
     <span class="art-year">{{ a.year }}</span>
@@ -57,8 +58,8 @@
 <h2>Lesenswert <span class="section-count">({{ lesenswert|length }})</span></h2>
 {% for a in lesenswert %}
 <div class="card">
-  <div style="display:flex; gap:.5rem; align-items:baseline;">
-    <span class="badge badge-{{ a.agent_verdict }}">{{ verdict_label.get(a.agent_verdict, a.agent_verdict) }}</span>
+  {% include "_verdict_controls.html" %}
+  <div style="display:flex; gap:.5rem; align-items:baseline; margin-top:.3rem;">
     <span class="art-journal">{{ a.journal_full }}</span>
     <span class="art-year">{{ a.year }}</span>
   </div>
@@ -92,6 +93,7 @@
   <summary><h2 style="display:inline;">Scannen <span class="section-count">({{ scannen|length }})</span></h2></summary>
   {% for a in scannen %}
   <div class="art-row">
+    {% include "_verdict_controls.html" %}
     <span class="art-journal">{{ a.journal_full }}</span>
     <a href="/article/{{ a.id }}" class="art-title">{{ a.title }}</a>
     <span class="art-year">{{ a.year }}</span>
@@ -107,6 +109,7 @@
   <summary><h2 style="display:inline;">Ignorieren <span class="section-count">({{ ignorieren|length }})</span></h2></summary>
   {% for a in ignorieren %}
   <div class="art-row">
+    {% include "_verdict_controls.html" %}
     <span class="art-journal">{{ a.journal_full }}</span>
     <a href="/article/{{ a.id }}" class="art-title">{{ a.title }}</a>
     <span class="art-year">{{ a.year }}</span>
