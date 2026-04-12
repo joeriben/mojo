@@ -1042,9 +1042,19 @@ def assess_then_verify(
     # Stash assessment for transparency
     verification["assessment"] = entry
 
-    # Clean up candidate_reads from final entry
-    final = verification.get("entry") or {}
-    final.pop("candidate_reads", None)
+    # If verification exhausted iterations without submitting, fall back to
+    # the assessment entry (better than returning None).
+    if verification.get("entry") is None and entry:
+        fallback = dict(entry)
+        fallback.pop("candidate_reads", None)
+        fallback["verdict_begruendung"] = (
+            fallback.get("verdict_begruendung", "")
+            + " (Verifikation ohne Ergebnis abgebrochen, Assessment-Verdict übernommen)"
+        )
+        verification["entry"] = fallback
+    else:
+        final = verification.get("entry") or {}
+        final.pop("candidate_reads", None)
 
     return verification
 

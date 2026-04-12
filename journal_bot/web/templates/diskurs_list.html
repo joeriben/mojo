@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}MOJO — Diskursräume{% endblock %}
+{% block content %}
+
+<h1 style="font-size:1.3rem; margin-bottom:1rem;">Diskursräume</h1>
+
+<div class="diskurs-grid">
+  {% for s in spaces %}
+  <a href="/diskurs/{{ s.key }}" class="card diskurs-card" style="text-decoration:none; color:inherit;">
+    <div class="name">{{ s.name }}</div>
+    <div class="desc">{{ s.description }}</div>
+    <div class="stats">
+      {{ s.journals|length }} Journals · {{ s.total }} Artikel
+      {% if s.verdicts %}
+      · {{ s.verdicts.get("lesenswert", 0) + s.verdicts.get("pflichtlektuere", 0) }} lesenswert
+      {% endif %}
+    </div>
+    {% if s.total > 0 %}
+    {% set les = s.verdicts.get("lesenswert", 0) + s.verdicts.get("pflichtlektuere", 0) %}
+    {% set sca = s.verdicts.get("scannen", 0) %}
+    {% set ign = s.verdicts.get("ignorieren", 0) %}
+    <div class="verdict-bar">
+      {% if les %}<span style="width:{{ (les / s.total * 100)|round(1) }}%; background:var(--lesenswert);"></span>{% endif %}
+      {% if sca %}<span style="width:{{ (sca / s.total * 100)|round(1) }}%; background:var(--scannen);"></span>{% endif %}
+      {% if ign %}<span style="width:{{ (ign / s.total * 100)|round(1) }}%; background:var(--ignorieren);"></span>{% endif %}
+    </div>
+    {% endif %}
+  </a>
+  {% endfor %}
+</div>
+
+{% endblock %}

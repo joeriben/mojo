@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}MOJO — {{ a.title[:60] }}{% endblock %}
+{% block content %}
+
+<p style="margin-bottom:.5rem;"><a href="/">&larr; Digest</a></p>
+
+<h1 style="font-size:1.2rem; line-height:1.4;">{{ a.title }}</h1>
+
+<div class="detail-meta">
+  {{ a.journal_full }}
+  {% if a.authors %} · {{ ", ".join(a.authors[:5]) }}{% if a.authors|length > 5 %} et al.{% endif %}{% endif %}
+  {% if a.year %} · {{ a.year }}{% endif %}
+  {% if a.doi %} · <a href="https://doi.org/{{ a.doi }}" target="_blank">doi:{{ a.doi }}</a>{% endif %}
+</div>
+
+{% if a.agent_entry %}
+{% set e = a.agent_entry %}
+
+<!-- Verdict -->
+<div class="detail-section">
+  <span class="badge badge-{{ a.agent_verdict }}">{{ verdict_label.get(a.agent_verdict, a.agent_verdict) }}</span>
+  <p style="margin-top:.4rem;">{{ e.verdict_begruendung }}</p>
+</div>
+
+<!-- Zitiert Dich -->
+{% if a.citation_hits %}
+<div class="cite-section detail-section">
+  <h3>Zitiert Dich</h3>
+  {% for h in a.citation_hits %}
+  <div style="font-size:.9rem; margin-top:.3rem;">
+    {% if h.confidence == "high" %}
+    <strong>{{ ", ".join(h.pub_authors[:2]) or "?" }}</strong> ({{ h.pub_year }}):
+    {{ h.pub_title[:120] }} <code>{{ h.pub_id }}</code>
+    {% elif h.confidence == "medium" %}
+    <em>(wahrscheinlich)</em> <strong>{{ ", ".join(h.pub_authors[:2]) or "?" }}</strong> ({{ h.pub_year }}):
+    {{ h.pub_title[:120] }} <code>{{ h.pub_id }}</code>
+    {% else %}
+    <em>(unspezifische Erwähnung)</em> <code>{{ h.pub_id }}</code>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Kernthese -->
+<div class="detail-section">
+  <h3>Kernthese</h3>
+  <p>{{ e.kernthese }}</p>
+</div>
+
+<!-- Bezüge -->
+<div class="detail-section">
+  <h3>Bezüge zu Deinem Werk</h3>
+  {% if e.bezuege %}
+  {% for b in e.bezuege %}
+  <div class="bezug">
+    <strong>{{ b.pub_kurz }}</strong> <code>{{ b.pub_id }}</code>
+    <span class="bezug-rel">{{ relation_label.get(b.relation, b.relation) }}</span>
+    <p style="margin-top:.2rem; font-size:.9rem;">{{ b.bezug }}</p>
+  </div>
+  {% endfor %}
+  {% else %}
+  <p style="color:var(--muted);">Keine substantiellen Bezüge gefunden.</p>
+  {% endif %}
+</div>
+
+<!-- Bemerkenswert -->
+{% if e.bemerkenswert %}
+<div class="detail-section">
+  <h3>Bemerkenswert</h3>
+  <ul style="padding-left:1.2rem; font-size:.9rem;">
+    {% for note in e.bemerkenswert %}
+    <li>{{ note }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<!-- Methodisch/Theoretisch -->
+{% if e.theoretisch_methodisch %}
+<div class="detail-section">
+  <h3>Methodisch / Theoretisch</h3>
+  <p style="font-size:.9rem;">{{ e.theoretisch_methodisch }}</p>
+</div>
+{% endif %}
+
+{% else %}
+<p style="color:var(--muted); margin-top:1rem;">(Kein Agent-Ergebnis vorhanden.)</p>
+{% endif %}
+
+<!-- Meta footer -->
+<div class="meta-footer">
+  {{ a.iterations }} Iterationen ·
+  {{ a.tokens_in|default(0) }} in / {{ a.tokens_out|default(0) }} out
+  {% if a.tokens_cached_read %} · Cache: {{ a.tokens_cached_read }} read{% endif %}
+  {% if a.cost_usd %} · ${{ "%.3f"|format(a.cost_usd) }}{% endif %}
+</div>
+
+<!-- Actions -->
+<div class="actions" style="margin-top:1rem;">
+  {% if a.doi %}<a href="https://doi.org/{{ a.doi }}" target="_blank" class="btn btn-primary">DOI öffnen</a>{% endif %}
+  {% if a.url %}<a href="{{ a.url }}" target="_blank" class="btn">URL</a>{% endif %}
+</div>
+
+{% endblock %}

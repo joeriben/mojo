@@ -305,7 +305,7 @@ def cmd_digest(args: argparse.Namespace) -> int:
             )
             cost = result["agent_result"].get("est_cost_usd", 0.0)
             total_cost += cost
-            verdict = result["agent_result"].get("entry", {}).get("verdict", "?")
+            verdict = (result["agent_result"].get("entry") or {}).get("verdict", "?")
             print(f"[digest] ✓ {verdict}  (${cost:.3f})")
         except Exception as e:
             print(f"[digest] FEHLER bei {sa.id}: {e}")
@@ -494,6 +494,13 @@ def cmd_journal(args: argparse.Namespace) -> int:
     return 2
 
 
+def cmd_web(args: argparse.Namespace) -> int:
+    from journal_bot.web.app import app
+    print(f"[web] MOJO UI auf http://localhost:{args.port}")
+    app.run(debug=True, port=args.port)
+    return 0
+
+
 def cmd_stats(args: argparse.Namespace) -> int:
     store = Store()
     s = store.stats()
@@ -667,6 +674,10 @@ def main(argv: list[str] | None = None) -> int:
 
     p_stats = sub.add_parser("stats", help="Store-Statistik")
     p_stats.set_defaults(func=cmd_stats)
+
+    p_web = sub.add_parser("web", help="Web-UI starten (localhost:5000)")
+    p_web.add_argument("--port", type=int, default=5555)
+    p_web.set_defaults(func=cmd_web)
 
     args = parser.parse_args(argv)
     return args.func(args)

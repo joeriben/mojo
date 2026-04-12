@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}MOJO — {{ meta.name }}{% endblock %}
+{% block content %}
+
+<p style="margin-bottom:.5rem;"><a href="/diskurs">&larr; Diskursräume</a></p>
+
+<h1 style="font-size:1.3rem;">{{ meta.name }}</h1>
+<p style="color:var(--muted); font-size:.9rem; margin-bottom:1rem;">{{ meta.description }}</p>
+
+<!-- Journal stats -->
+<div style="display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:1rem;">
+  {% for j in journal_stats %}
+  <span class="btn" style="font-size:.8rem; cursor:default;">{{ j.name }} ({{ j.count }})</span>
+  {% endfor %}
+</div>
+
+<!-- Verdict distribution -->
+<div style="display:flex; gap:1rem; margin-bottom:1rem; font-size:.85rem;">
+  {% for v in ["pflichtlektuere", "lesenswert", "scannen", "ignorieren"] %}
+  {% set count = by_verdict.get(v, [])|length %}
+  {% if count %}
+  <span><span class="badge badge-{{ v }}">{{ verdict_label[v] }}</span> {{ count }}</span>
+  {% endif %}
+  {% endfor %}
+  <span style="color:var(--muted);">Total: {{ total }}</span>
+</div>
+
+<!-- Zitiert Dich -->
+{% if cites_you %}
+<div class="cite-section">
+  <h2>Zitiert Dich <span class="section-count">({{ cites_you|length }})</span></h2>
+  {% for a in cites_you %}
+  <div class="art-row">
+    <span class="badge badge-{{ a.agent_verdict }}">{{ verdict_label.get(a.agent_verdict, a.agent_verdict) }}</span>
+    <span class="art-journal">{{ a.journal_full }}</span>
+    <a href="/article/{{ a.id }}" class="art-title">{{ a.title }}</a>
+    <span class="art-year">{{ a.year }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Lesenswert -->
+{% set lesenswert = by_verdict.get("pflichtlektuere", []) + by_verdict.get("lesenswert", []) %}
+{% if lesenswert %}
+<h2>Lesenswert <span class="section-count">({{ lesenswert|length }})</span></h2>
+{% for a in lesenswert %}
+<div class="card">
+  <div style="display:flex; gap:.5rem; align-items:baseline;">
+    <span class="badge badge-{{ a.agent_verdict }}">{{ verdict_label.get(a.agent_verdict, a.agent_verdict) }}</span>
+    <span class="art-journal">{{ a.journal_full }}</span>
+    <span class="art-year">{{ a.year }}</span>
+  </div>
+  <h3 style="color:var(--fg); font-size:1rem; margin:.4rem 0;">
+    <a href="/article/{{ a.id }}">{{ a.title }}</a>
+  </h3>
+  {% if a.agent_entry %}
+  <p style="font-size:.9rem;">{{ a.agent_entry.kernthese[:250] }}{% if a.agent_entry.kernthese|length > 250 %}…{% endif %}</p>
+  {% if a.agent_entry.bemerkenswert %}
+  <ul style="font-size:.85rem; color:var(--muted); padding-left:1.2rem; margin-top:.3rem;">
+    {% for note in a.agent_entry.bemerkenswert[:2] %}
+    <li>{{ note[:120] }}{% if note|length > 120 %}…{% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  {% endif %}
+  <div class="actions">
+    <a href="/article/{{ a.id }}" class="btn btn-primary">Details</a>
+    {% if a.doi %}<a href="https://doi.org/{{ a.doi }}" target="_blank" class="btn">DOI</a>{% endif %}
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- Scannen (with bemerkenswert prioritized) -->
+{% set scannen = by_verdict.get("scannen", []) %}
+{% if scannen %}
+{% set with_notes = [] %}
+{% set without_notes = [] %}
+{% for a in scannen %}
+  {% if a.agent_entry and a.agent_entry.bemerkenswert %}
+    {% set _ = with_notes.append(a) %}
+  {% else %}
+    {% set _ = without_notes.append(a) %}
+  {% endif %}
+{% endfor %}
+<details open>
+  <summary><h2 style="display:inline;">Scannen <span class="section-count">({{ scannen|length }})</span></h2></summary>
+  {% for a in with_notes + without_notes %}
+  <div class="art-row">
+    <span class="art-journal">{{ a.journal_full }}</span>
+    <a href="/article/{{ a.id }}" class="art-title">{{ a.title }}</a>
+    <span class="art-year">{{ a.year }}</span>
+  </div>
+  {% endfor %}
+</details>
+{% endif %}
+
+<!-- Ignorieren -->
+{% set ignorieren = by_verdict.get("ignorieren", []) %}
+{% if ignorieren %}
+<details>
+  <summary><h2 style="display:inline;">Ignorieren <span class="section-count">({{ ignorieren|length }})</span></h2></summary>
+  {% for a in ignorieren %}
+  <div class="art-row">
+    <span class="art-journal">{{ a.journal_full }}</span>
+    <a href="/article/{{ a.id }}" class="art-title">{{ a.title }}</a>
+    <span class="art-year">{{ a.year }}</span>
+  </div>
+  {% endfor %}
+</details>
+{% endif %}
+
+{% endblock %}
