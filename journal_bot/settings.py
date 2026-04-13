@@ -72,8 +72,9 @@ OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 MODEL_SUMMARIZE = _profile.get("model_summarize", "anthropic/claude-haiku-4.5")
 MODEL_AGENT = _profile.get("model_agent", "anthropic/claude-opus-4.6")
 
-# --- API-Key-Ablage (interaktiv abgefragt, nicht .env) ---
+# --- API-Key-Ablage ---
 KEY_FILE = Path.home() / ".config" / "mojo" / "openrouter_key"
+S2_KEY_FILE = Path.home() / ".config" / "mojo" / "s2_api_key"
 
 
 def save_profile(data: dict) -> None:

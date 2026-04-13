@@ -82,20 +82,30 @@
         </div>
       </div>
       <div class="form-group">
-        <label>OpenRouter API-Key</label>
+        <label>OpenRouter API-Key <span style="color:var(--muted); font-size:.8rem;">(LLM-Analyse)</span></label>
         <div style="display:flex; gap:.5rem; align-items:center;">
           <input type="password" name="api_key" value="" class="form-input"
                  style="max-width:400px;"
-                 placeholder="{% if api_key_status.exists %}{{ api_key_status.masked }} (unverändert lassen = beibehalten){% else %}sk-or-... (wird in ~/.config/mojo/openrouter_key gespeichert){% endif %}">
+                 placeholder="{% if api_key_status.exists %}{{ api_key_status.masked }} (unverändert lassen = beibehalten){% else %}sk-or-...{% endif %}">
           {% if api_key_status.exists %}
           <span style="color:var(--lesenswert); font-size:.85rem;">aktiv</span>
           {% endif %}
         </div>
-        <p style="font-size:.8rem; color:var(--muted); margin-top:.25rem;">
-          Leer lassen = bestehender Key bleibt. Neuen Key eintragen = überschreibt.
-          Gespeichert in <code>~/.config/mojo/openrouter_key</code> (chmod 600).
-        </p>
       </div>
+      <div class="form-group">
+        <label>Semantic Scholar API-Key <span style="color:var(--muted); font-size:.8rem;">(Abstract-Backfill, optional)</span></label>
+        <div style="display:flex; gap:.5rem; align-items:center;">
+          <input type="password" name="s2_api_key" value="" class="form-input"
+                 style="max-width:400px;"
+                 placeholder="{% if s2_key_status.exists %}{{ s2_key_status.masked }} (unverändert lassen = beibehalten){% else %}Kostenlos unter semanticscholar.org/product/api{% endif %}">
+          {% if s2_key_status.exists %}
+          <span style="color:var(--lesenswert); font-size:.85rem;">aktiv</span>
+          {% endif %}
+        </div>
+      </div>
+      <p style="font-size:.8rem; color:var(--muted); margin-top:.25rem;">
+        Leer lassen = bestehender Key bleibt. Neuen Key eintragen = überschreibt.
+      </p>
     </div>
 
     <div style="display:flex; gap:.75rem; align-items:center; margin-bottom:1.5rem;">

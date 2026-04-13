@@ -25,6 +25,7 @@ from journal_bot.settings import (
     JOURNALS,
     JOURNALS_JSON,
     KEY_FILE,
+    S2_KEY_FILE,
     MODEL_AGENT,
     MODEL_SUMMARIZE,
     RESEARCHER_AREAS,
@@ -853,14 +854,15 @@ def setup():
     journal_counts = db_stats.get("by_journal", {})
 
     # API key status
-    api_key_status = {"exists": False, "masked": ""}
-    if KEY_FILE.exists():
-        key = KEY_FILE.read_text().strip()
-        if key:
-            api_key_status = {
-                "exists": True,
-                "masked": key[:7] + "…" + key[-4:] if len(key) > 12 else "***",
-            }
+    def _key_status(path: Path) -> dict:
+        if path.exists():
+            k = path.read_text().strip()
+            if k:
+                return {"exists": True, "masked": k[:7] + "…" + k[-4:] if len(k) > 12 else "***"}
+        return {"exists": False, "masked": ""}
+
+    api_key_status = _key_status(KEY_FILE)
+    s2_key_status = _key_status(S2_KEY_FILE)
 
     # Discourse spaces as ordered list of (key, meta) tuples
     spaces = list(DISCOURSE_SPACES.items())
@@ -883,6 +885,7 @@ def setup():
         db_stats=db_stats,
         db_size_mb=db_size_mb,
         api_key_status=api_key_status,
+        s2_key_status=s2_key_status,
         verdict_label=VERDICT_LABEL,
     )
 
@@ -920,17 +923,21 @@ def api_setup_profile():
     except Exception as e:
         return f'<span style="color:var(--pflichtlektuere);">Fehler: {esc(str(e))}</span>'
 
-    # Handle API key separately (written to KEY_FILE, not profile.json)
-    api_key = request.form.get("api_key", "").strip()
-    if api_key:
-        KEY_FILE.parent.mkdir(parents=True, exist_ok=True)
-        KEY_FILE.write_text(api_key + "\n")
-        KEY_FILE.chmod(0o600)
-        key_msg = " · API-Key aktualisiert"
-    else:
-        key_msg = ""
+    # Handle API keys separately (written to key files, not profile.json)
+    key_msgs = []
+    for form_field, key_file, label in [
+        ("api_key", KEY_FILE, "OpenRouter"),
+        ("s2_api_key", S2_KEY_FILE, "Semantic Scholar"),
+    ]:
+        val = request.form.get(form_field, "").strip()
+        if val:
+            key_file.parent.mkdir(parents=True, exist_ok=True)
+            key_file.write_text(val + "\n")
+            key_file.chmod(0o600)
+            key_msgs.append(label)
 
-    return f'<span style="color:var(--lesenswert);">✓ Profil gespeichert{key_msg}</span>'
+    extra = f" · Keys aktualisiert: {', '.join(key_msgs)}" if key_msgs else ""
+    return f'<span style="color:var(--lesenswert);">✓ Profil gespeichert{extra}</span>'
 
 
 @app.route("/api/setup/ingest", methods=["POST"])
