@@ -47,9 +47,22 @@ app = Flask(
 app.secret_key = os.urandom(24)  # For session (lightweight state only)
 
 # Server-side agent state (single-user tool, no cookie size limits)
+# Context is persisted to disk so it survives server restarts.
+_AGENT_CONTEXT_FILE = Path(__file__).parent.parent.parent / ".agent_context.txt"
+
+
+def _load_agent_context() -> str:
+    if _AGENT_CONTEXT_FILE.exists():
+        try:
+            return _AGENT_CONTEXT_FILE.read_text(encoding="utf-8")
+        except Exception:
+            pass
+    return ""
+
+
 _agent_state: dict = {
-    "context": "",       # Uploaded text (can be 50k+ chars)
-    "messages": [],      # Chat history
+    "context": _load_agent_context(),
+    "messages": [],
 }
 
 
@@ -1255,14 +1268,16 @@ def agent_page():
 
 @app.route("/api/agent/context", methods=["POST", "DELETE"])
 def api_agent_context():
-    """Set or clear the agent's text context."""
+    """Set or clear the agent's text context (persisted to disk)."""
     if request.method == "DELETE":
         _agent_state["context"] = ""
+        _AGENT_CONTEXT_FILE.unlink(missing_ok=True)
         return jsonify({"ok": True})
 
     data = request.get_json(force=True)
     text = data.get("text", "").strip()
     _agent_state["context"] = text
+    _AGENT_CONTEXT_FILE.write_text(text, encoding="utf-8")
     return jsonify({"ok": True, "chars": len(text)})
 
 

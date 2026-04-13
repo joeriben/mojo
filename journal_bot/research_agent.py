@@ -351,7 +351,8 @@ def build_system_prompt(user_context: str | None = None) -> str:
     prompt_parts.extend([
         "",
         "=== REGELN ===",
-        "- Antworte auf Deutsch.",
+        "- Antworte auf Deutsch, sachlich und präzise. Kein Pampering, keine Emojis,",
+        "  keine emotionale Kommunikation. Die User sind Akademiker*innen.",
         "- Nutze die Tools, um die MOJO-DB zu durchsuchen. Halluziniere keine Artikel.",
         "- Wenn du Artikel empfiehlst, gib immer Titel, Autoren, Jahr und Journal an.",
         "- Verlinke Artikel als /article/<id> für die MOJO-Detailseite.",
@@ -365,8 +366,11 @@ def build_system_prompt(user_context: str | None = None) -> str:
     if user_context:
         prompt_parts.extend([
             "",
-            "=== AKTUELLER TEXT DES USERS ===",
-            user_context[:15000],  # Cap at 15k chars
+            "=== AKTUELLER TEXT DES USERS (per 'Kontext setzen' übergeben) ===",
+            "Der folgende Text wurde vom User hochgeladen. Er ist vollständig vorhanden.",
+            "Beziehe dich direkt auf Inhalte, Argumente und Referenzen in diesem Text.",
+            "",
+            user_context[:50000],
         ])
 
     return "\n".join(prompt_parts)
