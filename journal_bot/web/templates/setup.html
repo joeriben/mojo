@@ -13,32 +13,96 @@
 
 <!-- ═══════════════════════ TAB: Profil ═══════════════════════ -->
 <div id="tab-profil" class="tab-content active">
-  <div class="card">
-    <h2 style="margin-top:0;">Forscherprofil</h2>
-    <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
-      Diese Angaben steuern, wie der Agent Deine Publikationen bewertet.
-    </p>
-    <form hx-post="/api/setup/profile" hx-target="#profile-status" hx-swap="innerHTML">
-      <div class="form-group">
-        <label>Name</label>
-        <input type="text" name="name" value="{{ profile.name }}" class="form-input">
+  <form hx-post="/api/setup/profile" hx-target="#profile-status" hx-swap="innerHTML">
+
+    <div class="card">
+      <h2 style="margin-top:0;">Forscherprofil</h2>
+      <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
+        Diese Angaben steuern alle LLM-Prompts, das Citation-Tracking und die UI.
+        Änderungen werden in <code>profile.json</code> gespeichert und sofort wirksam.
+      </p>
+      <div class="form-row">
+        <div class="form-group" style="flex:1;">
+          <label>Name</label>
+          <input type="text" name="name" value="{{ profile.name }}" class="form-input" required>
+        </div>
+        <div class="form-group" style="flex:2;">
+          <label>Institution</label>
+          <input type="text" name="institution" value="{{ profile.institution }}" class="form-input">
+        </div>
       </div>
       <div class="form-group">
-        <label>Institution</label>
-        <input type="text" name="institution" value="{{ profile.institution }}" class="form-input">
-      </div>
-      <div class="form-group">
-        <label>Forschungsgebiete</label>
+        <label>Forschungsgebiete <span style="color:var(--muted); font-size:.8rem;">(Freitext, wird in Prompts eingesetzt)</span></label>
         <textarea name="areas" class="form-input" rows="3">{{ profile.areas }}</textarea>
       </div>
       <div class="form-group">
-        <label>Triage-Topics <span style="color:var(--muted); font-size:.8rem;">(eins pro Zeile)</span></label>
+        <label>Triage-Topics <span style="color:var(--muted); font-size:.8rem;">(eins pro Zeile — steuern Screening-Relevanzbewertung)</span></label>
         <textarea name="triage_topics" class="form-input" rows="6">{{ profile.triage_topics|join('\n') }}</textarea>
       </div>
-      <button type="submit" class="btn btn-primary">Speichern</button>
-      <span id="profile-status" style="margin-left:.5rem; font-size:.85rem;"></span>
-    </form>
-  </div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0;">Pfade & Zotero</h2>
+      <div class="form-row">
+        <div class="form-group" style="flex:1;">
+          <label>Zotero-Collection</label>
+          <input type="text" name="zotero_collection" value="{{ profile.zotero_collection }}"
+                 class="form-input" placeholder="My publications">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label>Seit Jahr <span style="color:var(--muted); font-size:.8rem;">(ältester Jahrgang im Corpus)</span></label>
+          <input type="number" name="since_year" value="{{ profile.since_year }}"
+                 class="form-input" style="max-width:120px;" min="1990" max="2030">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Zotero-Storage-Pfad</label>
+        <input type="text" name="zotero_storage" value="{{ profile.zotero_storage }}"
+               class="form-input" placeholder="{{ home }}/Zotero/storage">
+      </div>
+      <div class="form-group">
+        <label>Ausgabe-Verzeichnis <span style="color:var(--muted); font-size:.8rem;">(Digest, Trends, Obsidian-Export)</span></label>
+        <input type="text" name="digest_dir" value="{{ profile.digest_dir }}"
+               class="form-input" placeholder="./output">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0;">LLM & API</h2>
+      <div class="form-row">
+        <div class="form-group" style="flex:1;">
+          <label>Agent-Modell <span style="color:var(--muted); font-size:.8rem;">(Hauptanalyse)</span></label>
+          <input type="text" name="model_agent" value="{{ profile.model_agent }}"
+                 class="form-input" placeholder="anthropic/claude-opus-4.6">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label>Summarize-Modell <span style="color:var(--muted); font-size:.8rem;">(Corpus-Summaries)</span></label>
+          <input type="text" name="model_summarize" value="{{ profile.model_summarize }}"
+                 class="form-input" placeholder="anthropic/claude-haiku-4.5">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>OpenRouter API-Key</label>
+        <div style="display:flex; gap:.5rem; align-items:center;">
+          <input type="password" name="api_key" value="" class="form-input"
+                 style="max-width:400px;"
+                 placeholder="{% if api_key_status.exists %}{{ api_key_status.masked }} (unverändert lassen = beibehalten){% else %}sk-or-... (wird in ~/.config/mojo/openrouter_key gespeichert){% endif %}">
+          {% if api_key_status.exists %}
+          <span style="color:var(--lesenswert); font-size:.85rem;">aktiv</span>
+          {% endif %}
+        </div>
+        <p style="font-size:.8rem; color:var(--muted); margin-top:.25rem;">
+          Leer lassen = bestehender Key bleibt. Neuen Key eintragen = überschreibt.
+          Gespeichert in <code>~/.config/mojo/openrouter_key</code> (chmod 600).
+        </p>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:.75rem; align-items:center; margin-bottom:1.5rem;">
+      <button type="submit" class="btn btn-primary">Alle Einstellungen speichern</button>
+      <span id="profile-status" style="font-size:.85rem;"></span>
+    </div>
+  </form>
 </div>
 
 <!-- ═══════════════════════ TAB: Zotero & Corpus ═══════════════════════ -->
@@ -240,9 +304,11 @@
 
   .form-group { margin-bottom: .75rem; }
   .form-group label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: .25rem; }
-  .form-input { width: 100%; max-width: 500px; font-size: .9rem; padding: 6px 10px;
+  .form-input { width: 100%; font-size: .9rem; padding: 6px 10px;
                 border: 1px solid var(--border); border-radius: 4px; font-family: inherit; }
   textarea.form-input { resize: vertical; }
+  .form-row { display: flex; gap: 1rem; }
+  @media (max-width: 700px) { .form-row { flex-direction: column; gap: 0; } }
 
   .stats-table { border-collapse: collapse; font-size: .9rem; }
   .stats-table td, .stats-table th { padding: 4px 12px 4px 0; vertical-align: top; }

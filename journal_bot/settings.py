@@ -21,33 +21,40 @@ class JournalConfig:
     tier: str = "B"                         # "A" | "B" | "C" — Analysetiefe
     clusters: list[str] = field(default_factory=list)  # Diskursraum-Zuordnung
 
-# --- Researcher profile (adapt for your own instance) ---
-# These constants personalise all LLM prompts, citation tracking, and UI.
-# Change them once here — the rest of the codebase reads from these.
-RESEARCHER_NAME = "Benjamin Jörissen"
-RESEARCHER_INSTITUTION = "FAU Erlangen-Nürnberg, Lehrstuhl für Pädagogik mit Schwerpunkt kulturelle Bildung"
-RESEARCHER_AREAS = (
-    "ästhetische und kulturelle Bildung, Postdigitalität, generative KI "
-    "in Bildungskontexten, Cultural Resilience, digital-kulturelles Erbe, "
-    "New Materialisms"
-)
-RESEARCHER_TRIAGE_TOPICS = [
-    "Ästhetische und kulturelle Bildung, Kunstpädagogik",
-    "Postdigitalität, digitale Kultur, Medienbildung",
-    "Generative KI in Bildungskontexten",
-    "Cultural Resilience, Nachhaltigkeit, Anthropozän",
-    "New Materialisms (Barad, Haraway), Posthumanismus, STS",
-    "Bildungstheorie, Erziehungstheorie",
-    "Allgemeine Pädagogik",
-]
+# --- Researcher profile ---
+# Defaults below; overridden by profile.json in project root (written by web UI).
+# Priority: profile.json > environment > defaults here.
+
+PROFILE_JSON = PROJECT_ROOT / "profile.json"
+
+def _load_profile() -> dict:
+    """Load profile.json if it exists, return empty dict otherwise."""
+    if PROFILE_JSON.exists():
+        try:
+            return json.loads(PROFILE_JSON.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return {}
+
+_profile = _load_profile()
+
+RESEARCHER_NAME = _profile.get("name", "Your Name")
+RESEARCHER_INSTITUTION = _profile.get("institution", "Your Institution")
+RESEARCHER_AREAS = _profile.get("areas", "your research areas")
+RESEARCHER_TRIAGE_TOPICS = _profile.get("triage_topics", [
+    "Topic 1",
+    "Topic 2",
+])
 
 # --- Zotero ---
-# Override via environment: MOJO_ZOTERO_STORAGE, MOJO_ZOTERO_COLLECTION
+# Override via profile.json or environment: MOJO_ZOTERO_STORAGE, MOJO_ZOTERO_COLLECTION
 ZOTERO_STORAGE = Path(
-    os.environ.get("MOJO_ZOTERO_STORAGE", str(Path.home() / "Zotero" / "storage"))
+    _profile.get("zotero_storage",
+        os.environ.get("MOJO_ZOTERO_STORAGE", str(Path.home() / "Zotero" / "storage")))
 )
-ZOTERO_COLLECTION = os.environ.get("MOJO_ZOTERO_COLLECTION", "My publications")
-SINCE_YEAR = 2018
+ZOTERO_COLLECTION = _profile.get("zotero_collection",
+    os.environ.get("MOJO_ZOTERO_COLLECTION", "My publications"))
+SINCE_YEAR = _profile.get("since_year", 2018)
 
 # --- Projekt-Dateien ---
 CORPUS_JSON = PROJECT_ROOT / "corpus.json"
@@ -55,20 +62,37 @@ SUMMARIES_JSON = PROJECT_ROOT / "summaries.json"
 STATE_DB = PROJECT_ROOT / "seen.db"
 
 # --- Ausgabe ---
-# Override via environment: MOJO_DIGEST_DIR
 DIGEST_DIR = Path(
-    os.environ.get("MOJO_DIGEST_DIR", str(PROJECT_ROOT / "output"))
+    _profile.get("digest_dir",
+        os.environ.get("MOJO_DIGEST_DIR", str(PROJECT_ROOT / "output")))
 )
 
 # --- LLM (OpenRouter) ---
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-# Für die Summarisation — billig und faktisch
-MODEL_SUMMARIZE = "anthropic/claude-haiku-4.5"
-# Für den Agent-Lauf — das eigentliche Reasoning
-MODEL_AGENT = "anthropic/claude-opus-4.6"
+MODEL_SUMMARIZE = _profile.get("model_summarize", "anthropic/claude-haiku-4.5")
+MODEL_AGENT = _profile.get("model_agent", "anthropic/claude-opus-4.6")
 
 # --- API-Key-Ablage (interaktiv abgefragt, nicht .env) ---
 KEY_FILE = Path.home() / ".config" / "mojo" / "openrouter_key"
+
+
+def save_profile(data: dict) -> None:
+    """Write profile.json and update module-level constants in-place."""
+    import journal_bot.settings as _self
+    PROFILE_JSON.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    # Update module globals so running process sees changes immediately
+    _self.RESEARCHER_NAME = data.get("name", _self.RESEARCHER_NAME)
+    _self.RESEARCHER_INSTITUTION = data.get("institution", _self.RESEARCHER_INSTITUTION)
+    _self.RESEARCHER_AREAS = data.get("areas", _self.RESEARCHER_AREAS)
+    _self.RESEARCHER_TRIAGE_TOPICS = data.get("triage_topics", _self.RESEARCHER_TRIAGE_TOPICS)
+    _self.ZOTERO_STORAGE = Path(data["zotero_storage"]) if data.get("zotero_storage") else _self.ZOTERO_STORAGE
+    _self.ZOTERO_COLLECTION = data.get("zotero_collection", _self.ZOTERO_COLLECTION)
+    _self.SINCE_YEAR = data.get("since_year", _self.SINCE_YEAR)
+    _self.DIGEST_DIR = Path(data["digest_dir"]) if data.get("digest_dir") else _self.DIGEST_DIR
+    _self.MODEL_SUMMARIZE = data.get("model_summarize", _self.MODEL_SUMMARIZE)
+    _self.MODEL_AGENT = data.get("model_agent", _self.MODEL_AGENT)
 
 
 # --- Diskursräume ---

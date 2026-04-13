@@ -3,11 +3,12 @@
 __pycache__/
 *.pyc
 
-# Daten (enthalten Benjamins Texte / API-Keys / personenbezogene Metadaten)
+# Daten (persönliche Texte / API-Keys / Metadaten)
 corpus.json
 summaries.json
 articles.db
 seen.db
+profile.json
 profile.md
 *.key
 .env

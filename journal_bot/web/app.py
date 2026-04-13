@@ -19,19 +19,24 @@ from flask import (
 from journal_bot.store import Store, ARTICLES_DB
 from journal_bot.settings import (
     CORPUS_JSON,
+    DIGEST_DIR,
     DISCOURSE_SPACES,
     DISKURSRAEUME_JSON,
     JOURNALS,
     JOURNALS_JSON,
     KEY_FILE,
+    MODEL_AGENT,
+    MODEL_SUMMARIZE,
     RESEARCHER_AREAS,
     RESEARCHER_INSTITUTION,
     RESEARCHER_NAME,
     RESEARCHER_TRIAGE_TOPICS,
+    SINCE_YEAR,
     SUMMARIES_JSON,
     ZOTERO_COLLECTION,
     ZOTERO_STORAGE,
     journals_in_cluster,
+    save_profile,
 )
 
 app = Flask(
@@ -775,14 +780,19 @@ def api_diskurs_profile(cluster_key: str):
 
 
 def _get_profile() -> dict:
-    """Read researcher profile (settings.py defaults, no file override yet)."""
+    """Read current researcher profile from settings (reflects profile.json)."""
+    import journal_bot.settings as s
     return {
-        "name": RESEARCHER_NAME,
-        "institution": RESEARCHER_INSTITUTION,
-        "areas": RESEARCHER_AREAS,
-        "triage_topics": list(RESEARCHER_TRIAGE_TOPICS),
-        "zotero_collection": ZOTERO_COLLECTION,
-        "zotero_storage": str(ZOTERO_STORAGE),
+        "name": s.RESEARCHER_NAME,
+        "institution": s.RESEARCHER_INSTITUTION,
+        "areas": s.RESEARCHER_AREAS,
+        "triage_topics": list(s.RESEARCHER_TRIAGE_TOPICS),
+        "zotero_collection": s.ZOTERO_COLLECTION,
+        "zotero_storage": str(s.ZOTERO_STORAGE),
+        "since_year": s.SINCE_YEAR,
+        "digest_dir": str(s.DIGEST_DIR),
+        "model_agent": s.MODEL_AGENT,
+        "model_summarize": s.MODEL_SUMMARIZE,
     }
 
 
@@ -850,6 +860,7 @@ def setup():
     return render_template(
         "setup.html",
         profile=_get_profile(),
+        home=str(Path.home()),
         corpus_status=_file_status(CORPUS_JSON, count_key="publications"),
         summaries_status=_file_status(SUMMARIES_JSON, count_key="summaries"),
         journals=JOURNALS,
@@ -865,10 +876,48 @@ def setup():
 
 @app.route("/api/setup/profile", methods=["POST"])
 def api_setup_profile():
-    """HTMX: Save researcher profile (currently read-only, shows confirmation)."""
-    # Profile is in settings.py — changing it requires code change.
-    # For now, acknowledge the form submission.
-    return '<span style="color:var(--lesenswert);">✓ Profil ist aktuell in settings.py definiert (read-only)</span>'
+    """HTMX: Save researcher profile to profile.json."""
+    esc = html_mod.escape
+
+    # Build profile dict from form
+    triage_raw = request.form.get("triage_topics", "")
+    triage_topics = [t.strip() for t in triage_raw.split("\n") if t.strip()]
+
+    profile_data = {
+        "name": request.form.get("name", "").strip(),
+        "institution": request.form.get("institution", "").strip(),
+        "areas": request.form.get("areas", "").strip(),
+        "triage_topics": triage_topics,
+        "zotero_collection": request.form.get("zotero_collection", "").strip(),
+        "zotero_storage": request.form.get("zotero_storage", "").strip(),
+        "since_year": int(request.form.get("since_year", 2018)),
+        "digest_dir": request.form.get("digest_dir", "").strip(),
+        "model_agent": request.form.get("model_agent", "").strip(),
+        "model_summarize": request.form.get("model_summarize", "").strip(),
+    }
+
+    # Remove empty strings (fall back to defaults)
+    profile_data = {k: v for k, v in profile_data.items() if v}
+
+    if not profile_data.get("name"):
+        return '<span style="color:var(--pflichtlektuere);">Name ist Pflichtfeld.</span>'
+
+    try:
+        save_profile(profile_data)
+    except Exception as e:
+        return f'<span style="color:var(--pflichtlektuere);">Fehler: {esc(str(e))}</span>'
+
+    # Handle API key separately (written to KEY_FILE, not profile.json)
+    api_key = request.form.get("api_key", "").strip()
+    if api_key:
+        KEY_FILE.parent.mkdir(parents=True, exist_ok=True)
+        KEY_FILE.write_text(api_key + "\n")
+        KEY_FILE.chmod(0o600)
+        key_msg = " · API-Key aktualisiert"
+    else:
+        key_msg = ""
+
+    return f'<span style="color:var(--lesenswert);">✓ Profil gespeichert{key_msg}</span>'
 
 
 @app.route("/api/setup/ingest", methods=["POST"])
