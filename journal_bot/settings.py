@@ -69,7 +69,7 @@ DIGEST_DIR = Path(
 
 # --- LLM (OpenRouter) ---
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-MODEL_SUMMARIZE = _profile.get("model_summarize", "anthropic/claude-haiku-4.5")
+MODEL_SUMMARIZE = _profile.get("model_summarize", "anthropic/claude-opus-4.6")
 MODEL_AGENT = _profile.get("model_agent", "anthropic/claude-opus-4.6")
 
 # --- API-Key-Ablage ---

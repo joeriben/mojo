@@ -262,14 +262,14 @@ def run(
               f"in={usage.prompt_tokens if usage else '?'} out={usage.completion_tokens if usage else '?'}")
 
     elapsed = time.time() - start
-    # Haiku 4.5 Pricing auf OpenRouter: ~$1/M input, ~$5/M output (Stand Anf. 2026)
-    est_cost = (total_in / 1_000_000) * 1.0 + (total_out / 1_000_000) * 5.0
+    # Opus 4.6 Pricing auf OpenRouter: ~$15/M input, ~$75/M output (Stand Anf. 2026)
+    est_cost = (total_in / 1_000_000) * 15.0 + (total_out / 1_000_000) * 75.0
     print()
     print("=== Summarize fertig ===")
     print(f"Summarisiert in summaries.json: {len(existing)}")
     print(f"Fehler diesem Lauf:              {errors}")
     print(f"Tokens gesamt: in={total_in:,}  out={total_out:,}")
-    print(f"Geschätzte Kosten (Haiku 4.5):   ~${est_cost:.2f}")
+    print(f"Geschätzte Kosten (Opus 4.6):    ~${est_cost:.2f}")
     print(f"Dauer:                           {elapsed:.0f}s")
     print(f"Geschrieben: {output_path}")
 
