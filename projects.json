@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "projects": [
+    {
+      "key": "cultural_resilience",
+      "name": "Cultural Resilience: A Post-Anthropic Theory of Bildung between Inheritances and Futurities",
+      "type": "research_programme",
+      "status": "active",
+      "period": "2020-11 – 2029-12",
+      "description": "Relational educational theory responding to planetary crises. Three structural moments: Rootedness (aesthetic-sensory awareness of entanglement with human and nonhuman others), Resourcefulness (diffractional world-making as creative-transformative practice), Resistance (performative destabilization of hegemonic normative orders). Draws on agential realism (Barad), relational ontology (Haraway, Latour), and critical aesthetics (Rancière, Menke).",
+      "relevance_shifts": [
+        "Cultural Resilience relates Belonging (heritages, traditions, relatings, becomings), resourcefulness (Futurabilities, Reframings, Re-definitions etc.), and resistance (as as collective creative practice) and is understood as a collective human-nonhuman transformational/transgressive learning process",
+        "Articles about ecological grief, mourning, loss, Anthropocene education often operate within Rootedness without naming it",
+        "Futurability, hope, agency, planetary Bildung connect to Resourcefulness",
+        "Affective justice, relational ethics, care ethics connect to the normative dimension",
+        "The term 'resilience' itself rarely appears — the connection is structural, not lexical",
+        "Post-anthropocentric ethics, plant ethics, multispecies thinking are directly relevant",
+        "Critiques of neoliberal freedom/sovereignty connect to the freedom-as-reconfiguration thesis"
+      ],
+      "connected_publications": [
+        "ZSSJ4BPL",
+        "3W9X5QLZ",
+        "KGZXSKKC",
+        "A93WTEZQ",
+        "AC9GZ3JY",
+        "Y2NWPJUK"
+      ],
+      "funder": ""
+    },
+    {
+      "key": "metakubi",
+      "name": "MetaKuBi — Metavorhaben zur Kulturellen Bildung in gesellschaftlichen Transformationen",
+      "type": "funded_project",
+      "status": "active",
+      "funder": "BMBF",
+      "period": "2024-01 – 2028-12",
+      "description": "TP 1: Discourse-analytical meta-research on cultural education. TP 3: Big-data research synthesis. Systematic mapping of the field of cultural education research in the context of societal transformations (digitalization, sustainability, migration, democratic crisis).",
+      "relevance_shifts": [
+        "Concepts of Transformation (e.g. Change, Morphogenesis, Metamorphosis, Transgression) and how they are contextualized",
+        "transfromative dynamics in/of/around education, arts, and aesthetic practices",
+        "Systematic reviews and meta-analyses of cultural/arts education research are directly relevant",
+        "Discourse-analytical and bibliometric approaches to mapping research fields",
+        "Institutional and organizational transformation in cultural education",
+        "Digitalization as systemic change in cultural education (not just tool adoption)",
+        "School development and Schulkultur in the context of cultural education"
+      ],
+      "connected_publications": [
+        "5UWKEA6U",
+        "XH57JSW6",
+        "QXQZUH5H",
+        "GN9NVNSU",
+        "FMXQVWCC",
+        "AHMKY4U6"
+      ]
+    },
+    {
+      "key": "ai4artsed",
+      "name": "AI4ArtsEd — Artificial Intelligence for Arts Education",
+      "type": "funded_project",
+      "status": "active",
+      "funder": "BMBF",
+      "period": "2024-01 – 2026-12",
+      "description": "Participatory development of generative AI tools for arts and cultural education. Focus on bias and cultural hegemony in training data (CLIP, Stable Diffusion), critical-creative pedagogical practices (Prompt Interception), and non-extractivist approaches to AI in education. International collaboration (Kenya, Germany).",
+      "relevance_shifts": [
+        "Articles about generative AI in education become lesenswert when they address cultural, aesthetic, or critical-pedagogical dimensions",
+        "AI bias, western hegemony in training data, decolonial and indigenous perspectives on AI are directly relevant",
+        "Prompt engineering as pedagogical practice, human-AI co-creation in artistic contexts",
+        "Critical AI studies that address perception, representation, or cultural production",
+        "AI literacy framed as critical practice (not just competence/skill acquisition)",
+        "Text-to-X. Image2X, constructive and deconstructive generation, CLIP, diffusion models in educational contexts",
+        "data-based empowerment, LoRa Training, Embedding Space deconstruction"
+      ],
+      "connected_publications": [
+        "L224MAYL",
+        "DNKSX4RT",
+        "LEHKCH59"
+      ]
+    },
+    {
+      "key": "comearts",
+      "name": "ComeArts — fortbilden durch vernetzen – vernetzen durch fortbilden",
+      "type": "funded_project",
+      "status": "active",
+      "period": "2023-07 – 2026-02",
+      "description": "Gelingensbedingungen diversitätssensibler, digitalisierungs- und digitalitätsbezogener Fortbildungsmodule für die Fächer Kunst und Musik in Community Networks. Professional development for arts/music teachers addressing digitalization and diversity through networked community structures. ComeArts Youth = Post-digital youth culture as a condition of teaching; ComeArts Across = Learning to explore cross-aesthetics and (post-)digitality in aesthetic education.",
+      "relevance_shifts": [
+        "Post-digital teacher professional development in arts and music education",
+        "post-digital youth cultural hybrid human-nonhuman aesthetic decision making",
+        "cross-aesthetic (post-) digital practices",
+        "Diversity-sensitive approaches to arts education (intersectional, postcolonial)",
+        "Community networks and collaborative professional learning structures",
+        "Digitalization in arts/music teacher training (not generic EdTech)"
+      ],
+      "connected_publications": [
+        "LMVFVJY8",
+        "SDHR5NM2",
+        "ZJCDF5AK"
+      ],
+      "funder": "BMBF"
+    },
+    {
+      "key": "diaes_kubi",
+      "name": "DiäS-KuBi — Digitale-Ästhetische Souveränität in der kulturellen Bildung",
+      "type": "funded_project",
+      "status": "active",
+      "period": "2023-06 – 2025-12",
+      "description": "Teachers' digital-aesthetic sovereignty as a basis for cultural, artistic, musical, poetic, and physical education in a digital world. Investigates how teachers can be suppoerted to develop agency at the intersection of digital and aesthetic practice. DiäS-R = Cultural Resilience. DiäS-C = Global Digital Citizenship Education",
+      "relevance_shifts": [
+        "Digital-aesthetic sovereignty as concept — articles on aesthetic agency in digital contexts",
+        "Relational Teacher Training",
+        "Teacher competencies at the intersection of digital and aesthetic practice",
+        "Digitalität (not just digitalization) in arts/cultural education pedagogy",
+        "Post-digital aesthetics in educational practice",
+        "Post-digital Cultural Resilience (Belonging - Resourcefulness - Resistance)",
+        "Digital Global Citizenship Education"
+      ],
+      "connected_publications": [
+        "9JZX4LMW",
+        "VE7W8RI9",
+        "M8RZJRHN",
+        "XTJR5DRD"
+      ],
+      "funder": ""
+    }
+  ]
+}

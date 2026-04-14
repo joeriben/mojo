@@ -8,6 +8,7 @@
   <button class="tab active" onclick="switchTab('profil', this)">Profil</button>
   <button class="tab" onclick="switchTab('zotero', this)">Zotero & Corpus</button>
   <button class="tab" onclick="switchTab('matrix', this)">Journals & Diskursräume</button>
+  <button class="tab" onclick="switchTab('projekte', this)">Projekte</button>
   <button class="tab" onclick="switchTab('system', this)">System</button>
 </div>
 
@@ -361,6 +362,128 @@
         <div id="test-fetch-content" style="font-size:.82rem; margin-top:.5rem;"></div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ TAB: Projekte ═══════════════════════ -->
+<div id="tab-projekte" class="tab-content">
+  <div class="card">
+    <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
+      Aktive Forschungsprojekte steuern die Relevanz-Bewertung: Ein Artikel kann durch Projektbezug
+      von <em>scannen</em> zu <em>lesenswert</em> aufgewertet werden.
+      Änderungen werden in <code>projects.json</code> gespeichert.
+    </p>
+  </div>
+
+  <div id="projects-list">
+    {% for p in projects %}
+    <div class="card" id="project-{{ p.key }}" style="margin-bottom:1rem;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline;">
+        <h2 style="margin:0; font-size:1rem;">{{ p.name }}</h2>
+        <div style="display:flex; gap:.5rem; align-items:center;">
+          {% if p.status == 'active' %}
+          <span class="badge badge-lesenswert">aktiv</span>
+          {% else %}
+          <span class="badge badge-ignorieren">{{ p.status }}</span>
+          {% endif %}
+          {% if p.funder %}<span style="font-size:.8rem; color:var(--muted);">{{ p.funder }}</span>{% endif %}
+          {% if p.period %}<span style="font-size:.8rem; color:var(--muted);">{{ p.period }}</span>{% endif %}
+        </div>
+      </div>
+
+      <div class="project-view" id="project-view-{{ p.key }}">
+        <p style="font-size:.85rem; margin-top:.5rem;">{{ p.description }}</p>
+
+        {% if p.relevance_shifts %}
+        <div style="margin-top:.5rem;">
+          <strong style="font-size:.82rem; color:var(--muted);">Relevance Shifts:</strong>
+          <ul style="font-size:.85rem; margin-top:.25rem; padding-left:1.2rem;">
+            {% for rs in p.relevance_shifts %}
+            <li>{{ rs }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        {% if p.connected_publications %}
+        <div style="margin-top:.5rem; font-size:.82rem; color:var(--muted);">
+          Verknüpfte Publikationen: {{ p.connected_publications|join(', ') }}
+        </div>
+        {% endif %}
+
+        <button class="btn" style="margin-top:.75rem; font-size:.8rem;"
+                onclick="toggleProjectEdit('{{ p.key }}')">Bearbeiten</button>
+      </div>
+
+      <div class="project-edit" id="project-edit-{{ p.key }}" style="display:none; margin-top:.75rem;">
+        <form onsubmit="saveProject('{{ p.key }}', this); return false;">
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" name="name" value="{{ p.name }}" class="form-input" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="flex:1;">
+              <label>Status</label>
+              <select name="status" class="form-input">
+                <option value="active" {{ 'selected' if p.status == 'active' }}>active</option>
+                <option value="completed" {{ 'selected' if p.status == 'completed' }}>completed</option>
+                <option value="planned" {{ 'selected' if p.status == 'planned' }}>planned</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label>Fördergeber</label>
+              <input type="text" name="funder" value="{{ p.funder or '' }}" class="form-input">
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label>Laufzeit</label>
+              <input type="text" name="period" value="{{ p.period or '' }}" class="form-input">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Beschreibung</label>
+            <textarea name="description" class="form-input" rows="3">{{ p.description }}</textarea>
+          </div>
+          <div class="form-group">
+            <label>Relevance Shifts <span style="color:var(--muted); font-size:.8rem;">(eins pro Zeile — wie verschiebt dieses Projekt Relevanzbewertungen?)</span></label>
+            <textarea name="relevance_shifts" class="form-input" rows="5">{{ p.relevance_shifts|join('\n') }}</textarea>
+          </div>
+          <div class="form-group">
+            <label>Verknüpfte Publikationen <span style="color:var(--muted); font-size:.8rem;">(pub_ids, kommasepariert)</span></label>
+            <input type="text" name="connected_publications" value="{{ p.connected_publications|join(', ') }}" class="form-input">
+          </div>
+          <div style="display:flex; gap:.5rem; align-items:center;">
+            <button type="submit" class="btn btn-primary">Speichern</button>
+            <button type="button" class="btn" onclick="toggleProjectEdit('{{ p.key }}')">Abbrechen</button>
+            <button type="button" class="btn" style="margin-left:auto; color:var(--pflichtlektuere);"
+                    onclick="if(confirm('Projekt «{{ p.name }}» löschen?')) deleteProject('{{ p.key }}')">Löschen</button>
+            <span id="project-status-{{ p.key }}" style="font-size:.85rem;"></span>
+          </div>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0;">Neues Projekt</h2>
+    <form onsubmit="addProject(this); return false;">
+      <div class="form-row">
+        <div class="form-group" style="flex:1;">
+          <label>Schlüssel <span style="color:var(--muted); font-size:.8rem;">(eindeutig, z.B. ai4artsed)</span></label>
+          <input type="text" name="key" class="form-input" pattern="[a-z0-9_]+" required>
+        </div>
+        <div class="form-group" style="flex:3;">
+          <label>Name</label>
+          <input type="text" name="name" class="form-input" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Beschreibung</label>
+        <textarea name="description" class="form-input" rows="2"></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Projekt anlegen</button>
+      <span id="add-project-status" style="font-size:.85rem; margin-left:.5rem;"></span>
+    </form>
   </div>
 </div>
 
@@ -884,6 +1007,61 @@ function deleteJournal(short, name, count) {
         alert(result.error || 'Fehler beim Löschen');
       }
     });
+}
+
+// ── Projects ──
+function toggleProjectEdit(key) {
+  var view = document.getElementById('project-view-' + key);
+  var edit = document.getElementById('project-edit-' + key);
+  if (edit.style.display === 'none') {
+    edit.style.display = 'block'; view.style.display = 'none';
+  } else {
+    edit.style.display = 'none'; view.style.display = 'block';
+  }
+}
+
+function saveProject(key, form) {
+  var fd = new FormData(form);
+  var data = { key: key };
+  fd.forEach(function(v, k) { data[k] = v; });
+  fetch('/api/setup/project/' + encodeURIComponent(key), {
+    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)
+  }).then(function(r) { return r.json(); }).then(function(res) {
+    var el = document.getElementById('project-status-' + key);
+    if (res.ok) {
+      el.innerHTML = '<span style="color:var(--lesenswert);">✓ Gespeichert</span>';
+      setTimeout(function() { location.reload(); }, 600);
+    } else {
+      el.innerHTML = '<span style="color:var(--pflichtlektuere);">' + (res.error || 'Fehler') + '</span>';
+    }
+  });
+}
+
+function deleteProject(key) {
+  fetch('/api/setup/project/' + encodeURIComponent(key), { method: 'DELETE' })
+    .then(function(r) { return r.json(); }).then(function(res) {
+      if (res.ok) {
+        var card = document.getElementById('project-' + key);
+        if (card) card.remove();
+      } else { alert(res.error || 'Fehler'); }
+    });
+}
+
+function addProject(form) {
+  var fd = new FormData(form);
+  var data = {};
+  fd.forEach(function(v, k) { data[k] = v; });
+  fetch('/api/setup/project/_new', {
+    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)
+  }).then(function(r) { return r.json(); }).then(function(res) {
+    var el = document.getElementById('add-project-status');
+    if (res.ok) {
+      el.innerHTML = '<span style="color:var(--lesenswert);">✓ Angelegt</span>';
+      setTimeout(function() { location.reload(); }, 600);
+    } else {
+      el.innerHTML = '<span style="color:var(--pflichtlektuere);">' + (res.error || 'Fehler') + '</span>';
+    }
+  });
 }
 </script>
 {% endblock %}

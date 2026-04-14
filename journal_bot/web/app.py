@@ -18,6 +18,7 @@ from flask import (
 
 from journal_bot.store import Store, ARTICLES_DB
 from journal_bot.settings import (
+    PROJECT_ROOT,
     CORPUS_JSON,
     DIGEST_DIR,
     DISCOURSE_SPACES,
@@ -50,6 +51,26 @@ app.secret_key = os.urandom(24)  # For session (lightweight state only)
 # Server-side agent state (single-user tool, no cookie size limits)
 # Context is persisted to disk so it survives server restarts.
 _AGENT_CONTEXT_FILE = Path(__file__).parent.parent.parent / ".agent_context.txt"
+
+
+PROJECTS_JSON = PROJECT_ROOT / "projects.json"
+
+
+def _load_projects() -> list[dict]:
+    if PROJECTS_JSON.exists():
+        try:
+            data = json.loads(PROJECTS_JSON.read_text(encoding="utf-8"))
+            return data.get("projects", [])
+        except Exception:
+            pass
+    return []
+
+
+def _save_projects(projects: list[dict]) -> None:
+    payload = {"version": 1, "projects": projects}
+    tmp = PROJECTS_JSON.with_suffix(".tmp")
+    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(PROJECTS_JSON)
 
 
 def _load_agent_context() -> str:
@@ -901,6 +922,7 @@ def setup():
         journal_counts=journal_counts,
         spaces=spaces,
         space_journal_counts=space_journal_counts,
+        projects=_load_projects(),
         db_stats=db_stats,
         db_size_mb=db_size_mb,
         api_key_status=api_key_status,
@@ -1138,6 +1160,79 @@ def api_setup_diskursraum_delete(key: str):
 
     _save_diskursraeume_json()
     return jsonify({"ok": True, "name": name})
+
+
+# ── Projects CRUD ──
+
+@app.route("/api/setup/project/_new", methods=["POST"])
+def api_setup_project_new():
+    """Create a new project. Expects JSON."""
+    data = request.get_json(force=True)
+    key = (data.get("key") or "").strip().lower()
+    name = (data.get("name") or "").strip()
+    if not key or not name:
+        return jsonify({"ok": False, "error": "Schlüssel und Name sind Pflicht."})
+
+    projects = _load_projects()
+    if any(p["key"] == key for p in projects):
+        return jsonify({"ok": False, "error": f"Schlüssel «{key}» existiert bereits."})
+
+    projects.append({
+        "key": key,
+        "name": name,
+        "type": "funded_project",
+        "status": "active",
+        "funder": data.get("funder", ""),
+        "period": data.get("period", ""),
+        "description": data.get("description", ""),
+        "relevance_shifts": [],
+        "connected_publications": [],
+    })
+    _save_projects(projects)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/setup/project/<key>", methods=["POST"])
+def api_setup_project_update(key: str):
+    """Update an existing project. Expects JSON."""
+    data = request.get_json(force=True)
+    projects = _load_projects()
+    proj = next((p for p in projects if p["key"] == key), None)
+    if not proj:
+        return jsonify({"ok": False, "error": "Projekt nicht gefunden."}), 404
+
+    proj["name"] = (data.get("name") or proj["name"]).strip()
+    proj["status"] = data.get("status", proj.get("status", "active"))
+    proj["funder"] = (data.get("funder") or "").strip()
+    proj["period"] = (data.get("period") or "").strip()
+    proj["description"] = (data.get("description") or "").strip()
+
+    rs_raw = data.get("relevance_shifts", "")
+    if isinstance(rs_raw, str):
+        proj["relevance_shifts"] = [l.strip() for l in rs_raw.split("\n") if l.strip()]
+    elif isinstance(rs_raw, list):
+        proj["relevance_shifts"] = rs_raw
+
+    cp_raw = data.get("connected_publications", "")
+    if isinstance(cp_raw, str):
+        proj["connected_publications"] = [p.strip() for p in cp_raw.split(",") if p.strip()]
+    elif isinstance(cp_raw, list):
+        proj["connected_publications"] = cp_raw
+
+    _save_projects(projects)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/setup/project/<key>", methods=["DELETE"])
+def api_setup_project_delete(key: str):
+    """Delete a project."""
+    projects = _load_projects()
+    before = len(projects)
+    projects = [p for p in projects if p["key"] != key]
+    if len(projects) == before:
+        return jsonify({"ok": False, "error": "Nicht gefunden."}), 404
+    _save_projects(projects)
+    return jsonify({"ok": True})
 
 
 def _matrix_context() -> dict:
