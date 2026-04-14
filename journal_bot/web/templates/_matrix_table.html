@@ -14,6 +14,7 @@
       <thead>
         <tr>
           <th class="matrix-journal-col" style="text-align:left;">Journal</th>
+          <th class="matrix-type-col" title="Retrieval-Typ">Typ</th>
           <th class="matrix-count-col" style="text-align:right;" title="Artikel in DB">Artikel</th>
           <th class="matrix-tier-col" colspan="3">Tier</th>
           {% for key, meta in spaces %}
@@ -21,14 +22,18 @@
             <span class="cluster-header" title="{{ meta.description }}">{{ meta.name }}</span>
           </th>
           {% endfor %}
+          <th style="width:28px;"></th>
         </tr>
       </thead>
       <tbody>
         {% for j in journals %}
-        <tr{% if not j.enabled %} class="journal-disabled"{% endif %}>
+        <tr{% if not j.enabled %} class="journal-disabled"{% endif %} data-short="{{ j.short }}">
           <td class="matrix-journal-col">
             <span class="journal-name">{{ j.name }}</span>
             <span class="journal-short">{{ j.short }}</span>
+          </td>
+          <td class="matrix-type-col">
+            <span class="badge badge-type-{{ j.type }}" title="{{ j.type }}">{{ j.type }}</span>
           </td>
           <td class="matrix-count-col" style="text-align:right; color:var(--muted);">
             {{ journal_counts.get(j.short, 0) }}
@@ -61,6 +66,10 @@
                    onchange="markDirty()">
           </td>
           {% endfor %}
+          <td class="matrix-delete-cell">
+            <button type="button" class="btn-delete-journal" title="Journal entfernen"
+                    onclick="deleteJournal('{{ j.short }}', '{{ j.name|e }}', {{ journal_counts.get(j.short, 0) }})">×</button>
+          </td>
         </tr>
         {% endfor %}
       </tbody>

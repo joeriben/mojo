@@ -1,0 +1,30 @@
+{
+  "$schema": "mojo-custom-fetcher-v1",
+  "base_url": "https://www.e-flux.com",
+  "strategy": "issue_list",
+
+  "issues": {
+    "url": "https://www.e-flux.com/journal/",
+    "link_selector": "a[href*='/journal/']",
+    "year_regex": "(20\\d{2})"
+  },
+
+  "article": {
+    "container": "article, .article-item, .entry",
+    "title": "h2 a, h3 a, .title a",
+    "url": "h2 a@href, h3 a@href, .title a@href",
+    "authors": ".author, .byline, .contributor",
+    "date": "time@datetime, .date",
+    "abstract": ".abstract, .excerpt, .summary"
+  },
+
+  "detail": {
+    "enabled": true,
+    "abstract": ".article-body p:first-of-type, .content p:first-of-type"
+  },
+
+  "url_fixup": {
+    "relative_to_base": true,
+    "doi_prefix_strip": true
+  }
+}

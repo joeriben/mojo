@@ -9,6 +9,7 @@ from journal_bot.fetchers.ojs_fetcher import OJSFetcher
 from journal_bot.fetchers.html_fetcher import HTMLFetcher
 from journal_bot.fetchers.openalex_fetcher import OpenAlexFetcher
 from journal_bot.fetchers.dce_fetcher import DCEFetcher
+from journal_bot.fetchers.configurable_fetcher import ConfigurableFetcher
 
 
 def build_fetcher(jc: JournalConfig, since_year: int | None = None) -> Fetcher:
@@ -22,6 +23,8 @@ def build_fetcher(jc: JournalConfig, since_year: int | None = None) -> Fetcher:
         return OpenAlexFetcher(jc, since_year=since_year)
     if jc.type == "dce":
         return DCEFetcher(jc, since_year=since_year)
+    if jc.type == "custom":
+        return ConfigurableFetcher(jc, since_year=since_year)
     raise ValueError(f"Unbekannter Fetcher-Typ: {jc.type}")
 
 

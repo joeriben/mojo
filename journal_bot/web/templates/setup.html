@@ -241,8 +241,126 @@
 
   <!-- ---- Matrix (wird per HTMX bei Diskursraum-Änderung neu geladen) ---- -->
   <div class="card" id="matrix-card"
-       hx-get="/api/setup/matrix-fragment" hx-trigger="diskurs-changed from:body" hx-swap="innerHTML">
+       hx-get="/api/setup/matrix-fragment" hx-trigger="diskurs-changed from:body, journal-changed from:body" hx-swap="innerHTML">
     {% include "_matrix_table.html" %}
+  </div>
+
+  <!-- ---- Journal hinzufügen ---- -->
+  <div class="card" id="add-journal-card">
+    <h2 style="margin-top:0;">Journal hinzufügen</h2>
+    <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
+      ISSN eingeben um zu prüfen, ob das Journal via OpenAlex abrufbar ist.
+      Für Journals ohne OpenAlex-Eintrag: RSS/OJS-Feed oder Custom-Config verwenden.
+    </p>
+
+    <!-- Step 1: ISSN-Lookup -->
+    <div class="form-row" style="margin-bottom:1rem;">
+      <div class="form-group" style="flex:1;">
+        <label>ISSN <span style="color:var(--muted); font-size:.8rem;">(optional — für OpenAlex-Prüfung)</span></label>
+        <input type="text" id="add-issn" class="form-input" placeholder="z.B. 1862-5215"
+               style="max-width:200px;" pattern="[\dX]{4}-[\dX]{4}">
+      </div>
+      <div style="display:flex; align-items:flex-end; padding-bottom:.75rem;">
+        <button type="button" class="btn" onclick="lookupISSN()">ISSN prüfen</button>
+      </div>
+      <div id="issn-result" style="display:flex; align-items:flex-end; padding-bottom:.75rem; font-size:.85rem;"></div>
+    </div>
+
+    <!-- Step 2: Details -->
+    <div class="form-row">
+      <div class="form-group" style="flex:2;">
+        <label>Voller Name</label>
+        <input type="text" id="add-name" class="form-input" placeholder="z.B. Zeitschrift für Pädagogik" required>
+      </div>
+      <div class="form-group" style="flex:1;">
+        <label>Kurzname <span style="color:var(--muted); font-size:.8rem;">(eindeutig, ohne Sonderzeichen)</span></label>
+        <input type="text" id="add-short" class="form-input" placeholder="z.B. ZfPaed" pattern="[a-zA-Z0-9_-]+" required>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group" style="flex:1;">
+        <label>Retrieval-Typ</label>
+        <select id="add-type" class="form-input" onchange="onTypeChange()" style="max-width:200px;">
+          <option value="openalex" selected>OpenAlex (ISSN)</option>
+          <option value="rss">RSS-Feed</option>
+          <option value="ojs">OJS-Feed</option>
+          <option value="custom">Custom-Config</option>
+        </select>
+      </div>
+      <div class="form-group" id="add-url-group" style="flex:2; display:none;">
+        <label id="add-url-label">Feed-URL</label>
+        <input type="text" id="add-url" class="form-input" placeholder="https://...">
+      </div>
+      <div class="form-group" style="flex:0 0 auto;">
+        <label>Tier</label>
+        <select id="add-tier" class="form-input" style="max-width:80px;">
+          <option value="A">A</option>
+          <option value="B" selected>B</option>
+          <option value="C">C</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Diskursräume (Checkboxen) -->
+    <div class="form-group">
+      <label>Diskursräume</label>
+      <div style="display:flex; flex-wrap:wrap; gap:.75rem; font-size:.85rem;">
+        {% for key, meta in spaces %}
+        <label style="cursor:pointer;">
+          <input type="checkbox" class="add-cluster-cb" value="{{ key }}"> {{ meta.name }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Custom config editor (nur für type=custom sichtbar) -->
+    <div id="custom-config-section" style="display:none;">
+      <div class="form-group">
+        <label>Custom-Config <span style="color:var(--muted); font-size:.8rem;">(JSON — festes Schema, CSS-Selektoren)</span></label>
+        <textarea id="add-custom-config" class="form-input" rows="12" style="font-family:monospace; font-size:.8rem;">{
+  "$schema": "mojo-custom-fetcher-v1",
+  "base_url": "https://example.com",
+  "strategy": "single_page",
+
+  "index": {
+    "url": "https://example.com/articles"
+  },
+
+  "article": {
+    "container": "article",
+    "title": "h2 a",
+    "url": "h2 a@href",
+    "authors": ".author",
+    "date": "time@datetime",
+    "abstract": ".abstract"
+  },
+
+  "detail": {
+    "enabled": false,
+    "abstract": ".full-abstract"
+  },
+
+  "url_fixup": {
+    "relative_to_base": true,
+    "doi_prefix_strip": true
+  }
+}</textarea>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:.75rem; align-items:center; margin-top:.5rem;">
+      <button type="button" class="btn" onclick="testFetchJournal()">Test-Fetch</button>
+      <button type="button" class="btn btn-primary" onclick="addJournal()">Journal hinzufügen</button>
+      <span id="add-journal-status" style="font-size:.85rem;"></span>
+    </div>
+
+    <div id="test-fetch-result" style="margin-top:.75rem; display:none;">
+      <div class="card" style="background:var(--code-bg); padding:.75rem;">
+        <strong style="font-size:.85rem;">Test-Ergebnis:</strong>
+        <div id="test-fetch-content" style="font-size:.82rem; margin-top:.5rem;"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -378,6 +496,32 @@
   .chip-input { font-size: .8rem !important; padding: 3px 6px !important; max-width: 250px !important; }
   .diskurs-chip-add { border-style: dashed; }
   .diskurs-chip-add .chip-display strong { color: var(--accent); }
+
+  /* Type badges */
+  .matrix-type-col { width: 60px; text-align: center; }
+  .badge-type-openalex { background: #e8f5e9; color: #2e7d32; font-size: .65rem; padding: 1px 4px; border-radius: 3px; }
+  .badge-type-rss { background: #fff3e0; color: #e65100; font-size: .65rem; padding: 1px 4px; border-radius: 3px; }
+  .badge-type-ojs { background: #e3f2fd; color: #1565c0; font-size: .65rem; padding: 1px 4px; border-radius: 3px; }
+  .badge-type-custom { background: #f3e5f5; color: #7b1fa2; font-size: .65rem; padding: 1px 4px; border-radius: 3px; }
+  .badge-type-dce { background: #fce4ec; color: #c62828; font-size: .65rem; padding: 1px 4px; border-radius: 3px; }
+  .badge-type-html { background: #efebe9; color: #4e342e; font-size: .65rem; padding: 1px 4px; border-radius: 3px; }
+
+  /* Dark mode type badges */
+  [data-theme="dark"] .badge-type-openalex { background: #1b5e20; color: #a5d6a7; }
+  [data-theme="dark"] .badge-type-rss { background: #bf360c; color: #ffcc80; }
+  [data-theme="dark"] .badge-type-ojs { background: #0d47a1; color: #90caf9; }
+  [data-theme="dark"] .badge-type-custom { background: #4a148c; color: #ce93d8; }
+  [data-theme="dark"] .badge-type-dce { background: #b71c1c; color: #ef9a9a; }
+  [data-theme="dark"] .badge-type-html { background: #3e2723; color: #bcaaa4; }
+
+  /* Delete button in matrix */
+  .matrix-delete-cell { text-align: center; width: 28px; }
+  .btn-delete-journal {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 1rem; line-height: 1; padding: 2px 4px; border-radius: 3px;
+    opacity: .3; transition: opacity .15s;
+  }
+  .btn-delete-journal:hover { opacity: 1; color: var(--pflichtlektuere); }
 </style>
 
 <script>
@@ -524,6 +668,222 @@ function saveMatrix() {
     document.getElementById('matrix-status').textContent = 'Fehler: ' + err;
     document.getElementById('matrix-status').style.color = 'var(--pflichtlektuere)';
   });
+}
+
+// ---- Journal Add/Delete/Test ----
+
+function showAddStatus(msg, ok) {
+  var el = document.getElementById('add-journal-status');
+  el.textContent = msg;
+  el.style.color = ok ? 'var(--lesenswert)' : 'var(--pflichtlektuere)';
+  if (ok) setTimeout(function() { el.textContent = ''; }, 5000);
+}
+
+function onTypeChange() {
+  var type = document.getElementById('add-type').value;
+  var urlGroup = document.getElementById('add-url-group');
+  var urlLabel = document.getElementById('add-url-label');
+  var customSection = document.getElementById('custom-config-section');
+
+  if (type === 'openalex') {
+    urlGroup.style.display = 'none';
+    customSection.style.display = 'none';
+  } else if (type === 'custom') {
+    urlGroup.style.display = 'none';
+    customSection.style.display = 'block';
+  } else {
+    urlGroup.style.display = 'block';
+    customSection.style.display = 'none';
+    urlLabel.textContent = type === 'rss' ? 'RSS-Feed-URL' : 'OJS-Feed-URL';
+  }
+}
+
+function lookupISSN() {
+  var issn = document.getElementById('add-issn').value.trim();
+  if (!issn) { showAddStatus('Bitte ISSN eingeben.', false); return; }
+
+  var el = document.getElementById('issn-result');
+  el.innerHTML = '<span style="color:var(--muted);">Prüfe…</span>';
+
+  fetch('/api/openalex/lookup?issn=' + encodeURIComponent(issn))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!data.ok) {
+        el.innerHTML = '<span style="color:var(--pflichtlektuere);">' + (data.error || 'Fehler') + '</span>';
+        return;
+      }
+      if (data.found) {
+        el.innerHTML = '<span style="color:var(--lesenswert);">&#10003; ' + data.name + ' (' + data.works_count + ' Werke)</span>';
+        // Auto-fill name
+        if (!document.getElementById('add-name').value) {
+          document.getElementById('add-name').value = data.name;
+        }
+        document.getElementById('add-type').value = 'openalex';
+        onTypeChange();
+      } else {
+        el.innerHTML = '<span style="color:var(--scannen);">Nicht in OpenAlex — RSS/OJS/Custom nötig</span>';
+      }
+    })
+    .catch(function(err) {
+      el.innerHTML = '<span style="color:var(--pflichtlektuere);">' + err + '</span>';
+    });
+}
+
+function _getAddFormData() {
+  var type = document.getElementById('add-type').value;
+  var clusters = [];
+  document.querySelectorAll('.add-cluster-cb:checked').forEach(function(cb) {
+    clusters.push(cb.value);
+  });
+
+  var data = {
+    name: document.getElementById('add-name').value.trim(),
+    short: document.getElementById('add-short').value.trim(),
+    type: type,
+    issn: document.getElementById('add-issn').value.trim(),
+    tier: document.getElementById('add-tier').value,
+    clusters: clusters,
+  };
+
+  if (type === 'openalex') {
+    data.url = data.issn ? 'issn:' + data.issn : '';
+  } else if (type === 'rss' || type === 'ojs') {
+    data.url = document.getElementById('add-url').value.trim();
+  } else if (type === 'custom') {
+    data.url = '';
+  }
+
+  return data;
+}
+
+function testFetchJournal() {
+  var data = _getAddFormData();
+  if (!data.short) { showAddStatus('Kurzname eingeben.', false); return; }
+
+  var resultDiv = document.getElementById('test-fetch-result');
+  var contentDiv = document.getElementById('test-fetch-content');
+  resultDiv.style.display = 'block';
+  contentDiv.innerHTML = '<span style="color:var(--muted);">Fetche…</span>';
+
+  // For custom type: save config first
+  var savePromise = Promise.resolve();
+  if (data.type === 'custom') {
+    var configText = document.getElementById('add-custom-config').value;
+    try {
+      var config = JSON.parse(configText);
+    } catch(e) {
+      contentDiv.innerHTML = '<span style="color:var(--pflichtlektuere);">Ungültiges JSON: ' + e.message + '</span>';
+      return;
+    }
+    savePromise = fetch('/api/setup/journal/custom-config', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({short: data.short, config: config})
+    }).then(function(r) { return r.json(); }).then(function(result) {
+      if (!result.ok) throw new Error(result.error);
+    });
+  }
+
+  savePromise.then(function() {
+    return fetch('/api/setup/journal/test', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    });
+  }).then(function(r) { return r.json(); })
+  .then(function(result) {
+    if (!result.ok) {
+      contentDiv.innerHTML = '<span style="color:var(--pflichtlektuere);">Fehler: ' + result.error + '</span>';
+      return;
+    }
+    var html = '<strong style="color:var(--lesenswert);">' + result.count + ' Artikel gefunden</strong>';
+    if (result.sample && result.sample.length > 0) {
+      html += '<ul style="margin:.5rem 0 0 0; padding-left:1.2rem;">';
+      result.sample.forEach(function(a) {
+        html += '<li>' + a.title;
+        if (a.authors && a.authors.length) html += ' <span style="color:var(--muted);">— ' + a.authors.join(', ') + '</span>';
+        if (a.date) html += ' <span style="color:var(--muted);">(' + a.date + ')</span>';
+        html += '</li>';
+      });
+      html += '</ul>';
+    }
+    contentDiv.innerHTML = html;
+  }).catch(function(err) {
+    contentDiv.innerHTML = '<span style="color:var(--pflichtlektuere);">' + err + '</span>';
+  });
+}
+
+function addJournal() {
+  var data = _getAddFormData();
+  if (!data.name || !data.short) {
+    showAddStatus('Name und Kurzname sind Pflicht.', false);
+    return;
+  }
+
+  // For custom type: save config first
+  var savePromise = Promise.resolve();
+  if (data.type === 'custom') {
+    var configText = document.getElementById('add-custom-config').value;
+    try {
+      var config = JSON.parse(configText);
+    } catch(e) {
+      showAddStatus('Ungültiges JSON: ' + e.message, false);
+      return;
+    }
+    savePromise = fetch('/api/setup/journal/custom-config', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({short: data.short, config: config})
+    }).then(function(r) { return r.json(); }).then(function(result) {
+      if (!result.ok) throw new Error(result.error);
+    });
+  }
+
+  savePromise.then(function() {
+    return fetch('/api/setup/journal', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    });
+  }).then(function(r) { return r.json(); })
+  .then(function(result) {
+    if (result.ok) {
+      showAddStatus(result.message, true);
+      // Reset form
+      document.getElementById('add-name').value = '';
+      document.getElementById('add-short').value = '';
+      document.getElementById('add-issn').value = '';
+      document.getElementById('add-url').value = '';
+      document.getElementById('issn-result').innerHTML = '';
+      document.querySelectorAll('.add-cluster-cb').forEach(function(cb) { cb.checked = false; });
+      // Reload matrix
+      document.body.dispatchEvent(new Event('journal-changed'));
+    } else {
+      showAddStatus(result.error || 'Fehler', false);
+    }
+  }).catch(function(err) {
+    showAddStatus('' + err, false);
+  });
+}
+
+function deleteJournal(short, name, count) {
+  var msg = 'Journal «' + name + '» (' + short + ') entfernen?';
+  if (count > 0) msg += '\n\n' + count + ' Artikel bleiben in der DB erhalten.';
+  if (!confirm(msg)) return;
+
+  fetch('/api/setup/journal/' + encodeURIComponent(short), { method: 'DELETE' })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+      if (result.ok) {
+        // Remove row from table
+        var row = document.querySelector('tr[data-short="' + short + '"]');
+        if (row) row.remove();
+        showAddStatus(result.message, true);
+        document.body.dispatchEvent(new Event('journal-changed'));
+      } else {
+        alert(result.error || 'Fehler beim Löschen');
+      }
+    });
 }
 </script>
 {% endblock %}

@@ -1138,6 +1138,156 @@ def api_setup_matrix_fragment():
     return render_template("_matrix_table.html", **_matrix_context())
 
 
+# ======================================================= Journal CRUD ===
+
+
+@app.route("/api/setup/journal", methods=["POST"])
+def api_setup_journal_add():
+    """Add a new journal.  Expects JSON body."""
+    from journal_bot.journals import add_journal
+    data = request.get_json(force=True)
+    esc = html_mod.escape
+
+    name = (data.get("name") or "").strip()
+    short = (data.get("short") or "").strip()
+    journal_type = (data.get("type") or "openalex").strip()
+    url = (data.get("url") or "").strip()
+    issn = (data.get("issn") or "").strip()
+    tier = (data.get("tier") or "B").strip()
+    clusters = data.get("clusters") or []
+
+    if not name or not short:
+        return jsonify({"ok": False, "error": "Name und Kurzname sind Pflicht."})
+
+    msg = add_journal(
+        name=name,
+        short=short,
+        journal_type=journal_type,
+        url=url,
+        issn=issn,
+        tier=tier,
+        clusters=clusters,
+    )
+
+    if not msg.startswith("✓"):
+        return jsonify({"ok": False, "error": msg})
+
+    # Reload in-memory JOURNALS list
+    _reload_journals()
+
+    return jsonify({"ok": True, "message": msg})
+
+
+@app.route("/api/setup/journal/<short>", methods=["DELETE"])
+def api_setup_journal_delete(short: str):
+    """Remove a journal.  Articles stay in the DB."""
+    from journal_bot.journals import remove_journal
+
+    msg = remove_journal(short)
+    if not msg.startswith("✓"):
+        return jsonify({"ok": False, "error": msg}), 404
+
+    _reload_journals()
+    return jsonify({"ok": True, "message": msg})
+
+
+@app.route("/api/setup/journal/test", methods=["POST"])
+def api_setup_journal_test():
+    """Test-fetch a journal config.  Returns article count + sample titles."""
+    from journal_bot.settings import JournalConfig
+    from journal_bot.fetchers import build_fetcher
+
+    data = request.get_json(force=True)
+    jc = JournalConfig(
+        name=data.get("name", "Test"),
+        short=data.get("short", "_test"),
+        type=data.get("type", "openalex"),
+        url=data.get("url", ""),
+        issn=data.get("issn", ""),
+        tier="C",
+    )
+
+    try:
+        fetcher = build_fetcher(jc)
+        articles = fetcher.fetch()
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e), "count": 0, "sample": []})
+
+    sample = [
+        {"title": a.title, "authors": a.authors, "date": a.published}
+        for a in articles[:5]
+    ]
+    return jsonify({
+        "ok": True,
+        "count": len(articles),
+        "sample": sample,
+        "message": f"{len(articles)} Artikel gefunden",
+    })
+
+
+@app.route("/api/openalex/lookup")
+def api_openalex_lookup():
+    """Check if an ISSN is indexed in OpenAlex.  Returns source metadata."""
+    import httpx as _httpx
+
+    issn = request.args.get("issn", "").strip()
+    if not issn:
+        return jsonify({"ok": False, "error": "ISSN fehlt."})
+
+    try:
+        resp = _httpx.get(
+            f"https://api.openalex.org/sources/issn:{issn}",
+            params={"mailto": "mojo@localhost"},
+            timeout=15,
+        )
+        if resp.status_code == 404:
+            return jsonify({"ok": True, "found": False, "message": f"ISSN {issn} nicht in OpenAlex."})
+        resp.raise_for_status()
+        src = resp.json()
+        return jsonify({
+            "ok": True,
+            "found": True,
+            "name": src.get("display_name", ""),
+            "works_count": src.get("works_count", 0),
+            "openalex_id": src.get("id", ""),
+            "message": f"{src.get('display_name', '?')} — {src.get('works_count', '?')} Werke",
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)})
+
+
+@app.route("/api/setup/journal/custom-config", methods=["POST"])
+def api_setup_journal_custom_config():
+    """Save a custom fetcher config.  Validates against the fixed schema."""
+    from journal_bot.fetchers.configurable_fetcher import save_config, validate_config
+
+    data = request.get_json(force=True)
+    short = (data.get("short") or "").strip()
+    config = data.get("config")
+
+    if not short:
+        return jsonify({"ok": False, "error": "Kurzname fehlt."})
+    if not isinstance(config, dict):
+        return jsonify({"ok": False, "error": "config muss ein JSON-Objekt sein."})
+
+    errors = validate_config(config)
+    if errors:
+        return jsonify({"ok": False, "error": "; ".join(errors)})
+
+    try:
+        path = save_config(short, config)
+    except ValueError as e:
+        return jsonify({"ok": False, "error": str(e)})
+
+    return jsonify({"ok": True, "message": f"✓ Config gespeichert: {path.name}"})
+
+
+def _reload_journals() -> None:
+    """Reload the in-memory JOURNALS list after add/delete."""
+    import journal_bot.settings as _settings
+    _settings.JOURNALS[:] = _settings._load_journals()
+
+
 # ============================================================= Backup ===
 
 

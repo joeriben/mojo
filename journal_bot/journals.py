@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from journal_bot.settings import PROJECT_ROOT, JOURNALS_JSON
 
 _PATH = JOURNALS_JSON
+
+# Retrieval types that can be configured via the UI.
+VALID_TYPES = {"openalex", "rss", "ojs", "html", "dce", "custom"}
 
 
 def load() -> dict:
@@ -26,38 +30,80 @@ def save(data: dict) -> None:
 def add_journal(
     name: str,
     short: str,
-    issn: str,
-    clusters: list[str] | None = None,
     journal_type: str = "openalex",
+    url: str = "",
+    issn: str = "",
+    tier: str = "B",
+    clusters: list[str] | None = None,
 ) -> str:
     """Add a journal to journals.json and assign clusters in diskursraeume.json.
 
-    Returns a status message.
+    The url field depends on the type:
+      - openalex: "issn:XXXX-XXXX" (built from issn param if url is empty)
+      - rss/ojs:  feed URL
+      - html:     page URL
+      - custom:   ignored (config lives in fetchers/custom/{short}.json)
+      - dce:      hardcoded in fetcher
+
+    Returns a status message (starts with ✓ on success).
     """
+    if journal_type not in VALID_TYPES:
+        return f"Unbekannter Typ: {journal_type}. Erlaubt: {', '.join(sorted(VALID_TYPES))}"
+
+    # Sanitize short code
+    short_clean = re.sub(r"[^a-zA-Z0-9_-]", "", short)
+    if not short_clean or len(short_clean) < 2:
+        return "Kurzname muss mindestens 2 alphanumerische Zeichen haben."
+
     data = load()
     journals = data.get("journals", [])
 
     # Check for duplicates
     existing_shorts = {j["short"].lower() for j in journals}
-    if short.lower() in existing_shorts:
-        return f"Journal '{short}' existiert bereits."
+    if short_clean.lower() in existing_shorts:
+        return f"Journal '{short_clean}' existiert bereits."
 
-    existing_issns = set()
-    for j in journals:
-        url = j.get("url", "")
-        if url.startswith("issn:"):
-            existing_issns.add(url[5:])
-    if issn in existing_issns:
-        return f"ISSN {issn} ist bereits registriert."
+    # Build URL from ISSN for openalex if not explicitly given
+    if journal_type == "openalex":
+        if not url and issn:
+            url = f"issn:{issn}"
+        if not url:
+            return "OpenAlex-Journals brauchen eine ISSN."
 
-    # Add journal entry
-    entry = {
+    # For rss/ojs: URL is required
+    if journal_type in ("rss", "ojs") and not url:
+        return f"{journal_type.upper()}-Journals brauchen eine Feed-URL."
+
+    # For custom: verify config file exists
+    if journal_type == "custom":
+        from journal_bot.fetchers.configurable_fetcher import CUSTOM_CONFIG_DIR
+        config_path = CUSTOM_CONFIG_DIR / f"{short_clean}.json"
+        if not config_path.exists():
+            return (
+                f"Custom-Config nicht gefunden: {config_path.name}. "
+                f"Bitte zuerst die Config-Datei anlegen."
+            )
+
+    # Check ISSN uniqueness (if provided)
+    if issn:
+        for j in journals:
+            j_url = j.get("url", "")
+            j_issn = j.get("issn", "")
+            if issn in (j_url.removeprefix("issn:"), j_issn):
+                return f"ISSN {issn} ist bereits registriert ({j['short']})."
+
+    # Build entry
+    entry: dict = {
         "name": name,
-        "short": short,
+        "short": short_clean,
         "type": journal_type,
-        "url": f"issn:{issn}",
+        "url": url,
+        "tier": tier,
         "enabled": True,
     }
+    if issn:
+        entry["issn"] = issn
+
     journals.append(entry)
     data["journals"] = journals
     save(data)
@@ -67,12 +113,13 @@ def add_journal(
         from journal_bot.diskurs import load as load_diskurs, save as save_diskurs
         dr = load_diskurs()
         dr_clusters = dr.get("journal_clusters", {})
-        dr_clusters[short] = clusters
+        dr_clusters[short_clean] = clusters
         dr["journal_clusters"] = dr_clusters
         save_diskurs(dr)
 
     cluster_str = ", ".join(clusters) if clusters else "(keine)"
-    return f"✓ {name} ({short}, {issn}) hinzugefügt → Diskursräume: {cluster_str}"
+    type_label = f"[{journal_type}]"
+    return f"✓ {name} ({short_clean}) hinzugefügt {type_label} → Diskursräume: {cluster_str}"
 
 
 def remove_journal(short: str) -> str:
