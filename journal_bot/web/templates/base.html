@@ -112,6 +112,8 @@
     .filters button { cursor: pointer; background: var(--accent); color: #fff; border: none; }
     .filters button:hover { opacity: .85; }
     .filters .reset { background: none; color: var(--muted); border: 1px solid var(--border); }
+    .filter-group { display: inline-flex; align-items: center; gap: .25rem; }
+    .filter-sep { color: var(--muted); font-size: .85rem; }
 
     /* Detail page */
     .detail-meta { color: var(--muted); font-size: .85rem; margin-bottom: 1rem; }
@@ -174,6 +176,7 @@
     .art-title:hover .tooltip:not(:empty) { display: block; }
     .tooltip-verdict { font-weight: 600; margin-bottom: .3rem; }
     .tooltip-kernthese { color: var(--muted); }
+    .tooltip-abstract { color: var(--muted); font-style: italic; }
 
     /* Toggle */
     details summary { cursor: pointer; user-select: none; }

@@ -9,12 +9,21 @@
 
 <!-- Filters -->
 <form class="filters" method="get" action="/">
-  <select name="year">
-    <option value="">Alle Jahre</option>
-    {% for y in all_years %}
-    <option value="{{ y }}" {% if filters.year == y %}selected{% endif %}>{{ y }}</option>
-    {% endfor %}
-  </select>
+  <span class="filter-group">
+    <select name="year_from">
+      <option value="">von …</option>
+      {% for y in all_years %}
+      <option value="{{ y }}" {% if filters.year_from == y %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+    <span class="filter-sep">–</span>
+    <select name="year_to">
+      <option value="">… bis</option>
+      {% for y in all_years %}
+      <option value="{{ y }}" {% if filters.year_to == y %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+  </span>
   <select name="cluster">
     <option value="">Alle Diskursräume</option>
     {% for key, name in clusters %}

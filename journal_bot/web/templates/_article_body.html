@@ -123,6 +123,15 @@
   {% include "_archive_button.html" %}
 </div>
 
+<!-- Original-Abstract -->
+{% set abs = a.openalex_abstract or a.abstract %}
+{% if abs %}
+<div class="detail-section" style="margin-top:1.5rem;">
+  <h3>Original-Abstract</h3>
+  <p style="font-size:.9rem; line-height:1.5; color:var(--fg); opacity:.85;">{{ abs }}</p>
+</div>
+{% endif %}
+
 {% if a.agent_entry and a.agent_entry._previous is defined %}
 {% set prev = a.agent_entry._previous %}
 <details style="margin-top:1.5rem;">

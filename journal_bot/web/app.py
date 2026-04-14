@@ -111,11 +111,19 @@ def digest():
     """Main digest view with filters."""
     from datetime import date
     store = _store()
-    # Default to current year if no filters set at all
-    has_any_filter = any(request.args.get(k) for k in ("year", "cluster", "journal", "verdict", "archived"))
-    year = request.args.get("year", type=int)
-    if year is None and not has_any_filter:
-        year = date.today().year
+    current_year = date.today().year
+
+    # Year range: default to current year
+    has_any_filter = any(
+        request.args.get(k)
+        for k in ("year_from", "year_to", "cluster", "journal", "verdict", "archived")
+    )
+    year_from = request.args.get("year_from", type=int)
+    year_to = request.args.get("year_to", type=int)
+    if year_from is None and year_to is None and not has_any_filter:
+        year_from = current_year
+        year_to = current_year
+
     cluster = request.args.get("cluster", "")
     journal = request.args.get("journal", "")
     verdict_filter = request.args.get("verdict", "")
@@ -128,8 +136,8 @@ def digest():
         journals_filter = [journal]
 
     articles = store.find_in_window(
-        start_year=year,
-        end_year=year if year else None,
+        start_year=year_from,
+        end_year=year_to,
         journals=journals_filter,
         only_processed=True,
     )
@@ -186,7 +194,8 @@ def digest():
         clusters=clusters,
         journal_list=journal_list,
         filters={
-            "year": year,
+            "year_from": year_from,
+            "year_to": year_to,
             "cluster": cluster,
             "journal": journal,
             "verdict": verdict_filter,
@@ -338,17 +347,27 @@ def api_tooltip(article_id: str):
     """HTMX endpoint: lazy-load tooltip content on hover."""
     store = _store()
     a = store.get(article_id)
-    if not a or not a.agent_entry:
+    if not a:
         return ""
-    if isinstance(a.agent_entry, str):
-        a.agent_entry = json.loads(a.agent_entry)
-    e = a.agent_entry
-    parts = []
-    if e.get("verdict_begruendung"):
-        parts.append(f'<div class="tooltip-verdict">{e["verdict_begruendung"][:300]}</div>')
-    if e.get("kernthese"):
-        parts.append(f'<div class="tooltip-kernthese">{e["kernthese"][:400]}</div>')
-    return "".join(parts)
+
+    # Agent entry available → show verdict + kernthese
+    if a.agent_entry:
+        if isinstance(a.agent_entry, str):
+            a.agent_entry = json.loads(a.agent_entry)
+        e = a.agent_entry
+        parts = []
+        if e.get("verdict_begruendung"):
+            parts.append(f'<div class="tooltip-verdict">{e["verdict_begruendung"][:300]}</div>')
+        if e.get("kernthese"):
+            parts.append(f'<div class="tooltip-kernthese">{e["kernthese"][:400]}</div>')
+        return "".join(parts)
+
+    # No agent entry (Tier C) → fall back to original abstract
+    esc = html_mod.escape
+    abstract = a.openalex_abstract or a.abstract
+    if abstract:
+        return f'<div class="tooltip-abstract">{esc(abstract[:500])}</div>'
+    return ""
 
 
 @app.route("/api/verdict", methods=["POST"])
