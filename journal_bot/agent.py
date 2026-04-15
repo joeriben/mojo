@@ -17,12 +17,10 @@ from journal_bot.citation_tracker import find_citations, format_for_agent
 from journal_bot.enrichment import enrich
 from journal_bot.llm_client import build_client
 from journal_bot.settings import (
-    CORPUS_JSON, MODEL_AGENT, MODEL_SUMMARIZE, PROJECT_ROOT, SINCE_YEAR,
-    SUMMARIES_JSON, RESEARCHER_AREAS, RESEARCHER_INSTITUTION, RESEARCHER_NAME,
+    CORPUS_JSON, MODEL_AGENT, MODEL_SUMMARIZE, SINCE_YEAR, SUMMARIES_JSON,
+    RESEARCHER_AREAS, RESEARCHER_INSTITUTION, RESEARCHER_NAME,
     RESEARCHER_TRIAGE_TOPICS,
 )
-
-PROJECTS_JSON = PROJECT_ROOT / "projects.json"
 
 
 # ------------------------------------------------------------------ Prompt --
@@ -62,56 +60,41 @@ There are two distinct reasons an article matters:
 "ignorieren" = neither substantive connections nor noteworthy observations.
 
 === VERDICT CALIBRATION ===
-The purpose of this digest is twofold: (1) maintain awareness of relevant discourses,
-and (2) identify articles with Anregungspotenzial — stimulation potential for the
-researcher's thinking, projects, and teaching. This is NOT about "resource transfer"
-or direct applicability. An article is relevant when it offers perspectives,
-counter-positions, conceptual moves, or phenomenal cases that could productively
-irritate, extend, or contextualize the researcher's work.
+The threshold for "lesenswert" is HIGH. Most articles are "scannen" or "ignorieren".
 
-**ignorieren** — genuinely outside the observation field:
-  The article has no connection to the researcher's disciplines, projects, or discourse
-  spaces. Typical: clinical pharmacology, sports biomechanics, accounting standards.
-  Also ignorieren: articles that nominally share a keyword but operate in an entirely
-  different disciplinary logic without Anregungspotenzial.
+**ignorieren** — even when shared references exist:
+  Shared Haraway/Barad/Rancière citations alone are NOT enough. If the only connection
+  is a shared theoretical frame without transfer of arguments, methods, or concepts
+  into or out of the researcher's own work → ignorieren.
 
-**scannen** — within the observation field, worth knowing about:
-  The article touches the researcher's discourse spaces or project themes. It is
-  useful for maintaining Diskursübersicht — knowing what is being discussed, by whom,
-  with which methods. Typical: a new empirical study on media use in schools —
-  phenomenally relevant for Medienbildung, but no specific stimulation for the
-  researcher's own theoretical or project work.
+**scannen** — useful as background or phenomenal indicator:
+  The article touches the observation field and offers something worth noting
+  (bemerkenswert), but does not provide concrete resources for the researcher's own
+  argumentation. Typical: a foundational text on algorithmic opacity — phenomenally
+  relevant, useful background, but no direct contribution → scannen.
 
-**lesenswert** — offers Anregungspotenzial for thinking or projects:
-  The article could productively stimulate the researcher's work. This includes:
-  - A new conceptual move, counter-position, or reframing relevant to published work
-  - A perspective, case, or method productive for an ACTIVE RESEARCH PROJECT
-    (the connection may be structural/conceptual, not lexical — see project descriptions)
-  - An article that operates within the same problematic from a different tradition
-    (productive friction, not just overlap)
-  - Work that the researcher should be aware of to position their own arguments
-  Typical: an article on collective mourning in the Anthropocene — different
-  theoretical tradition (Freud, not Barad), but the phenomenal case and the
-  educational framing are directly productive for Cultural Resilience/Rootedness.
+**lesenswert** — ONLY when there is concrete resource transfer:
+  The article extends, contradicts, or imports something specific. There is a clearly
+  nameable gain: a new argument, a method, a counter-example, a conceptual resource.
+  Shared reference frames alone are NOT enough. "parallelisiert" alone is NOT enough.
+  Typical: an article explicitly cites the researcher's work and extends a concept
+  with new empirical cases → lesenswert.
 
 **pflichtlektuere** — central to current work, must read immediately.
 
 === PROCEDURE ===
 1. Read the new article carefully (title, abstract, references).
-2. **Immediate decision**: If clearly outside the observation field — call
-   `submit_digest_entry` with verdict="ignorieren" immediately. Minimal output.
-3. If potentially relevant, check THREE dimensions:
-   (a) **Published work**: Are there substantive connections to the publication record?
-       Pick 2–4 candidates, load with `read_publication(pub_id, search_term)`.
-   (b) **Active projects**: Does the article offer Anregungspotenzial for a research
-       project? A DIFFERENT theoretical tradition working on the SAME problematic is
-       a positive signal, not a negative one — it means productive friction.
-       An article on "planetary Bildung" from Freire/Vygotsky is relevant for Cultural
-       Resilience precisely BECAUSE it approaches the problem differently.
-   (c) **Discourse awareness**: Would {RESEARCHER_NAME} want to know about this to
-       maintain Diskursübersicht? → fill `bemerkenswert`.
-4. Decide verdict based on the strongest dimension. Project relevance alone
-   can justify "lesenswert" even without direct connections to published work.
+2. **Immediate decision**: If clearly irrelevant — call `submit_digest_entry` with
+   verdict="ignorieren" immediately. Minimal output: kernthese 1 sentence, empty
+   bezuege, empty bemerkenswert. NO `read_publication`. Typical: pure psychometrics,
+   clinical studies, applied didactics without theoretical connection.
+3. If potentially relevant, check both:
+   (a) Are there substantive connections to the published works? Pick 2–4 candidates
+       from the publication list, overlaps in named_thinkers are a strong lever.
+       Load candidates with `read_publication(pub_id)` (use `search_term` to target).
+   (b) Is there a second-order observation? Ask: "Would {RESEARCHER_NAME} want to
+       know this, even without reading the article?" → fill `bemerkenswert`.
+4. Decide verdict. Fill `bezuege` and/or `bemerkenswert` accordingly.
 
 === RULES ===
 - Cite the researcher's work in `bezuege` ONLY after reading the full text. No
@@ -125,41 +108,8 @@ irritate, extend, or contextualize the researcher's work.
 === PUBLICATION RECORD ({SINCE_YEAR}+) ==="""
 
 
-def _build_projects_block() -> str:
-    """Format active research projects as a prompt section."""
-    if not PROJECTS_JSON.exists():
-        return ""
-    try:
-        data = json.loads(PROJECTS_JSON.read_text(encoding="utf-8"))
-    except Exception:
-        return ""
-    active = [p for p in data.get("projects", []) if p.get("status") == "active"]
-    if not active:
-        return ""
-    lines = [
-        "\n=== ACTIVE RESEARCH PROJECTS ===",
-        "These projects shift what counts as relevant. An article that would otherwise be",
-        '"scannen" may become "lesenswert" if it connects to an active project.',
-        "The connection is often conceptual, not lexical — the project's terminology may",
-        "not appear in the article. Use the relevance shifts below as bridging heuristics.\n",
-    ]
-    for p in active:
-        lines.append(f"[{p.get('key', '?')}] {p.get('name', '?')}")
-        if p.get("period"):
-            lines.append(f"  Period: {p['period']}")
-        if p.get("description"):
-            lines.append(f"  {p['description']}")
-        for rs in p.get("relevance_shifts", []):
-            lines.append(f"  → {rs}")
-        if p.get("connected_publications"):
-            lines.append(f"  Publications: {', '.join(p['connected_publications'])}")
-        lines.append("")
-    return "\n".join(lines)
-
-
 def build_system_prompt(summaries: dict[str, dict], outro: str | None = None) -> str:
-    projects_block = _build_projects_block()
-    lines = [SYSTEM_INTRO, projects_block, outro or SYSTEM_OUTRO, ""]
+    lines = [SYSTEM_INTRO, outro or SYSTEM_OUTRO, ""]
     # Sortiert nach Jahr absteigend — aktuelles zuerst
     sorted_pubs = sorted(
         summaries.items(),
@@ -673,52 +623,56 @@ ASSESSMENT_OUTRO = f"""
    between the article and the researcher's published arguments. Shared reference frames
    alone (both citing Haraway) do NOT constitute a bezug.
 2. **bemerkenswert** (second-order observations): Worth knowing even without reading —
-   unusual methods, cross-disciplinary imports, phenomenal indicators, discourse shifts.
+   unusual methods, cross-disciplinary imports, phenomenal indicators.
+
+"ignorieren" = neither substantive connections nor noteworthy observations.
 
 === VERDICT CALIBRATION ===
-The purpose of this digest is to maintain Diskursübersicht and identify articles with
-Anregungspotenzial — stimulation potential for the researcher's thinking and projects.
-This is NOT about "resource transfer" or direct applicability.
-
-- **ignorieren**: Genuinely outside the observation field. No connection to the
-  researcher's disciplines, projects, or discourse spaces. Typical: clinical
-  pharmacology, sports biomechanics, accounting standards.
-- **scannen**: Within the observation field, useful for Diskursübersicht. The article
-  touches the researcher's themes but offers no specific stimulation for current
-  thinking or project work.
-- **lesenswert**: Offers Anregungspotenzial — the article could productively
-  stimulate the researcher's work. This includes:
-  (a) Substantive connections to the published work (extends, contradicts, imports)
-  (b) Productive relevance for an ACTIVE RESEARCH PROJECT — even from a different
-      theoretical tradition. An article on "planetary Bildung" from Freire/Vygotsky
-      is relevant for Cultural Resilience precisely BECAUSE the different approach
-      offers productive friction. Different tradition + same problematic = lesenswert.
-  (c) A conceptual move, case, or method that the researcher should know about to
-      position their own arguments.
+The threshold for "lesenswert" is HIGH. Most articles are "scannen" or "ignorieren".
+- **ignorieren**: Shared Haraway/Barad/Rancière citations alone are NOT enough.
+  No transfer of arguments or concepts → ignorieren.
+- **scannen**: Touches the observation field, maybe something bemerkenswert, but no
+  concrete resource transfer for the researcher's own argumentation.
+- **lesenswert**: ONLY with concrete resource transfer — extends, contradicts, imports
+  something specific. "parallelisiert" alone is NEVER enough for lesenswert.
 - **pflichtlektuere**: Central to current work, must read immediately.
 
 === PROCEDURE (ASSESSMENT PHASE) ===
 You have NO access to full texts. You work only with the publication index above.
 
 1. Read the new article carefully (title, abstract, references).
-2. **Immediate decision**: If clearly outside the observation field → call
-   `submit_digest_entry` with verdict="ignorieren" immediately.
-3. Check THREE dimensions:
-   (a) **Published work**: Are there substantive connections to the publication record?
-   (b) **Active projects**: Does the article offer Anregungspotenzial for a research
-       project? Check the project descriptions and relevance_shifts above.
-       A DIFFERENT theoretical tradition working on the SAME problematic is a
-       POSITIVE signal — it means productive friction, not irrelevance.
-   (c) **Discourse awareness**: Is this worth noting for Diskursübersicht?
-4. Generate candidate_reads when you see a specific connection to a publication that
-   would benefit from full-text verification. Maximum 2 candidate_reads.
-5. Fill bemerkenswert independently — second-order observations do not require
-   full-text verification.
-6. Decide verdict based on the STRONGEST dimension. Project relevance alone can
-   justify "lesenswert" even without direct connections to published work.
+2. **Immediate decision**: If clearly irrelevant → call `submit_digest_entry` with
+   verdict="ignorieren" immediately. Empty bezuege, empty candidate_reads, empty
+   bemerkenswert. Typical: pure psychometrics, clinical studies, applied didactics.
+3. If the article is in the researcher's broad field but has no SPECIFIC argumentative
+   connection → verdict="scannen" with empty candidate_reads. Fill bemerkenswert if
+   applicable. Do NOT generate candidate_reads just because the article is thematically
+   adjacent. "Touches the observation field" = scannen, not verification.
+4. Generate candidate_reads ONLY when ALL of these hold:
+   (a) The article's references, abstract, or methodology suggest a CONCRETE transfer
+       of arguments, concepts, or methods to/from the researcher's specific publications.
+   (b) You can name the SPECIFIC publication and the SPECIFIC argument/concept involved.
+   (c) The connection goes beyond shared reference frames (both citing Haraway/Barad/
+       Rancière is NOT enough) and beyond thematic adjacency (both discussing "digitality"
+       or "cultural education" is NOT enough).
+   Examples that DO warrant candidate_reads:
+   - The article explicitly cites the researcher's work.
+   - The article develops a concept that directly extends or contradicts a specific
+     argument in a specific publication (nameable, not vague).
+   - The article imports a specific method from the researcher's field into a new context.
+   Examples that do NOT warrant candidate_reads:
+   - "Both discuss postdigitality" → scannen, no candidates.
+   - "Shared Haraway/Barad framework" → scannen, no candidates.
+   - "Relevant to the field of media education" → scannen, no candidates.
+5. Fill bemerkenswert independently of candidate_reads — second-order observations do
+   not require full-text verification.
 
 === RULES ===
 - Write NO bezuege. The field stays empty. Bezuege require full-text reading.
+- candidate_reads is EXPENSIVE (triggers a verification phase). Generate only when
+  you are confident that reading the full text will reveal a substantive connection
+  that cannot be assessed from the summary alone.
+- Maximum 2 candidate_reads. More is almost never needed.
 - bemerkenswert may and should be filled when applicable.
 
 === PUBLICATION RECORD ({SINCE_YEAR}+) ==="""
