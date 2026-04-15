@@ -296,6 +296,12 @@ def cmd_digest(args: argparse.Namespace) -> int:
         return 0
 
     total_cost = 0.0
+    # Cost safety: after the first 3 articles, check if per-article cost is plausible.
+    # With prompt caching, assessment should cost ~$0.01-0.05/article.
+    # Without caching, it costs ~$0.40+/article. If we detect this, abort early.
+    COST_CHECK_AFTER = 3
+    MAX_COST_PER_ARTICLE = 0.15  # $0.15 — generous margin above cached cost
+
     print(f"\n[digest] === Agent ({len(to_analyze)} Artikel, {model}, assess→verify) ===")
     for i, sa in enumerate(to_analyze, 1):
         journal_name = sa.journal_full or sa.journal_short
@@ -309,8 +315,28 @@ def cmd_digest(args: argparse.Namespace) -> int:
             total_cost += cost
             verdict = (result["agent_result"].get("entry") or {}).get("verdict", "?")
             print(f"[digest] ✓ {verdict}  (${cost:.3f})")
+        except agent_mod.CacheNotHitError as e:
+            print(f"\n[digest] ABBRUCH: Prompt-Cache greift nicht. {e}")
+            print(f"[digest] Bisher: {i-1} Artikel, ${total_cost:.3f}")
+            return 1
         except Exception as e:
             print(f"[digest] FEHLER bei {sa.id}: {e}")
+
+        # Cost safety check after first N articles
+        if i == COST_CHECK_AFTER and total_cost > 0:
+            avg_cost = total_cost / i
+            projected = avg_cost * len(to_analyze)
+            if avg_cost > MAX_COST_PER_ARTICLE:
+                print(f"\n[digest] ⚠ KOSTEN-WARNUNG: ${avg_cost:.3f}/Artikel "
+                      f"(erwartet <${MAX_COST_PER_ARTICLE:.2f})")
+                print(f"[digest] Hochrechnung: ${projected:.2f} für {len(to_analyze)} Artikel")
+                print(f"[digest] Prompt-Caching scheint NICHT zu funktionieren.")
+                print(f"[digest] ABBRUCH nach {i} Artikeln. "
+                      f"Bisherige Kosten: ${total_cost:.3f}")
+                return 1
+            else:
+                print(f"[digest] ✓ Kosten-Check: ${avg_cost:.3f}/Artikel — "
+                      f"Cache ok, Hochrechnung: ${projected:.2f}")
 
     print(f"\n[digest] Gesamtkosten: ${total_cost:.3f}")
     return 0

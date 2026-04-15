@@ -10,8 +10,19 @@ Der Agent:
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from typing import Any
+
+
+class CacheNotHitError(RuntimeError):
+    """Raised when prompt caching fails and costs would be excessive."""
+    pass
+
+
+# Minimum expected cache-read ratio after the first call (which always writes).
+# If the second+ call reads < 50% from cache, something is wrong.
+_MIN_CACHE_READ_RATIO = 0.5
 
 from journal_bot.citation_tracker import find_citations, format_for_agent
 from journal_bot.enrichment import enrich
@@ -513,6 +524,23 @@ def batch_screen(
         if usage:
             usage_dump = usage.model_dump() if hasattr(usage, "model_dump") else {}
             cost = usage_dump.get("cost") or 0.0
+
+            # Cache safety: after batch 2+, verify cache is hitting
+            if batch_num >= 2:
+                pd = usage_dump.get("prompt_tokens_details") or {}
+                cached = pd.get("cached_tokens") or 0
+                total_prompt = usage.prompt_tokens or 1
+                ratio = cached / total_prompt
+                if ratio < _MIN_CACHE_READ_RATIO:
+                    msg = (
+                        f"[screen] CACHE-WARNUNG: Batch {batch_num} hat nur "
+                        f"{ratio:.0%} Cache-Hits ({cached}/{total_prompt} Tokens). "
+                        f"Erwartete Kosten pro Batch ohne Cache: "
+                        f"~${total_prompt / 1e6 * 15:.2f}. "
+                        f"ABBRUCH — bitte Cache-Konfiguration prüfen."
+                    )
+                    print(msg, file=sys.stderr)
+                    raise CacheNotHitError(msg)
         total_cost += cost
 
         # Parse response
@@ -759,6 +787,7 @@ def run_agent(
     total_cached_read = 0
     total_cache_write = 0
     total_cost_usd = 0.0
+    _cache_verified = False  # set True after first successful cache read
 
     for it in range(1, max_iterations + 1):
         if verbose:
@@ -777,14 +806,18 @@ def run_agent(
             # OpenRouter-spezifische Extras im usage-Dump
             usage_dump = usage.model_dump() if hasattr(usage, "model_dump") else {}
             pd = usage_dump.get("prompt_tokens_details") or {}
-            total_cached_read += pd.get("cached_tokens") or 0
+            cached = pd.get("cached_tokens") or 0
+            total_cached_read += cached
             total_cache_write += pd.get("cache_write_tokens") or 0
             total_cost_usd += usage_dump.get("cost") or 0.0
-            if verbose and (pd.get("cached_tokens") or pd.get("cache_write_tokens")):
+            if verbose and (cached or pd.get("cache_write_tokens")):
                 print(
-                    f"[agent] cache: read={pd.get('cached_tokens', 0)}, "
+                    f"[agent] cache: read={cached}, "
                     f"write={pd.get('cache_write_tokens', 0)}"
                 )
+            # Mark cache as verified once we see a successful read
+            if cached > 0:
+                _cache_verified = True
 
         msg = resp.choices[0].message
         finish = resp.choices[0].finish_reason
