@@ -149,6 +149,7 @@ _PROJECT_SIGNAL_KEYWORDS = {
         "multispecies", "plant ethics", "care ethics", "rootedness",
         "resourcefulness", "futurability", "post-anthropocentric",
         "posthuman", "relational ontology", "agential realism",
+        "auschwitz", "shoah", "holocaust",
     ],
     "metakubi": [
         "transformation", "morphogenesis", "metamorphosis", "transgression",
@@ -196,7 +197,22 @@ _PROJECT_CONTEXT_RULES = {
             "art", "arts", "aesthetic", "cultural", "creativity", "creative",
             "music", "pedagog", "teacher", "classroom", "education",
             "learning", "bias", "decolonial", "indigenous", "representation",
-            "training data", "artistic", "co-creation", "prompt",
+            "training data", "artistic", "co-creation", "prompt", "colonial",
+            "hegemony", "lifeworld", "power", "manipulation", "control",
+            "subjectiv", "xr", "extended reality", "ästhet", "kunst",
+            "musik", "bildung", "unterricht",
+        ],
+        "block_any": [
+            "healthcare", "medicine", "medical", "clinical", "patient",
+            "hospital", "project management", "public service",
+            "administrative", "legal process", "court", "labour", "labor",
+            "interview",
+        ],
+        "rescue_any": [
+            "art", "arts", "aesthetic", "cultural", "creative", "artistic",
+            "bias", "decolonial", "indigenous", "representation",
+            "training data", "co-creation", "prompt", "chatgpt",
+            "generative ai", "llm", "xr", "extended reality",
         ],
         "min_score": 3,
         "strong_score": 5,
@@ -204,8 +220,22 @@ _PROJECT_CONTEXT_RULES = {
     "metakubi": {
         "context_any": [
             "arts", "cultural", "education", "school", "schulkultur",
-            "review", "mapping", "bibliometric", "meta-analysis",
-            "research synthesis", "discourse", "institution",
+            "schule", "schul", "unterricht", "bildung", "transformation",
+            "krise", "digitalisierungsprozess", "digitalisierungsprozesse",
+            "mapping", "bibliometric", "meta-analysis",
+            "research synthesis", "systematic review", "institutional",
+        ],
+        "hard_block_any": ["interview"],
+        "block_any": [
+            "healthcare", "medicine", "medical", "clinical", "patient",
+            "hospital", "project management", "public service",
+            "administrative", "legal process", "court", "labour", "labor",
+            "workplace",
+        ],
+        "rescue_any": [
+            "arts", "cultural", "school", "schule", "schul",
+            "schulkultur", "systematic review", "meta-analysis",
+            "mapping", "bibliometric", "research synthesis", "krise",
         ],
         "min_score": 3,
         "strong_score": 5,
@@ -214,7 +244,7 @@ _PROJECT_CONTEXT_RULES = {
         "context_any": [
             "arts", "music", "aesthetic", "cultural", "youth",
             "community", "network", "teacher", "training", "diversity",
-            "postcolonial", "intersectional",
+            "postcolonial", "intersectional", "kunst", "musik", "bildung",
         ],
         "min_score": 3,
         "strong_score": 5,
@@ -223,6 +253,31 @@ _PROJECT_CONTEXT_RULES = {
         "context_any": [
             "aesthetic", "arts", "music", "cultural", "teacher",
             "citizenship", "sovereignty", "pedagog", "education",
+            "bildung", "ästhet", "xr", "extended reality", "kunst",
+            "musik",
+        ],
+        "min_score": 3,
+        "strong_score": 5,
+    },
+    "cultural_resilience": {
+        "context_any": [
+            "education", "pedagog", "bildung", "erziehung", "aesthetic",
+            "cultural", "ecological", "climate", "anthropocene", "mourning",
+            "grief", "hope", "justice", "resistance", "care", "affect",
+            "multispecies", "posthuman", "subjectiv", "body", "bodies",
+            "media", "shoah", "auschwitz", "holocaust",
+        ],
+        "block_any": [
+            "healthcare", "medicine", "medical", "clinical", "patient",
+            "hospital", "project management", "public service",
+            "administrative", "legal process", "court", "interview",
+        ],
+        "rescue_any": [
+            "aesthetic", "cultural", "ecological", "climate",
+            "anthropocene", "mourning", "grief", "hope", "justice",
+            "resistance", "affect",
+            "multispecies", "posthuman", "shoah", "auschwitz", "holocaust",
+            "body", "bodies", "subjectiv",
         ],
         "min_score": 3,
         "strong_score": 5,
@@ -545,6 +600,10 @@ def _project_overlap_words(project: dict[str, Any]) -> set[str]:
     return _text_words(project_text) - _PROJECT_OVERLAP_STOP
 
 
+def _match_any_cues(cues: list[str], text_blob: str) -> list[str]:
+    return [cue for cue in cues if _cue_hits_text(cue, text_blob)]
+
+
 def _project_match_score(project: dict[str, Any], text_blob: str, text_words: set[str]) -> int:
     score = 0
     phrase_score = 0
@@ -562,10 +621,15 @@ def _project_match_score(project: dict[str, Any], text_blob: str, text_words: se
     if not rules:
         return score
 
-    context_hits = sum(
-        1 for cue in rules["context_any"]
-        if _cue_hits_text(cue, text_blob)
-    )
+    if _match_any_cues(rules.get("hard_block_any", []), text_blob):
+        return 0
+
+    block_hits = _match_any_cues(rules.get("block_any", []), text_blob)
+    rescue_hits = _match_any_cues(rules.get("rescue_any", []), text_blob)
+    if block_hits and not rescue_hits:
+        return 0
+
+    context_hits = len(_match_any_cues(rules["context_any"], text_blob))
     score += min(context_hits, 2)
     if score < rules["min_score"]:
         return 0
@@ -881,6 +945,13 @@ def derive_attention_profile(
 
     bemerkenswert = entry.get("bemerkenswert") or []
     bezuege = entry.get("bezuege") or []
+    article_blob = "\n".join(
+        [
+            title or "",
+            abstract or "",
+            openalex_abstract or "",
+        ]
+    ).lower()
     text_blob = "\n".join(
         [
             title or "",
@@ -892,7 +963,7 @@ def derive_attention_profile(
             "\n".join(bemerkenswert),
         ]
     ).lower()
-    project_hits = detect_project_hits(text_blob)
+    project_hits = detect_project_hits(article_blob)
     trigger_author_hit = any(
         trigger in " ".join(authors).lower() for trigger in TRIGGER_AUTHORS
     )

@@ -95,6 +95,14 @@ python3 scripts/backfill_attention_metadata.py
 
 Perspektivisch: Web-UI mit strukturierter Ablage, Zotero-1-Click, Escalation-Button.
 
+## Rückkopplung
+
+Wenn sich genügend User-Overrides angesammelt haben, folgt darauf
+[Workflow 05: Override-Kalibrierung](05_override_kalibrierung.md).
+Dort werden Fehlmuster aus `articles.db` lokal ausgewertet und als
+deterministische Regeln, Projekt-Shifts oder Prompt-Anpassungen
+zurück in die Pipeline gespeist.
+
 ## Tier-System
 
 | Tier | Journals | Verfahren | Kosten/Artikel |

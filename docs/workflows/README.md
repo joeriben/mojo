@@ -10,6 +10,7 @@ Dokumentation der Kern-Workflows für den autonomen Claude-Agenten innerhalb der
 | 02 | [Diskursraum-Pflege](02_diskursraum_pflege.md) | quartalsweise | ~$0.01 | Profile → Crosscut → Suggest → CRUD |
 | 03 | [Wöchentlicher Digest](03_woechentlicher_digest.md) | wöchentlich | ~$1.75 | Fetch → Screening → Tier-Agent → DB |
 | 04 | [Trend-Analyse](04_trend_analyse.md) | quartalsweise | ~$1.50 | LLM-Trends + Biblio pro Diskursraum |
+| 05 | [Override-Kalibrierung](05_override_kalibrierung.md) | bei Bedarf | $0 | Overrides → Regelhinweise → Heuristik/Prompt/Projekt-Update |
 
 ## Abhängigkeiten
 
@@ -17,7 +18,9 @@ Dokumentation der Kern-Workflows für den autonomen Claude-Agenten innerhalb der
 01 Journal-Evaluation (+ Tier-Zuordnung A/B/C)
  └→ 02 Diskursraum-Pflege (neue Journals brauchen Cluster)
       └→ 03 Wöchentlicher Digest (regelmäßig)
-           └→ 04 Trend-Analyse (wenn genug Daten)
+           ├→ 04 Trend-Analyse (wenn genug Daten)
+           └→ 05 Override-Kalibrierung (bei genug User-Feedback)
+                └→ zurück in 03 Wöchentlicher Digest
 ```
 
 ## Datendateien
@@ -47,6 +50,8 @@ mojo digest --no-screen                 # Screening überspringen
 mojo trends --cluster KEY               # LLM-Trendanalyse (Opus)
 mojo biblio --cluster KEY               # Bibliometrie (kein LLM)
 mojo coverage --cluster KEY             # Journal-Zitations-Coverage
+python3 scripts/analyze_overrides.py --suggest-rules   # Override-Kalibrierung
+python3 scripts/backfill_attention_metadata.py         # Attention-Metadaten neu berechnen
 
 # --- Journal-Management ---
 mojo scout                              # Journal-Evaluation (Haiku + Opus)
