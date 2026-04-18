@@ -192,6 +192,8 @@ _EMERGENT_MOTIF_STOP = _STOP | {
     "analysiert", "analysiere", "methodisch", "theoretisch", "theorie",
     "praxis", "diskurs", "screening", "scannen", "ignorieren", "lesenswert",
     "pflichtlektüre", "agent", "verdict", "begründung", "bemerkenswert",
+    "about", "should", "otherwise", "current", "beyond", "understanding",
+    "journey",
 }
 
 
@@ -581,8 +583,23 @@ def _normalize_motif_token(token: str) -> str:
     return token
 
 
+def _motif_source_title(title: str) -> str:
+    raw = (title or "").strip()
+    if not raw:
+        return ""
+    if raw.lower().startswith("review of "):
+        last_year_match = None
+        for match in re.finditer(r"\(\d{4}\)\.\s*", raw):
+            last_year_match = match
+        if last_year_match:
+            raw = raw[last_year_match.end():]
+        elif ":" in raw:
+            raw = raw.split(":", 1)[1]
+    return raw
+
+
 def _article_motif_tokens(article: Any) -> set[str]:
-    text_blob = (getattr(article, "title", "") or "").lower()
+    text_blob = _motif_source_title(getattr(article, "title", "")).lower()
     tokens = {
         _normalize_motif_token(token)
         for token in re.findall(r"[\w-]{5,}", text_blob)
@@ -593,6 +610,7 @@ def _article_motif_tokens(article: Any) -> set[str]:
 def suggest_emergent_motifs(
     articles: list[Any],
     *,
+    background_articles: list[Any] | None = None,
     min_articles: int = 3,
     min_journals: int = 2,
     limit: int = 4,
@@ -606,6 +624,7 @@ def suggest_emergent_motifs(
     token_strong: Counter[str] = Counter()
     article_tokens: dict[str, set[str]] = {}
     article_lookup: dict[str, Any] = {}
+    background_token_articles: dict[str, set[str]] = defaultdict(set)
 
     for article in articles:
         article_id = getattr(article, "id", "")
@@ -624,11 +643,36 @@ def suggest_emergent_motifs(
             if getattr(article, "discourse_indicator", "") == "starker_indikator":
                 token_strong[token] += 1
 
+    if background_articles is None:
+        background_articles = []
+    candidate_ids = set(article_lookup)
+    for article in background_articles:
+        article_id = getattr(article, "id", "")
+        if not article_id or article_id in candidate_ids:
+            continue
+        for token in _article_motif_tokens(article):
+            background_token_articles[token].add(article_id)
+
+    background_total = max(
+        1,
+        len({getattr(article, "id", "") for article in background_articles if getattr(article, "id", "")}) - len(candidate_ids),
+    )
+    candidate_total = max(1, len(article_lookup))
+    distinctiveness: dict[str, float] = {}
+    for token, article_ids in token_articles.items():
+        article_count = len(article_ids)
+        background_count = len(background_token_articles[token])
+        distinctiveness[token] = (article_count / candidate_total) / (
+            (background_count + 1) / background_total
+        )
+
     candidates: list[EmergentMotifSuggestion] = []
     for token, article_ids in token_articles.items():
         article_count = len(article_ids)
         journal_count = len(token_journals[token])
         if article_count < min_articles or journal_count < min_journals:
+            continue
+        if distinctiveness.get(token, 0.0) < 2.0:
             continue
 
         co_tokens: Counter[str] = Counter()
@@ -640,7 +684,11 @@ def suggest_emergent_motifs(
         companion = ""
         companion_count = 0
         for co_token, count in co_tokens.most_common():
-            if count >= max(2, min_articles - 1):
+            if (
+                count >= max(2, min_articles - 1)
+                and count / max(article_count, 1) >= 0.4
+                and distinctiveness.get(co_token, 0.0) >= 1.8
+            ):
                 companion = co_token
                 companion_count = count
                 break
@@ -654,6 +702,7 @@ def suggest_emergent_motifs(
             + journal_count * 1.5
             + token_strong[token] * 1.2
             + companion_count * 0.3
+            + distinctiveness[token] * 2.5
         )
         candidates.append(
             EmergentMotifSuggestion(

@@ -78,7 +78,11 @@ def main() -> int:
                 group_articles = [
                     article for article in group_articles if (article.year or 0) >= min_year
                 ]
-        suggestions = suggest_emergent_motifs(group_articles, limit=args.limit)
+        suggestions = suggest_emergent_motifs(
+            group_articles,
+            background_articles=by_group[group],
+            limit=args.limit,
+        )
         if not suggestions:
             print("  (keine stabilen emergenten Motive)")
             continue

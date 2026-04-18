@@ -343,7 +343,10 @@ def diskursraum(cluster_key: str | None = None):
                 unassigned_articles = [
                     a for a in unassigned_articles if (a.year or 0) >= max_year - 2
                 ]
-        for suggestion in suggest_emergent_motifs(unassigned_articles):
+        for suggestion in suggest_emergent_motifs(
+            unassigned_articles,
+            background_articles=ordered,
+        ):
             sample_articles = [
                 article for article in ordered if article.id in set(suggestion.article_ids)
             ][:3]
