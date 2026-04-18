@@ -173,6 +173,62 @@ _PROJECT_SIGNAL_KEYWORDS = {
     ],
 }
 
+_PROJECT_OVERLAP_STOP = _STOP | {
+    "active", "agency", "ai", "algorithmic", "algorithms", "artificial",
+    "arts", "basis", "becoming", "care", "change", "collective",
+    "condition", "conditions", "context", "contexts", "crisis", "crises",
+    "critical", "data", "decision", "describes", "digitality",
+    "digitalization", "diversity", "ethics", "field", "future", "futures",
+    "global", "governance", "human", "humannonhuman", "identity",
+    "inheritances", "intelligence", "international", "investigates",
+    "labor", "management", "model", "models", "modules", "music",
+    "networked", "nonhuman", "orders", "others", "participatory", "period",
+    "post", "postdigital", "practice", "practices", "professional",
+    "programme", "programme", "relates", "responding", "review", "social",
+    "societal", "structures", "supported", "suppoerted", "systemic",
+    "teaching", "terms", "theory", "training", "transformation",
+    "transformations", "transformational", "work", "world",
+}
+
+_PROJECT_CONTEXT_RULES = {
+    "ai4artsed": {
+        "context_any": [
+            "art", "arts", "aesthetic", "cultural", "creativity", "creative",
+            "music", "pedagog", "teacher", "classroom", "education",
+            "learning", "bias", "decolonial", "indigenous", "representation",
+            "training data", "artistic", "co-creation", "prompt",
+        ],
+        "min_score": 3,
+        "strong_score": 5,
+    },
+    "metakubi": {
+        "context_any": [
+            "arts", "cultural", "education", "school", "schulkultur",
+            "review", "mapping", "bibliometric", "meta-analysis",
+            "research synthesis", "discourse", "institution",
+        ],
+        "min_score": 3,
+        "strong_score": 5,
+    },
+    "comearts": {
+        "context_any": [
+            "arts", "music", "aesthetic", "cultural", "youth",
+            "community", "network", "teacher", "training", "diversity",
+            "postcolonial", "intersectional",
+        ],
+        "min_score": 3,
+        "strong_score": 5,
+    },
+    "diaes_kubi": {
+        "context_any": [
+            "aesthetic", "arts", "music", "cultural", "teacher",
+            "citizenship", "sovereignty", "pedagog", "education",
+        ],
+        "min_score": 3,
+        "strong_score": 5,
+    },
+}
+
 _EMERGENT_MOTIF_STOP = _STOP | {
     "artificial", "intelligence", "generative", "algorithmic", "algorithms",
     "chatgpt", "llms", "large", "language", "model", "models", "platform",
@@ -478,12 +534,7 @@ def _load_active_projects(path: Path = PROJECTS_JSON) -> list[dict[str, Any]]:
     return [p for p in data.get("projects", []) if p.get("status") == "active"]
 
 
-def _project_match_score(project: dict[str, Any], text_blob: str, text_words: set[str]) -> int:
-    score = 0
-    for phrase in _PROJECT_SIGNAL_KEYWORDS.get(project.get("key", ""), []):
-        if phrase.lower() in text_blob:
-            score += 2 if " " in phrase else 1
-
+def _project_overlap_words(project: dict[str, Any]) -> set[str]:
     project_text = " ".join(
         [
             project.get("name", ""),
@@ -491,8 +542,35 @@ def _project_match_score(project: dict[str, Any], text_blob: str, text_words: se
             " ".join(project.get("relevance_shifts", [])),
         ]
     )
-    overlap = text_words & _text_words(project_text)
-    score += min(len(overlap), 4)
+    return _text_words(project_text) - _PROJECT_OVERLAP_STOP
+
+
+def _project_match_score(project: dict[str, Any], text_blob: str, text_words: set[str]) -> int:
+    score = 0
+    phrase_score = 0
+    for phrase in _PROJECT_SIGNAL_KEYWORDS.get(project.get("key", ""), []):
+        if phrase.lower() in text_blob:
+            hit_score = 2 if " " in phrase else 1
+            score += hit_score
+            phrase_score += hit_score
+
+    overlap = text_words & _project_overlap_words(project)
+    overlap_score = min(len(overlap), 4)
+    score += overlap_score
+
+    rules = _PROJECT_CONTEXT_RULES.get(project.get("key", ""))
+    if not rules:
+        return score
+
+    context_hits = sum(
+        1 for cue in rules["context_any"]
+        if _cue_hits_text(cue, text_blob)
+    )
+    score += min(context_hits, 2)
+    if score < rules["min_score"]:
+        return 0
+    if context_hits == 0 and phrase_score < rules["strong_score"]:
+        return 0
     return score
 
 
