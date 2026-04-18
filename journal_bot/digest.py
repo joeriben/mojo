@@ -52,6 +52,9 @@ def _merge_attention_metadata(entry: dict, profile: dict) -> dict:
     merged.setdefault("selection_mode", profile["selection_mode"])
     merged.setdefault("discourse_indicator", profile["discourse_indicator"])
     merged.setdefault("signal_group", profile["signal_group"])
+    merged.setdefault("suggested_subgroup", profile["suggested_subgroup"])
+    merged.setdefault("suggested_subgroup_reason", profile["suggested_subgroup_reason"])
+    merged.setdefault("suggested_subgroup_confidence", profile["suggested_subgroup_confidence"])
     if profile.get("project_hits") and "project_hits" not in merged:
         merged["project_hits"] = profile["project_hits"]
     return merged
@@ -116,6 +119,9 @@ def process_article(
             selection_mode=attention.selection_mode,
             discourse_indicator=attention.discourse_indicator,
             signal_group=attention.signal_group,
+            suggested_subgroup=attention.suggested_subgroup,
+            suggested_subgroup_reason=attention.suggested_subgroup_reason,
+            suggested_subgroup_confidence=attention.suggested_subgroup_confidence,
         )
 
     md = agent_mod.render_markdown(result)

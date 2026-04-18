@@ -85,11 +85,47 @@
       <span class="badge badge-lesenswert">{{ group.strong_count }} stark</span>
       {% endif %}
     </div>
+    {% if group.subgroups %}
+    <div style="margin-top:.3rem; font-size:.82rem; color:var(--muted);">
+      Vorschläge:
+      {% for subgroup, count in group.subgroups %}
+      <span style="margin-right:.5rem;"><code>{{ subgroup }}</code> ({{ count }})</span>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if group.emergent_suggestions %}
+    <div style="margin-top:.6rem; padding:.7rem .8rem; background:rgba(0,0,0,.02); border:1px solid var(--border); border-radius:8px;">
+      <div style="font-size:.82rem; color:var(--muted); margin-bottom:.35rem;">
+        Emergent aus unzugeordneten starken Restartikeln der letzten 3 Jahre:
+      </div>
+      {% for motif in group.emergent_suggestions %}
+      <div style="margin-top:.45rem;">
+        <strong><code>{{ motif.label }}</code></strong>
+        <span style="font-size:.82rem; color:var(--muted);">
+          {{ motif.article_count }} Artikel in {{ motif.journal_count }} Journals
+          {% if motif.strong_count %} · {{ motif.strong_count }} stark{% endif %}
+        </span>
+        <div style="margin-top:.18rem; font-size:.85rem;">
+          {% for a in motif.articles %}
+          <div class="art-row" style="margin:.15rem 0 0 0;">
+            <span class="badge badge-{{ a.effective_verdict }}">{{ verdict_label.get(a.effective_verdict, a.effective_verdict) }}</span>
+            {{ title_link(a) }}
+            <span class="art-year">{{ a.year }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
     <div style="margin-top:.4rem;">
       {% for a in group.articles %}
       <div class="art-row">
         <span class="badge badge-{{ a.effective_verdict }}">{{ verdict_label.get(a.effective_verdict, a.effective_verdict) }}</span>
         {{ title_link(a) }}
+        {% if a.suggested_subgroup %}
+        <span style="font-size:.78rem; color:var(--muted);"><code>{{ a.suggested_subgroup }}</code></span>
+        {% endif %}
         <span class="art-year">{{ a.year }}</span>
       </div>
       {% endfor %}

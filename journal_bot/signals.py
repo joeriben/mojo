@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Any
@@ -29,6 +30,100 @@ SELECTION_MODES = {
 }
 DISCOURSE_INDICATORS = {
     "kein_indikator", "schwacher_indikator", "starker_indikator",
+}
+
+_SUBGROUP_SEEDS = {
+    "ai4artsed": {
+        "critical_ai_literacy": [
+            "ai literacy", "critical ai", "critical literacy", "media literacy",
+            "literacy scale", "assessment", "competence", "instrumental",
+        ],
+        "bias_decoloniality": [
+            "bias", "decolonial", "indigenous", "hegemony",
+            "western", "training data", "cultural production",
+        ],
+        "generative_co_creation": [
+            "generative ai", "chatgpt", "co-creation", "creative ai",
+            "artistic expression", "human-ai", "diffusion", "clip",
+        ],
+        "prompting_as_pedagogy": [
+            "prompting", "prompt engineering", "prompt design",
+            "pedagogical practice", "classroom use",
+        ],
+        "arts_music_teacher_ed": [
+            "arts education", "music education", "art education",
+            "arts teacher", "music teacher", "arts-based",
+            "aesthetic education",
+        ],
+        "xr_immersive_aesthetics": [
+            "xr", "vr", "immersive", "vision pro", "deepfake",
+            "synthetic", "virtual worlds",
+        ],
+        "policy_governance": [
+            "policy", "regulation", "governance", "ethics", "responsibility",
+            "surveillance", "platform", "law",
+        ],
+    },
+    "cultural_resilience": {
+        "planetary_rootedness": [
+            "anthropocene", "planetary", "ecological", "mourning", "grief",
+            "multispecies", "plant ethics", "world", "earth",
+        ],
+        "affect_relationality": [
+            "affect", "care", "discomfort", "solitude", "presence",
+            "relational", "assemblage", "fragility",
+        ],
+        "normativity_resistance": [
+            "justice", "resistance", "freedom", "sovereignty", "hegemony",
+            "normative", "political economy",
+        ],
+        "postdigital_materiality": [
+            "algorithmic", "datafied", "digital noise", "materiality",
+            "subject", "literacies", "postdigital",
+        ],
+    },
+    "metakubi": {
+        "transformation_discourses": [
+            "transformation", "metamorphosis", "morphogenesis", "change",
+            "transgression", "reframing",
+        ],
+        "mapping_reviews": [
+            "mapping", "systematic review", "meta-analysis", "bibliometric",
+            "research synthesis", "review",
+        ],
+        "institutional_change": [
+            "school development", "schulkultur", "organization", "institutional",
+            "field", "higher education",
+        ],
+    },
+    "comearts": {
+        "teacher_networks": [
+            "community networks", "professional development", "teacher learning",
+            "teacher training", "collaborative",
+        ],
+        "postdigital_arts_practice": [
+            "post-digital", "arts education", "music education", "cross-aesthetic",
+            "youth culture", "aesthetic practice",
+        ],
+        "diversity_inclusion": [
+            "diversity", "inclusion", "intersectional", "postcolonial",
+            "refugee", "inclusive",
+        ],
+    },
+    "diaes_kubi": {
+        "digital_aesthetic_agency": [
+            "digital-aesthetic", "agency", "aesthetic agency", "sovereignty",
+            "creative practice",
+        ],
+        "teacher_competencies": [
+            "teacher competencies", "teacher education", "teacher training",
+            "professional learning",
+        ],
+        "global_citizenship": [
+            "global citizenship", "european identity", "civic", "citizenship",
+            "democracy",
+        ],
+    },
 }
 
 # Stopwords for title-word extraction (DE + EN), shared with citation_tracker
@@ -76,6 +171,27 @@ _PROJECT_SIGNAL_KEYWORDS = {
         "teacher competencies", "post-digital aesthetics",
         "global citizenship", "cultural resilience",
     ],
+}
+
+_EMERGENT_MOTIF_STOP = _STOP | {
+    "artificial", "intelligence", "generative", "algorithmic", "algorithms",
+    "chatgpt", "llms", "large", "language", "model", "models", "platform",
+    "platforms", "student", "students", "teacher", "teachers", "teaching",
+    "pedagogy", "pedagogical", "education", "educational", "learning",
+    "higher", "journal", "journals", "article", "articles", "paper",
+    "papers", "study", "studies", "analysis", "research", "digital",
+    "school", "schools", "classroom", "university", "universities", "online",
+    "social", "public", "human", "humans", "technology", "technologies",
+    "future", "critical", "ethics", "ethical", "policy", "governance",
+    "creative", "creativity", "literacy", "literacies", "aesthetic",
+    "aesthetics", "cultural", "culture", "based", "using", "towards",
+    "through", "perspective", "perspectives", "approach", "approaches",
+    "practice", "design", "development", "context", "science", "media",
+    "machine", "futures",
+    "artikel", "beitrag", "beiträge", "untersucht", "zeigt", "argumentiert",
+    "analysiert", "analysiere", "methodisch", "theoretisch", "theorie",
+    "praxis", "diskurs", "screening", "scannen", "ignorieren", "lesenswert",
+    "pflichtlektüre", "agent", "verdict", "begründung", "bemerkenswert",
 }
 
 
@@ -212,7 +328,24 @@ class AttentionProfile:
     discourse_indicator: str = ""
     signal_group: str = ""
     project_hits: list[str] = field(default_factory=list)
+    suggested_subgroup: str = ""
+    suggested_subgroup_reason: str = ""
+    suggested_subgroup_confidence: float = 0.0
     deterministic_signals: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
+class EmergentMotifSuggestion:
+    """Corpus-level motif hypothesis for currently unassigned articles."""
+    label: str
+    article_count: int
+    journal_count: int
+    strong_count: int
+    score: float
+    article_ids: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -424,6 +557,180 @@ def _infer_discourse_indicator(
     return "kein_indikator"
 
 
+def _cue_hits_text(cue: str, text: str) -> bool:
+    cue = cue.lower().strip()
+    haystack = (text or "").lower()
+    if not cue or not haystack:
+        return False
+    if len(cue) <= 3 or " " not in cue:
+        pattern = r"\b" + re.escape(cue) + r"\b"
+        return re.search(pattern, haystack) is not None
+    return cue in haystack
+
+
+def _normalize_motif_token(token: str) -> str:
+    token = token.lower().strip("-_ ")
+    if len(token) < 5 or token in _EMERGENT_MOTIF_STOP:
+        return ""
+    if token.endswith("ies") and len(token) > 6:
+        token = token[:-3] + "y"
+    elif token.endswith("s") and len(token) > 7 and not token.endswith(("ss", "ics")):
+        token = token[:-1]
+    if token in _EMERGENT_MOTIF_STOP or len(token) < 5:
+        return ""
+    return token
+
+
+def _article_motif_tokens(article: Any) -> set[str]:
+    text_blob = (getattr(article, "title", "") or "").lower()
+    tokens = {
+        _normalize_motif_token(token)
+        for token in re.findall(r"[\w-]{5,}", text_blob)
+    }
+    return {token for token in tokens if token}
+
+
+def suggest_emergent_motifs(
+    articles: list[Any],
+    *,
+    min_articles: int = 3,
+    min_journals: int = 2,
+    limit: int = 4,
+) -> list[EmergentMotifSuggestion]:
+    """Suggest recurring motifs from unassigned articles within one signal group."""
+    if not articles:
+        return []
+
+    token_articles: dict[str, set[str]] = defaultdict(set)
+    token_journals: dict[str, set[str]] = defaultdict(set)
+    token_strong: Counter[str] = Counter()
+    article_tokens: dict[str, set[str]] = {}
+    article_lookup: dict[str, Any] = {}
+
+    for article in articles:
+        article_id = getattr(article, "id", "")
+        if not article_id:
+            continue
+        tokens = _article_motif_tokens(article)
+        if not tokens:
+            continue
+        article_tokens[article_id] = tokens
+        article_lookup[article_id] = article
+        journal = getattr(article, "journal_short", "") or getattr(article, "journal_full", "")
+        for token in tokens:
+            token_articles[token].add(article_id)
+            if journal:
+                token_journals[token].add(journal)
+            if getattr(article, "discourse_indicator", "") == "starker_indikator":
+                token_strong[token] += 1
+
+    candidates: list[EmergentMotifSuggestion] = []
+    for token, article_ids in token_articles.items():
+        article_count = len(article_ids)
+        journal_count = len(token_journals[token])
+        if article_count < min_articles or journal_count < min_journals:
+            continue
+
+        co_tokens: Counter[str] = Counter()
+        for article_id in article_ids:
+            for co_token in article_tokens.get(article_id, set()):
+                if co_token != token:
+                    co_tokens[co_token] += 1
+
+        companion = ""
+        companion_count = 0
+        for co_token, count in co_tokens.most_common():
+            if count >= max(2, min_articles - 1):
+                companion = co_token
+                companion_count = count
+                break
+
+        label = token
+        if companion:
+            label = f"{token} / {companion}"
+
+        score = (
+            article_count * 2.0
+            + journal_count * 1.5
+            + token_strong[token] * 1.2
+            + companion_count * 0.3
+        )
+        candidates.append(
+            EmergentMotifSuggestion(
+                label=label,
+                article_count=article_count,
+                journal_count=journal_count,
+                strong_count=token_strong[token],
+                score=score,
+                article_ids=sorted(article_ids),
+            )
+        )
+
+    candidates.sort(
+        key=lambda item: (-item.score, -item.strong_count, -item.article_count, item.label)
+    )
+
+    selected: list[EmergentMotifSuggestion] = []
+    used_article_sets: list[set[str]] = []
+    used_token_sets: set[frozenset[str]] = set()
+    for candidate in candidates:
+        candidate_ids = set(candidate.article_ids)
+        token_parts = frozenset(part.strip() for part in candidate.label.split("/"))
+        if token_parts in used_token_sets:
+            continue
+        if any(candidate_ids <= used_ids for used_ids in used_article_sets):
+            continue
+        selected.append(candidate)
+        used_article_sets.append(candidate_ids)
+        used_token_sets.add(token_parts)
+        if len(selected) >= limit:
+            break
+
+    return selected
+
+
+def _suggest_subgroup(
+    *,
+    signal_group: str,
+    title: str,
+    text_blob: str,
+    signal_profile: SignalProfile,
+    discourse_indicator: str,
+) -> tuple[str, str, float]:
+    if not signal_group or discourse_indicator == "kein_indikator":
+        return "", "", 0.0
+
+    seeds = _SUBGROUP_SEEDS.get(signal_group, {})
+    if seeds:
+        scores: list[tuple[int, str, list[str]]] = []
+        for subgroup, cues in seeds.items():
+            score = 0
+            hits: list[str] = []
+            for cue in cues:
+                cue_lower = cue.lower()
+                if _cue_hits_text(cue_lower, text_blob):
+                    score += 3 if " " in cue_lower else 2
+                    hits.append(cue)
+                elif _cue_hits_text(cue_lower, title or ""):
+                    score += 2
+                    hits.append(cue)
+            if score:
+                scores.append((score, subgroup, hits))
+
+        if scores:
+            scores.sort(key=lambda item: (-item[0], item[1]))
+            best_score, best_subgroup, hits = scores[0]
+            confidence = min(0.95, 0.35 + best_score / 10)
+            reason = "Signale: " + ", ".join(hits[:3])
+            if signal_profile.keyword_hits:
+                reason += f" | Keywords: {', '.join(signal_profile.keyword_hits[:3])}"
+            return best_subgroup, reason[:220], confidence
+
+    # Emerging motifs need corpus-level aggregation. A per-article fallback creates
+    # mostly one-off labels that look structured but do not compress the discourse.
+    return "", "", 0.0
+
+
 def derive_attention_profile(
     *,
     article_id: str,
@@ -482,12 +789,22 @@ def derive_attention_profile(
     signal_group = ""
     if discourse_indicator != "kein_indikator":
         signal_group = entry.get("signal_group", "") or (project_hits[0] if project_hits else "")
+    suggested_subgroup, subgroup_reason, subgroup_confidence = _suggest_subgroup(
+        signal_group=signal_group,
+        title=title,
+        text_blob=text_blob,
+        signal_profile=signal_profile,
+        discourse_indicator=discourse_indicator,
+    )
 
     return AttentionProfile(
         selection_mode=selection_mode,
         discourse_indicator=discourse_indicator,
         signal_group=signal_group,
         project_hits=project_hits,
+        suggested_subgroup=suggested_subgroup,
+        suggested_subgroup_reason=subgroup_reason,
+        suggested_subgroup_confidence=subgroup_confidence,
         deterministic_signals=signal_profile.to_dict(),
     )
 

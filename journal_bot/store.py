@@ -63,6 +63,9 @@ CREATE TABLE IF NOT EXISTS articles (
     selection_mode      TEXT,
     discourse_indicator TEXT,
     signal_group        TEXT,
+    suggested_subgroup  TEXT,
+    suggested_subgroup_reason TEXT,
+    suggested_subgroup_confidence REAL,
 
     -- User override (null = agrees with agent)
     user_verdict        TEXT,
@@ -90,6 +93,15 @@ MIGRATIONS = [
     """,
     """
     ALTER TABLE articles ADD COLUMN signal_group TEXT;
+    """,
+    """
+    ALTER TABLE articles ADD COLUMN suggested_subgroup TEXT;
+    """,
+    """
+    ALTER TABLE articles ADD COLUMN suggested_subgroup_reason TEXT;
+    """,
+    """
+    ALTER TABLE articles ADD COLUMN suggested_subgroup_confidence REAL;
     """,
     """
     ALTER TABLE articles ADD COLUMN user_verdict TEXT;
@@ -151,6 +163,9 @@ class StoredArticle:
     selection_mode: str = ""
     discourse_indicator: str = ""
     signal_group: str = ""
+    suggested_subgroup: str = ""
+    suggested_subgroup_reason: str = ""
+    suggested_subgroup_confidence: float = 0.0
 
     # User override
     user_verdict: str = ""
@@ -262,6 +277,9 @@ class Store:
         selection_mode: str = "",
         discourse_indicator: str = "",
         signal_group: str = "",
+        suggested_subgroup: str = "",
+        suggested_subgroup_reason: str = "",
+        suggested_subgroup_confidence: float = 0.0,
     ) -> None:
         with self._conn() as c:
             c.execute(
@@ -279,7 +297,10 @@ class Store:
                     iterations = ?,
                     selection_mode = ?,
                     discourse_indicator = ?,
-                    signal_group = ?
+                    signal_group = ?,
+                    suggested_subgroup = ?,
+                    suggested_subgroup_reason = ?,
+                    suggested_subgroup_confidence = ?
                 WHERE id = ?
                 """,
                 (
@@ -296,6 +317,9 @@ class Store:
                     selection_mode or None,
                     discourse_indicator or None,
                     signal_group or None,
+                    suggested_subgroup or None,
+                    suggested_subgroup_reason or None,
+                    suggested_subgroup_confidence or None,
                     article_id,
                 ),
             )
@@ -322,6 +346,9 @@ class Store:
         selection_mode: str = "",
         discourse_indicator: str = "",
         signal_group: str = "",
+        suggested_subgroup: str = "",
+        suggested_subgroup_reason: str = "",
+        suggested_subgroup_confidence: float = 0.0,
         entry: dict | None = None,
     ) -> None:
         with self._conn() as c:
@@ -331,13 +358,19 @@ class Store:
                     UPDATE articles SET
                         selection_mode = ?,
                         discourse_indicator = ?,
-                        signal_group = ?
+                        signal_group = ?,
+                        suggested_subgroup = ?,
+                        suggested_subgroup_reason = ?,
+                        suggested_subgroup_confidence = ?
                     WHERE id = ?
                     """,
                     (
                         selection_mode or None,
                         discourse_indicator or None,
                         signal_group or None,
+                        suggested_subgroup or None,
+                        suggested_subgroup_reason or None,
+                        suggested_subgroup_confidence or None,
                         article_id,
                     ),
                 )
@@ -348,6 +381,9 @@ class Store:
                         selection_mode = ?,
                         discourse_indicator = ?,
                         signal_group = ?,
+                        suggested_subgroup = ?,
+                        suggested_subgroup_reason = ?,
+                        suggested_subgroup_confidence = ?,
                         agent_entry_json = ?
                     WHERE id = ?
                     """,
@@ -355,6 +391,9 @@ class Store:
                         selection_mode or None,
                         discourse_indicator or None,
                         signal_group or None,
+                        suggested_subgroup or None,
+                        suggested_subgroup_reason or None,
+                        suggested_subgroup_confidence or None,
                         json.dumps(entry, ensure_ascii=False),
                         article_id,
                     ),
@@ -513,6 +552,9 @@ def _row_to_article(row: sqlite3.Row) -> StoredArticle:
         selection_mode=row["selection_mode"] or "",
         discourse_indicator=row["discourse_indicator"] or "",
         signal_group=row["signal_group"] or "",
+        suggested_subgroup=row["suggested_subgroup"] or "",
+        suggested_subgroup_reason=row["suggested_subgroup_reason"] or "",
+        suggested_subgroup_confidence=row["suggested_subgroup_confidence"] or 0.0,
         user_verdict=row["user_verdict"] or "",
         user_memo=row["user_memo"] or "",
         user_verdict_at=row["user_verdict_at"] or "",

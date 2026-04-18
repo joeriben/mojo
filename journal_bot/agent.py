@@ -1198,6 +1198,8 @@ def render_markdown(result: dict) -> str:
         meta_profile.append(f"Diskursindikator: `{entry['discourse_indicator']}`")
     if entry.get("signal_group"):
         meta_profile.append(f"Signalgruppe: `{entry['signal_group']}`")
+    if entry.get("suggested_subgroup"):
+        meta_profile.append(f"Sub-Motiv: `{entry['suggested_subgroup']}`")
     if meta_profile:
         lines.append(" · ".join(meta_profile))
         lines.append("")

@@ -12,6 +12,15 @@
     {% if a.selection_mode %}<span>Selektion: <code>{{ a.selection_mode }}</code></span>{% endif %}
     {% if a.discourse_indicator %}<span>{% if a.selection_mode %} · {% endif %}Diskursindikator: <code>{{ a.discourse_indicator }}</code></span>{% endif %}
     {% if a.signal_group %}<span>{% if a.selection_mode or a.discourse_indicator %} · {% endif %}Signalgruppe: <code>{{ a.signal_group }}</code></span>{% endif %}
+    {% if a.suggested_subgroup %}<span>{% if a.selection_mode or a.discourse_indicator or a.signal_group %} · {% endif %}Sub-Motiv-Vorschlag: <code>{{ a.suggested_subgroup }}</code></span>{% endif %}
+  </p>
+  {% endif %}
+  {% if a.suggested_subgroup_reason %}
+  <p style="margin-top:.25rem; font-size:.82rem; color:var(--muted);">
+    {{ a.suggested_subgroup_reason }}
+    {% if a.suggested_subgroup_confidence %}
+    · Confidence: {{ "%.2f"|format(a.suggested_subgroup_confidence) }}
+    {% endif %}
   </p>
   {% endif %}
 </div>

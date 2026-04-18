@@ -17,6 +17,7 @@ from flask import (
 )
 
 from journal_bot.store import Store, ARTICLES_DB
+from journal_bot.signals import suggest_emergent_motifs
 from journal_bot.settings import (
     PROJECT_ROOT,
     CORPUS_JSON,
@@ -324,6 +325,38 @@ def diskursraum(cluster_key: str | None = None):
                 -(a.year or 0),
             ),
         )
+        subgroup_counts: dict[str, int] = {}
+        for article in ordered:
+            if article.suggested_subgroup:
+                subgroup_counts[article.suggested_subgroup] = (
+                    subgroup_counts.get(article.suggested_subgroup, 0) + 1
+                )
+        emergent_suggestions = []
+        unassigned_articles = [
+            a
+            for a in ordered
+            if not a.suggested_subgroup and a.discourse_indicator == "starker_indikator"
+        ]
+        if unassigned_articles:
+            max_year = max((a.year or 0) for a in unassigned_articles)
+            if max_year:
+                unassigned_articles = [
+                    a for a in unassigned_articles if (a.year or 0) >= max_year - 2
+                ]
+        for suggestion in suggest_emergent_motifs(unassigned_articles):
+            sample_articles = [
+                article for article in ordered if article.id in set(suggestion.article_ids)
+            ][:3]
+            emergent_suggestions.append(
+                {
+                    "label": suggestion.label,
+                    "article_count": suggestion.article_count,
+                    "journal_count": suggestion.journal_count,
+                    "strong_count": suggestion.strong_count,
+                    "score": suggestion.score,
+                    "articles": sample_articles,
+                }
+            )
         signal_groups.append(
             {
                 "key": group_key,
@@ -333,6 +366,11 @@ def diskursraum(cluster_key: str | None = None):
                     1 for a in ordered if a.discourse_indicator == "starker_indikator"
                 ),
                 "articles": ordered[:3],
+                "subgroups": sorted(
+                    subgroup_counts.items(),
+                    key=lambda item: (-item[1], item[0]),
+                )[:4],
+                "emergent_suggestions": emergent_suggestions,
             }
         )
     signal_groups.sort(key=lambda item: (-item["strong_count"], -item["count"], item["key"]))
