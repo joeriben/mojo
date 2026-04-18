@@ -66,9 +66,33 @@ mojo biblio      # Citation-frequency analysis: --cluster NAME (free)
 mojo stats       # Store statistics
 ```
 
+## Reproducible Workflows
+
+The operational workflows are documented in [docs/workflows/README.md](docs/workflows/README.md).
+They are intended to make MOJO usable not only as a local prototype, but also as a
+repeatable agent workflow for other installations.
+
+Important workflows:
+- Weekly digest pipeline: [docs/workflows/03_woechentlicher_digest.md](docs/workflows/03_woechentlicher_digest.md)
+- Override calibration loop: [docs/workflows/05_override_kalibrierung.md](docs/workflows/05_override_kalibrierung.md)
+
+The override calibration loop matters for open-source reuse:
+- user overrides are analyzed locally from `articles.db`
+- recurring false positives / false negatives are turned into explicit rule hints
+- those hints can then be implemented in `journal_bot/signals.py`, `projects.json`, or `journal_bot/agent.py`
+- existing article metadata can be synchronized afterwards via:
+
+```bash
+python3 scripts/analyze_overrides.py --suggest-rules
+python3 scripts/backfill_attention_metadata.py
+```
+
 ## Project Status
 
-Working prototype. Core pipeline (ingest → summarize → fetch → digest → trends → biblio) is functional end-to-end. 20 journals configured, 624 articles in store. See ROADMAP.md for open items.
+Working prototype. Core pipeline (ingest → summarize → fetch → digest → trends → biblio)
+is functional end-to-end. The exact article count and calibration state depend on the local
+installation and current `articles.db`. See `mojo stats` for the live local state and
+[ROADMAP.md](ROADMAP.md) for open items.
 
 ## Setup
 
