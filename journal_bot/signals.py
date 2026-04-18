@@ -1,11 +1,12 @@
-"""Deterministic relevance signals — zero LLM cost.
+"""Deterministic relevance signals and attention metadata — zero LLM cost.
 
 Computes a signal profile for each article using already-stored metadata:
   a) cites_researcher — article cites the researcher's publications (via citation_tracker)
   b) zotero_overlap   — article refs cite items from the researcher's Zotero library (by title)
   c) keyword_hits     — article title contains key terms from the researcher's summaries
 
-All signals operate on data already present in articles.db + summaries.json + zotero_library.json.
+All signals operate on data already present in articles.db + summaries.json + projects.json
++ zotero_library.json.
 """
 
 from __future__ import annotations
@@ -21,6 +22,14 @@ from journal_bot.settings import CORPUS_JSON, SUMMARIES_JSON, PROJECT_ROOT
 
 
 ZOTERO_LIBRARY_JSON = PROJECT_ROOT / "zotero_library.json"
+PROJECTS_JSON = PROJECT_ROOT / "projects.json"
+TRIGGER_AUTHORS = ("macgilchrist", "jarke", "wendy chun", "wendy hui kyong")
+SELECTION_MODES = {
+    "none", "screening", "similarity", "complementarity", "citation", "trigger", "mixed",
+}
+DISCOURSE_INDICATORS = {
+    "kein_indikator", "schwacher_indikator", "starker_indikator",
+}
 
 # Stopwords for title-word extraction (DE + EN), shared with citation_tracker
 _STOP = {
@@ -35,12 +44,50 @@ _STOP = {
     "about", "some", "what", "which", "when", "where", "how", "who", "new",
     "case", "study", "analysis", "approach", "toward", "towards", "through",
     "based", "using", "between", "review", "introduction", "special", "issue",
+    "digital", "cultural", "education", "educational", "research", "teacher",
+    "teachers", "learning", "school", "schools", "project", "projects",
+}
+
+_PROJECT_SIGNAL_KEYWORDS = {
+    "cultural_resilience": [
+        "resilience", "anthropocene", "planetary", "mourning", "grief",
+        "multispecies", "plant ethics", "care ethics", "rootedness",
+        "resourcefulness", "futurability", "post-anthropocentric",
+        "posthuman", "relational ontology", "agential realism",
+    ],
+    "metakubi": [
+        "transformation", "morphogenesis", "metamorphosis", "transgression",
+        "meta-analysis", "systematic review", "bibliometric",
+        "discourse-analytical", "school development", "schulkultur",
+        "cultural education",
+    ],
+    "ai4artsed": [
+        "generative ai", "chatgpt", "llm", "diffusion", "clip", "bias",
+        "decolonial", "indigenous", "co-creation", "ai literacy",
+        "prompt engineering", "embedding space",
+    ],
+    "comearts": [
+        "teacher professional development", "music education", "arts education",
+        "community networks", "post-digital youth", "cross-aesthetic",
+        "diversity-sensitive", "teacher training",
+    ],
+    "diaes_kubi": [
+        "digital-aesthetic sovereignty", "aesthetic agency", "digital contexts",
+        "teacher competencies", "post-digital aesthetics",
+        "global citizenship", "cultural resilience",
+    ],
 }
 
 
 def _title_words(title: str) -> set[str]:
     """Distinctive words from a title (lowercase, ≥4 chars, no stopwords)."""
     words = re.findall(r"\w{4,}", (title or "").lower())
+    return {w for w in words if w not in _STOP}
+
+
+def _text_words(text: str) -> set[str]:
+    """Distinctive words from free text (lowercase, ≥4 chars, no stopwords)."""
+    words = re.findall(r"[\w-]{4,}", (text or "").lower())
     return {w for w in words if w not in _STOP}
 
 
@@ -158,6 +205,19 @@ class SignalProfile:
         return asdict(self)
 
 
+@dataclass
+class AttentionProfile:
+    """How and why an article should surface in the attention system."""
+    selection_mode: str = ""
+    discourse_indicator: str = ""
+    signal_group: str = ""
+    project_hits: list[str] = field(default_factory=list)
+    deterministic_signals: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
 def signal_cites_researcher(
     crossref_refs: list[dict],
     authored_all: list[dict] | None = None,
@@ -270,6 +330,165 @@ def compute_signals(
             refs, zotero_doi_index, zotero_word_index,
         ),
         keyword_hits=signal_keyword_hits(title, key_terms),
+    )
+
+
+def _load_active_projects(path: Path = PROJECTS_JSON) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    return [p for p in data.get("projects", []) if p.get("status") == "active"]
+
+
+def _project_match_score(project: dict[str, Any], text_blob: str, text_words: set[str]) -> int:
+    score = 0
+    for phrase in _PROJECT_SIGNAL_KEYWORDS.get(project.get("key", ""), []):
+        if phrase.lower() in text_blob:
+            score += 2 if " " in phrase else 1
+
+    project_text = " ".join(
+        [
+            project.get("name", ""),
+            project.get("description", ""),
+            " ".join(project.get("relevance_shifts", [])),
+        ]
+    )
+    overlap = text_words & _text_words(project_text)
+    score += min(len(overlap), 4)
+    return score
+
+
+def detect_project_hits(text_blob: str) -> list[str]:
+    """Match an article blob against active project/problem fields."""
+    blob = (text_blob or "").lower()
+    words = _text_words(blob)
+    hits: list[tuple[int, str]] = []
+    for project in _load_active_projects():
+        score = _project_match_score(project, blob, words)
+        if score >= 2:
+            hits.append((score, project["key"]))
+    hits.sort(key=lambda item: (-item[0], item[1]))
+    return [key for _, key in hits[:2]]
+
+
+def _infer_selection_mode(
+    *,
+    explicit: str,
+    signal_profile: SignalProfile,
+    trigger_author_hit: bool,
+    project_hits: list[str],
+    bezuege: list[dict],
+    verdict: str,
+    discourse_indicator: str,
+) -> str:
+    if explicit in SELECTION_MODES:
+        return explicit
+    if signal_profile.cites_researcher:
+        return "citation"
+    if trigger_author_hit:
+        return "trigger"
+    if project_hits and bezuege and discourse_indicator != "kein_indikator":
+        return "mixed"
+    if project_hits and discourse_indicator != "kein_indikator":
+        return "complementarity"
+    if bezuege or signal_profile.zotero_overlap or signal_profile.keyword_hits:
+        return "similarity"
+    if verdict:
+        return "screening"
+    return "none"
+
+
+def _infer_discourse_indicator(
+    *,
+    explicit: str,
+    verdict: str,
+    bemerkenswert: list[str],
+    project_hits: list[str],
+    signal_profile: SignalProfile,
+) -> str:
+    if explicit in DISCOURSE_INDICATORS:
+        return explicit
+    if verdict in {"pflichtlektuere", "lesenswert"}:
+        return "starker_indikator"
+    if verdict == "scannen" and project_hits and (bemerkenswert or signal_profile.signal_count > 0):
+        return "starker_indikator"
+    if verdict == "scannen" and project_hits:
+        return "schwacher_indikator"
+    if verdict == "ignorieren" and project_hits and (bemerkenswert or signal_profile.signal_count > 1):
+        return "schwacher_indikator"
+    if bemerkenswert or signal_profile.signal_count > 0 or verdict == "scannen":
+        return "schwacher_indikator"
+    return "kein_indikator"
+
+
+def derive_attention_profile(
+    *,
+    article_id: str,
+    title: str,
+    authors: list[str],
+    abstract: str = "",
+    openalex_abstract: str = "",
+    crossref_refs: list[dict] | None = None,
+    entry: dict[str, Any] | None = None,
+    signal_resources: dict[str, Any] | None = None,
+) -> AttentionProfile:
+    """Derive attention metadata from existing article + agent data."""
+    entry = entry or {}
+    signal_resources = signal_resources or load_signal_resources()
+    signal_profile = compute_signals(
+        article_id,
+        title,
+        crossref_refs or [],
+        **signal_resources,
+    )
+
+    bemerkenswert = entry.get("bemerkenswert") or []
+    bezuege = entry.get("bezuege") or []
+    text_blob = "\n".join(
+        [
+            title or "",
+            abstract or "",
+            openalex_abstract or "",
+            entry.get("kernthese", "") or "",
+            entry.get("verdict_begruendung", "") or "",
+            entry.get("theoretisch_methodisch", "") or "",
+            "\n".join(bemerkenswert),
+        ]
+    ).lower()
+    project_hits = detect_project_hits(text_blob)
+    trigger_author_hit = any(
+        trigger in " ".join(authors).lower() for trigger in TRIGGER_AUTHORS
+    )
+
+    discourse_indicator = _infer_discourse_indicator(
+        explicit=entry.get("discourse_indicator", ""),
+        verdict=entry.get("verdict", ""),
+        bemerkenswert=bemerkenswert,
+        project_hits=project_hits,
+        signal_profile=signal_profile,
+    )
+    selection_mode = _infer_selection_mode(
+        explicit=entry.get("selection_mode", ""),
+        signal_profile=signal_profile,
+        trigger_author_hit=trigger_author_hit,
+        project_hits=project_hits,
+        bezuege=bezuege,
+        verdict=entry.get("verdict", ""),
+        discourse_indicator=discourse_indicator,
+    )
+    signal_group = ""
+    if discourse_indicator != "kein_indikator":
+        signal_group = entry.get("signal_group", "") or (project_hits[0] if project_hits else "")
+
+    return AttentionProfile(
+        selection_mode=selection_mode,
+        discourse_indicator=discourse_indicator,
+        signal_group=signal_group,
+        project_hits=project_hits,
+        deterministic_signals=signal_profile.to_dict(),
     )
 
 

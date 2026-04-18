@@ -10,6 +10,7 @@ from datetime import date
 from pathlib import Path
 
 from journal_bot import agent as agent_mod
+from journal_bot.signals import derive_attention_profile, load_signal_resources
 from journal_bot.settings import DIGEST_DIR
 from journal_bot.store import Store, StoredArticle, make_article_id
 
@@ -45,6 +46,17 @@ def _article_dict_from_stored(sa: StoredArticle) -> dict:
     }
 
 
+def _merge_attention_metadata(entry: dict, profile: dict) -> dict:
+    """Keep attention metadata alongside the semantic digest entry."""
+    merged = dict(entry)
+    merged.setdefault("selection_mode", profile["selection_mode"])
+    merged.setdefault("discourse_indicator", profile["discourse_indicator"])
+    merged.setdefault("signal_group", profile["signal_group"])
+    if profile.get("project_hits") and "project_hits" not in merged:
+        merged["project_hits"] = profile["project_hits"]
+    return merged
+
+
 def process_article(
     sa: StoredArticle,
     store: Store,
@@ -61,6 +73,7 @@ def process_article(
     mode="assess_verify": two-phase assessment → verification pipeline.
     """
     article = _article_dict_from_stored(sa)
+    signal_resources = load_signal_resources()
 
     if mode == "assess_verify":
         kwargs = {"verbose": verbose}
@@ -77,6 +90,18 @@ def process_article(
 
     entry = result.get("entry")
     if entry:
+        attention = derive_attention_profile(
+            article_id=sa.id,
+            title=sa.title,
+            authors=sa.authors,
+            abstract=sa.abstract,
+            openalex_abstract=sa.openalex_abstract,
+            crossref_refs=sa.crossref_refs,
+            entry=entry,
+            signal_resources=signal_resources,
+        )
+        entry = _merge_attention_metadata(entry, attention.to_dict())
+        result["entry"] = entry
         store.update_agent_result(
             sa.id,
             verdict=entry.get("verdict", ""),
@@ -88,6 +113,9 @@ def process_article(
             tokens_cache_write=result.get("tokens_cache_write", 0),
             cost_usd=result.get("est_cost_usd", 0.0),
             iterations=result.get("iterations", 0),
+            selection_mode=attention.selection_mode,
+            discourse_indicator=attention.discourse_indicator,
+            signal_group=attention.signal_group,
         )
 
     md = agent_mod.render_markdown(result)
@@ -160,4 +188,4 @@ def process_by_doi(doi: str, store: Store, journal: str = "", verbose: bool = Tr
         sa = _article_to_stored(art_for_enrich, enrichment)
         store.upsert_article(sa)
 
-    return process_article(sa, store, verbose=verbose, skip_triage=True)
+    return process_article(sa, store, verbose=verbose)

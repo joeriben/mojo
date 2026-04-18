@@ -1,0 +1,714 @@
+## From “education for sustainable development” to “education for the end of the world as we know it”
+_Sharon Stein, Vanessa Andreotti, Rene Suša, Cash Ahenakew, Tereza Čajková · Educational Philosophy and Theory · doi:10.1080/00131857.2020.1835646_
+https://doi.org/10.1080/00131857.2020.1835646
+
+**Verdict:** LESENSWERT — Der Artikel erweitert substantiell Jörissens/Klepackis eigene Kritik an Education for Sustainable Development durch eine dekoloniale Fundamentalkritik und stellt damit eine wichtige Ressource für die Weiterentwicklung des Konzepts der kulturellen Resilienz dar.
+
+### Kernthese
+Der Artikel kritisiert "Education for Sustainable Development" (ESD) als unzureichend und selbstproblematisch, da sie von der Möglichkeit nachhaltigen Wachstums auf einem endlichen Planeten ausgehe. Stattdessen argumentieren die Autor*innen, dass die Krise in der gewalttätigen und unnachhaltigen Natur modern-kolonialer Existenzweisen verwurzelt sei, die durch Verleugnung und Investitionen in die Versprechen der Modernität/Kolonialität aufrechterhalten würden. Sie schlagen einen radikalen Wechsel vor: von ESD hin zu einer "Bildung für das Ende der Welt, wie wir sie kennen", die ein kollektives "Erwachsenwerden" und ein anderes "Erscheinen" für die Arbeit an unvorhergesehenen globalen Herausforderungen betont.
+
+### Bezüge zu Deinem Werk
+
+**Jörissen/Klepacki 2025: Cultural Resilience and the Cultivation of a Postdigital Planetary Dissensus** (`3W9X5QLZ`, erweitert)
+Der neue Artikel von Stein et al. (2020) radikalisiert die Kritik an 'Education for Sustainable Development' (ESD), die Jörissen/Klepacki (2025) ebenfalls problematisieren, jedoch in einer anderen Stoßrichtung: Während Jörissen/Klepacki nach einem 'complementary counterpart' zu ESD suchen, der Nachhaltigkeit als strukturelles Moment der Bildungstheorie verankert, argumentieren Stein et al. für eine vollständige Ablösung von ESD durch eine 'education for the end of the world as we know it'. Beide Texte teilen die Diagnose der Unzulänglichkeit konventioneller ESD-Ansätze, aber Stein et al. gehen weiter in ihrer dekolonialen Fundamentalkritik der modern-kolonialen Existenzweisen.
+
+### Bemerkenswert
+- [
+- "
+- D
+- e
+- r
+-  
+- A
+- r
+- t
+- i
+- k
+- e
+- l
+-  
+- v
+- e
+- r
+- t
+- r
+- i
+- t
+- t
+-  
+- e
+- i
+- n
+- e
+-  
+- r
+- a
+- d
+- i
+- k
+- a
+- l
+- e
+-  
+- P
+- o
+- s
+- i
+- t
+- i
+- o
+- n
+- ,
+-  
+- d
+- i
+- e
+-  
+- d
+- e
+- n
+-  
+- d
+- o
+- m
+- i
+- n
+- a
+- n
+- t
+- e
+- n
+-  
+- D
+- i
+- s
+- k
+- u
+- r
+- s
+-  
+- d
+- e
+- r
+-  
+- „
+- B
+- i
+- l
+- d
+- u
+- n
+- g
+-  
+- f
+- ü
+- r
+-  
+- n
+- a
+- c
+- h
+- h
+- a
+- l
+- t
+- i
+- g
+- e
+-  
+- E
+- n
+- t
+- w
+- i
+- c
+- k
+- l
+- u
+- n
+- g
+- "
+-  
+- (
+- E
+- S
+- D
+- /
+- B
+- N
+- E
+- )
+-  
+- n
+- i
+- c
+- h
+- t
+-  
+- r
+- e
+- f
+- o
+- r
+- m
+- i
+- e
+- r
+- e
+- n
+- ,
+-  
+- s
+- o
+- n
+- d
+- e
+- r
+- n
+-  
+- a
+- l
+- s
+-  
+- T
+- e
+- i
+- l
+-  
+- d
+- e
+- s
+-  
+- P
+- r
+- o
+- b
+- l
+- e
+- m
+- s
+-  
+- d
+- e
+- k
+- o
+- n
+- s
+- t
+- r
+- u
+- i
+- e
+- r
+- e
+- n
+-  
+- u
+- n
+- d
+-  
+- e
+- r
+- s
+- e
+- t
+- z
+- e
+- n
+-  
+- w
+- i
+- l
+- l
+- .
+- "
+- ,
+-  
+- "
+- D
+- i
+- e
+-  
+- A
+- u
+- t
+- o
+- r
+- *
+- i
+- n
+- n
+- e
+- n
+- g
+- r
+- u
+- p
+- p
+- e
+-  
+- u
+- m
+-  
+- V
+- a
+- n
+- e
+- s
+- s
+- a
+-  
+- A
+- n
+- d
+- r
+- e
+- o
+- t
+- t
+- i
+-  
+- i
+- s
+- t
+-  
+- e
+- i
+- n
+- e
+-  
+- z
+- e
+- n
+- t
+- r
+- a
+- l
+- e
+-  
+- S
+- t
+- i
+- m
+- m
+- e
+-  
+- i
+- m
+-  
+- F
+- e
+- l
+- d
+-  
+- d
+- e
+- r
+-  
+- d
+- e
+- k
+- o
+- l
+- o
+- n
+- i
+- a
+- l
+- e
+- n
+-  
+- B
+- i
+- l
+- d
+- u
+- n
+- g
+- s
+- t
+- h
+- e
+- o
+- r
+- i
+- e
+-  
+- u
+- n
+- d
+-  
+- -
+- k
+- r
+- i
+- t
+- i
+- k
+- ;
+-  
+- i
+- h
+- r
+- e
+-  
+- A
+- r
+- b
+- e
+- i
+- t
+- e
+- n
+-  
+- s
+- i
+- n
+- d
+-  
+- f
+- ü
+- r
+-  
+- d
+- a
+- s
+-  
+- F
+- o
+- r
+- s
+- c
+- h
+- u
+- n
+- g
+- s
+- f
+- e
+- l
+- d
+-  
+- d
+- e
+- r
+-  
+- C
+- u
+- l
+- t
+- u
+- r
+- a
+- l
+- ,
+-  
+- A
+- e
+- s
+- t
+- h
+- e
+- t
+- i
+- c
+- ,
+-  
+- a
+- n
+- d
+-  
+- A
+- r
+- t
+- s
+-  
+- E
+- d
+- u
+- c
+- a
+- t
+- i
+- o
+- n
+-  
+- (
+- C
+- A
+- A
+- E
+- )
+-  
+- z
+- u
+- n
+- e
+- h
+- m
+- e
+- n
+- d
+-  
+- r
+- e
+- l
+- e
+- v
+- a
+- n
+- t
+- .
+- "
+- ,
+-  
+- "
+- D
+- i
+- e
+-  
+- R
+- a
+- d
+- i
+- k
+- a
+- l
+- i
+- t
+- ä
+- t
+-  
+- d
+- e
+- r
+-  
+- F
+- o
+- r
+- d
+- e
+- r
+- u
+- n
+- g
+-  
+- n
+- a
+- c
+- h
+-  
+- e
+- i
+- n
+- e
+- r
+-  
+- '
+- B
+- i
+- l
+- d
+- u
+- n
+- g
+-  
+- f
+- ü
+- r
+-  
+- d
+- a
+- s
+-  
+- E
+- n
+- d
+- e
+-  
+- d
+- e
+- r
+-  
+- W
+- e
+- l
+- t
+- '
+-  
+- s
+- t
+- e
+- l
+- l
+- t
+-  
+- e
+- i
+- n
+- e
+-  
+- G
+- r
+- e
+- n
+- z
+- p
+- o
+- s
+- i
+- t
+- i
+- o
+- n
+-  
+- i
+- m
+-  
+- N
+- a
+- c
+- h
+- h
+- a
+- l
+- t
+- i
+- g
+- k
+- e
+- i
+- t
+- s
+- d
+- i
+- s
+- k
+- u
+- r
+- s
+-  
+- d
+- a
+- r
+- ,
+-  
+- d
+- i
+- e
+-  
+- ü
+- b
+- e
+- r
+-  
+- b
+- l
+- o
+- ß
+- e
+-  
+- R
+- e
+- f
+- o
+- r
+- m
+- a
+- n
+- s
+- ä
+- t
+- z
+- e
+-  
+- h
+- i
+- n
+- a
+- u
+- s
+- g
+- e
+- h
+- t
+-  
+- u
+- n
+- d
+-  
+- g
+- r
+- u
+- n
+- d
+- l
+- e
+- g
+- e
+- n
+- d
+- e
+-  
+- e
+- r
+- k
+- e
+- n
+- n
+- t
+- n
+- i
+- s
+- t
+- h
+- e
+- o
+- r
+- e
+- t
+- i
+- s
+- c
+- h
+- e
+-  
+- u
+- n
+- d
+-  
+- o
+- n
+- t
+- o
+- l
+- o
+- g
+- i
+- s
+- c
+- h
+- e
+-  
+- F
+- r
+- a
+- g
+- e
+- n
+-  
+- s
+- t
+- e
+- l
+- l
+- t
+- .
+- "
+- ]
+
+### Methodisch / theoretisch
+Dekoloniale und postkoloniale Bildungstheorie mit explizitem Fokus auf Modernität/Kolonialität als gewalttätige und unnachhaltige Existenzweise. Der Beitrag verbindet kritische Pädagogik mit Environmental Studies und dekolonialer Theorie, verwendet dabei eine explizit normativ-politische Positionierung und metaphorische Begrifflichkeiten ('grow up', 'show up', 'end of the world').
+
+---
+_7 Agent-Iterationen · 4 Volltext-Reads · 300,022 in / 3,447 out · cache: 134,720 read / 0 write · $0.131_

@@ -3,13 +3,13 @@
 Subcommands:
   ingest     — Zotero-Collection (ZOTERO_COLLECTION) nach corpus.json
                (einmalig oder bei Änderung, keine LLM-Kosten)
-  summarize  — Corpus mit Haiku zu faktischen Kurzprofilen (summaries.json)
+  summarize  — Corpus mit dem konfigurierten Modell zu Kurzprofilen (summaries.json)
                (einmalig, ~3€)
   fetch      — Feeds → OpenAlex/Crossref-Enrichment → articles.db
                (wöchentlich, keine LLM-Kosten)
   backfill   — Fehlende Abstracts aus Crossref-Cache/Playwright/Zotero nachziehen
                (einmalig oder nach fetch, keine LLM-Kosten)
-  digest     — Agent-Lauf (Opus) über Store-Einträge oder ad-hoc via --doi
+  digest     — Agent-Lauf über Store-Einträge oder ad-hoc via --doi
                (Kosten ~$0.50–$1 pro Artikel dank Caching)
   trends     — Aggregat-Trendanalyse aus articles.db nach Obsidian
                (gelegentlich, ~$1–3 pro Run je nach Fenster)
@@ -140,6 +140,8 @@ def cmd_digest(args: argparse.Namespace) -> int:
                 citation_hits=[], tokens_in=0, tokens_out=0,
                 tokens_cached_read=0, tokens_cache_write=0,
                 cost_usd=0.0, iterations=0,
+                selection_mode="screening",
+                discourse_indicator="kein_indikator",
             )
 
         # Catchword hits → Haiku triage on title alone
@@ -163,6 +165,8 @@ def cmd_digest(args: argparse.Namespace) -> int:
                     citation_hits=[], tokens_in=0, tokens_out=0,
                     tokens_cached_read=0, tokens_cache_write=0,
                     cost_usd=result.get("cost_usd", 0.0), iterations=0,
+                    selection_mode="screening",
+                    discourse_indicator="kein_indikator",
                 )
             else:
                 triage_scannen.append(sa)
@@ -176,6 +180,8 @@ def cmd_digest(args: argparse.Namespace) -> int:
                     citation_hits=[], tokens_in=0, tokens_out=0,
                     tokens_cached_read=0, tokens_cache_write=0,
                     cost_usd=result.get("cost_usd", 0.0), iterations=0,
+                    selection_mode="screening",
+                    discourse_indicator="schwacher_indikator",
                 )
 
         print(f"\n[digest] Ohne Abstract: {len(no_data)} Artikel")
@@ -254,6 +260,8 @@ def cmd_digest(args: argparse.Namespace) -> int:
                     citation_hits=[], tokens_in=0, tokens_out=0,
                     tokens_cached_read=0, tokens_cache_write=0,
                     cost_usd=0.0, iterations=0,
+                    selection_mode="screening",
+                    discourse_indicator="kein_indikator",
                 )
 
         print(f"\n[digest] Screening: {len(passed)} weitergeben, "
@@ -289,6 +297,8 @@ def cmd_digest(args: argparse.Namespace) -> int:
                 citation_hits=[], tokens_in=0, tokens_out=0,
                 tokens_cached_read=0, tokens_cache_write=0,
                 cost_usd=0.0, iterations=0,
+                selection_mode="screening",
+                discourse_indicator="schwacher_indikator",
             )
 
     if not to_analyze:
@@ -573,7 +583,7 @@ def main(argv: list[str] | None = None) -> int:
     p_ingest.add_argument("--output", default=str(CORPUS_JSON))
     p_ingest.set_defaults(func=cmd_ingest)
 
-    p_sum = sub.add_parser("summarize", help="Corpus mit Haiku summarisieren")
+    p_sum = sub.add_parser("summarize", help="Corpus mit konfiguriertem Modell summarisieren")
     p_sum.add_argument("--corpus", default=str(CORPUS_JSON))
     p_sum.add_argument("--output", default=str(SUMMARIES_JSON))
     p_sum.add_argument("--limit", type=int, default=None)
@@ -598,10 +608,10 @@ def main(argv: list[str] | None = None) -> int:
     p_digest.add_argument("--since", type=int, default=None,
                           help="Nur Artikel ab diesem Erscheinungsjahr (z.B. 2025)")
     p_digest.add_argument("--no-screen", action="store_true",
-                          help="DeepSeek-Vorfilter überspringen (alle direkt zu Opus)")
+                          help="DeepSeek-Vorfilter überspringen (alle direkt zum Agenten)")
     p_digest.add_argument("--model", default=None,
-                          help="Agent-Modell (Default: deepseek/deepseek-v3.2, "
-                               "Alternativen: anthropic/claude-opus-4.6, anthropic/claude-sonnet-4.6)")
+                          help="Agent-Modell via OpenRouter-ID (z.B. deepseek/deepseek-v3.2, "
+                               "anthropic/claude-opus-4.6)")
     p_digest.add_argument("--quiet", action="store_true")
     p_digest.set_defaults(func=cmd_digest)
 

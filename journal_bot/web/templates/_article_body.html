@@ -7,6 +7,13 @@
 <div class="detail-section">
   {% include "_verdict_controls.html" %}
   <p style="margin-top:.4rem;">{{ e.verdict_begruendung }}</p>
+  {% if a.selection_mode or a.discourse_indicator or a.signal_group %}
+  <p style="margin-top:.5rem; font-size:.85rem; color:var(--muted);">
+    {% if a.selection_mode %}<span>Selektion: <code>{{ a.selection_mode }}</code></span>{% endif %}
+    {% if a.discourse_indicator %}<span>{% if a.selection_mode %} · {% endif %}Diskursindikator: <code>{{ a.discourse_indicator }}</code></span>{% endif %}
+    {% if a.signal_group %}<span>{% if a.selection_mode or a.discourse_indicator %} · {% endif %}Signalgruppe: <code>{{ a.signal_group }}</code></span>{% endif %}
+  </p>
+  {% endif %}
 </div>
 
 <!-- Zitiert Dich -->

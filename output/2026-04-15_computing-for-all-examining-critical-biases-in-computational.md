@@ -1,0 +1,372 @@
+## Computing for all?: Examining critical biases in computational tools for learning
+_Breanne Krystine Litts, Kristin A. Searle, Bryan McKinley Jones Brayboy, Yasmin B. Kafai · British Journal of Educational Technology · doi:10.1111/bjet.13059_
+https://doi.org/10.1111/bjet.13059
+
+**Verdict:** SCANNEN — Thematisch berührt das Beobachtungsfeld (kulturelle Bias in digitalen Tools, indigene Wissenssysteme), aber es fehlt ein spezifischer argumentativer Anschluss an Jörissens publizierte Positionen (z.B. Prompt Interception, kulturelle Resilienz als relationale Theorie). Kein konkreter Ressourcentransfer erkennbar.
+
+### Kernthese
+Der Artikel untersucht kulturelle Bias in Programmierumgebungen für Anfänger*innen, insbesondere wie deren struktureller Aufbau bestimmte Epistemologien privilegiert und kulturelle Praktiken wie Storytelling (hier bei indigenen Jugendlichen) einschränkt. Anhand einer Studie mit 38 Native American Youth, die interaktive Geschichten für ihre Community entwickelten, zeigt der Beitrag, dass Computertools kulturelle Artefakte mit tief eingebetteten epistemologischen, ontologischen und axiologischen Vorannahmen sind. Er plädiert für strukturell kulturell responsive Designprozesse.
+
+### Bezüge zu Deinem Werk
+_Keine substantiellen Bezüge gefunden._
+
+### Bemerkenswert
+- [
+- "
+- U
+- n
+- t
+- e
+- r
+- s
+- u
+- c
+- h
+- t
+-  
+- s
+- p
+- e
+- z
+- i
+- f
+- i
+- s
+- c
+- h
+- ,
+-  
+- w
+- i
+- e
+-  
+- d
+- i
+- e
+-  
+- s
+- t
+- r
+- u
+- k
+- t
+- u
+- r
+- e
+- l
+- l
+- e
+-  
+- G
+- e
+- s
+- t
+- a
+- l
+- t
+- u
+- n
+- g
+-  
+- v
+- o
+- n
+-  
+- P
+- r
+- o
+- g
+- r
+- a
+- m
+- m
+- i
+- e
+- r
+- u
+- m
+- g
+- e
+- b
+- u
+- n
+- g
+- e
+- n
+-  
+- (
+- n
+- i
+- c
+- h
+- t
+-  
+- n
+- u
+- r
+-  
+- O
+- b
+- e
+- r
+- f
+- l
+- ä
+- c
+- h
+- e
+- n
+- m
+- e
+- r
+- k
+- m
+- a
+- l
+- e
+- )
+-  
+- i
+- n
+- d
+- i
+- g
+- e
+- n
+- e
+-  
+- E
+- r
+- z
+- ä
+- h
+- l
+- t
+- r
+- a
+- d
+- i
+- t
+- i
+- o
+- n
+- e
+- n
+-  
+- b
+- e
+- h
+- i
+- n
+- d
+- e
+- r
+- t
+-  
+- –
+-  
+- e
+- i
+- n
+-  
+- k
+- o
+- n
+- k
+- r
+- e
+- t
+- e
+- r
+-  
+- F
+- a
+- l
+- l
+-  
+- v
+- o
+- n
+-  
+- „
+- e
+- m
+- b
+- e
+- d
+- d
+- e
+- d
+-  
+- c
+- u
+- l
+- t
+- u
+- r
+- a
+- l
+-  
+- b
+- i
+- a
+- s
+- e
+- s
+- "
+- .
+- "
+- ,
+-  
+- "
+- M
+- e
+- t
+- h
+- o
+- d
+- i
+- s
+- c
+- h
+- :
+-  
+- C
+- o
+- m
+- m
+- u
+- n
+- i
+- t
+- y
+- -
+- b
+- a
+- s
+- i
+- e
+- r
+- t
+- e
+- r
+-  
+- D
+- e
+- s
+- i
+- g
+- n
+- p
+- r
+- o
+- z
+- e
+- s
+- s
+-  
+- m
+- i
+- t
+-  
+- N
+- a
+- t
+- i
+- v
+- e
+-  
+- A
+- m
+- e
+- r
+- i
+- c
+- a
+- n
+-  
+- Y
+- o
+- u
+- t
+- h
+- ;
+-  
+- T
+- r
+- a
+- n
+- s
+- f
+- e
+- r
+-  
+- a
+- u
+- f
+-  
+- s
+- t
+- r
+- u
+- k
+- t
+- u
+- r
+- e
+- l
+- l
+- e
+-  
+- E
+- b
+- e
+- n
+- e
+-  
+- v
+- o
+- n
+-  
+- C
+- o
+- m
+- p
+- u
+- t
+- e
+- r
+- t
+- o
+- o
+- l
+- s
+-  
+- (
+- n
+- i
+- c
+- h
+- t
+-  
+- n
+- u
+- r
+-  
+- I
+- n
+- h
+- a
+- l
+- t
+- e
+- )
+- .
+- "
+- ]
+
+### Methodisch / theoretisch
+Kritische Analyse von Programmierumgebungen als kulturelle Artefakte; ethnografische Studie mit 38 Native American Youth, die in Teams Community-basierte, ortsbezogene interaktive Geschichten und Spiele entwickelten; Fokus auf Storytelling als kulturelle Praxis; Verbindung von Culturally Responsive Computing und kritischer Designforschung.
+
+---
+_1 Agent-Iterationen · 0 Volltext-Reads · 29,958 in / 767 out · $0.008_

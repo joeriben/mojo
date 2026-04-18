@@ -245,8 +245,9 @@ Die DB (17k Artikel + 160 Publikationen mit Bezügen) kann erkennen, wenn Benjam
 
 1. **Git-Diff des revertierten Commits prüfen**: `git show b7fc098`
 2. **Prompt-Änderungen selektiv wieder einführen**: `_build_projects_block()` und geänderte `ASSESSMENT_OUTRO` aus dem Diff übernehmen
-3. **Vor Batch-Lauf**: 2-3 Einzelartikel testen, Kosten verifizieren (Safety-Check im Code hilft jetzt)
-4. **Validierung gegen die 28 Upgrades**: hätte der neue Prompt sie alle als lesenswert erkannt? Wie viele False Positives auf den 45 Downgrades?
+3. **Offline zuerst**: `python3 scripts/analyze_overrides.py` laufen lassen, um die 28 Upgrades / 45 Downgrades reproduzierbar zu sehen
+4. **Vor Batch-Lauf**: 2-3 Einzelartikel testen, Kosten verifizieren (Safety-Check im Code hilft jetzt)
+5. **Validierung gegen die 28 Upgrades**: hätte der neue Prompt sie alle als lesenswert erkannt? Wie viele False Positives auf den 45 Downgrades?
 5. **Erst bei Gelingen Batch-Lauf auf den 1.672 offenen Artikeln**
 
 ---
@@ -265,4 +266,4 @@ Die DB (17k Artikel + 160 Publikationen mit Bezügen) kann erkennen, wenn Benjam
 - **Zotero-Pfad**: `/Users/joerissen/FAUbox/Zotero` (nicht `~/Zotero`)
 - **Zotero-Collection**: "Benjamin's publications" (key QM7TZT44)
 - **Obsidian-Vault**: `/Users/joerissen/Documents/Obsidian Vault/research/mojo/` (falls Output-Format dort bleibt)
-- **CLAUDE.md** im Projekt-Root enthält zusätzlichen Kontext für Claude-basierte Assistenten — sollte für andere LLMs ggf. umbenannt oder ergänzt werden (z.B. `AGENTS.md` als generischer Name).
+- **`AGENTS.md` ist jetzt der kanonische Assistenten-Kontext** im Projekt-Root. `CLAUDE.md` bleibt als Kompatibilitäts-Spiegel erhalten.

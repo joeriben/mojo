@@ -70,6 +70,35 @@
 <div id="diskurs-biblio-result" style="margin-bottom:1rem;"></div>
 <div id="diskurs-trends-result" style="margin-bottom:1rem;"></div>
 
+{% if signal_groups %}
+<div class="card" style="margin-bottom:1.5rem;">
+  <h2 style="margin-top:0;">Diskursignale</h2>
+  <p style="font-size:.9rem; color:var(--muted);">
+    Verdichtete Muster aus Artikeln mit Diskursindikator. Die Liste zeigt Signalgruppen statt nur Einzeltitel.
+  </p>
+  {% for group in signal_groups %}
+  <div style="margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border);">
+    <div style="display:flex; gap:.5rem; align-items:baseline; flex-wrap:wrap;">
+      <strong>{{ group.label }}</strong>
+      <span style="font-size:.85rem; color:var(--muted);">{{ group.count }} Artikel</span>
+      {% if group.strong_count %}
+      <span class="badge badge-lesenswert">{{ group.strong_count }} stark</span>
+      {% endif %}
+    </div>
+    <div style="margin-top:.4rem;">
+      {% for a in group.articles %}
+      <div class="art-row">
+        <span class="badge badge-{{ a.effective_verdict }}">{{ verdict_label.get(a.effective_verdict, a.effective_verdict) }}</span>
+        {{ title_link(a) }}
+        <span class="art-year">{{ a.year }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
 <!-- Zitiert Dich -->
 {% if cites_you %}
 <div class="cite-section">

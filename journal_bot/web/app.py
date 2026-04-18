@@ -310,6 +310,32 @@ def diskursraum(cluster_key: str | None = None):
         by_verdict[v] = [a for a in articles if a.effective_verdict == v]
 
     cites_you = [a for a in articles if a.citation_hits]
+    signal_groups: list[dict] = []
+    grouped_signals: dict[str, list] = {}
+    for a in articles:
+        if a.signal_group and a.discourse_indicator != "kein_indikator":
+            grouped_signals.setdefault(a.signal_group, []).append(a)
+    for group_key, group_articles in grouped_signals.items():
+        ordered = sorted(
+            group_articles,
+            key=lambda a: (
+                VERDICT_ORDER.get(a.effective_verdict, 99),
+                0 if a.discourse_indicator == "starker_indikator" else 1,
+                -(a.year or 0),
+            ),
+        )
+        signal_groups.append(
+            {
+                "key": group_key,
+                "label": group_key.replace("_", " "),
+                "count": len(ordered),
+                "strong_count": sum(
+                    1 for a in ordered if a.discourse_indicator == "starker_indikator"
+                ),
+                "articles": ordered[:3],
+            }
+        )
+    signal_groups.sort(key=lambda item: (-item["strong_count"], -item["count"], item["key"]))
 
     # Per-journal stats
     journal_stats = []
@@ -326,6 +352,7 @@ def diskursraum(cluster_key: str | None = None):
         articles=articles,
         by_verdict=by_verdict,
         cites_you=cites_you,
+        signal_groups=signal_groups,
         verdict_label=VERDICT_LABEL,
         relation_label=RELATION_LABEL,
         total=len(articles),

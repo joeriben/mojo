@@ -19,9 +19,9 @@ Academic researchers — especially in theory-heavy and highly transdisciplinary
 ## Core Design Decisions
 
 ### Agent Architecture (3-layer)
-- **Haiku summaries** (factual, non-interpretive, ~120 words each) of the researcher's own publications serve as a **search index** — always in the agent's context. No interpretation baked in; the summaries tell the agent WHAT each paper discusses, not what it MEANS.
-- **Opus agent with tool-use** does the actual interpretive work LIVE: reads the new article + enrichment data, selects 2–5 own publications from the index, reads their FULL TEXT via `read_publication()` tool, then produces a grounded digest entry. The agent cites only what it has actually read.
-- **Prompt caching** (Anthropic ephemeral cache via OpenRouter) reduces repeated input costs across multi-iteration agent runs and batch processing.
+- **Summaries** (factual, non-interpretive, ~120 words each) of the researcher's own publications serve as a **search index** — always in the agent's context. No interpretation baked in; the summaries tell the agent WHAT each paper discusses, not what it MEANS.
+- **Tool-use agent** does the actual interpretive work LIVE: reads the new article + enrichment data, selects 2–5 own publications from the index, reads their FULL TEXT via `read_publication()` tool, then produces a grounded digest entry. The agent cites only what it has actually read.
+- **Prompt caching** via OpenRouter reduces repeated input costs across multi-iteration agent runs and batch processing.
 
 ### Three Categories of Relevance
 1. **Bezüge** (substantive connections): explicit links to the researcher's own arguments, grounded in full-text reading. Relation types: *erweitert, widerspricht, parallelisiert, importiert, tangential*.
@@ -45,9 +45,8 @@ Citation-frequency ranking from Crossref reference lists: which works are most c
 ## Technology Stack
 
 - **Python 3.10+**, plain venv (no framework dependencies)
-- **OpenRouter** as LLM gateway (OpenAI-compatible API, supports Claude tool-use + prompt caching)
-- **Claude Haiku 4.5** for corpus summarization
-- **Claude Opus 4.6** for agent reasoning + trend analysis
+- **OpenRouter** as LLM gateway (OpenAI-compatible API, supports tool use + prompt caching)
+- **Configurable models** via profile/UI/CLI (e.g. DeepSeek V3.2, Claude Opus 4.6)
 - **OpenAlex API** (free, polite pool) for journal fetching + enrichment
 - **Crossref API** (free) for reference lists + citation tracking
 - **SQLite** for article store + dedup state
@@ -74,3 +73,7 @@ Working prototype. Core pipeline (ingest → summarize → fetch → digest → 
 ## Setup
 
 See the step-by-step in DEVLOG.md (Session 2026-04-09/10).
+
+## Assistant Context
+
+`AGENTS.md` is the canonical project context for coding assistants. `CLAUDE.md` is kept as a compatibility mirror.

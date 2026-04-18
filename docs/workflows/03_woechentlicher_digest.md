@@ -82,8 +82,16 @@ mojo stats
 Alle Ergebnisse in `articles.db`:
 - `agent_verdict`: pflichtlektuere | lesenswert | scannen | ignorieren
 - `agent_entry_json`: Kernthese, Bezüge, Bemerkenswert, Verdict-Begründung
+- `selection_mode`: similarity | complementarity | citation | trigger | screening
+- `discourse_indicator`: kein_indikator | schwacher_indikator | starker_indikator
+- `signal_group`: verdichtbares Muster, meist Projekt-/Problemfeld-Key
 - `citation_hits_json`: Gefundene Zitationen von Benjamins Werk
 - `cost_usd`: Tatsächliche Kosten pro Artikel
+
+Bestehende Bestände lassen sich ohne API-Kosten nachziehen:
+```bash
+python3 scripts/backfill_attention_metadata.py
+```
 
 Perspektivisch: Web-UI mit strukturierter Ablage, Zotero-1-Click, Escalation-Button.
 

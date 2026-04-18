@@ -4,6 +4,8 @@ Dieses Dokument gilt für jeden Coding-Assistenten, der an MOJO arbeitet (Claude
 
 **Neue Assistenten sollten zuerst `HANDOVER.md` lesen** — darin steht der aktuelle Arbeitsstand und die letzten Entscheidungen.
 
+**Arbeitskontext / Memory:** `docs/context/MEMORY.md` ist der Index über die aufgebauten Memory-Files (User-Profil, Feedback, Projekt-Entscheidungen). Bei Session-Start als Index lesen, relevante Files bei Bedarf nachladen.
+
 ## Was ist dieses Projekt?
 Ein persönlicher Forschungsassistent für Benjamin Jörissen (FAU Erlangen-Nürnberg, Allgemeine Pädagogik / ästhetische & kulturelle Bildung). Der Bot sichtet wöchentlich wissenschaftliche Zeitschriften, bewertet jeden Beitrag gegen Benjamins publiziertes Werk, und produziert Digest-Einträge + Trend-Analysen.
 

@@ -60,6 +60,9 @@ CREATE TABLE IF NOT EXISTS articles (
     tokens_cache_write  INTEGER,
     cost_usd            REAL,
     iterations          INTEGER,
+    selection_mode      TEXT,
+    discourse_indicator TEXT,
+    signal_group        TEXT,
 
     -- User override (null = agrees with agent)
     user_verdict        TEXT,
@@ -79,6 +82,15 @@ CREATE INDEX IF NOT EXISTS idx_articles_fetched_at  ON articles(fetched_at);
 
 MIGRATIONS = [
     # Add user verdict columns (idempotent)
+    """
+    ALTER TABLE articles ADD COLUMN selection_mode TEXT;
+    """,
+    """
+    ALTER TABLE articles ADD COLUMN discourse_indicator TEXT;
+    """,
+    """
+    ALTER TABLE articles ADD COLUMN signal_group TEXT;
+    """,
     """
     ALTER TABLE articles ADD COLUMN user_verdict TEXT;
     """,
@@ -136,6 +148,9 @@ class StoredArticle:
     tokens_cache_write: int = 0
     cost_usd: float = 0.0
     iterations: int = 0
+    selection_mode: str = ""
+    discourse_indicator: str = ""
+    signal_group: str = ""
 
     # User override
     user_verdict: str = ""
@@ -244,6 +259,9 @@ class Store:
         tokens_cache_write: int,
         cost_usd: float,
         iterations: int,
+        selection_mode: str = "",
+        discourse_indicator: str = "",
+        signal_group: str = "",
     ) -> None:
         with self._conn() as c:
             c.execute(
@@ -258,7 +276,10 @@ class Store:
                     tokens_cached_read = ?,
                     tokens_cache_write = ?,
                     cost_usd = ?,
-                    iterations = ?
+                    iterations = ?,
+                    selection_mode = ?,
+                    discourse_indicator = ?,
+                    signal_group = ?
                 WHERE id = ?
                 """,
                 (
@@ -272,6 +293,9 @@ class Store:
                     tokens_cache_write,
                     cost_usd,
                     iterations,
+                    selection_mode or None,
+                    discourse_indicator or None,
+                    signal_group or None,
                     article_id,
                 ),
             )
@@ -290,6 +314,51 @@ class Store:
                 "UPDATE articles SET zotero_key = ? WHERE id = ?",
                 (zotero_key, article_id),
             )
+
+    def set_attention_profile(
+        self,
+        article_id: str,
+        *,
+        selection_mode: str = "",
+        discourse_indicator: str = "",
+        signal_group: str = "",
+        entry: dict | None = None,
+    ) -> None:
+        with self._conn() as c:
+            if entry is None:
+                c.execute(
+                    """
+                    UPDATE articles SET
+                        selection_mode = ?,
+                        discourse_indicator = ?,
+                        signal_group = ?
+                    WHERE id = ?
+                    """,
+                    (
+                        selection_mode or None,
+                        discourse_indicator or None,
+                        signal_group or None,
+                        article_id,
+                    ),
+                )
+            else:
+                c.execute(
+                    """
+                    UPDATE articles SET
+                        selection_mode = ?,
+                        discourse_indicator = ?,
+                        signal_group = ?,
+                        agent_entry_json = ?
+                    WHERE id = ?
+                    """,
+                    (
+                        selection_mode or None,
+                        discourse_indicator or None,
+                        signal_group or None,
+                        json.dumps(entry, ensure_ascii=False),
+                        article_id,
+                    ),
+                )
 
     def set_user_verdict(
         self,
@@ -441,6 +510,9 @@ def _row_to_article(row: sqlite3.Row) -> StoredArticle:
         tokens_cache_write=row["tokens_cache_write"] or 0,
         cost_usd=row["cost_usd"] or 0.0,
         iterations=row["iterations"] or 0,
+        selection_mode=row["selection_mode"] or "",
+        discourse_indicator=row["discourse_indicator"] or "",
+        signal_group=row["signal_group"] or "",
         user_verdict=row["user_verdict"] or "",
         user_memo=row["user_memo"] or "",
         user_verdict_at=row["user_verdict_at"] or "",
