@@ -3,28 +3,29 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>de.joerissen.mojo</string>
+    <string>__LABEL__</string>
 
     <key>ProgramArguments</key>
     <array>
-        <string>/Users/joerissen/ai/mojo/.venv/bin/python</string>
-        <string>-m</string>
-        <string>journal_bot.cli</string>
-        <string>run</string>
+        <string>/bin/zsh</string>
+        <string>__PROJECT_ROOT__/scripts/run_weekly_digest.sh</string>
     </array>
 
     <key>WorkingDirectory</key>
-    <string>/Users/joerissen/ai/mojo</string>
+    <string>__PROJECT_ROOT__</string>
 
     <key>EnvironmentVariables</key>
     <dict>
-        <!-- OPENROUTER_API_KEY kommt aus .env via python-dotenv,
-             falls Du ihn dort hinterlegst. Alternativ hier eintragen. -->
         <key>PATH</key>
-        <string>/usr/local/bin:/usr/bin:/bin</string>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>MOJO_PYTHON</key>
+        <string>__PYTHON__</string>
+        <key>MOJO_DIGEST_NEXT</key>
+        <string>50</string>
+        <key>MOJO_SINCE_YEAR</key>
+        <string>2025</string>
     </dict>
 
-    <!-- Jeden Montag 07:00 -->
     <key>StartCalendarInterval</key>
     <dict>
         <key>Weekday</key>
@@ -36,9 +37,9 @@
     </dict>
 
     <key>StandardOutPath</key>
-    <string>/Users/joerissen/ai/mojo/launchd/stdout.log</string>
+    <string>__PROJECT_ROOT__/launchd/stdout.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/joerissen/ai/mojo/launchd/stderr.log</string>
+    <string>__PROJECT_ROOT__/launchd/stderr.log</string>
 
     <key>RunAtLoad</key>
     <false/>

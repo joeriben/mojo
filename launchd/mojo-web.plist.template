@@ -3,25 +3,25 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>de.joerissen.mojo-web</string>
+    <string>__LABEL__</string>
 
     <key>ProgramArguments</key>
     <array>
-        <string>/Users/joerissen/ai/mojo/.venv/bin/python</string>
+        <string>__PYTHON__</string>
         <string>-m</string>
         <string>journal_bot.cli</string>
         <string>web</string>
         <string>--port</string>
-        <string>5555</string>
+        <string>__PORT__</string>
     </array>
 
     <key>WorkingDirectory</key>
-    <string>/Users/joerissen/ai/mojo</string>
+    <string>__PROJECT_ROOT__</string>
 
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
-        <string>/usr/local/bin:/usr/bin:/bin</string>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
     </dict>
 
     <key>RunAtLoad</key>
@@ -31,8 +31,8 @@
     <true/>
 
     <key>StandardOutPath</key>
-    <string>/Users/joerissen/ai/mojo/launchd/web_stdout.log</string>
+    <string>__PROJECT_ROOT__/launchd/web_stdout.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/joerissen/ai/mojo/launchd/web_stderr.log</string>
+    <string>__PROJECT_ROOT__/launchd/web_stderr.log</string>
 </dict>
 </plist>

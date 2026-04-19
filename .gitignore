@@ -25,3 +25,8 @@ config.toml
 # Temporäre Dateien
 *.tmp
 /tmp/
+
+# launchd (nur lokal, nie ins Repo)
+launchd/*.log
+launchd/*.plist
+!launchd/*.plist.template
