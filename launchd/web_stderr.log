@@ -267,3 +267,54 @@ ModuleNotFoundError: No module named 'markdown'
  * Restarting with stat
  * Debugger is active!
  * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+127.0.0.1 - - [19/Apr/2026 13:55:10] "GET /agent HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 13:55:37] "POST /api/agent/context HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 13:57:16] "POST /api/agent/chat HTTP/1.1" 200 -

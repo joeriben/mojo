@@ -30,6 +30,44 @@ CONTEXT_SUMMARY_MODEL = "deepseek/deepseek-v3.2"
 SHORT_CONTEXT_CHARS = 4000
 CONTEXT_SUMMARY_INPUT_CHARS = 60000
 CONTEXT_SUMMARY_OUTPUT_CHARS = 6000
+SEARCH_STOPWORDS = {
+    "aber", "about", "against", "all", "als", "and", "an", "are", "auf", "aus",
+    "bei", "beim", "beyond", "bitte", "can", "contra", "das", "dass", "dem",
+    "den", "der", "des", "die", "dies", "diese", "diesem", "diesen", "dieser",
+    "doch", "durch", "ein", "eine", "einer", "eines", "er", "es", "etc", "for",
+    "from", "für", "gegen", "gibt", "hat", "have", "how", "ich", "im", "in",
+    "into", "ist", "kann", "können", "mit", "nach", "nicht", "oder", "of", "on",
+    "relevant", "sind", "so", "such", "text", "texte", "this", "to", "und", "was",
+    "welche", "welcher", "welches", "welchen", "which", "wie", "wo", "zu",
+    "zum", "zur",
+}
+QUESTION_NOISE = {
+    "agent", "artikel", "artikeln", "bezug", "bezüge", "db", "entwurf",
+    "entwurfs", "fehlen", "fehlende", "frage", "literatur", "missed", "mojo",
+    "ref", "referenz", "referenzen", "recherche", "research", "soll", "suchen",
+    "suche", "thema", "themen", "user",
+}
+GENERIC_SEARCH_TERMS = {
+    "art", "arts", "bildung", "creative", "creativity", "culture", "cultural",
+    "digital", "education", "educational", "kunst", "learning", "media", "school",
+}
+VERDICT_SCORE = {
+    "pflichtlektuere": 6,
+    "lesenswert": 4,
+    "scannen": 1,
+    "ignorieren": -4,
+}
+FIELD_WEIGHTS = {
+    "title": 5,
+    "authors": 4,
+    "topics": 4,
+    "concepts": 3,
+    "signal_group": 3,
+    "subgroup": 3,
+    "kernthese": 2,
+    "abstract": 2,
+    "entry": 1,
+}
 
 
 def _load_summaries() -> dict:
@@ -64,54 +102,416 @@ def _load_corpus_index() -> list[dict]:
     ]
 
 
-def _search_articles_by_text(query: str, limit: int = 30) -> list[dict]:
-    """Search articles.db by title/abstract keywords. Returns lightweight dicts."""
-    store = Store()
-    keywords = [w.strip() for w in query.split() if len(w.strip()) > 2]
-    if not keywords:
+def _normalize_search_text(text: str) -> str:
+    return re.sub(r"\s+", " ", (text or "").lower()).strip()
+
+
+def _extract_search_terms(text: str, *, min_len: int = 3) -> list[str]:
+    tokens = re.findall(r"[A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9_\-/\.]*", text.lower())
+    terms: list[str] = []
+    for token in tokens:
+        token = token.strip("._-/")
+        if len(token) < min_len:
+            continue
+        if token in SEARCH_STOPWORDS or token in QUESTION_NOISE:
+            continue
+        if token.isdigit():
+            continue
+        terms.append(token)
+    deduped: list[str] = []
+    for term in terms:
+        if term not in deduped:
+            deduped.append(term)
+    return deduped
+
+
+def _row_to_search_result(
+    row,
+    *,
+    score: float = 0.0,
+    match_reasons: list[str] | None = None,
+) -> dict:
+    entry = None
+    if row["agent_entry_json"]:
+        try:
+            entry = json.loads(row["agent_entry_json"])
+        except Exception:
+            pass
+
+    topics = []
+    concepts = []
+    citation_hits = []
+    if row["openalex_topics"]:
+        try:
+            topics = json.loads(row["openalex_topics"])
+        except Exception:
+            topics = []
+    if row["openalex_concepts"]:
+        try:
+            concepts = json.loads(row["openalex_concepts"])
+        except Exception:
+            concepts = []
+    if row["citation_hits_json"]:
+        try:
+            citation_hits = json.loads(row["citation_hits_json"])
+        except Exception:
+            citation_hits = []
+
+    return {
+        "id": row["id"],
+        "journal": row["journal_full"] or row["journal_short"],
+        "title": row["title"],
+        "authors": json.loads(row["authors_json"]) if row["authors_json"] else [],
+        "year": row["year"],
+        "doi": row["doi"],
+        "verdict": row["agent_verdict"],
+        "kernthese": entry.get("kernthese", "") if entry else "",
+        "bezuege": entry.get("bezuege", []) if entry else [],
+        "topics": [t.get("name", "") for t in topics if isinstance(t, dict) and t.get("name")],
+        "concepts": [c.get("name", "") for c in concepts if isinstance(c, dict) and c.get("name")],
+        "signal_group": row["signal_group"] or "",
+        "suggested_subgroup": row["suggested_subgroup"] or "",
+        "discourse_indicator": row["discourse_indicator"] or "",
+        "citation_hits_count": len(citation_hits),
+        "score": score,
+        "match_reasons": match_reasons or [],
+    }
+
+
+def _candidate_search_rows(terms: list[str], limit: int = 220):
+    if not terms:
         return []
 
-    # Build LIKE conditions
+    store = Store()
+    fields = [
+        "title",
+        "authors_json",
+        "abstract",
+        "openalex_abstract",
+        "agent_entry_json",
+        "openalex_topics",
+        "openalex_concepts",
+        "signal_group",
+        "suggested_subgroup",
+        "suggested_subgroup_reason",
+        "citation_hits_json",
+    ]
     conditions = []
-    params = []
-    for kw in keywords[:5]:  # max 5 keywords
-        conditions.append(
-            "(title LIKE ? OR abstract LIKE ? OR openalex_abstract LIKE ?)"
-        )
-        pattern = f"%{kw}%"
-        params.extend([pattern, pattern, pattern])
+    params: list[Any] = []
+    for term in terms[:12]:
+        pattern = f"%{term.lower()}%"
+        field_cond = " OR ".join(f"LOWER(COALESCE({field}, '')) LIKE ?" for field in fields)
+        conditions.append(f"({field_cond})")
+        params.extend([pattern] * len(fields))
 
-    where = " AND ".join(conditions)
     sql = (
-        f"SELECT id, journal_short, journal_full, title, authors_json, abstract, "
-        f"doi, year, agent_verdict, agent_entry_json, cost_usd "
-        f"FROM articles WHERE {where} AND agent_verdict IS NOT NULL "
-        f"ORDER BY year DESC LIMIT ?"
+        "SELECT id, journal_short, journal_full, title, authors_json, abstract, openalex_abstract, doi, year, "
+        "agent_verdict, agent_entry_json, cost_usd, openalex_topics, openalex_concepts, "
+        "signal_group, suggested_subgroup, discourse_indicator, citation_hits_json "
+        "FROM articles WHERE agent_verdict IS NOT NULL "
+        f"AND ({' OR '.join(conditions)}) "
+        "ORDER BY year DESC LIMIT ?"
     )
     params.append(limit)
 
     with store._conn() as c:
-        rows = c.execute(sql, params).fetchall()
+        return c.execute(sql, params).fetchall()
 
-    results = []
-    for r in rows:
-        entry = None
-        if r["agent_entry_json"]:
-            try:
-                entry = json.loads(r["agent_entry_json"])
-            except Exception:
-                pass
-        results.append({
-            "id": r["id"],
-            "journal": r["journal_full"] or r["journal_short"],
-            "title": r["title"],
-            "authors": json.loads(r["authors_json"]) if r["authors_json"] else [],
-            "year": r["year"],
-            "doi": r["doi"],
-            "verdict": r["agent_verdict"],
-            "kernthese": entry.get("kernthese", "") if entry else "",
-        })
-    return results
+
+def _score_search_row(row, terms: list[str], phrases: list[str], intent: str) -> tuple[float, list[str]]:
+    entry = {}
+    if row["agent_entry_json"]:
+        try:
+            entry = json.loads(row["agent_entry_json"])
+        except Exception:
+            entry = {}
+
+    topics = []
+    concepts = []
+    citation_hits = []
+    if row["openalex_topics"]:
+        try:
+            topics = json.loads(row["openalex_topics"])
+        except Exception:
+            topics = []
+    if row["openalex_concepts"]:
+        try:
+            concepts = json.loads(row["openalex_concepts"])
+        except Exception:
+            concepts = []
+    if row["citation_hits_json"]:
+        try:
+            citation_hits = json.loads(row["citation_hits_json"])
+        except Exception:
+            citation_hits = []
+
+    def _blob(value) -> str:
+        if isinstance(value, str):
+            return _normalize_search_text(value)
+        if isinstance(value, list):
+            values = []
+            for item in value:
+                if isinstance(item, dict):
+                    values.extend(str(v) for v in item.values() if isinstance(v, str))
+                else:
+                    values.append(str(item))
+            return _normalize_search_text(" ".join(values))
+        if isinstance(value, dict):
+            return _normalize_search_text(
+                " ".join(str(v) for v in value.values() if isinstance(v, str))
+            )
+        return ""
+
+    field_blobs = {
+        "title": _blob(row["title"]),
+        "authors": _blob(row["authors_json"]),
+        "abstract": _blob((row["abstract"] or "") + " " + (row["openalex_abstract"] or "")),
+        "topics": _blob(topics),
+        "concepts": _blob(concepts),
+        "signal_group": _blob((row["signal_group"] or "") + " " + (row["discourse_indicator"] or "")),
+        "subgroup": _blob(row["suggested_subgroup"] or ""),
+        "kernthese": _blob(entry.get("kernthese", "")),
+        "entry": _blob(entry),
+    }
+
+    score = float(VERDICT_SCORE.get(row["agent_verdict"], 0))
+    term_weights = {
+        term: max(0.45, 2.2 - idx * 0.12) * (0.55 if term in GENERIC_SEARCH_TERMS else 1.0)
+        for idx, term in enumerate(terms)
+    }
+    phrase_weights = {
+        phrase: max(1.6, 3.0 - idx * 0.2)
+        for idx, phrase in enumerate(phrases)
+    }
+    matched_terms: dict[str, list[str]] = {}
+    specific_hits = 0
+    for label, blob in field_blobs.items():
+        hits = [term for term in terms if term in blob]
+        phrase_hits = [phrase for phrase in phrases if phrase and phrase in blob]
+        all_hits = list(dict.fromkeys(hits + phrase_hits))
+        if all_hits:
+            hit_weight = sum(term_weights.get(term, 1.0) for term in hits)
+            hit_weight += sum(phrase_weights.get(phrase, 2.0) for phrase in phrase_hits)
+            score += FIELD_WEIGHTS.get(label, 1) * hit_weight
+            matched_terms[label] = all_hits[:4]
+            specific_hits += sum(1 for term in hits if term not in GENERIC_SEARCH_TERMS)
+            specific_hits += len(phrase_hits)
+
+    if row["year"]:
+        score += max(min((int(row["year"]) - 2018) * 0.15, 1.5), 0)
+    if citation_hits:
+        score += 1.5
+    if entry.get("bezuege"):
+        score += min(len(entry["bezuege"]), 3) * 0.75
+    if row["discourse_indicator"] == "starker_indikator":
+        score += 1.25
+    if intent == "methods":
+        method_terms = {"method", "methods", "methodik", "methode", "ethnograph", "interview", "analyse", "praxe"}
+        if any(term in field_blobs["abstract"] or term in field_blobs["entry"] for term in method_terms):
+            score += 2.0
+    elif intent == "counter":
+        if "widerspricht" in field_blobs["entry"] or "krit" in field_blobs["entry"]:
+            score += 2.0
+    if matched_terms and specific_hits == 0:
+        score -= 3.0
+
+    reasons: list[str] = []
+    label_map = {
+        "title": "Titel",
+        "authors": "Autor:innen",
+        "topics": "Topics",
+        "concepts": "Konzepte",
+        "signal_group": "Signalgruppe",
+        "subgroup": "Sub-Motiv",
+        "kernthese": "Kernthese",
+        "abstract": "Abstract",
+        "entry": "Agent-Analyse",
+    }
+    for key in ["title", "topics", "concepts", "signal_group", "subgroup", "kernthese", "abstract", "authors"]:
+        if key in matched_terms:
+            reasons.append(f"{label_map[key]}: {', '.join(matched_terms[key][:3])}")
+    if citation_hits:
+        reasons.append("zitiert Benjamin")
+    if entry.get("bezuege"):
+        first = entry["bezuege"][0]
+        pub = first.get("pub_kurz", "")
+        relation = first.get("relation", "")
+        if pub:
+            reasons.append(f"Agent-Bezug: {pub} ({relation})")
+
+    return score, reasons[:4]
+
+
+def _parse_context_sections(user_context: str | None) -> dict[str, list[str]]:
+    if not user_context:
+        return {}
+
+    aliases = {
+        "fokus": "focus",
+        "schlüsselbegriffe": "keywords",
+        "schlusselbegriffe": "keywords",
+        "vorhandene referenzen und debatten": "references",
+        "empirischer/methodischer kontext": "methods",
+        "offene anschlussstellen": "gaps",
+    }
+    sections: dict[str, list[str]] = {}
+    current = ""
+    for raw_line in user_context.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.startswith("## "):
+            current = aliases.get(_normalize_search_text(line[3:]), "")
+            if current and current not in sections:
+                sections[current] = []
+            continue
+        if not current:
+            continue
+        if line.startswith("- "):
+            line = line[2:].strip()
+        sections.setdefault(current, []).append(line)
+    return sections
+
+
+def _detect_search_intent(message: str) -> str:
+    msg = _normalize_search_text(message)
+    if any(token in msg for token in ["methode", "methodisch", "zugang", "methodological", "method"]):
+        return "methods"
+    if any(token in msg for token in ["gegenargument", "widerspruch", "kritik", "counter", "opposition"]):
+        return "counter"
+    if any(token in msg for token in ["fehl", "referenz", "bezug", "missed"]):
+        return "missing_refs"
+    if any(token in msg for token in ["relevant", "anschluss", "welche artikel", "relevante artikel"]):
+        return "relevant"
+    return "general"
+
+
+def _build_search_plan(message: str, user_context: str | None = None) -> dict[str, Any]:
+    intent = _detect_search_intent(message)
+    sections = _parse_context_sections(user_context)
+    message_terms = _extract_search_terms(message)
+    phrases: list[str] = []
+    terms: list[str] = []
+
+    def _add_items(items: list[str], *, phrase_limit: int, term_limit: int) -> None:
+        for item in items[:phrase_limit]:
+            clean = item.strip()
+            if clean and len(clean) >= 4 and clean not in phrases:
+                phrases.append(clean)
+        for item in items[:term_limit]:
+            for term in _extract_search_terms(item):
+                if term not in terms:
+                    terms.append(term)
+
+    if intent == "methods":
+        _add_items(sections.get("methods", []), phrase_limit=5, term_limit=5)
+        _add_items(sections.get("keywords", []), phrase_limit=4, term_limit=6)
+    elif intent == "counter":
+        _add_items(sections.get("focus", []), phrase_limit=4, term_limit=5)
+        _add_items(sections.get("gaps", []), phrase_limit=4, term_limit=5)
+        _add_items(sections.get("keywords", []), phrase_limit=4, term_limit=5)
+    elif intent == "missing_refs":
+        _add_items(sections.get("gaps", []), phrase_limit=5, term_limit=5)
+        _add_items(sections.get("references", []), phrase_limit=4, term_limit=4)
+        _add_items(sections.get("keywords", []), phrase_limit=5, term_limit=6)
+        _add_items(sections.get("focus", []), phrase_limit=3, term_limit=4)
+    else:
+        _add_items(sections.get("keywords", []), phrase_limit=6, term_limit=8)
+        _add_items(sections.get("focus", []), phrase_limit=4, term_limit=5)
+
+    for term in message_terms:
+        if term not in terms:
+            terms.append(term)
+
+    specific_terms = [term for term in terms if term not in GENERIC_SEARCH_TERMS]
+    generic_terms = [term for term in terms if term in GENERIC_SEARCH_TERMS]
+    if len(specific_terms) >= 4:
+        terms = specific_terms[:10] + generic_terms[:2]
+
+    return {
+        "intent": intent,
+        "phrases": phrases[:8],
+        "terms": terms[:14],
+    }
+
+
+def _search_articles_by_plan(plan: dict[str, Any], limit: int = 12) -> list[dict]:
+    terms = plan.get("terms") or []
+    phrases = [_normalize_search_text(p) for p in (plan.get("phrases") or []) if p.strip()]
+    rows = _candidate_search_rows(list(dict.fromkeys(terms + phrases)), limit=220)
+
+    scored: list[dict] = []
+    for row in rows:
+        score, reasons = _score_search_row(row, terms, phrases, plan.get("intent", "general"))
+        if score <= 0:
+            continue
+        scored.append(_row_to_search_result(row, score=score, match_reasons=reasons))
+
+    non_ignored = [item for item in scored if item["verdict"] != "ignorieren"]
+    if non_ignored:
+        scored = non_ignored
+
+    scored.sort(
+        key=lambda item: (
+            -item["score"],
+            -VERDICT_SCORE.get(item["verdict"], 0),
+            -(item["year"] or 0),
+        )
+    )
+    return scored[:limit]
+
+
+def _format_search_results(results: list[dict], *, include_reasons: bool = False) -> str:
+    lines = []
+    for r in results:
+        authors_str = ", ".join(r["authors"][:2])
+        if len(r["authors"]) > 2:
+            authors_str += " et al."
+        parts = [
+            f"- [{r['verdict'].upper()}] {r['title']}",
+            f"  {authors_str} ({r['year']}) — {r['journal']}",
+            f"  ID: {r['id']}",
+        ]
+        if include_reasons and r.get("match_reasons"):
+            parts.append("  Warum passend: " + " | ".join(r["match_reasons"][:3]))
+        if r["kernthese"]:
+            parts.append(f"  Kernthese: {r['kernthese'][:220]}")
+        lines.append("\n".join(parts))
+    return "\n\n".join(lines)
+
+
+def build_retrieval_prefetch(message: str, user_context: str | None = None) -> str:
+    plan = _build_search_plan(message, user_context)
+    results = _search_articles_by_plan(plan, limit=8)
+    if not results:
+        return ""
+
+    parts = [
+        "=== AUTOMATISCHE VORRECHERCHE AUS DER MOJO-DB ===",
+        f"Intent: {plan['intent']}",
+    ]
+    if plan["phrases"]:
+        parts.append("Leitphrasen: " + "; ".join(plan["phrases"][:5]))
+    if plan["terms"]:
+        parts.append("Suchterme: " + ", ".join(plan["terms"][:10]))
+    parts.append("")
+    parts.append(_format_search_results(results[:6], include_reasons=True))
+    parts.append("")
+    parts.append(
+        "Nutze diese Treffer als Startpunkt. Wenn etwas unklar ist, lies Details per Tool "
+        "`read_article_detail` nach oder suche gezielt weiter."
+    )
+    return "\n".join(parts)
+
+
+def _search_articles_by_text(
+    query: str,
+    user_context: str | None = None,
+    limit: int = 30,
+) -> list[dict]:
+    """Search articles.db robustly from natural-language or keyword queries."""
+    plan = _build_search_plan(query, user_context)
+    return _search_articles_by_plan(plan, limit=limit)
 
 
 def _search_articles_by_verdict(
@@ -121,36 +521,18 @@ def _search_articles_by_verdict(
     store = Store()
     placeholders = ",".join("?" * len(verdicts))
     sql = (
-        f"SELECT id, journal_short, journal_full, title, authors_json, "
-        f"doi, year, agent_verdict, agent_entry_json "
+        "SELECT id, journal_short, journal_full, title, authors_json, doi, year, "
+        "agent_verdict, agent_entry_json, openalex_topics, openalex_concepts, "
+        "signal_group, suggested_subgroup, discourse_indicator, citation_hits_json "
         f"FROM articles WHERE agent_verdict IN ({placeholders}) "
-        f"ORDER BY year DESC LIMIT ?"
+        "ORDER BY year DESC LIMIT ?"
     )
     params = list(verdicts) + [limit]
 
     with store._conn() as c:
         rows = c.execute(sql, params).fetchall()
 
-    results = []
-    for r in rows:
-        entry = None
-        if r["agent_entry_json"]:
-            try:
-                entry = json.loads(r["agent_entry_json"])
-            except Exception:
-                pass
-        results.append({
-            "id": r["id"],
-            "journal": r["journal_full"] or r["journal_short"],
-            "title": r["title"],
-            "authors": json.loads(r["authors_json"]) if r["authors_json"] else [],
-            "year": r["year"],
-            "doi": r["doi"],
-            "verdict": r["agent_verdict"],
-            "kernthese": entry.get("kernthese", "") if entry else "",
-            "bezuege": entry.get("bezuege", []) if entry else [],
-        })
-    return results
+    return [_row_to_search_result(r) for r in rows]
 
 
 TOOL_DEFINITIONS = [
@@ -160,15 +542,16 @@ TOOL_DEFINITIONS = [
             "name": "search_mojo_db",
             "description": (
                 "Search the MOJO article database (17,000+ screened journal articles) "
-                "by keywords. Returns title, journal, year, verdict, and kernthese. "
-                "Use this to find articles relevant to the user's text."
+                "from natural-language or keyword queries. It matches not only title and "
+                "abstract, but also agent analyses, OpenAlex topics/concepts, signal groups, "
+                "and other stored metadata. Use this to find articles relevant to the user's text."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "Space-separated keywords to search in title and abstract.",
+                        "description": "Natural-language search request or compact keyword bundle.",
                     },
                     "limit": {
                         "type": "integer",
@@ -221,27 +604,20 @@ TOOL_DEFINITIONS = [
 ]
 
 
-def _execute_tool(name: str, args: dict) -> str:
+def _execute_tool(name: str, args: dict, user_context: str | None = None) -> str:
     """Execute a tool call and return result as string."""
     if name == "search_mojo_db":
         results = _search_articles_by_text(
             args.get("query", ""),
+            user_context=user_context,
             limit=args.get("limit", 20),
         )
         if not results:
             return "Keine Treffer gefunden."
-        lines = []
-        for r in results:
-            authors_str = ", ".join(r["authors"][:2])
-            if len(r["authors"]) > 2:
-                authors_str += " et al."
-            lines.append(
-                f"- [{r['verdict'].upper()}] {r['title']}\n"
-                f"  {authors_str} ({r['year']}) — {r['journal']}\n"
-                f"  ID: {r['id']}"
-                + (f"\n  Kernthese: {r['kernthese'][:200]}" if r["kernthese"] else "")
-            )
-        return f"{len(results)} Treffer:\n\n" + "\n\n".join(lines)
+        return f"{len(results)} Treffer:\n\n" + _format_search_results(
+            results,
+            include_reasons=True,
+        )
 
     elif name == "get_high_relevance_articles":
         results = _search_articles_by_verdict(
@@ -250,25 +626,10 @@ def _execute_tool(name: str, args: dict) -> str:
         )
         if not results:
             return "Keine hochrelevanten Artikel gefunden."
-        lines = []
-        for r in results:
-            authors_str = ", ".join(r["authors"][:2])
-            if len(r["authors"]) > 2:
-                authors_str += " et al."
-            bezuege_str = ""
-            if r.get("bezuege"):
-                bezuege_str = "\n  Bezüge: " + "; ".join(
-                    b.get("pub_kurz", "") + " (" + b.get("relation", "") + ")"
-                    for b in r["bezuege"][:3]
-                )
-            lines.append(
-                f"- [{r['verdict'].upper()}] {r['title']}\n"
-                f"  {authors_str} ({r['year']}) — {r['journal']}\n"
-                f"  ID: {r['id']}"
-                + (f"\n  Kernthese: {r['kernthese'][:200]}" if r["kernthese"] else "")
-                + bezuege_str
-            )
-        return f"{len(results)} hochrelevante Artikel:\n\n" + "\n\n".join(lines)
+        return f"{len(results)} hochrelevante Artikel:\n\n" + _format_search_results(
+            results,
+            include_reasons=True,
+        )
 
     elif name == "read_article_detail":
         article_id = args.get("article_id", "")
@@ -529,9 +890,11 @@ def build_system_prompt(user_context: str | None = None) -> str:
         "- Verlinke Artikel als /article/<id> für die MOJO-Detailseite.",
         "- Unterscheide zwischen: echten Bezügen (substantive connections) und "
         "  thematischen Überlappungen (shared reference frames).",
-        "- Sei ehrlich über die Grenzen deiner Suche. LIKE-Suche findet nicht alles.",
-        "- Wenn der Text klar genug ist, mach proaktiv mehrere Suchen mit "
-        "  verschiedenen Keywords.",
+        "- Es kann eine automatische Vorrecherche mit Kandidaten geben. Nutze sie als Startpunkt,",
+        "  aber prüfe sie kritisch und lies bei Bedarf Details per Tool nach.",
+        "- Wenn der Text klar genug ist, mach proaktiv mehrere Suchen mit unterschiedlichen",
+        "  Query-Bündeln statt nur einer generischen Suchanfrage.",
+        "- Sei ehrlich über die Grenzen der Suche und benenne Unsicherheiten offen.",
     ])
 
     if user_context:
@@ -562,10 +925,15 @@ def chat(
     system_prompt = build_system_prompt(user_context)
 
     # Build messages
+    prefetch = build_retrieval_prefetch(message, user_context)
+    user_message = message
+    if prefetch:
+        user_message += "\n\n" + prefetch
+
     messages = []
     for h in history[-20:]:  # Keep last 20 turns
         messages.append({"role": h["role"], "content": h["content"]})
-    messages.append({"role": "user", "content": message})
+    messages.append({"role": "user", "content": user_message})
 
     total_input = 0
     total_output = 0
@@ -632,7 +1000,11 @@ def chat(
                 args = json.loads(tc.function.arguments)
             except Exception:
                 args = {}
-            result = _execute_tool(tc.function.name, args)
+            result = _execute_tool(
+                tc.function.name,
+                args,
+                user_context=user_context,
+            )
             messages.append({
                 "role": "tool",
                 "tool_call_id": tc.id,
