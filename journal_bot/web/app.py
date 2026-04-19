@@ -100,6 +100,7 @@ def format_number_filter(value):
         return str(value)
 
 VERDICT_ORDER = ["pflichtlektuere", "lesenswert", "scannen", "ignorieren"]
+VERDICT_RANK = {verdict: rank for rank, verdict in enumerate(VERDICT_ORDER)}
 VERDICT_LABEL = {
     "pflichtlektuere": "Pflichtlektüre",
     "lesenswert": "Lesenswert",
@@ -117,6 +118,10 @@ RELATION_LABEL = {
 
 def _store():
     return Store()
+
+
+def _verdict_rank(verdict: str | None) -> int:
+    return VERDICT_RANK.get(verdict or "", len(VERDICT_ORDER))
 
 
 def _journal_full_name(short: str) -> str:
@@ -320,7 +325,7 @@ def diskursraum(cluster_key: str | None = None):
         ordered = sorted(
             group_articles,
             key=lambda a: (
-                VERDICT_ORDER.get(a.effective_verdict, 99),
+                _verdict_rank(a.effective_verdict),
                 0 if a.discourse_indicator == "starker_indikator" else 1,
                 -(a.year or 0),
             ),
@@ -707,12 +712,14 @@ def overrides():
         a.journal_full = a.journal_full or _journal_full_name(a.journal_short)
 
     # Group by direction
-    upgrades = [a for a in articles
-                if VERDICT_ORDER.index(a.user_verdict) < VERDICT_ORDER.index(a.agent_verdict)
-                if a.user_verdict in VERDICT_ORDER and a.agent_verdict in VERDICT_ORDER]
-    downgrades = [a for a in articles
-                  if VERDICT_ORDER.index(a.user_verdict) > VERDICT_ORDER.index(a.agent_verdict)
-                  if a.user_verdict in VERDICT_ORDER and a.agent_verdict in VERDICT_ORDER]
+    upgrades = [
+        a for a in articles
+        if _verdict_rank(a.user_verdict) < _verdict_rank(a.agent_verdict)
+    ]
+    downgrades = [
+        a for a in articles
+        if _verdict_rank(a.user_verdict) > _verdict_rank(a.agent_verdict)
+    ]
     confirms = [a for a in articles if a.user_verdict == a.agent_verdict]
 
     return render_template(
