@@ -26,6 +26,11 @@ from journal_bot.settings import (
 )
 from journal_bot.store import ARTICLES_DB, Store
 
+CONTEXT_SUMMARY_MODEL = "deepseek/deepseek-v3.2"
+SHORT_CONTEXT_CHARS = 4000
+CONTEXT_SUMMARY_INPUT_CHARS = 60000
+CONTEXT_SUMMARY_OUTPUT_CHARS = 6000
+
 
 def _load_summaries() -> dict:
     if SUMMARIES_JSON.exists():
@@ -304,6 +309,172 @@ def _execute_tool(name: str, args: dict) -> str:
     return f"Unbekanntes Tool: {name}"
 
 
+def _trim_text(text: str, max_chars: int, suffix: str = "\n\n[gekürzt]") -> str:
+    """Trim text at a sensible boundary."""
+    text = text.strip()
+    if len(text) <= max_chars:
+        return text
+    cut = text[:max_chars]
+    boundary = max(cut.rfind("\n\n"), cut.rfind("\n"), cut.rfind(". "))
+    if boundary >= int(max_chars * 0.7):
+        cut = cut[:boundary].rstrip()
+    else:
+        cut = cut.rstrip()
+    return cut + suffix
+
+
+def _fallback_context_digest(text: str) -> str:
+    """Cheap local fallback when no LLM summary is available."""
+    cleaned = re.sub(r"\n{3,}", "\n\n", text).strip()
+    lines = [line.strip() for line in cleaned.splitlines() if line.strip()]
+    if not lines:
+        return ""
+
+    selected: list[str] = []
+    total_chars = 0
+    for line in lines:
+        if line.startswith(("http://", "https://")):
+            continue
+        selected.append(line)
+        total_chars += len(line) + 1
+        if total_chars >= 2500 or len(selected) >= 18:
+            break
+
+    if not selected:
+        selected = lines[:12]
+
+    digest = "\n".join(selected)
+    return _trim_text(
+        "Automatisch komprimierter Arbeitskontext (Fallback ohne LLM):\n\n"
+        + digest,
+        3200,
+    )
+
+
+def _usage_cost(usage: Any, model: str, prompt_tokens: int, completion_tokens: int) -> float:
+    """Prefer OpenRouter's reported cost, fall back only when necessary."""
+    usage_dump = usage.model_dump() if hasattr(usage, "model_dump") else {}
+    reported_cost = usage_dump.get("cost")
+    if reported_cost is not None:
+        return float(reported_cost)
+    if "claude-opus" in model:
+        return (prompt_tokens * 15.0 + completion_tokens * 75.0) / 1_000_000
+    return 0.0
+
+
+def prepare_context(
+    text: str,
+    model: str = CONTEXT_SUMMARY_MODEL,
+    allow_llm: bool = True,
+) -> dict[str, Any]:
+    """Prepare a compact context dossier for the research agent."""
+    raw_text = text.strip()
+    if not raw_text:
+        return {
+            "raw_text": "",
+            "raw_chars": 0,
+            "prompt_context": "",
+            "prompt_chars": 0,
+            "source": "empty",
+            "model": "",
+            "tokens_used": 0,
+            "cost_usd": 0.0,
+        }
+
+    if len(raw_text) <= SHORT_CONTEXT_CHARS:
+        prompt_context = _trim_text(raw_text, SHORT_CONTEXT_CHARS, suffix="")
+        return {
+            "raw_text": raw_text,
+            "raw_chars": len(raw_text),
+            "prompt_context": prompt_context,
+            "prompt_chars": len(prompt_context),
+            "source": "raw_short",
+            "model": "",
+            "tokens_used": 0,
+            "cost_usd": 0.0,
+        }
+
+    if allow_llm:
+        try:
+            client = build_client()
+            source_text = _trim_text(raw_text, CONTEXT_SUMMARY_INPUT_CHARS)
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "Du verdichtest wissenschaftliche Textentwürfe für einen "
+                            "Rechercheagenten. Extrahiere nur die such- und argumentationsrelevanten "
+                            "Informationen. Antworte auf Deutsch, stark komprimiert, in Markdown."
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            "Erstelle ein kurzes Arbeitsdossier für einen Literatur-Rechercheagenten.\n"
+                            "Ziel: Der Agent soll fehlende Referenzen, relevante Artikel, "
+                            "Gegenargumente und methodische Parallelen finden können, ohne den "
+                            "Volltext erneut zu sehen.\n\n"
+                            "Format:\n"
+                            "## Fokus\n"
+                            "- Texttyp/Ziel\n"
+                            "- Zentrale Frage oder These\n"
+                            "- 3-6 Kernargumente\n"
+                            "## Schlüsselbegriffe\n"
+                            "- 8-15 Suchbegriffe oder Query-Phrasen\n"
+                            "## Vorhandene Referenzen und Debatten\n"
+                            "- genannte Autor:innen, Werke, Schulen, Begriffe\n"
+                            "## Empirischer/methodischer Kontext\n"
+                            "- Material, Feld, Methoden, Fallbeispiele\n"
+                            "## Offene Anschlussstellen\n"
+                            "- Wo weitere Literatur besonders nützlich wäre\n\n"
+                            "Maximal ca. 700 Wörter, keine Ausschmückung, keine Wiederholung.\n\n"
+                            "TEXT:\n"
+                            f"{source_text}"
+                        ),
+                    },
+                ],
+                max_tokens=1200,
+                extra_body={"transforms": ["middle-out"]},
+            )
+            content = (response.choices[0].message.content or "").strip()
+            if content:
+                usage = getattr(response, "usage", None)
+                prompt_tokens = usage.prompt_tokens if usage else 0
+                completion_tokens = usage.completion_tokens if usage else 0
+                prompt_context = _trim_text(content, CONTEXT_SUMMARY_OUTPUT_CHARS)
+                return {
+                    "raw_text": raw_text,
+                    "raw_chars": len(raw_text),
+                    "prompt_context": prompt_context,
+                    "prompt_chars": len(prompt_context),
+                    "source": "llm_summary",
+                    "model": model,
+                    "tokens_used": prompt_tokens + completion_tokens,
+                    "cost_usd": _usage_cost(
+                        usage,
+                        model,
+                        prompt_tokens,
+                        completion_tokens,
+                    ) if usage else 0.0,
+                }
+        except Exception:
+            pass
+
+    prompt_context = _fallback_context_digest(raw_text)
+    return {
+        "raw_text": raw_text,
+        "raw_chars": len(raw_text),
+        "prompt_context": prompt_context,
+        "prompt_chars": len(prompt_context),
+        "source": "fallback_excerpt" if allow_llm else "legacy_fallback",
+        "model": "",
+        "tokens_used": 0,
+        "cost_usd": 0.0,
+    }
+
+
 def build_system_prompt(user_context: str | None = None) -> str:
     """Build system prompt for the research agent."""
     summaries = _load_summaries()
@@ -366,11 +537,11 @@ def build_system_prompt(user_context: str | None = None) -> str:
     if user_context:
         prompt_parts.extend([
             "",
-            "=== AKTUELLER TEXT DES USERS (per 'Kontext setzen' übergeben) ===",
-            "Der folgende Text wurde vom User hochgeladen. Er ist vollständig vorhanden.",
-            "Beziehe dich direkt auf Inhalte, Argumente und Referenzen in diesem Text.",
+            "=== AKTUELLER ARBEITSKONTEXT DES USERS ===",
+            "Das Folgende ist ein kondensiertes Dossier des hochgeladenen Texts.",
+            "Nutze es als Such- und Argumentkontext; nenne Unsicherheiten offen, wenn Details fehlen.",
             "",
-            user_context[:50000],
+            user_context,
         ])
 
     return "\n".join(prompt_parts)
@@ -398,31 +569,65 @@ def chat(
 
     total_input = 0
     total_output = 0
+    total_cost = 0.0
     max_iterations = 5
+    system_message = {
+        "role": "system",
+        "content": [
+            {
+                "type": "text",
+                "text": system_prompt,
+                "cache_control": {"type": "ephemeral"},
+            }
+        ],
+    }
 
     for _ in range(max_iterations):
         response = client.chat.completions.create(
             model=model,
-            messages=[{"role": "system", "content": system_prompt}] + messages,
+            messages=[system_message] + messages,
             tools=TOOL_DEFINITIONS,
             max_tokens=4096,
             extra_body={"transforms": ["middle-out"]},
         )
 
         choice = response.choices[0]
-        usage = response.usage
+        usage = getattr(response, "usage", None)
         if usage:
-            total_input += usage.prompt_tokens
-            total_output += usage.completion_tokens
+            prompt_tokens = usage.prompt_tokens or 0
+            completion_tokens = usage.completion_tokens or 0
+            total_input += prompt_tokens
+            total_output += completion_tokens
+            total_cost += _usage_cost(
+                usage,
+                model,
+                prompt_tokens,
+                completion_tokens,
+            )
 
         # If no tool calls, we're done
-        if not choice.message.tool_calls:
+        tool_calls = getattr(choice.message, "tool_calls", None) or []
+        if not tool_calls:
             content = choice.message.content or ""
             break
 
         # Process tool calls
-        messages.append(choice.message)
-        for tc in choice.message.tool_calls:
+        messages.append({
+            "role": "assistant",
+            "content": choice.message.content or "",
+            "tool_calls": [
+                {
+                    "id": tc.id,
+                    "type": "function",
+                    "function": {
+                        "name": tc.function.name,
+                        "arguments": tc.function.arguments,
+                    },
+                }
+                for tc in tool_calls
+            ],
+        })
+        for tc in tool_calls:
             try:
                 args = json.loads(tc.function.arguments)
             except Exception:
@@ -438,13 +643,10 @@ def chat(
         if hasattr(messages[-1], "content"):
             content = messages[-1].content or content
 
-    # Estimate cost (Opus via OpenRouter)
-    cost = (total_input * 15.0 + total_output * 75.0) / 1_000_000
-
     return {
         "content": content,
         "tokens_used": total_input + total_output,
         "tokens_in": total_input,
         "tokens_out": total_output,
-        "cost_usd": cost,
+        "cost_usd": total_cost,
     }

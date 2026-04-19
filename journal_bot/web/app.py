@@ -11,6 +11,7 @@ import os
 import shutil
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 from flask import (
     Flask, render_template, render_template_string, request,
     abort, jsonify, send_file, session, Response,
@@ -51,7 +52,8 @@ app.secret_key = os.urandom(24)  # For session (lightweight state only)
 
 # Server-side agent state (single-user tool, no cookie size limits)
 # Context is persisted to disk so it survives server restarts.
-_AGENT_CONTEXT_FILE = Path(__file__).parent.parent.parent / ".agent_context.txt"
+_AGENT_CONTEXT_FILE = Path(__file__).parent.parent.parent / ".agent_context.json"
+_LEGACY_AGENT_CONTEXT_FILE = Path(__file__).parent.parent.parent / ".agent_context.txt"
 
 
 PROJECTS_JSON = PROJECT_ROOT / "projects.json"
@@ -74,13 +76,76 @@ def _save_projects(projects: list[dict]) -> None:
     tmp.replace(PROJECTS_JSON)
 
 
-def _load_agent_context() -> str:
+def _empty_agent_context() -> dict[str, Any]:
+    return {
+        "raw_text": "",
+        "raw_chars": 0,
+        "prompt_context": "",
+        "prompt_chars": 0,
+        "source": "empty",
+        "model": "",
+        "tokens_used": 0,
+        "cost_usd": 0.0,
+    }
+
+
+def _normalize_agent_context(payload: Any, source_override: str | None = None) -> dict[str, Any]:
+    from journal_bot.research_agent import prepare_context
+
+    if isinstance(payload, str):
+        text = payload.strip()
+        if not text:
+            return _empty_agent_context()
+        ctx = prepare_context(text, allow_llm=False)
+        ctx["source"] = source_override or "legacy_fallback"
+        return ctx
+
+    if not isinstance(payload, dict):
+        return _empty_agent_context()
+
+    ctx = _empty_agent_context()
+    ctx.update(payload)
+    ctx["raw_text"] = str(ctx.get("raw_text", "") or "").strip()
+    ctx["prompt_context"] = str(ctx.get("prompt_context", "") or "").strip()
+    ctx["raw_chars"] = int(ctx.get("raw_chars") or len(ctx["raw_text"]))
+    ctx["prompt_chars"] = int(ctx.get("prompt_chars") or len(ctx["prompt_context"]))
+    ctx["tokens_used"] = int(ctx.get("tokens_used") or 0)
+    ctx["cost_usd"] = float(ctx.get("cost_usd") or 0.0)
+    ctx["source"] = str(ctx.get("source", "") or source_override or "empty")
+    ctx["model"] = str(ctx.get("model", "") or "")
+
+    if ctx["raw_text"] and not ctx["prompt_context"]:
+        rebuilt = prepare_context(ctx["raw_text"], allow_llm=False)
+        rebuilt["source"] = source_override or rebuilt["source"]
+        return rebuilt
+
+    return ctx
+
+
+def _load_agent_context() -> dict[str, Any]:
     if _AGENT_CONTEXT_FILE.exists():
         try:
-            return _AGENT_CONTEXT_FILE.read_text(encoding="utf-8")
+            payload = json.loads(_AGENT_CONTEXT_FILE.read_text(encoding="utf-8"))
+            return _normalize_agent_context(payload)
         except Exception:
             pass
-    return ""
+    if _LEGACY_AGENT_CONTEXT_FILE.exists():
+        try:
+            payload = _LEGACY_AGENT_CONTEXT_FILE.read_text(encoding="utf-8")
+            return _normalize_agent_context(payload, source_override="legacy_fallback")
+        except Exception:
+            pass
+    return _empty_agent_context()
+
+
+def _save_agent_context(ctx: dict[str, Any]) -> None:
+    payload = _normalize_agent_context(ctx)
+    tmp = _AGENT_CONTEXT_FILE.with_suffix(".tmp")
+    tmp.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    tmp.replace(_AGENT_CONTEXT_FILE)
 
 
 _agent_state: dict = {
@@ -791,6 +856,22 @@ def _md_to_html(text: str) -> str:
             if pre_lines:
                 out.append(f'<pre style="white-space:pre-wrap; font-size:.85rem; line-height:1.5;">{esc(chr(10).join(pre_lines))}</pre>')
     return "\n".join(out)
+
+
+def _render_agent_markdown(content: str) -> str:
+    """Render agent output as HTML, with a no-dependency fallback."""
+    try:
+        import markdown
+    except ModuleNotFoundError:
+        return html_mod.escape(content).replace("\n", "<br>")
+
+    try:
+        return markdown.markdown(
+            content,
+            extensions=["tables", "fenced_code"],
+        )
+    except Exception:
+        return html_mod.escape(content).replace("\n", "<br>")
 
 
 @app.route("/api/diskurs/trends/<cluster_key>", methods=["POST"])
@@ -1600,14 +1681,23 @@ def agent_page():
         except Exception:
             pass
 
-    ctx = _agent_state["context"]
+    ctx = _normalize_agent_context(_agent_state["context"])
     return render_template(
         "agent.html",
         db_article_count=stats["total"],
         corpus_count=corpus_count,
-        context_set=bool(ctx),
-        context_preview=(ctx[:200] + "…") if ctx else "",
-        context_chars=len(ctx),
+        context_set=bool(ctx.get("prompt_context")),
+        context_preview=(
+            ctx["prompt_context"][:300] + "…"
+            if ctx.get("prompt_context") and len(ctx["prompt_context"]) > 300
+            else ctx.get("prompt_context", "")
+        ),
+        context_chars=ctx.get("prompt_chars", 0),
+        raw_chars=ctx.get("raw_chars", 0),
+        context_source=ctx.get("source", ""),
+        context_model=ctx.get("model", ""),
+        context_tokens=ctx.get("tokens_used", 0),
+        context_cost_display=f"${ctx['cost_usd']:.4f}" if ctx.get("cost_usd") else "",
         messages=_agent_state["messages"],
     )
 
@@ -1616,21 +1706,40 @@ def agent_page():
 def api_agent_context():
     """Set or clear the agent's text context (persisted to disk)."""
     if request.method == "DELETE":
-        _agent_state["context"] = ""
+        _agent_state["context"] = _empty_agent_context()
         _AGENT_CONTEXT_FILE.unlink(missing_ok=True)
+        _LEGACY_AGENT_CONTEXT_FILE.unlink(missing_ok=True)
         return jsonify({"ok": True})
+
+    from journal_bot.research_agent import prepare_context
 
     data = request.get_json(force=True)
     text = data.get("text", "").strip()
-    _agent_state["context"] = text
-    _AGENT_CONTEXT_FILE.write_text(text, encoding="utf-8")
-    return jsonify({"ok": True, "chars": len(text)})
+    if not text:
+        return jsonify({"error": "Kein Text übergeben."}), 400
+
+    ctx = prepare_context(text)
+    _agent_state["context"] = ctx
+    _save_agent_context(ctx)
+    return jsonify({
+        "ok": True,
+        "raw_chars": ctx["raw_chars"],
+        "context_chars": ctx["prompt_chars"],
+        "source": ctx["source"],
+        "model": ctx["model"],
+        "tokens_used": ctx["tokens_used"],
+        "cost_usd": ctx["cost_usd"],
+        "preview": (
+            ctx["prompt_context"][:300] + "…"
+            if len(ctx["prompt_context"]) > 300
+            else ctx["prompt_context"]
+        ),
+    })
 
 
 @app.route("/api/agent/chat", methods=["POST"])
 def api_agent_chat():
     """Process a chat message with the research agent."""
-    import markdown
     from journal_bot.research_agent import chat as agent_chat
 
     data = request.get_json(force=True)
@@ -1640,7 +1749,7 @@ def api_agent_chat():
     if not message:
         return jsonify({"error": "Keine Nachricht."}), 400
 
-    user_context = _agent_state["context"] or None
+    user_context = _normalize_agent_context(_agent_state["context"]).get("prompt_context") or None
 
     try:
         result = agent_chat(
@@ -1651,14 +1760,7 @@ def api_agent_chat():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-    # Convert markdown to HTML
-    try:
-        html_content = markdown.markdown(
-            result["content"],
-            extensions=["tables", "fenced_code"],
-        )
-    except Exception:
-        html_content = html_mod.escape(result["content"]).replace("\n", "<br>")
+    html_content = _render_agent_markdown(result["content"])
 
     # Store server-side for page reload
     msgs = _agent_state["messages"]
@@ -1683,7 +1785,6 @@ def api_agent_chat():
 def api_agent_clear():
     """Clear agent chat history."""
     _agent_state["messages"] = []
-    _agent_state["context"] = ""
     return jsonify({"ok": True})
 
 

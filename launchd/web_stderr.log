@@ -247,3 +247,23 @@ Traceback (most recent call last):
   File "/Users/joerissen/ai/mojo/journal_bot/web/app.py", line 1633, in api_agent_chat
     import markdown
 ModuleNotFoundError: No module named 'markdown'
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/web/app.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+127.0.0.1 - - [19/Apr/2026 13:09:46] "POST /api/agent/chat HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 13:10:08] "POST /api/agent/context HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 13:10:43] "POST /api/agent/chat HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 13:15:29] "POST /api/agent/chat HTTP/1.1" 200 -
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/web/app.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/web/app.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496

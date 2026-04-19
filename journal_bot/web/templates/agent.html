@@ -23,7 +23,7 @@
                  onchange="loadFile(this)">
         </div>
         <div style="display:flex; gap:.5rem; align-items:center;">
-          <button type="button" class="btn btn-primary" onclick="setContext()">
+          <button type="button" class="btn btn-primary" id="set-context-btn" onclick="setContext()">
             Kontext setzen
           </button>
           <button type="button" class="btn" onclick="clearContext()">
@@ -34,13 +34,31 @@
       </form>
     </div>
 
-    {% if context_set %}
-    <div class="card" style="border-color:var(--lesenswert);">
+    <div class="card" id="active-context-card" style="border-color:var(--lesenswert);{% if not context_set %} display:none;{% endif %}">
       <h3 style="margin-top:0; color:var(--lesenswert);">Aktiver Kontext</h3>
-      <p style="font-size:.85rem;">{{ context_preview }}</p>
-      <p style="font-size:.8rem; color:var(--muted);">{{ context_chars|format_number }} Zeichen</p>
+      <p style="font-size:.85rem;" id="active-context-preview">{{ context_preview }}</p>
+      <p style="font-size:.8rem; color:var(--muted);" id="active-context-size">
+        {{ context_chars|format_number }} Zeichen Arbeitskontext aus
+        {{ raw_chars|format_number }} Zeichen Rohtext
+      </p>
+      {% if context_source == "llm_summary" %}
+      <p style="font-size:.78rem; color:var(--muted);" id="active-context-meta">
+        Einmalig verdichtet{% if context_model %} mit <code>{{ context_model }}</code>{% endif %}
+        {% if context_tokens %} · {{ context_tokens|format_number }} Tokens{% endif %}
+        {% if context_cost_display %} · {{ context_cost_display }}{% endif %}
+      </p>
+      {% elif context_source in ["fallback_excerpt", "legacy_fallback"] %}
+      <p style="font-size:.78rem; color:var(--muted);" id="active-context-meta">
+        Lokaler Kurzkontext ohne LLM-Kosten
+      </p>
+      {% elif context_source == "raw_short" %}
+      <p style="font-size:.78rem; color:var(--muted);" id="active-context-meta">
+        Kurztext direkt verwendet
+      </p>
+      {% else %}
+      <p style="font-size:.78rem; color:var(--muted);" id="active-context-meta"></p>
+      {% endif %}
     </div>
-    {% endif %}
 
     <div class="card">
       <h3 style="margin-top:0;">Vorschläge</h3>
@@ -152,6 +170,20 @@
 <script>
 let chatHistory = [];
 
+function contextMetaLabel(data) {
+  if (data.source === 'llm_summary') {
+    const parts = ['Einmalig verdichtet'];
+    if (data.model) parts.push(data.model);
+    if (data.tokens_used) parts.push(data.tokens_used.toLocaleString('de') + ' Tokens');
+    if (data.cost_usd) parts.push('$' + data.cost_usd.toFixed(4));
+    return parts.join(' · ');
+  }
+  if (data.source === 'raw_short') {
+    return 'Kurztext direkt verwendet';
+  }
+  return 'Lokaler Kurzkontext ohne LLM-Kosten';
+}
+
 function loadFile(input) {
   const file = input.files[0];
   if (!file) return;
@@ -165,15 +197,49 @@ function loadFile(input) {
 function setContext() {
   const text = document.getElementById('user-text').value.trim();
   if (!text) { alert('Bitte Text eingeben oder Datei hochladen.'); return; }
+  const status = document.getElementById('context-status');
+  const button = document.getElementById('set-context-btn');
+  status.textContent = 'Kontext wird verdichtet…';
+  status.style.color = 'var(--muted)';
+  button.disabled = true;
 
   fetch('/api/agent/context', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({text: text})
-  }).then(r => r.json()).then(data => {
-    document.getElementById('context-status').textContent =
-      '✓ ' + data.chars.toLocaleString('de') + ' Zeichen gesetzt';
-    document.getElementById('context-status').style.color = 'var(--lesenswert)';
+  }).then(async (r) => {
+    const raw = await r.text();
+    let data = null;
+    try {
+      data = raw ? JSON.parse(raw) : {};
+    } catch (_) {
+      throw new Error(raw ? raw.slice(0, 300) : 'Ungültige Serverantwort');
+    }
+    if (!r.ok) {
+      throw new Error(data.error || ('HTTP ' + r.status));
+    }
+    return data;
+  }).then(data => {
+    const parts = [
+      '✓ ' + data.raw_chars.toLocaleString('de') + ' → ' +
+      data.context_chars.toLocaleString('de') + ' Zeichen'
+    ];
+    if (data.cost_usd) {
+      parts.push('$' + data.cost_usd.toFixed(4));
+    }
+    status.textContent = parts.join(' · ');
+    status.style.color = 'var(--lesenswert)';
+    document.getElementById('active-context-preview').textContent = data.preview || '';
+    document.getElementById('active-context-size').textContent =
+      data.context_chars.toLocaleString('de') + ' Zeichen Arbeitskontext aus ' +
+      data.raw_chars.toLocaleString('de') + ' Zeichen Rohtext';
+    document.getElementById('active-context-meta').textContent = contextMetaLabel(data);
+    document.getElementById('active-context-card').style.display = 'block';
+    button.disabled = false;
+  }).catch(err => {
+    status.textContent = 'Fehler: ' + err.message;
+    status.style.color = 'var(--pflichtlektuere)';
+    button.disabled = false;
   });
 }
 
@@ -185,6 +251,7 @@ function clearContext() {
   }).then(() => {
     document.getElementById('context-status').textContent = 'Kontext gelöscht';
     document.getElementById('context-status').style.color = 'var(--muted)';
+    document.getElementById('active-context-card').style.display = 'none';
   });
 }
 
@@ -212,7 +279,22 @@ function sendMessage(e) {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({message: text, history: chatHistory.slice(0, -1)})
-  }).then(r => r.json()).then(data => {
+  }).then(async (r) => {
+    const raw = await r.text();
+    let data = null;
+    try {
+      data = raw ? JSON.parse(raw) : {};
+    } catch (_) {
+      if (!r.ok) {
+        throw new Error(raw ? raw.slice(0, 300) : 'Unbekannter Serverfehler');
+      }
+      throw new Error('Ungültige Serverantwort');
+    }
+    if (!r.ok) {
+      throw new Error(data.error || ('HTTP ' + r.status));
+    }
+    return data;
+  }).then(data => {
     document.getElementById('chat-loading').style.display = 'none';
     document.getElementById('send-btn').disabled = false;
 
