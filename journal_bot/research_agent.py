@@ -47,6 +47,15 @@ QUESTION_NOISE = {
     "ref", "referenz", "referenzen", "recherche", "research", "soll", "suchen",
     "suche", "thema", "themen", "user",
 }
+ARGUMENT_TERM_NOISE = {
+    "als", "auch", "braucht", "damit", "deuten", "dies", "diese", "dieser",
+    "diesem", "diesen", "ein", "eine", "einer", "eines", "fragen", "greifen",
+    "hat", "hier", "ihr", "ihre", "ihren", "ihres", "ihm", "ihn", "kurz", "mehr",
+    "nicht", "noch", "nur", "problem", "probleme", "relevant", "sein", "sind",
+    "sie", "soll", "sollte", "sondern", "stärker", "ueber", "und", "unter",
+    "verstehen", "viel", "von", "vor", "warum", "weil", "werden", "wider",
+    "widerspruch", "widersprüche", "wird", "wie", "wir", "zwischen",
+}
 GENERIC_SEARCH_TERMS = {
     "art", "arts", "bildung", "creative", "creativity", "culture", "cultural",
     "digital", "education", "educational", "kunst", "learning", "media", "school",
@@ -125,6 +134,16 @@ def _extract_search_terms(text: str, *, min_len: int = 3) -> list[str]:
     return deduped
 
 
+def _clean_argument_terms(terms: list[str]) -> list[str]:
+    cleaned: list[str] = []
+    for term in terms:
+        if term in ARGUMENT_TERM_NOISE:
+            continue
+        if term not in cleaned:
+            cleaned.append(term)
+    return cleaned
+
+
 def _row_to_search_result(
     row,
     *,
@@ -165,6 +184,7 @@ def _row_to_search_result(
         "year": row["year"],
         "doi": row["doi"],
         "verdict": row["agent_verdict"],
+        "verdict_reason": entry.get("verdict_begruendung", "") if entry else "",
         "kernthese": entry.get("kernthese", "") if entry else "",
         "bezuege": entry.get("bezuege", []) if entry else [],
         "topics": [t.get("name", "") for t in topics if isinstance(t, dict) and t.get("name")],
@@ -347,6 +367,10 @@ def _parse_context_sections(user_context: str | None) -> dict[str, list[str]]:
         return {}
 
     aliases = {
+        "argumentationseinheiten": "argument_units",
+        "argumentative einheiten": "argument_units",
+        "argumenteinheiten": "argument_units",
+        "argumentationskomplexe": "argument_units",
         "fokus": "focus",
         "schlüsselbegriffe": "keywords",
         "schlusselbegriffe": "keywords",
@@ -371,6 +395,60 @@ def _parse_context_sections(user_context: str | None) -> dict[str, list[str]]:
             line = line[2:].strip()
         sections.setdefault(current, []).append(line)
     return sections
+
+
+def _derive_argument_units_from_text(prompt_context: str) -> list[str]:
+    sections = _parse_context_sections(prompt_context)
+    units: list[str] = []
+
+    def _add(items: list[str], prefix: str = "") -> None:
+        for item in items:
+            clean = item.strip(" -")
+            if not clean:
+                continue
+            text = f"{prefix}{clean}" if prefix else clean
+            if len(text) < 20:
+                continue
+            if text not in units:
+                units.append(text)
+
+    if sections.get("argument_units"):
+        _add(sections["argument_units"])
+    if not units:
+        _add(sections.get("focus", []))
+    if len(units) < 5:
+        _add(sections.get("gaps", []), prefix="Offene Anschlussstelle: ")
+    if len(units) < 6:
+        _add(sections.get("methods", []), prefix="Methodischer Komplex: ")
+    if len(units) < 6:
+        _add(sections.get("references", []), prefix="Debattenkontext: ")
+
+    if not units:
+        paragraphs = [
+            line.strip() for line in prompt_context.splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        ]
+        _add(paragraphs[:6])
+
+    return units[:6]
+
+
+def _ensure_argument_units(prompt_context: str) -> tuple[str, list[str]]:
+    units = _derive_argument_units_from_text(prompt_context)
+    if not units:
+        return prompt_context, []
+
+    sections = _parse_context_sections(prompt_context)
+    if sections.get("argument_units"):
+        return prompt_context, units
+
+    extra = "\n".join(["## Argumenteinheiten"] + [f"- {unit}" for unit in units])
+    merged = prompt_context.rstrip()
+    if merged:
+        merged += "\n\n" + extra
+    else:
+        merged = extra
+    return merged, units
 
 
 def _detect_search_intent(message: str) -> str:
@@ -435,6 +513,44 @@ def _build_search_plan(message: str, user_context: str | None = None) -> dict[st
     }
 
 
+def _build_argument_plan(
+    unit: str,
+    intent: str,
+    user_context: str | None = None,
+) -> dict[str, Any]:
+    """Build a tighter search plan for one argumentative unit."""
+    terms = _clean_argument_terms(_extract_search_terms(unit))
+    phrases = [unit.strip()] if unit.strip() else []
+
+    # Only supplement lightly from the global keyword pool if the unit is too thin.
+    if len(terms) < 5 and user_context:
+        sections = _parse_context_sections(user_context)
+        for bucket in ("keywords", "references", "methods", "gaps"):
+            for item in sections.get(bucket, [])[:4]:
+                for term in _extract_search_terms(item):
+                    if term not in terms:
+                        terms.append(term)
+                    if len(terms) >= 8:
+                        break
+                if len(terms) >= 8:
+                    break
+            if len(terms) >= 8:
+                break
+    terms = _clean_argument_terms(terms)
+
+    specific_terms = [term for term in terms if term not in GENERIC_SEARCH_TERMS]
+    generic_terms = [term for term in terms if term in GENERIC_SEARCH_TERMS]
+    if len(specific_terms) >= 3:
+        terms = specific_terms[:8] + generic_terms[:2]
+
+    return {
+        "intent": intent,
+        "phrases": phrases[:3],
+        "terms": terms[:10],
+        "argument_unit": unit,
+    }
+
+
 def _search_articles_by_plan(plan: dict[str, Any], limit: int = 12) -> list[dict]:
     terms = plan.get("terms") or []
     phrases = [_normalize_search_text(p) for p in (plan.get("phrases") or []) if p.strip()]
@@ -480,11 +596,111 @@ def _format_search_results(results: list[dict], *, include_reasons: bool = False
     return "\n\n".join(lines)
 
 
+def _argument_reason_prefix(intent: str) -> str:
+    if intent == "counter":
+        return "Bezug zum Argument: mögliche Gegenposition oder produktive Spannung"
+    if intent == "methods":
+        return "Bezug zum Argument: methodisch anschlussfähig"
+    if intent == "missing_refs":
+        return "Bezug zum Argument: kann diesen Punkt stützen, erweitern oder irritieren"
+    return "Bezug zum Argument: anschlussfähig"
+
+
+def _argument_focus_summary(argument_unit: str, result: dict[str, Any]) -> str:
+    unit_terms = _clean_argument_terms(_extract_search_terms(argument_unit))
+    specific_terms = [term for term in unit_terms if term not in GENERIC_SEARCH_TERMS]
+    focus_terms = specific_terms[:4] or unit_terms[:4]
+    if not focus_terms:
+        return ""
+
+    result_blob = _normalize_search_text(
+        " ".join(
+            [
+                result.get("title", ""),
+                result.get("kernthese", ""),
+                " ".join(result.get("topics", [])),
+                " ".join(result.get("concepts", [])),
+                result.get("signal_group", ""),
+                result.get("suggested_subgroup", ""),
+                result.get("discourse_indicator", ""),
+            ]
+        )
+    )
+    overlaps = [term for term in focus_terms if term in result_blob][:3]
+    if overlaps:
+        return "greift hier besonders " + ", ".join(overlaps) + " auf"
+    return "relevant für " + ", ".join(focus_terms[:3])
+
+
+def _format_argument_results(
+    argument_unit: str,
+    results: list[dict],
+    *,
+    intent: str,
+    heading: str,
+) -> str:
+    lines = [heading, f"- {argument_unit}"]
+    for r in results:
+        authors_str = ", ".join(r["authors"][:2])
+        if len(r["authors"]) > 2:
+            authors_str += " et al."
+        lines.append(
+            f"- [{r['verdict'].upper()}] {r['title']}\n"
+            f"  {authors_str} ({r['year']}) — {r['journal']}\n"
+            f"  ID: {r['id']}"
+        )
+        reason_parts = []
+        focus_summary = _argument_focus_summary(argument_unit, r)
+        if focus_summary:
+            reason_parts.append(focus_summary)
+        if r.get("match_reasons"):
+            reason_parts.append(" | ".join(r["match_reasons"][:2]))
+        if r.get("bezuege"):
+            first = r["bezuege"][0]
+            pub = first.get("pub_kurz", "")
+            relation = first.get("relation", "")
+            if pub:
+                reason_parts.append(f"Agent-Bezug: {pub} ({relation})")
+        if reason_parts:
+            lines.append(
+                f"  {_argument_reason_prefix(intent)}: " + " | ".join(reason_parts)
+            )
+        if r["kernthese"]:
+            lines.append(f"  Kernthese: {r['kernthese'][:220]}")
+    return "\n".join(lines)
+
+
+def _search_by_argument_units(
+    message: str,
+    user_context: str | None = None,
+    *,
+    per_argument_limit: int = 2,
+    max_arguments: int = 4,
+    include_empty: bool = False,
+) -> list[dict[str, Any]]:
+    sections = _parse_context_sections(user_context)
+    units = sections.get("argument_units") or _derive_argument_units_from_text(user_context or "")
+    intent = _detect_search_intent(message)
+
+    groups: list[dict[str, Any]] = []
+    for idx, unit in enumerate(units[:max_arguments], start=1):
+        plan = _build_argument_plan(unit, intent, user_context)
+        results = _search_articles_by_plan(plan, limit=max(per_argument_limit, 1))
+        if not results and not include_empty:
+            continue
+        groups.append(
+            {
+                "index": idx,
+                "unit": unit,
+                "intent": intent,
+                "results": results[:per_argument_limit] if results else [],
+            }
+        )
+    return groups
+
+
 def build_retrieval_prefetch(message: str, user_context: str | None = None) -> str:
     plan = _build_search_plan(message, user_context)
-    results = _search_articles_by_plan(plan, limit=8)
-    if not results:
-        return ""
 
     parts = [
         "=== AUTOMATISCHE VORRECHERCHE AUS DER MOJO-DB ===",
@@ -494,14 +710,154 @@ def build_retrieval_prefetch(message: str, user_context: str | None = None) -> s
         parts.append("Leitphrasen: " + "; ".join(plan["phrases"][:5]))
     if plan["terms"]:
         parts.append("Suchterme: " + ", ".join(plan["terms"][:10]))
-    parts.append("")
-    parts.append(_format_search_results(results[:6], include_reasons=True))
+
+    groups = _search_by_argument_units(
+        message,
+        user_context,
+        per_argument_limit=2,
+        max_arguments=4,
+    )
+    if groups:
+        parts.append(f"Argumenteinheiten: {len(groups)}")
+        for group in groups:
+            parts.append("")
+            parts.append(
+                _format_argument_results(
+                    group["unit"],
+                    group["results"],
+                    intent=group["intent"],
+                    heading=f"### Argument {group['index']}",
+                )
+            )
+    else:
+        results = _search_articles_by_plan(plan, limit=6)
+        if not results:
+            return ""
+        parts.append("")
+        parts.append(_format_search_results(results[:6], include_reasons=True))
+
     parts.append("")
     parts.append(
-        "Nutze diese Treffer als Startpunkt. Wenn etwas unklar ist, lies Details per Tool "
-        "`read_article_detail` nach oder suche gezielt weiter."
+        "Nutze diese Treffer als Startpunkt. Argumentiere nach Möglichkeit einheitsbezogen, "
+        "nicht nur auf Volltext-Ebene."
     )
     return "\n".join(parts)
+
+
+def _format_authors_short(authors: list[str]) -> str:
+    authors_str = ", ".join(authors[:2])
+    if len(authors) > 2:
+        authors_str += " et al."
+    return authors_str
+
+
+def _short_excerpt(text: str, max_chars: int = 220) -> str:
+    return _trim_text(text or "", max_chars, suffix="…")
+
+
+def _should_force_argument_report(message: str, user_context: str | None = None) -> bool:
+    sections = _parse_context_sections(user_context)
+    units = sections.get("argument_units") or _derive_argument_units_from_text(user_context or "")
+    if not units:
+        return False
+
+    intent = _detect_search_intent(message)
+    if intent != "general":
+        return True
+
+    msg = _normalize_search_text(message)
+    mentions_argument = "argument" in msg or "komplex" in msg
+    mentions_text = any(token in msg for token in ["aufsatz", "entwurf", "text", "paper"])
+    asks_relation = any(token in msg for token in ["bezug", "damit", "tun", "warum", "wieso", "welcher", "welche"])
+    return mentions_argument and (mentions_text or asks_relation)
+
+
+def _argument_report_intent(message: str) -> str:
+    intent = _detect_search_intent(message)
+    return intent if intent != "general" else "relevant"
+
+
+def _argument_report_title(intent: str) -> str:
+    if intent == "counter":
+        return "Argumentationsbezogene Prüfung auf Gegenargumente und Widersprüche"
+    if intent == "methods":
+        return "Argumentationsbezogene Prüfung auf methodische Parallelen"
+    if intent == "missing_refs":
+        return "Argumentationsbezogene Prüfung auf fehlende Referenzen"
+    return "Argumentationsbezogene Relevanzprüfung"
+
+
+def _format_argument_findings(group: dict[str, Any]) -> list[str]:
+    lines = [
+        f"## Argumentationskomplex {group['index']}",
+        f"Darstellung des Komplexes: {group['unit']}",
+        "",
+        "Findings des Agents:",
+    ]
+
+    results = group.get("results") or []
+    if not results:
+        lines.append("- Kein klarer Treffer in der MOJO-DB für diesen Komplex.")
+        return lines
+
+    for result in results:
+        title_link = f"[{result['title']}](/article/{result['id']})"
+        lines.append(
+            f"- [{result['verdict'].upper()}] {title_link}\n"
+            f"  {_format_authors_short(result['authors'])} ({result['year']}) — {result['journal']}"
+        )
+
+        focus_summary = _argument_focus_summary(group["unit"], result)
+        if focus_summary:
+            lines.append(f"  Argumentbezug: {focus_summary[:1].upper() + focus_summary[1:]}.")
+
+        bezuege = result.get("bezuege") or []
+        if bezuege:
+            first = bezuege[0]
+            pub = first.get("pub_kurz", "")
+            relation = first.get("relation", "")
+            bezug_text = _short_excerpt(first.get("bezug", ""), 220)
+            relation_label = f"{pub} ({relation})".strip() if pub else relation
+            if relation_label and bezug_text:
+                lines.append(
+                    f"  Eigener Publikationsbezug: {relation_label} — {bezug_text}"
+                )
+            elif relation_label:
+                lines.append(f"  Eigener Publikationsbezug: {relation_label}")
+
+        if result.get("verdict_reason"):
+            lines.append(
+                f"  Agent-Einschätzung: {_short_excerpt(result['verdict_reason'], 220)}"
+            )
+
+        if result.get("kernthese"):
+            lines.append(f"  Kernthese: {_short_excerpt(result['kernthese'], 260)}")
+    return lines
+
+
+def build_argument_report(message: str, user_context: str | None = None) -> str:
+    intent = _argument_report_intent(message)
+    groups = _search_by_argument_units(
+        message,
+        user_context,
+        per_argument_limit=2,
+        max_arguments=6,
+        include_empty=True,
+    )
+    if not groups:
+        return ""
+
+    lines = [_argument_report_title(intent), ""]
+    for idx, group in enumerate(groups):
+        if idx:
+            lines.extend(["", "---", ""])
+        lines.extend(_format_argument_findings(group))
+    lines.extend([
+        "",
+        "Hinweis: Die Gliederung ist erzwungen argumentbezogen. Leere oder schwache Abschnitte zeigen,",
+        "dass für den jeweiligen Komplex in der aktuellen MOJO-DB noch kein überzeugender Treffer vorliegt.",
+    ])
+    return "\n".join(lines)
 
 
 def _search_articles_by_text(
@@ -607,8 +963,33 @@ TOOL_DEFINITIONS = [
 def _execute_tool(name: str, args: dict, user_context: str | None = None) -> str:
     """Execute a tool call and return result as string."""
     if name == "search_mojo_db":
+        query = args.get("query", "")
+        groups = _search_by_argument_units(
+            query,
+            user_context,
+            per_argument_limit=2,
+            max_arguments=4,
+        )
+        if groups:
+            lines = []
+            total_hits = sum(len(group["results"]) for group in groups)
+            lines.append(
+                f"{total_hits} Treffer über {len(groups)} Argumente:"
+            )
+            for group in groups:
+                lines.append("")
+                lines.append(
+                    _format_argument_results(
+                        group["unit"],
+                        group["results"],
+                        intent=group["intent"],
+                        heading=f"### Argument {group['index']}",
+                    )
+                )
+            return "\n".join(lines)
+
         results = _search_articles_by_text(
-            args.get("query", ""),
+            query,
             user_context=user_context,
             limit=args.get("limit", 20),
         )
@@ -736,6 +1117,7 @@ def prepare_context(
             "raw_chars": 0,
             "prompt_context": "",
             "prompt_chars": 0,
+            "argument_units": [],
             "source": "empty",
             "model": "",
             "tokens_used": 0,
@@ -744,11 +1126,13 @@ def prepare_context(
 
     if len(raw_text) <= SHORT_CONTEXT_CHARS:
         prompt_context = _trim_text(raw_text, SHORT_CONTEXT_CHARS, suffix="")
+        prompt_context, argument_units = _ensure_argument_units(prompt_context)
         return {
             "raw_text": raw_text,
             "raw_chars": len(raw_text),
             "prompt_context": prompt_context,
             "prompt_chars": len(prompt_context),
+            "argument_units": argument_units,
             "source": "raw_short",
             "model": "",
             "tokens_used": 0,
@@ -789,7 +1173,9 @@ def prepare_context(
                             "## Empirischer/methodischer Kontext\n"
                             "- Material, Feld, Methoden, Fallbeispiele\n"
                             "## Offene Anschlussstellen\n"
-                            "- Wo weitere Literatur besonders nützlich wäre\n\n"
+                            "- Wo weitere Literatur besonders nützlich wäre\n"
+                            "## Argumenteinheiten\n"
+                            "- 4-8 eigenständige argumentative Komplexe des Texts, jeweils als knapper Bullet\n\n"
                             "Maximal ca. 700 Wörter, keine Ausschmückung, keine Wiederholung.\n\n"
                             "TEXT:\n"
                             f"{source_text}"
@@ -805,11 +1191,13 @@ def prepare_context(
                 prompt_tokens = usage.prompt_tokens if usage else 0
                 completion_tokens = usage.completion_tokens if usage else 0
                 prompt_context = _trim_text(content, CONTEXT_SUMMARY_OUTPUT_CHARS)
+                prompt_context, argument_units = _ensure_argument_units(prompt_context)
                 return {
                     "raw_text": raw_text,
                     "raw_chars": len(raw_text),
                     "prompt_context": prompt_context,
                     "prompt_chars": len(prompt_context),
+                    "argument_units": argument_units,
                     "source": "llm_summary",
                     "model": model,
                     "tokens_used": prompt_tokens + completion_tokens,
@@ -824,11 +1212,13 @@ def prepare_context(
             pass
 
     prompt_context = _fallback_context_digest(raw_text)
+    prompt_context, argument_units = _ensure_argument_units(prompt_context)
     return {
         "raw_text": raw_text,
         "raw_chars": len(raw_text),
         "prompt_context": prompt_context,
         "prompt_chars": len(prompt_context),
+        "argument_units": argument_units,
         "source": "fallback_excerpt" if allow_llm else "legacy_fallback",
         "model": "",
         "tokens_used": 0,
@@ -890,6 +1280,8 @@ def build_system_prompt(user_context: str | None = None) -> str:
         "- Verlinke Artikel als /article/<id> für die MOJO-Detailseite.",
         "- Unterscheide zwischen: echten Bezügen (substantive connections) und "
         "  thematischen Überlappungen (shared reference frames).",
+        "- Wenn Argumenteinheiten vorliegen, arbeite argumentationsbezogen: prüfe Belege, Lücken",
+        "  und Gegenpositionen pro Einheit statt nur für den Volltext als Ganzes.",
         "- Es kann eine automatische Vorrecherche mit Kandidaten geben. Nutze sie als Startpunkt,",
         "  aber prüfe sie kritisch und lies bei Bedarf Details per Tool nach.",
         "- Wenn der Text klar genug ist, mach proaktiv mehrere Suchen mit unterschiedlichen",
@@ -920,6 +1312,17 @@ def chat(
 
     Returns dict with: content, html, tokens_used, cost_usd
     """
+    if _should_force_argument_report(message, user_context):
+        content = build_argument_report(message, user_context)
+        if content:
+            return {
+                "content": content,
+                "tokens_used": 0,
+                "tokens_in": 0,
+                "tokens_out": 0,
+                "cost_usd": 0.0,
+            }
+
     client = build_client()
     model = model or MODEL_AGENT
     system_prompt = build_system_prompt(user_context)

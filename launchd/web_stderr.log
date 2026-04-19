@@ -318,3 +318,93 @@ ModuleNotFoundError: No module named 'markdown'
 127.0.0.1 - - [19/Apr/2026 13:55:10] "GET /agent HTTP/1.1" 200 -
 127.0.0.1 - - [19/Apr/2026 13:55:37] "POST /api/agent/context HTTP/1.1" 200 -
 127.0.0.1 - - [19/Apr/2026 13:57:16] "POST /api/agent/chat HTTP/1.1" 200 -
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/web/app.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/web/app.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+127.0.0.1 - - [19/Apr/2026 14:09:31] "GET /agent HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 14:10:01] "POST /api/agent/context HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 14:10:29] "POST /api/agent/chat HTTP/1.1" 200 -
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+127.0.0.1 - - [19/Apr/2026 14:41:10] "POST /api/agent/chat HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 14:42:55] "POST /api/agent/chat HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 14:45:18] "GET /setup HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 14:45:22] "GET /review HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 14:45:29] "GET /api/tooltip/5600ea9e78f4119c6e3c297d7cac22d3 HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 14:45:33] "POST /api/verdict HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 14:46:00] "POST /api/verdict HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 14:46:00] "GET /api/tooltip/2559fb92116e641805878c2be9485fb4 HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 14:46:01] "GET /api/tooltip/a3130a19a9024d707899ff8daf0b4993 HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 14:46:22] "POST /api/verdict HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 14:46:24] "GET /api/tooltip/dea0c4c24b805a2c08b6ef3abc427254 HTTP/1.1" 200 -
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+127.0.0.1 - - [19/Apr/2026 14:47:16] "GET /api/tooltip/ad2626dd8e30357526d6041db761ee8c HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 14:47:17] "POST /api/verdict HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 14:47:20] "POST /api/verdict HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 14:47:21] "POST /api/verdict HTTP/1.1" 200 -
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/research_agent.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+127.0.0.1 - - [19/Apr/2026 15:40:10] "GET /diskurs HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 15:40:15] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 15:40:15] "[33mGET /apple-touch-icon-precomposed.png HTTP/1.1[0m" 404 -
+127.0.0.1 - - [19/Apr/2026 15:40:15] "[33mGET /apple-touch-icon.png HTTP/1.1[0m" 404 -
+127.0.0.1 - - [19/Apr/2026 15:40:15] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+127.0.0.1 - - [19/Apr/2026 15:40:34] "GET /api/tooltip/7c179322b1b3bf872ba323f410bf4c26 HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 15:40:34] "GET /api/tooltip/2b85964facfda78a3b683e0111fbe9ad HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 15:40:34] "GET /setup HTTP/1.1" 200 -
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/web/app.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496
+ * Detected change in '/Users/joerissen/ai/mojo/journal_bot/web/app.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 558-021-496

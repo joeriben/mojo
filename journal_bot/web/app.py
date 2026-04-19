@@ -82,6 +82,7 @@ def _empty_agent_context() -> dict[str, Any]:
         "raw_chars": 0,
         "prompt_context": "",
         "prompt_chars": 0,
+        "argument_units": [],
         "source": "empty",
         "model": "",
         "tokens_used": 0,
@@ -90,7 +91,7 @@ def _empty_agent_context() -> dict[str, Any]:
 
 
 def _normalize_agent_context(payload: Any, source_override: str | None = None) -> dict[str, Any]:
-    from journal_bot.research_agent import prepare_context
+    from journal_bot.research_agent import prepare_context, _derive_argument_units_from_text
 
     if isinstance(payload, str):
         text = payload.strip()
@@ -109,6 +110,13 @@ def _normalize_agent_context(payload: Any, source_override: str | None = None) -
     ctx["prompt_context"] = str(ctx.get("prompt_context", "") or "").strip()
     ctx["raw_chars"] = int(ctx.get("raw_chars") or len(ctx["raw_text"]))
     ctx["prompt_chars"] = int(ctx.get("prompt_chars") or len(ctx["prompt_context"]))
+    ctx["argument_units"] = [
+        str(item).strip()
+        for item in (ctx.get("argument_units") or [])
+        if str(item).strip()
+    ]
+    if ctx["prompt_context"] and not ctx["argument_units"]:
+        ctx["argument_units"] = _derive_argument_units_from_text(ctx["prompt_context"])
     ctx["tokens_used"] = int(ctx.get("tokens_used") or 0)
     ctx["cost_usd"] = float(ctx.get("cost_usd") or 0.0)
     ctx["source"] = str(ctx.get("source", "") or source_override or "empty")
@@ -196,6 +204,77 @@ def _journal_full_name(short: str) -> str:
     return short
 
 
+def _active_projects() -> list[dict[str, Any]]:
+    return [p for p in _load_projects() if p.get("status") == "active" and p.get("key")]
+
+
+def _active_project_map() -> dict[str, dict[str, Any]]:
+    return {p["key"]: p for p in _active_projects()}
+
+
+def _article_project_keys(article: Any, project_map: dict[str, dict[str, Any]]) -> list[str]:
+    if not project_map:
+        return []
+
+    keys: list[str] = []
+    entry = article.agent_entry if isinstance(article.agent_entry, dict) else {}
+    for key in entry.get("project_hits", []) or []:
+        if key in project_map and key not in keys:
+            keys.append(key)
+
+    if article.signal_group in project_map and article.signal_group not in keys:
+        keys.append(article.signal_group)
+
+    return keys
+
+
+def _prepare_articles_for_view(
+    articles: list[Any],
+    project_map: dict[str, dict[str, Any]] | None = None,
+) -> list[Any]:
+    project_map = project_map or {}
+    for a in articles:
+        if a.agent_entry and isinstance(a.agent_entry, str):
+            a.agent_entry = json.loads(a.agent_entry)
+        a.journal_full = a.journal_full or _journal_full_name(a.journal_short)
+        a.project_keys = _article_project_keys(a, project_map)
+        a.primary_project_key = a.project_keys[0] if a.project_keys else ""
+        a.project_labels = [
+            project_map[key]["name"]
+            for key in a.project_keys
+            if key in project_map
+        ]
+    return articles
+
+
+def _group_articles_by_project(
+    articles: list[Any],
+    project_map: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    groups: list[dict[str, Any]] = []
+    for project in _active_projects():
+        key = project["key"]
+        group_articles = [a for a in articles if getattr(a, "primary_project_key", "") == key]
+        if not group_articles:
+            continue
+        groups.append({
+            "key": key,
+            "label": project.get("name", key),
+            "articles": group_articles,
+            "count": len(group_articles),
+        })
+
+    unassigned = [a for a in articles if not getattr(a, "primary_project_key", "")]
+    if unassigned:
+        groups.append({
+            "key": "",
+            "label": "Ohne Projektkontext",
+            "articles": unassigned,
+            "count": len(unassigned),
+        })
+    return groups
+
+
 # ----------------------------------------------------------------- Routes ---
 
 @app.route("/")
@@ -204,11 +283,12 @@ def digest():
     from datetime import date
     store = _store()
     current_year = date.today().year
+    project_map = _active_project_map()
 
     # Year range: default to current year
     has_any_filter = any(
         request.args.get(k)
-        for k in ("year_from", "year_to", "cluster", "journal", "verdict", "archived")
+        for k in ("year_from", "year_to", "cluster", "journal", "verdict", "project", "archived")
     )
     year_from = request.args.get("year_from", type=int)
     year_to = request.args.get("year_to", type=int)
@@ -219,6 +299,8 @@ def digest():
     cluster = request.args.get("cluster", "")
     journal = request.args.get("journal", "")
     verdict_filter = request.args.get("verdict", "")
+    project_filter = request.args.get("project", "")
+    sort_mode = request.args.get("sort", "verdict")
 
     # Build query
     journals_filter = None
@@ -235,10 +317,7 @@ def digest():
     )
 
     # Parse entry JSON
-    for a in articles:
-        if a.agent_entry and isinstance(a.agent_entry, str):
-            a.agent_entry = json.loads(a.agent_entry)
-        a.journal_full = a.journal_full or _journal_full_name(a.journal_short)
+    articles = _prepare_articles_for_view(articles, project_map)
 
     # Hide archived unless explicitly requested
     show_archived = request.args.get("archived") == "1"
@@ -248,14 +327,31 @@ def digest():
     # Additional verdict filter (uses effective verdict)
     if verdict_filter:
         articles = [a for a in articles if a.effective_verdict == verdict_filter]
+    if project_filter:
+        articles = [a for a in articles if project_filter in getattr(a, "project_keys", [])]
+
+    ordered_articles = sorted(
+        articles,
+        key=lambda a: (
+            _verdict_rank(a.effective_verdict),
+            -(a.year or 0),
+            (a.journal_full or "").lower(),
+            (a.title or "").lower(),
+        ),
+    )
 
     # Citation hits across all verdicts
-    cites_you = [a for a in articles if a.citation_hits]
+    cites_you = [a for a in ordered_articles if a.citation_hits]
 
     # Group by effective verdict
     by_verdict = {}
     for v in VERDICT_ORDER:
-        by_verdict[v] = [a for a in articles if a.effective_verdict == v]
+        by_verdict[v] = [a for a in ordered_articles if a.effective_verdict == v]
+
+    project_sections = (
+        _group_articles_by_project(ordered_articles, project_map)
+        if sort_mode == "project" else []
+    )
 
     # Available years for filter (always show all, not just filtered)
     with store._conn() as c:
@@ -277,9 +373,11 @@ def digest():
 
     return render_template(
         "digest.html",
-        articles=articles,
+        articles=ordered_articles,
         by_verdict=by_verdict,
         cites_you=cites_you,
+        project_sections=project_sections,
+        project_list=[(p["key"], p["name"]) for p in _active_projects()],
         verdict_label=VERDICT_LABEL,
         relation_label=RELATION_LABEL,
         all_years=all_years,
@@ -291,8 +389,10 @@ def digest():
             "cluster": cluster,
             "journal": journal,
             "verdict": verdict_filter,
+            "project": project_filter,
+            "sort": sort_mode,
         },
-        total=len(articles),
+        total=len(ordered_articles),
     )
 
 
@@ -712,6 +812,9 @@ def review():
     store = _store()
     year = request.args.get("year", type=int)
     verdict_filter = request.args.get("verdict", "")
+    project_filter = request.args.get("project", "")
+    sort_mode = request.args.get("sort", "verdict")
+    project_map = _active_project_map()
 
     with store._conn() as c:
         sql = (
@@ -735,10 +838,23 @@ def review():
 
     from journal_bot.store import _row_to_article
     articles = [_row_to_article(r) for r in rows]
-    for a in articles:
-        if a.agent_entry and isinstance(a.agent_entry, str):
-            a.agent_entry = json.loads(a.agent_entry)
-        a.journal_full = a.journal_full or _journal_full_name(a.journal_short)
+    articles = _prepare_articles_for_view(articles, project_map)
+    if project_filter:
+        articles = [a for a in articles if project_filter in getattr(a, "project_keys", [])]
+
+    ordered_articles = sorted(
+        articles,
+        key=lambda a: (
+            _verdict_rank(a.agent_verdict),
+            -(a.year or 0),
+            (a.journal_full or "").lower(),
+            (a.title or "").lower(),
+        ),
+    )
+    project_sections = (
+        _group_articles_by_project(ordered_articles, project_map)
+        if sort_mode == "project" else []
+    )
 
     # Available years
     with store._conn() as c:
@@ -750,12 +866,19 @@ def review():
 
     return render_template(
         "review.html",
-        articles=articles,
+        articles=ordered_articles,
+        project_sections=project_sections,
+        project_list=[(p["key"], p["name"]) for p in _active_projects()],
         verdict_label=VERDICT_LABEL,
         relation_label=RELATION_LABEL,
         all_years=all_years,
-        filters={"year": year, "verdict": verdict_filter},
-        total=len(articles),
+        filters={
+            "year": year,
+            "verdict": verdict_filter,
+            "project": project_filter,
+            "sort": sort_mode,
+        },
+        total=len(ordered_articles),
     )
 
 
@@ -1698,6 +1821,7 @@ def agent_page():
         context_model=ctx.get("model", ""),
         context_tokens=ctx.get("tokens_used", 0),
         context_cost_display=f"${ctx['cost_usd']:.4f}" if ctx.get("cost_usd") else "",
+        context_units_count=len(ctx.get("argument_units", [])),
         messages=_agent_state["messages"],
     )
 
@@ -1729,6 +1853,7 @@ def api_agent_context():
         "model": ctx["model"],
         "tokens_used": ctx["tokens_used"],
         "cost_usd": ctx["cost_usd"],
+        "argument_units_count": len(ctx.get("argument_units", [])),
         "preview": (
             ctx["prompt_context"][:300] + "…"
             if len(ctx["prompt_context"]) > 300

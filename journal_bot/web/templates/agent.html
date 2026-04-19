@@ -41,6 +41,9 @@
         {{ context_chars|format_number }} Zeichen Arbeitskontext aus
         {{ raw_chars|format_number }} Zeichen Rohtext
       </p>
+      <p style="font-size:.78rem; color:var(--muted);" id="active-context-units">
+        {{ context_units_count|format_number }} Argumenteinheiten erkannt
+      </p>
       {% if context_source == "llm_summary" %}
       <p style="font-size:.78rem; color:var(--muted);" id="active-context-meta">
         Einmalig verdichtet{% if context_model %} mit <code>{{ context_model }}</code>{% endif %}
@@ -105,7 +108,7 @@
       </div>
 
       <div id="chat-loading" class="chat-loading" style="display:none;">
-        <span class="loading-dots">Agent denkt nach</span>
+        <span class="loading-dots">Agent arbeitet</span>
       </div>
 
       <form id="chat-form" class="chat-input-bar" onsubmit="sendMessage(event)">
@@ -224,6 +227,9 @@ function setContext() {
       '✓ ' + data.raw_chars.toLocaleString('de') + ' → ' +
       data.context_chars.toLocaleString('de') + ' Zeichen'
     ];
+    if (data.argument_units_count) {
+      parts.push(data.argument_units_count.toLocaleString('de') + ' Argumenteinheiten');
+    }
     if (data.cost_usd) {
       parts.push('$' + data.cost_usd.toFixed(4));
     }
@@ -233,6 +239,8 @@ function setContext() {
     document.getElementById('active-context-size').textContent =
       data.context_chars.toLocaleString('de') + ' Zeichen Arbeitskontext aus ' +
       data.raw_chars.toLocaleString('de') + ' Zeichen Rohtext';
+    document.getElementById('active-context-units').textContent =
+      (data.argument_units_count || 0).toLocaleString('de') + ' Argumenteinheiten erkannt';
     document.getElementById('active-context-meta').textContent = contextMetaLabel(data);
     document.getElementById('active-context-card').style.display = 'block';
     button.disabled = false;

@@ -20,6 +20,16 @@
     <option value="{{ v }}" {% if filters.verdict == v %}selected{% endif %}>{{ verdict_label[v] }}</option>
     {% endfor %}
   </select>
+  <select name="project">
+    <option value="">Alle Projektkontexte</option>
+    {% for key, name in project_list %}
+    <option value="{{ key }}" {% if filters.project == key %}selected{% endif %}>{{ name }}</option>
+    {% endfor %}
+  </select>
+  <select name="sort">
+    <option value="verdict" {% if filters.sort != "project" %}selected{% endif %}>Nach Verdict</option>
+    <option value="project" {% if filters.sort == "project" %}selected{% endif %}>Nach Projektkontext</option>
+  </select>
   <button type="submit">Filtern</button>
   <a href="/review" class="btn reset">Reset</a>
 </form>
@@ -28,12 +38,65 @@
 <p style="color:var(--muted); margin-top:2rem;">Alle relevanten Artikel bestätigt oder korrigiert.</p>
 {% endif %}
 
+{% if filters.sort == "project" %}
+{% for section in project_sections %}
+<details open>
+  <summary><h2 style="display:inline;">{{ section.label }} <span class="section-count">({{ section.count }})</span></h2></summary>
+  {% for a in section.articles %}
+  <div class="card" id="review-{{ a.id }}">
+    {% include "_verdict_controls.html" %}
+    <div style="display:flex; gap:.5rem; align-items:baseline; margin-top:.3rem; flex-wrap:wrap;">
+      <span class="art-journal">{{ a.journal_full }}</span>
+      <span class="art-year">{{ a.year }}</span>
+      {% if a.project_labels %}
+      <span style="font-size:.8rem; color:var(--muted);">Projekt: {{ a.project_labels|join(", ") }}</span>
+      {% endif %}
+    </div>
+    <h3 style="color:var(--fg); font-size:1rem; margin:.4rem 0;">
+      {{ title_link(a) }}
+    </h3>
+    {% if a.agent_entry %}
+    <p style="font-size:.9rem; margin-bottom:.3rem;">{{ a.agent_entry.kernthese[:250] }}{% if a.agent_entry.kernthese|length > 250 %}…{% endif %}</p>
+    <p style="font-size:.8rem; color:var(--muted);">{{ a.agent_entry.verdict_begruendung[:200] }}</p>
+    {% if a.agent_entry.bezuege %}
+    <div style="font-size:.85rem; margin-top:.3rem;">
+      {% for b in a.agent_entry.bezuege %}
+      <span style="color:var(--muted);">{{ b.pub_kurz }}</span>
+      <span class="bezug-rel">{{ relation_label.get(b.relation, b.relation) }}</span>{% if not loop.last %} · {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if a.agent_entry.bemerkenswert %}
+    <ul style="font-size:.85rem; color:var(--muted); padding-left:1.2rem; margin-top:.3rem;">
+      {% for note in a.agent_entry.bemerkenswert[:2] %}
+      <li>{{ note[:150] }}{% if note|length > 150 %}…{% endif %}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% endif %}
+    {% if a.citation_hits %}
+    <div style="font-size:.85rem; margin-top:.3rem; color:var(--lesenswert);">
+      Zitiert Dich ({{ a.citation_hits|length }})
+    </div>
+    {% endif %}
+    <div class="actions">
+      <a href="/article/{{ a.id }}" class="btn">Details</a>
+      {% if a.doi %}<a href="https://doi.org/{{ a.doi }}" target="_blank" class="btn">DOI</a>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</details>
+{% endfor %}
+{% else %}
 {% for a in articles %}
 <div class="card" id="review-{{ a.id }}">
   {% include "_verdict_controls.html" %}
-  <div style="display:flex; gap:.5rem; align-items:baseline; margin-top:.3rem;">
+  <div style="display:flex; gap:.5rem; align-items:baseline; margin-top:.3rem; flex-wrap:wrap;">
     <span class="art-journal">{{ a.journal_full }}</span>
     <span class="art-year">{{ a.year }}</span>
+    {% if a.project_labels %}
+    <span style="font-size:.8rem; color:var(--muted);">Projekt: {{ a.project_labels|join(", ") }}</span>
+    {% endif %}
   </div>
   <h3 style="color:var(--fg); font-size:1rem; margin:.4rem 0;">
     {{ title_link(a) }}
@@ -68,5 +131,6 @@
   </div>
 </div>
 {% endfor %}
+{% endif %}
 
 {% endblock %}
