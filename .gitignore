@@ -25,6 +25,7 @@ config.toml
 # Temporäre Dateien
 *.tmp
 /tmp/
+backups/
 
 # launchd (nur lokal, nie ins Repo)
 launchd/*.log

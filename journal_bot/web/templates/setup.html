@@ -527,8 +527,11 @@
   <div class="card">
     <h2 style="margin-top:0;">Backup & Export</h2>
     <div style="display:flex; gap:.75rem; flex-wrap:wrap;">
+      <a href="/api/backup/full" class="btn btn-primary">
+        Komplett-Backup herunterladen
+      </a>
       <a href="/api/backup/db" class="btn">
-        📦 DB-Backup herunterladen
+        Nur DB-Backup herunterladen
       </a>
       <a href="/api/export/json" class="btn">
         📋 JSON-Export (alle Artikel)
@@ -537,6 +540,11 @@
         📊 CSV-Export (alle Artikel)
       </a>
     </div>
+    <p style="font-size:.8rem; color:var(--muted); margin-top:.5rem;">
+      Komplett-Backup enthält den lokalen Nutzerzustand
+      (DB, Profil, Projekte, Journals, Diskursräume, Corpus, Summaries,
+      Custom-Fetcher und projektlokale Digest-Ausgaben). API-Keys sind aus Sicherheitsgründen nicht enthalten.
+    </p>
     <p style="font-size:.8rem; color:var(--muted); margin-top:.5rem;">
       JSON/CSV enthalten nur Metadaten + Verdicts (kein agent_entry).
     </p>

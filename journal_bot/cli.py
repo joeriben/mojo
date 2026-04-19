@@ -5,6 +5,8 @@ Subcommands:
                (einmalig oder bei Änderung, keine LLM-Kosten)
   summarize  — Corpus mit dem konfigurierten Modell zu Kurzprofilen (summaries.json)
                (einmalig, ~3€)
+  backup     — ZIP-Backup des lokalen Nutzerzustands
+               (DB + Profil + Projekte + Corpus + Summaries + Konfiguration)
   fetch      — Feeds → OpenAlex/Crossref-Enrichment → articles.db
                (wöchentlich, keine LLM-Kosten)
   backfill   — Fehlende Abstracts aus Crossref-Cache/Playwright/Zotero nachziehen
@@ -59,6 +61,25 @@ def cmd_summarize(args: argparse.Namespace) -> int:
 
 def cmd_fetch(args: argparse.Namespace) -> int:
     fetch.run(verbose=not args.quiet, since_year=args.since)
+    return 0
+
+
+def cmd_backup(args: argparse.Namespace) -> int:
+    from journal_bot.backup import create_backup_archive
+
+    output = Path(args.output) if args.output else None
+    result = create_backup_archive(
+        output_path=output,
+        include_digests=not args.no_digests,
+    )
+
+    print(f"[backup] Geschrieben: {result.archive_path}")
+    print(f"[backup] Enthalten: {len(result.included)} Dateien")
+    if result.skipped:
+        print("[backup] Hinweise:")
+        for item in result.skipped:
+            print(f"  - {item}")
+    print("[backup] API-Keys und Zotero-Storage sind absichtlich nicht enthalten.")
     return 0
 
 
@@ -735,6 +756,19 @@ def main(argv: list[str] | None = None) -> int:
                             help="Sekunden zwischen externen Requests (Default 2)")
     p_backfill.add_argument("--quiet", action="store_true")
     p_backfill.set_defaults(func=cmd_backfill)
+
+    p_backup = sub.add_parser("backup", help="Lokales Nutzer-Backup als ZIP erstellen")
+    p_backup.add_argument(
+        "--output",
+        default="",
+        help="Zielpfad für das ZIP-Archiv (default: ./backups/mojo_user_backup_*.zip)",
+    )
+    p_backup.add_argument(
+        "--no-digests",
+        action="store_true",
+        help="Digest-Ausgabeverzeichnis nicht mitsichern",
+    )
+    p_backup.set_defaults(func=cmd_backup)
 
     p_stats = sub.add_parser("stats", help="Store-Statistik")
     p_stats.set_defaults(func=cmd_stats)

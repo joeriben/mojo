@@ -1702,6 +1702,23 @@ def api_backup_db():
     )
 
 
+@app.route("/api/backup/full")
+def api_backup_full():
+    """Download a full ZIP backup of local user data."""
+    from journal_bot.backup import create_backup_archive
+    import tempfile
+
+    tmp = Path(tempfile.mktemp(suffix=".zip"))
+    create_backup_archive(output_path=tmp)
+    ts = datetime.now().strftime("%Y%m%d_%H%M")
+    return send_file(
+        tmp,
+        as_attachment=True,
+        download_name=f"mojo_user_backup_{ts}.zip",
+        mimetype="application/zip",
+    )
+
+
 @app.route("/api/export/json")
 def api_export_json():
     """Export all articles as JSON (metadata + verdicts, no full agent_entry)."""
