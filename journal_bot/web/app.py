@@ -8,7 +8,6 @@ import html as html_mod
 import io
 import json
 import os
-import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -1684,24 +1683,6 @@ def _reload_journals() -> None:
 # ============================================================= Backup ===
 
 
-@app.route("/api/backup/db")
-def api_backup_db():
-    """Download articles.db as backup."""
-    if not ARTICLES_DB.exists():
-        abort(404)
-    # Copy to temp to avoid locking issues
-    import tempfile
-    tmp = Path(tempfile.mktemp(suffix=".db"))
-    shutil.copy2(ARTICLES_DB, tmp)
-    ts = datetime.now().strftime("%Y%m%d_%H%M")
-    return send_file(
-        tmp,
-        as_attachment=True,
-        download_name=f"mojo_backup_{ts}.db",
-        mimetype="application/x-sqlite3",
-    )
-
-
 @app.route("/api/backup/full")
 def api_backup_full():
     """Download a full ZIP backup of local user data."""
@@ -1755,6 +1736,23 @@ def api_export_json():
         output,
         mimetype="application/json",
         headers={"Content-Disposition": f"attachment; filename=mojo_export_{ts}.json"},
+    )
+
+
+@app.route("/api/export/raw-package")
+def api_export_raw_package():
+    """Export article raw data without personal analysis fields."""
+    from journal_bot.article_exchange import default_raw_export_path, export_raw_articles
+    import tempfile
+
+    tmp_dir = Path(tempfile.mkdtemp(prefix="mojo_raw_export_"))
+    tmp = default_raw_export_path(tmp_dir)
+    result = export_raw_articles(_store(), output_path=tmp)
+    return send_file(
+        result.archive_path,
+        as_attachment=True,
+        download_name=result.archive_path.name,
+        mimetype="application/zip",
     )
 
 

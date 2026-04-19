@@ -528,10 +528,10 @@
     <h2 style="margin-top:0;">Backup & Export</h2>
     <div style="display:flex; gap:.75rem; flex-wrap:wrap;">
       <a href="/api/backup/full" class="btn btn-primary">
-        Komplett-Backup herunterladen
+        Backup herunterladen
       </a>
-      <a href="/api/backup/db" class="btn">
-        Nur DB-Backup herunterladen
+      <a href="/api/export/raw-package" class="btn">
+        Rohdatenpaket exportieren
       </a>
       <a href="/api/export/json" class="btn">
         📋 JSON-Export (alle Artikel)
@@ -541,12 +541,21 @@
       </a>
     </div>
     <p style="font-size:.8rem; color:var(--muted); margin-top:.5rem;">
-      Komplett-Backup enthält den lokalen Nutzerzustand
+      Das Backup enthält den lokalen Nutzerzustand
       (DB, Profil, Projekte, Journals, Diskursräume, Corpus, Summaries,
       Custom-Fetcher und projektlokale Digest-Ausgaben). API-Keys sind aus Sicherheitsgründen nicht enthalten.
     </p>
     <p style="font-size:.8rem; color:var(--muted); margin-top:.5rem;">
-      JSON/CSV enthalten nur Metadaten + Verdicts (kein agent_entry).
+      Rücksicherung auf einem neuen Rechner per CLI:
+      <code>mojo restore /pfad/zum/backup.zip</code>
+    </p>
+    <p style="font-size:.8rem; color:var(--muted); margin-top:.5rem;">
+      Rohdatenpaket ist fuer andere Installationen gedacht:
+      Artikel, Abstracts und Enrichment ja, Bewertungen/Memos nein.
+      Import per CLI: <code>mojo import-raw /pfad/zum/rohdaten.zip</code>
+    </p>
+    <p style="font-size:.8rem; color:var(--muted); margin-top:.5rem;">
+      JSON/CSV enthalten Metadaten plus Verdicts und sind keine neutrale Austauschdatei.
     </p>
   </div>
 </div>

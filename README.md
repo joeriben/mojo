@@ -60,6 +60,9 @@ Citation-frequency ranking from Crossref reference lists: which works are most c
 mojo ingest      # Zotero → corpus.json (one-time, no LLM)
 mojo summarize   # corpus → summaries.json (one-time, ~$2 Haiku)
 mojo backup      # ZIP-Backup des lokalen Nutzerzustands
+mojo restore X   # Backup aus ZIP in ein frisches Checkout zurückspielen
+mojo export-raw  # Rohdatenpaket ohne Bewertungen/Memos exportieren
+mojo import-raw X # Rohdatenpaket importieren, ohne erneut zu fetchen
 mojo fetch       # Feeds → articles.db (weekly, no LLM)
 mojo digest      # Agent run: --doi X or --next N (per article ~$0.50-$1)
 mojo trends      # LLM discourse analysis: --cluster NAME (~$0.20)

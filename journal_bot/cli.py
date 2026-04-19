@@ -7,6 +7,9 @@ Subcommands:
                (einmalig, ~3€)
   backup     — ZIP-Backup des lokalen Nutzerzustands
                (DB + Profil + Projekte + Corpus + Summaries + Konfiguration)
+  restore    — Restore eines Nutzer-Backups in ein frisches Checkout
+  export-raw — Rohdatenpaket fuer andere Installationen (ohne Bewertungen)
+  import-raw — Rohdatenpaket importieren, ohne erneut zu fetchen
   fetch      — Feeds → OpenAlex/Crossref-Enrichment → articles.db
                (wöchentlich, keine LLM-Kosten)
   backfill   — Fehlende Abstracts aus Crossref-Cache/Playwright/Zotero nachziehen
@@ -80,6 +83,76 @@ def cmd_backup(args: argparse.Namespace) -> int:
         for item in result.skipped:
             print(f"  - {item}")
     print("[backup] API-Keys und Zotero-Storage sind absichtlich nicht enthalten.")
+    return 0
+
+
+def cmd_restore(args: argparse.Namespace) -> int:
+    from journal_bot.backup import restore_backup_archive
+
+    result = restore_backup_archive(
+        Path(args.archive),
+        restore_digests=not args.no_digests,
+        digest_dir_override=Path(args.digest_dir) if args.digest_dir else None,
+        zotero_storage_override=Path(args.zotero_storage) if args.zotero_storage else None,
+        dry_run=args.dry_run,
+    )
+
+    prefix = "[restore:dry-run]" if args.dry_run else "[restore]"
+    print(f"{prefix} Archiv: {result.archive_path}")
+    print(f"{prefix} Ziele: {len(result.restored)}")
+    if result.profile_updates:
+        print(f"{prefix} Profil-Anpassungen:")
+        for key, value in result.profile_updates.items():
+            print(f"  - {key}: {value}")
+    if result.warnings:
+        print(f"{prefix} Hinweise:")
+        for item in result.warnings:
+            print(f"  - {item}")
+    if result.skipped:
+        print(f"{prefix} Ausgelassen:")
+        for item in result.skipped:
+            print(f"  - {item}")
+    if args.dry_run:
+        print(f"{prefix} Es wurden keine Dateien geschrieben.")
+    else:
+        print(f"{prefix} Restore abgeschlossen.")
+    return 0
+
+
+def cmd_export_raw(args: argparse.Namespace) -> int:
+    from journal_bot.article_exchange import default_raw_export_path, export_raw_articles
+
+    store = Store()
+    journals = args.journals.split(",") if args.journals else None
+    output = Path(args.output) if args.output else default_raw_export_path(PROJECT_ROOT / "exports")
+    result = export_raw_articles(
+        store,
+        output_path=output,
+        journals=journals,
+        since_year=args.since,
+    )
+    print(f"[export-raw] Geschrieben: {result.archive_path}")
+    print(f"[export-raw] Artikel: {result.article_count}")
+    print("[export-raw] Enthalten: Artikel, Abstracts, DOI/URLs und Enrichment; keine Bewertungen oder Memos.")
+    return 0
+
+
+def cmd_import_raw(args: argparse.Namespace) -> int:
+    from journal_bot.article_exchange import import_raw_articles
+
+    store = Store()
+    result = import_raw_articles(store, Path(args.archive))
+    print(f"[import-raw] Archiv: {result.archive_path}")
+    print(f"[import-raw] Importiert: {result.imported}")
+    print(f"[import-raw] Neu: {result.created}")
+    print(f"[import-raw] Aktualisiert: {result.updated}")
+    if result.skipped:
+        print(f"[import-raw] Uebersprungen: {result.skipped}")
+    if result.warnings:
+        print("[import-raw] Hinweise:")
+        for item in result.warnings:
+            print(f"  - {item}")
+    print("[import-raw] Agent- und User-Auswertungen bleiben unberuehrt.")
     return 0
 
 
@@ -769,6 +842,59 @@ def main(argv: list[str] | None = None) -> int:
         help="Digest-Ausgabeverzeichnis nicht mitsichern",
     )
     p_backup.set_defaults(func=cmd_backup)
+
+    p_restore = sub.add_parser("restore", help="Nutzer-Backup aus ZIP wiederherstellen")
+    p_restore.add_argument("archive", help="Pfad zum Backup-ZIP")
+    p_restore.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Nur prüfen und Zielpfade ausgeben, nichts schreiben",
+    )
+    p_restore.add_argument(
+        "--no-digests",
+        action="store_true",
+        help="Digest-Dateien aus dem Backup nicht zurueckspielen",
+    )
+    p_restore.add_argument(
+        "--digest-dir",
+        default="",
+        help="Digest-Zielpfad fuer diesen Rechner ueberschreiben",
+    )
+    p_restore.add_argument(
+        "--zotero-storage",
+        default="",
+        help="zotero_storage im Profil fuer diesen Rechner ueberschreiben",
+    )
+    p_restore.set_defaults(func=cmd_restore)
+
+    p_export_raw = sub.add_parser(
+        "export-raw",
+        help="Rohdatenpaket mit Artikeln/Abstracts ohne Bewertungen exportieren",
+    )
+    p_export_raw.add_argument(
+        "--output",
+        default="",
+        help="Zielpfad fuer das ZIP-Archiv (default: ./exports/mojo_article_rohdaten_*.zip)",
+    )
+    p_export_raw.add_argument(
+        "--since",
+        type=int,
+        default=None,
+        help="Optional nur Artikel ab diesem Jahr exportieren",
+    )
+    p_export_raw.add_argument(
+        "--journals",
+        default="",
+        help="Optional nur diese Journal-Kuerzel, komma-getrennt",
+    )
+    p_export_raw.set_defaults(func=cmd_export_raw)
+
+    p_import_raw = sub.add_parser(
+        "import-raw",
+        help="Rohdatenpaket mit Artikeln/Abstracts importieren",
+    )
+    p_import_raw.add_argument("archive", help="Pfad zum Rohdaten-ZIP")
+    p_import_raw.set_defaults(func=cmd_import_raw)
 
     p_stats = sub.add_parser("stats", help="Store-Statistik")
     p_stats.set_defaults(func=cmd_stats)

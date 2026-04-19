@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import shutil
 import tempfile
 import zipfile
 from dataclasses import dataclass
@@ -24,8 +25,19 @@ from journal_bot.fetchers.configurable_fetcher import CUSTOM_CONFIG_DIR
 
 
 PROJECTS_JSON = PROJECT_ROOT / "projects.json"
+AGENT_CONTEXT_JSON = PROJECT_ROOT / ".agent_context.json"
+LEGACY_AGENT_CONTEXT_TXT = PROJECT_ROOT / ".agent_context.txt"
 BACKUP_DIR = PROJECT_ROOT / "backups"
 BACKUP_SCHEMA_VERSION = 1
+CORE_ARCHIVE_MEMBERS = [
+    "project_root/profile.json",
+    "project_root/projects.json",
+    "project_root/journals.json",
+    "project_root/diskursraeume.json",
+    "project_root/corpus.json",
+    "project_root/summaries.json",
+    "project_root/articles.db",
+]
 
 
 @dataclass(frozen=True)
@@ -40,6 +52,15 @@ class BackupResult:
     archive_path: Path
     included: list[dict]
     skipped: list[str]
+
+
+@dataclass(frozen=True)
+class RestoreResult:
+    archive_path: Path
+    restored: list[str]
+    skipped: list[str]
+    warnings: list[str]
+    profile_updates: dict[str, str]
 
 
 def default_backup_path(now: datetime | None = None) -> Path:
@@ -101,6 +122,8 @@ def create_backup_archive(
         manifest = {
             "schema_version": BACKUP_SCHEMA_VERSION,
             "created_at": datetime.now().isoformat(timespec="seconds"),
+            "project_root": str(PROJECT_ROOT),
+            "digest_dir": str(DIGEST_DIR),
             "included": included,
             "skipped": skipped,
             "notes": [
@@ -114,6 +137,83 @@ def create_backup_archive(
         )
 
     return BackupResult(archive_path=output_path, included=included, skipped=skipped)
+
+
+def restore_backup_archive(
+    archive_path: Path,
+    *,
+    restore_digests: bool = True,
+    digest_dir_override: Path | None = None,
+    zotero_storage_override: Path | None = None,
+    dry_run: bool = False,
+) -> RestoreResult:
+    """Restore a user backup archive into the current project checkout."""
+    archive_path = Path(archive_path)
+    restored: list[str] = []
+    skipped: list[str] = []
+    warnings: list[str] = []
+    profile_updates: dict[str, str] = {}
+
+    with zipfile.ZipFile(archive_path, "r") as zf:
+        manifest = _read_manifest(zf)
+        archived_names = set(zf.namelist())
+        missing_core = [name for name in CORE_ARCHIVE_MEMBERS if name not in archived_names]
+        for name in missing_core:
+            warnings.append(f"Kernbestandteil fehlt im Archiv: {name}")
+
+        profile_payload = _load_archived_json(zf, "project_root/profile.json")
+        target_digest_dir = DIGEST_DIR
+        patched_profile: dict | None = None
+        if profile_payload is not None:
+            patched_profile, target_digest_dir, profile_updates = _prepare_profile_for_restore(
+                profile_payload,
+                manifest=manifest,
+                has_digest_entries=any(name.startswith("digest_dir/") for name in archived_names),
+                digest_dir_override=digest_dir_override,
+                zotero_storage_override=zotero_storage_override,
+                warnings=warnings,
+            )
+        elif digest_dir_override is not None:
+            target_digest_dir = Path(digest_dir_override).expanduser()
+
+        for name in sorted(archived_names):
+            if name.endswith("/") or name == "manifest.json":
+                continue
+            if name == "project_root/profile.json":
+                continue
+
+            destination = _restore_destination(
+                archive_member=name,
+                target_digest_dir=target_digest_dir,
+                restore_digests=restore_digests,
+                skipped=skipped,
+            )
+            if destination is None:
+                continue
+
+            restored.append(str(destination))
+            if dry_run:
+                continue
+
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            with zf.open(name, "r") as src, destination.open("wb") as dst:
+                shutil.copyfileobj(src, dst)
+
+        if patched_profile is not None:
+            restored.append(str(PROFILE_JSON))
+            if not dry_run:
+                PROFILE_JSON.write_text(
+                    json.dumps(patched_profile, ensure_ascii=False, indent=2) + "\n",
+                    encoding="utf-8",
+                )
+
+    return RestoreResult(
+        archive_path=archive_path,
+        restored=restored,
+        skipped=skipped,
+        warnings=warnings,
+        profile_updates=profile_updates,
+    )
 
 
 def _collect_entries(
@@ -145,6 +245,25 @@ def _collect_entries(
             )
         else:
             skipped.append(f"{path.name} fehlt")
+
+    if AGENT_CONTEXT_JSON.exists() and AGENT_CONTEXT_JSON.is_file():
+        entries.append(
+            BackupEntry(
+                source=AGENT_CONTEXT_JSON,
+                archive_path=f"project_root/{AGENT_CONTEXT_JSON.name}",
+                logical_name="agent_context",
+            )
+        )
+    elif LEGACY_AGENT_CONTEXT_TXT.exists() and LEGACY_AGENT_CONTEXT_TXT.is_file():
+        entries.append(
+            BackupEntry(
+                source=LEGACY_AGENT_CONTEXT_TXT,
+                archive_path=f"project_root/{LEGACY_AGENT_CONTEXT_TXT.name}",
+                logical_name="agent_context_legacy",
+            )
+        )
+    else:
+        skipped.append("kein persistierter Agent-Kontext")
 
     custom_configs = sorted(
         p for p in CUSTOM_CONFIG_DIR.glob("*.json")
@@ -225,3 +344,137 @@ def _snapshot_sqlite(source: Path) -> Path:
         src.close()
 
     return tmp_path
+
+
+def _read_manifest(zf: zipfile.ZipFile) -> dict:
+    try:
+        with zf.open("manifest.json", "r") as fh:
+            return json.loads(fh.read().decode("utf-8"))
+    except KeyError:
+        return {}
+
+
+def _load_archived_json(zf: zipfile.ZipFile, name: str) -> dict | None:
+    try:
+        with zf.open(name, "r") as fh:
+            return json.loads(fh.read().decode("utf-8"))
+    except KeyError:
+        return None
+
+
+def _prepare_profile_for_restore(
+    profile_payload: dict,
+    *,
+    manifest: dict,
+    has_digest_entries: bool,
+    digest_dir_override: Path | None,
+    zotero_storage_override: Path | None,
+    warnings: list[str],
+) -> tuple[dict, Path, dict[str, str]]:
+    profile = dict(profile_payload)
+    updates: dict[str, str] = {}
+
+    original_project_root_raw = manifest.get("project_root") or ""
+    original_project_root = Path(original_project_root_raw).expanduser() if original_project_root_raw else None
+
+    restored_digest_dir = _rewrite_digest_dir(
+        profile,
+        original_project_root=original_project_root,
+        has_digest_entries=has_digest_entries,
+        digest_dir_override=digest_dir_override,
+        warnings=warnings,
+    )
+    if restored_digest_dir is not None:
+        updates["digest_dir"] = str(restored_digest_dir)
+
+    if zotero_storage_override is not None:
+        z_path = Path(zotero_storage_override).expanduser()
+        profile["zotero_storage"] = str(z_path)
+        updates["zotero_storage"] = str(z_path)
+    else:
+        raw_zotero = str(profile.get("zotero_storage", "") or "").strip()
+        if raw_zotero and not Path(raw_zotero).expanduser().exists():
+            warnings.append(
+                f"zotero_storage aus dem Backup existiert hier nicht: {raw_zotero}"
+            )
+
+    target_digest_dir = Path(profile.get("digest_dir") or DIGEST_DIR).expanduser()
+    return profile, target_digest_dir, updates
+
+
+def _rewrite_digest_dir(
+    profile: dict,
+    *,
+    original_project_root: Path | None,
+    has_digest_entries: bool,
+    digest_dir_override: Path | None,
+    warnings: list[str],
+) -> Path | None:
+    if digest_dir_override is not None:
+        new_digest_dir = Path(digest_dir_override).expanduser()
+        profile["digest_dir"] = str(new_digest_dir)
+        return new_digest_dir
+
+    raw_digest_dir = str(profile.get("digest_dir", "") or "").strip()
+    if not raw_digest_dir:
+        new_digest_dir = PROJECT_ROOT / "output"
+        profile["digest_dir"] = str(new_digest_dir)
+        return new_digest_dir
+
+    digest_path = Path(raw_digest_dir).expanduser()
+
+    if not digest_path.is_absolute():
+        new_digest_dir = (PROJECT_ROOT / digest_path).resolve()
+        profile["digest_dir"] = str(new_digest_dir)
+        return new_digest_dir
+
+    if original_project_root and digest_path.is_relative_to(original_project_root):
+        rel = digest_path.relative_to(original_project_root)
+        new_digest_dir = PROJECT_ROOT / rel
+        profile["digest_dir"] = str(new_digest_dir)
+        return new_digest_dir
+
+    if has_digest_entries:
+        fallback_dir = PROJECT_ROOT / digest_path.name
+        profile["digest_dir"] = str(fallback_dir)
+        warnings.append(
+            f"digest_dir konnte nicht exakt umgeschrieben werden; nutze Fallback im Projekt: {fallback_dir}"
+        )
+        return fallback_dir
+
+    warnings.append(
+        f"digest_dir aus dem Backup bleibt unveraendert und sollte lokal geprueft werden: {raw_digest_dir}"
+    )
+    return digest_path
+
+
+def _restore_destination(
+    *,
+    archive_member: str,
+    target_digest_dir: Path,
+    restore_digests: bool,
+    skipped: list[str],
+) -> Path | None:
+    if archive_member.startswith("project_root/"):
+        rel = archive_member[len("project_root/"):]
+        if not rel:
+            return None
+        return PROJECT_ROOT / rel
+
+    if archive_member.startswith("custom_fetchers/"):
+        rel = archive_member[len("custom_fetchers/"):]
+        if not rel:
+            return None
+        return CUSTOM_CONFIG_DIR / rel
+
+    if archive_member.startswith("digest_dir/"):
+        if not restore_digests:
+            skipped.append(f"{archive_member} ausgelassen (--no-digests)")
+            return None
+        rel = archive_member[len("digest_dir/"):]
+        if not rel:
+            return None
+        return target_digest_dir / rel
+
+    skipped.append(f"unbekannter Archivpfad: {archive_member}")
+    return None
