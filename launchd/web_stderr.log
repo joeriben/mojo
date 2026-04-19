@@ -408,3 +408,22 @@ ModuleNotFoundError: No module named 'markdown'
  * Restarting with stat
  * Debugger is active!
  * Debugger PIN: 558-021-496
+127.0.0.1 - - [19/Apr/2026 15:59:25] "GET /diskurs/erziehungswiss HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 15:59:25] "GET /api/tooltip/2657f3f979cf4d959b53af10f520daae HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 15:59:46] "POST /api/diskurs/profile/erziehungswiss HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 16:01:36] "GET /api/tooltip/8c6946a9f15575c99ed29a4f2e1345ef HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 16:01:37] "GET /api/tooltip/1335b4fdd7489a5cf62c369942e1e3ca HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 16:01:37] "GET /api/tooltip/029017a0620d230ff75cb6ac7e6e7eb1 HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 16:01:49] "GET /api/tooltip/aee65231016c1851f414f7f106536093 HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 16:01:49] "GET /api/tooltip/477d667b6dcc7f641bc68f96712cfa9e HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 16:01:49] "GET /api/tooltip/d90e3cf00f89b506843615c1d25f2457 HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 16:02:22] "GET /review HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 16:02:31] "GET /api/tooltip/641bb1ec866e734027416bca2aa2c992 HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 16:02:34] "GET /review?year=&verdict=&project=cultural_resilience&sort=verdict HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 16:02:42] "GET /api/tooltip/641bb1ec866e734027416bca2aa2c992 HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 16:03:09] "GET /article/641bb1ec866e734027416bca2aa2c992 HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 16:03:10] "POST /api/verdict HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 16:03:36] "POST /api/verdict HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 16:03:37] "GET /api/tooltip/3bf4d61f708e6fda1d0537699086da63 HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 16:03:49] "GET /api/tooltip/c7bc1223bd6a692bded1902dce12d0ae HTTP/1.1" 200 -
+127.0.0.1 - - [19/Apr/2026 16:03:55] "POST /api/verdict HTTP/1.1" 200 -
