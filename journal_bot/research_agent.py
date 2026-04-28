@@ -41,6 +41,13 @@ SEARCH_STOPWORDS = {
     "welche", "welcher", "welches", "welchen", "which", "wie", "wo", "zu",
     "zum", "zur",
 }
+SEARCH_TERM_ALIASES = {
+    "bently": ["bentley"],
+    "dewey/bently": ["dewey", "bentley"],
+    "dewey-bently": ["dewey", "bentley"],
+    "dewey/bentley": ["dewey", "bentley"],
+    "dewey-bentley": ["dewey", "bentley"],
+}
 QUESTION_NOISE = {
     "agent", "artikel", "artikeln", "bezug", "bezüge", "db", "entwurf",
     "entwurfs", "fehlen", "fehlende", "frage", "literatur", "missed", "mojo",
@@ -50,11 +57,12 @@ QUESTION_NOISE = {
 ARGUMENT_TERM_NOISE = {
     "als", "auch", "braucht", "damit", "deuten", "dies", "diese", "dieser",
     "diesem", "diesen", "ein", "eine", "einer", "eines", "fragen", "greifen",
-    "hat", "hier", "ihr", "ihre", "ihren", "ihres", "ihm", "ihn", "kurz", "mehr",
-    "nicht", "noch", "nur", "problem", "probleme", "relevant", "sein", "sind",
-    "sie", "soll", "sollte", "sondern", "stärker", "ueber", "und", "unter",
-    "verstehen", "viel", "von", "vor", "warum", "weil", "werden", "wider",
-    "widerspruch", "widersprüche", "wird", "wie", "wir", "zwischen",
+    "hat", "hier", "ihr", "ihre", "ihren", "ihres", "ihm", "ihn", "insbesondere",
+    "jedoch", "kurz", "mehr", "nicht", "noch", "nur", "problem", "probleme",
+    "relevant", "sein", "sind", "sie", "soll", "sollte", "sondern", "stärker",
+    "ueber", "und", "unter", "verstehen", "viel", "von", "vor", "warum", "weil",
+    "werden", "wider", "widerspruch", "widersprüche", "wird", "wie", "wir",
+    "zwischen",
 }
 GENERIC_SEARCH_TERMS = {
     "art", "arts", "bildung", "creative", "creativity", "culture", "cultural",
@@ -118,15 +126,24 @@ def _normalize_search_text(text: str) -> str:
 def _extract_search_terms(text: str, *, min_len: int = 3) -> list[str]:
     tokens = re.findall(r"[A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9_\-/\.]*", text.lower())
     terms: list[str] = []
+
+    def _add_term(term: str) -> None:
+        if len(term) < min_len:
+            return
+        if term in SEARCH_STOPWORDS or term in QUESTION_NOISE:
+            return
+        if term.isdigit():
+            return
+        terms.append(term)
+        for alias in SEARCH_TERM_ALIASES.get(term, []):
+            if len(alias) >= min_len and alias not in SEARCH_STOPWORDS:
+                terms.append(alias)
+
     for token in tokens:
         token = token.strip("._-/")
-        if len(token) < min_len:
-            continue
-        if token in SEARCH_STOPWORDS or token in QUESTION_NOISE:
-            continue
-        if token.isdigit():
-            continue
-        terms.append(token)
+        _add_term(token)
+        for part in re.split(r"[/_.-]+", token):
+            _add_term(part.strip())
     deduped: list[str] = []
     for term in terms:
         if term not in deduped:
@@ -186,6 +203,7 @@ def _row_to_search_result(
         "verdict": row["agent_verdict"],
         "verdict_reason": entry.get("verdict_begruendung", "") if entry else "",
         "kernthese": entry.get("kernthese", "") if entry else "",
+        "theoretisch_methodisch": entry.get("theoretisch_methodisch", "") if entry else "",
         "bezuege": entry.get("bezuege", []) if entry else [],
         "topics": [t.get("name", "") for t in topics if isinstance(t, dict) and t.get("name")],
         "concepts": [c.get("name", "") for c in concepts if isinstance(c, dict) and c.get("name")],
@@ -457,9 +475,9 @@ def _detect_search_intent(message: str) -> str:
         return "methods"
     if any(token in msg for token in ["gegenargument", "widerspruch", "kritik", "counter", "opposition"]):
         return "counter"
-    if any(token in msg for token in ["fehl", "referenz", "bezug", "missed"]):
+    if any(token in msg for token in ["fehl", "referenz", "zitation", "missed"]):
         return "missing_refs"
-    if any(token in msg for token in ["relevant", "anschluss", "welche artikel", "relevante artikel"]):
+    if any(token in msg for token in ["relevant", "anschluss", "welche artikel", "relevante artikel", "bezüge zu", "bezug zu"]):
         return "relevant"
     return "general"
 
@@ -667,6 +685,10 @@ def _format_argument_results(
             )
         if r["kernthese"]:
             lines.append(f"  Kernthese: {r['kernthese'][:220]}")
+        if intent == "methods" and r.get("theoretisch_methodisch"):
+            lines.append(
+                f"  Methodischer Zugang: {_short_excerpt(r['theoretisch_methodisch'], 220)}"
+            )
     return "\n".join(lines)
 
 
@@ -761,11 +783,23 @@ def _should_force_argument_report(message: str, user_context: str | None = None)
     if not units:
         return False
 
-    intent = _detect_search_intent(message)
-    if intent != "general":
+    msg = _normalize_search_text(message)
+    explicit_local_scan = any(
+        token in msg
+        for token in [
+            "db-scan",
+            "db scan",
+            "trefferliste",
+            "nur treffer",
+            "ohne llm",
+            "kostenfrei",
+            "lokal",
+            "scannen",
+        ]
+    )
+    if explicit_local_scan:
         return True
 
-    msg = _normalize_search_text(message)
     mentions_argument = "argument" in msg or "komplex" in msg
     mentions_text = any(token in msg for token in ["aufsatz", "entwurf", "text", "paper"])
     asks_relation = any(token in msg for token in ["bezug", "damit", "tun", "warum", "wieso", "welcher", "welche"])
@@ -828,6 +862,11 @@ def _format_argument_findings(group: dict[str, Any]) -> list[str]:
         if result.get("verdict_reason"):
             lines.append(
                 f"  Agent-Einschätzung: {_short_excerpt(result['verdict_reason'], 220)}"
+            )
+
+        if group.get("intent") == "methods" and result.get("theoretisch_methodisch"):
+            lines.append(
+                f"  Methodischer Zugang: {_short_excerpt(result['theoretisch_methodisch'], 220)}"
             )
 
         if result.get("kernthese"):
@@ -959,6 +998,57 @@ TOOL_DEFINITIONS = [
     },
 ]
 
+FOCUSED_DB_TOOL_DEFINITIONS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "search_articles",
+            "description": (
+                "Search the MOJO article database with one focused query. Use several "
+                "different calls with different theoretical vocabularies, names, and "
+                "conceptual bridges instead of relying on one broad query."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": (
+                            "Compact keyword or phrase bundle, e.g. "
+                            "'Dewey Bentley transactionalism language ontology'."
+                        ),
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max results for this query, usually 8-20.",
+                    },
+                },
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "read_article_detail",
+            "description": (
+                "Read the stored MOJO analysis and metadata for one article ID after "
+                "search_articles has found a plausible candidate."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "article_id": {
+                        "type": "string",
+                        "description": "The MOJO article ID (32-char hex).",
+                    },
+                },
+                "required": ["article_id"],
+            },
+        },
+    },
+]
+
 
 def _execute_tool(name: str, args: dict, user_context: str | None = None) -> str:
     """Execute a tool call and return result as string."""
@@ -1047,6 +1137,51 @@ def _execute_tool(name: str, args: dict, user_context: str | None = None) -> str
             parts.append(f"\nMethodisch: {entry['theoretisch_methodisch']}")
 
         return "\n".join(p for p in parts if p)
+
+    return f"Unbekanntes Tool: {name}"
+
+
+def _format_focused_search_results(results: list[dict]) -> str:
+    lines = []
+    for idx, r in enumerate(results, start=1):
+        authors_str = ", ".join(r["authors"][:2])
+        if len(r["authors"]) > 2:
+            authors_str += " et al."
+        parts = [
+            f"{idx}. ID: {r['id']}",
+            f"   Titel: {r['title']}",
+            f"   {authors_str} ({r['year']}) — {r['journal']} — Verdict: {r['verdict']}",
+        ]
+        if r.get("match_reasons"):
+            parts.append("   Treffergründe: " + " | ".join(r["match_reasons"][:4]))
+        if r.get("kernthese"):
+            parts.append(f"   Kernthese: {_short_excerpt(r['kernthese'], 260)}")
+        if r.get("theoretisch_methodisch"):
+            parts.append(
+                f"   Theoretisch/methodisch: {_short_excerpt(r['theoretisch_methodisch'], 200)}"
+            )
+        if r.get("verdict_reason"):
+            parts.append(f"   Frühere Agent-Einschätzung: {_short_excerpt(r['verdict_reason'], 200)}")
+        lines.append("\n".join(parts))
+    return "\n\n".join(lines)
+
+
+def _execute_focused_db_tool(name: str, args: dict) -> str:
+    """Execute focused DB-agent tools without argument-unit short-circuiting."""
+    if name == "search_articles":
+        query = args.get("query", "")
+        limit = max(1, min(int(args.get("limit", 8) or 8), 10))
+        results = _search_articles_by_text(query, user_context=None, limit=limit)
+        if not results:
+            return f"Keine Treffer für Query: {query}"
+        return _trim_text(
+            f"{len(results)} Treffer für Query: {query}\n\n"
+            + _format_focused_search_results(results),
+            6500,
+        )
+
+    if name == "read_article_detail":
+        return _trim_text(_execute_tool(name, args, user_context=None), 3200)
 
     return f"Unbekanntes Tool: {name}"
 
@@ -1286,6 +1421,10 @@ def build_system_prompt(user_context: str | None = None) -> str:
         "  aber prüfe sie kritisch und lies bei Bedarf Details per Tool nach.",
         "- Wenn der Text klar genug ist, mach proaktiv mehrere Suchen mit unterschiedlichen",
         "  Query-Bündeln statt nur einer generischen Suchanfrage.",
+        "- Bei Fragen nach methodischen Zugängen: synthetisiere zuerst konkrete Arbeitsweisen",
+        "  und methodische Strategien; führe Artikeltreffer nur als Belege dafür an.",
+        "- Bei Theoriefragen: prüfe ausdrücklich, ob eine Frage eher begrifflich-argumentativ",
+        "  als bibliographisch gemeint ist, und antworte dann nicht nur als Trefferliste.",
         "- Sei ehrlich über die Grenzen der Suche und benenne Unsicherheiten offen.",
     ])
 
@@ -1300,6 +1439,259 @@ def build_system_prompt(user_context: str | None = None) -> str:
         ])
 
     return "\n".join(prompt_parts)
+
+
+def _should_use_focused_db_agent(message: str, user_context: str | None = None) -> bool:
+    """Use the lean, tool-driving DB agent for focused literature questions."""
+    if not user_context:
+        return False
+    if _should_force_argument_report(message, user_context):
+        return False
+
+    msg = _normalize_search_text(message)
+    if any(
+        token in msg
+        for token in [
+            "eigene publikationen",
+            "eigene texte",
+            "eigene arbeiten",
+            "benjamins publikationen",
+            "forscherprofil",
+            "corpus",
+            "korpus",
+        ]
+    ):
+        return False
+
+    intent = _detect_search_intent(message)
+    if intent in {"relevant", "missing_refs", "counter", "methods"}:
+        return True
+
+    return any(
+        token in msg
+        for token in [
+            "welche artikel",
+            "artikel in der mojo-db",
+            "mojo-db",
+            "mojo db",
+            "recherche",
+            "literatur",
+            "ähnliche arbeiten",
+            "aehnliche arbeiten",
+        ]
+    )
+
+
+def build_focused_db_system_prompt(user_context: str | None = None) -> str:
+    """Build a lean prompt for LLM-directed retrieval over articles.db only."""
+    store = Store()
+    stats = store.stats()
+    parts = [
+        "Du bist der fokussierte MOJO-DB-Rechercheagent.",
+        "Du beantwortest Literaturfragen ausschließlich anhand der lokalen MOJO-Artikel-Datenbank.",
+        f"Die Datenbank enthält {stats['total']} Artikel, davon {stats['processed']} mit Agent-Analyse.",
+        "",
+        "Wichtig:",
+        "- Lade nicht das Forscherprofil, keine eigenen Publikationen und keine Corpus-Summaries.",
+        "- Nutze stattdessen die Suchtools iterativ. Eine einzige Suche reicht bei Theoriefragen fast nie.",
+        "- Formuliere zuerst Suchhypothesen aus dem Anliegen des Users.",
+        "- Führe 3 bis maximal 5 search_articles-Aufrufe mit unterschiedlichen Vokabularen aus:",
+        "  Namen, Schulen, Gegenbegriffe, englische/deutsche Varianten, Schreibvarianten.",
+        "- Bei Vergleichs- oder Kontrastfragen musst du beide Seiten separat suchen, nicht nur",
+        "  die direkte Schnittmenge. Einseitige Treffer können wichtige Kontrastfolien sein.",
+        "- Lies danach maximal 4 Details der plausibelsten Kandidaten mit read_article_detail.",
+        "- Nach diesen Suchschritten musst du final antworten; keine endlose Recherche.",
+        "- Verwirf reine Namens- oder Themenüberlappungen ausdrücklich.",
+        "- Unterscheide direkt relevant, indirekt relevant, schwacher Treffer und Lücke in der DB.",
+        "- Antworte auf Deutsch. Gib Artikel immer mit Titel, Autor:innen, Jahr, Journal und /article/<id> an.",
+        "- Kopiere Artikel-IDs exakt aus den Tooltreffern. Erfinde oder korrigiere keine IDs.",
+        "- Sei knapp, aber begründe die Auswahl argumentativ.",
+    ]
+    if user_context:
+        parts.extend([
+            "",
+            "=== ANLIEGEN / TEXTKONTEXT DES USERS ===",
+            user_context,
+        ])
+    return "\n".join(parts)
+
+
+def _build_focused_search_hints(message: str, user_context: str | None = None) -> str:
+    """Build non-binding but mandatory-to-consider query axes from the user's terms."""
+    blob = _normalize_search_text(" ".join([message or "", user_context or ""]))
+    terms = set(_extract_search_terms(blob))
+    hints: list[str] = []
+
+    def has(*items: str) -> bool:
+        return any(item in blob or item in terms for item in items)
+
+    def add(query: str, reason: str) -> None:
+        line = f"- `{query}` — {reason}"
+        if line not in hints:
+            hints.append(line)
+
+    if has("barad") and has("whitehead"):
+        add("Barad Whitehead process ontology", "direkte Literaturlinie im Anliegen")
+    if has("dewey") and has("bentley", "bently"):
+        add("Dewey Bentley transactionalism", "alternative Anschlusslinie im Anliegen")
+    if has("barad") and has("dewey"):
+        add("Barad Dewey pragmatism transactionalism", "mögliche Brücke Barad-Pragmatismus")
+    if has("barad") and has("sprache", "language"):
+        add("Barad language material-discursive ontology", "Differenzmarker Sprache")
+    if has("whitehead") and has("sprache", "language", "ontologie", "ontology"):
+        add("Whitehead language process ontology", "Vergleichsseite Whitehead")
+    if has("dewey") and has("sprache", "language", "ontologie", "ontology"):
+        add("Dewey pragmatism language ontology", "Vergleichsseite Dewey")
+    if has("pragmat", "transactionalism", "transaktionalismus"):
+        add("pragmatism transactionalism education ontology", "weiterer Pragmatismus-Suchraum")
+
+    if not hints:
+        focus_terms = [t for t in _clean_argument_terms(list(terms)) if t not in GENERIC_SEARCH_TERMS]
+        if focus_terms:
+            add(" ".join(focus_terms[:6]), "aus dem Anliegen extrahierte Begriffe")
+
+    if not hints:
+        return ""
+    return (
+        "=== VERPFLICHTENDE SUCHACHSEN AUS DEM USERKONTEXT ===\n"
+        "Arbeite diese Achsen per search_articles ab oder erkläre in der Antwort, warum eine Achse "
+        "nicht sinnvoll war. Behaupte keine DB-Lücke zu einer Achse, bevor sie gesucht wurde.\n"
+        + "\n".join(hints[:8])
+    )
+
+
+def focused_db_chat(
+    message: str,
+    history: list[dict[str, str]],
+    user_context: str | None = None,
+    model: str | None = None,
+) -> dict[str, Any]:
+    """Run a lean LLM tool loop that searches and evaluates articles.db."""
+    client = build_client()
+    model = model or MODEL_AGENT
+    system_prompt = build_focused_db_system_prompt(user_context)
+
+    messages = []
+    for h in history[-8:]:
+        messages.append({"role": h["role"], "content": h["content"]})
+    search_hints = _build_focused_search_hints(message, user_context)
+    user_message = (
+        message
+        + "\n\nArbeitsweise: Entwickle mehrere Suchhypothesen, nutze search_articles "
+        "mehrfach, lies die stärksten Kandidaten im Detail, und bewerte sie dann."
+    )
+    if search_hints:
+        user_message += "\n\n" + search_hints
+    messages.append({
+        "role": "user",
+        "content": user_message,
+    })
+
+    total_input = 0
+    total_output = 0
+    total_cost = 0.0
+    content = ""
+    max_tool_rounds = 3
+    max_tool_calls = 8
+    tool_call_count = 0
+    system_message = {"role": "system", "content": system_prompt}
+
+    for _ in range(max_tool_rounds):
+        response = client.chat.completions.create(
+            model=model,
+            messages=[system_message] + messages,
+            tools=FOCUSED_DB_TOOL_DEFINITIONS,
+            max_tokens=2200,
+            extra_body={"transforms": ["middle-out"]},
+        )
+
+        choice = response.choices[0]
+        usage = getattr(response, "usage", None)
+        if usage:
+            prompt_tokens = usage.prompt_tokens or 0
+            completion_tokens = usage.completion_tokens or 0
+            total_input += prompt_tokens
+            total_output += completion_tokens
+            total_cost += _usage_cost(usage, model, prompt_tokens, completion_tokens)
+
+        tool_calls = getattr(choice.message, "tool_calls", None) or []
+        if not tool_calls:
+            content = choice.message.content or ""
+            break
+
+        remaining_tool_calls = max_tool_calls - tool_call_count
+        if remaining_tool_calls <= 0:
+            break
+        tool_calls = tool_calls[:remaining_tool_calls]
+
+        messages.append({
+            "role": "assistant",
+            "content": choice.message.content or "",
+            "tool_calls": [
+                {
+                    "id": tc.id,
+                    "type": "function",
+                    "function": {
+                        "name": tc.function.name,
+                        "arguments": tc.function.arguments,
+                    },
+                }
+                for tc in tool_calls
+            ],
+        })
+        for tc in tool_calls:
+            try:
+                args = json.loads(tc.function.arguments)
+            except Exception:
+                args = {}
+            result = _execute_focused_db_tool(tc.function.name, args)
+            tool_call_count += 1
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tc.id,
+                "content": result,
+            })
+
+        if tool_call_count >= max_tool_calls or total_cost >= 0.45:
+            break
+
+    if not content and tool_call_count:
+        messages.append({
+            "role": "user",
+            "content": (
+                "Erstelle jetzt die finale Antwort aus den bisherigen Such- und Lesetreffern. "
+                "Keine weiteren Tools. Ordne die Treffer nach direkter Relevanz, indirekter "
+                "Relevanz und schwachen Treffern; benenne Lücken der MOJO-DB."
+            ),
+        })
+        response = client.chat.completions.create(
+            model=model,
+            messages=[system_message] + messages,
+            max_tokens=3200,
+            extra_body={"transforms": ["middle-out"]},
+        )
+        usage = getattr(response, "usage", None)
+        if usage:
+            prompt_tokens = usage.prompt_tokens or 0
+            completion_tokens = usage.completion_tokens or 0
+            total_input += prompt_tokens
+            total_output += completion_tokens
+            total_cost += _usage_cost(usage, model, prompt_tokens, completion_tokens)
+        content = response.choices[0].message.content or ""
+    else:
+        if not content:
+            content = (
+                "Der Recherchelauf hat keine Suchtreffer erzeugt. "
+                "Bitte die Frage enger formulieren oder eine lokale Trefferliste anfordern."
+            )
+
+    return {
+        "content": content,
+        "tokens_used": total_input + total_output,
+        "tokens_in": total_input,
+        "tokens_out": total_output,
+        "cost_usd": total_cost,
+    }
 
 
 def chat(
@@ -1322,6 +1714,14 @@ def chat(
                 "tokens_out": 0,
                 "cost_usd": 0.0,
             }
+
+    if _should_use_focused_db_agent(message, user_context):
+        return focused_db_chat(
+            message=message,
+            history=history,
+            user_context=user_context,
+            model=model,
+        )
 
     client = build_client()
     model = model or MODEL_AGENT
