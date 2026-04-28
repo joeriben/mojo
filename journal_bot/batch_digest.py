@@ -17,6 +17,7 @@ LogFn = Callable[[str], None]
 @dataclass
 class BatchDigestResult:
     total_candidates: int = 0
+    non_articles: int = 0
     screened_out: int = 0
     screened_in: int = 0
     auto_passed: int = 0
@@ -71,6 +72,29 @@ def run_batch_digest(
     junk = [sa for sa in pending if _is_junk_title(sa.title)]
     if junk:
         _log(logger, verbose, f"[digest] {len(junk)} Nicht-Artikel entfernt (Corrections, Issue Info etc.)")
+        result.non_articles = len(junk)
+        for sa in junk:
+            store.update_agent_result(
+                sa.id,
+                verdict="ignorieren",
+                entry={
+                    "kernthese": "(Nicht-Artikel)",
+                    "bezuege": [],
+                    "bemerkenswert": [],
+                    "theoretisch_methodisch": "",
+                    "verdict": "ignorieren",
+                    "verdict_begruendung": "Nicht-Artikel: Correction, Issue Info o.ae.",
+                },
+                citation_hits=[],
+                tokens_in=0,
+                tokens_out=0,
+                tokens_cached_read=0,
+                tokens_cache_write=0,
+                cost_usd=0.0,
+                iterations=0,
+                selection_mode="screening",
+                discourse_indicator="kein_indikator",
+            )
         pending = [sa for sa in pending if not _is_junk_title(sa.title)]
 
     def _has_abstract(sa: StoredArticle) -> bool:

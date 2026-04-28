@@ -12,6 +12,7 @@
     <div style="margin-top:.25rem;">
       Neu verarbeitet: {{ batch.processed_articles }}
       · Kosten: ${{ "%.3f"|format(batch.total_cost_usd) }}
+      {% if batch.non_articles %} · {{ batch.non_articles }} Nicht-Artikel ignoriert{% endif %}
       {% if batch.c_tier_only %} · {{ batch.c_tier_only }} C-Tier nur gescreent{% endif %}
       {% if batch.screened_out %} · {{ batch.screened_out }} im Screening aussortiert{% endif %}
     </div>
