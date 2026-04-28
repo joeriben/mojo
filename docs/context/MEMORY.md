@@ -12,5 +12,6 @@
 - [feedback_kosten_differenzierung.md](feedback_kosten_differenzierung.md) — Opus für alle Journals zu teuer, A/B/C-Tier-Strategie nötig
 - [project_trigger_autoren.md](project_trigger_autoren.md) — Trigger-Autoren (MacGilchrist, Jarke, Chun etc.) → Escalation zu Opus unabhängig vom Tier
 - [project_missed_references_detector.md](project_missed_references_detector.md) — MOJO-DB als "Missed References"-Detektor für eigene Textentwürfe
+- [project_journal_topic_router.md](project_journal_topic_router.md) — OpenAlex-Journal-Top-Topics als kostenfreier Routing-Layer für Suchprozesse und A/B/C-Intuition
 - [feedback_citation_disambiguation.md](feedback_citation_disambiguation.md) — Citation-Tracker muss Vornamen-Initial prüfen, nicht nur Nachnamen
 - [feedback_kosten_kontrolle.md](feedback_kosten_kontrolle.md) — NIEMALS Batch-API-Tests ohne vorherige Einzelkosten-Verifikation

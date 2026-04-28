@@ -1,0 +1,55 @@
+<div class="card" style="margin-top:.5rem; background:var(--code-bg);">
+  <h3 style="margin-top:0; margin-bottom:.5rem;">Scan-Lauf</h3>
+  <div style="font-size:.85rem; line-height:1.5;">
+    <div><strong>Scope:</strong> {{ scope.label }}</div>
+    <div><strong>Modell:</strong> <code>{{ model }}</code></div>
+    <div><strong>Kostenlimit:</strong> ${{ "%.2f"|format(cost_limit_usd) }}</div>
+    <div style="margin-top:.4rem;">
+      Vorher: {{ preview_before.pending_articles }} ungeprozessiert
+      · Nachher: {{ summary_after.pending_articles }} ungeprozessiert
+    </div>
+    <div style="margin-top:.25rem;">
+      Neu verarbeitet: {{ batch.processed_articles }}
+      · Kosten: ${{ "%.3f"|format(batch.total_cost_usd) }}
+      {% if batch.c_tier_only %} · {{ batch.c_tier_only }} C-Tier nur gescreent{% endif %}
+      {% if batch.screened_out %} · {{ batch.screened_out }} im Screening aussortiert{% endif %}
+    </div>
+    <div style="margin-top:.4rem;">
+      Im Scope jetzt: {{ summary_after.total_articles }} Artikel
+      · {{ summary_after.processed_articles }} bewertet
+      · {{ summary_after.pending_articles }} offen
+    </div>
+    <div style="margin-top:.25rem;">
+      Aktualisierte Schätzung offen: ${{ "%.2f"|format(summary_after.estimated_cost_usd) }}
+      <span style="color:var(--muted);">
+        (Ø ${{ "%.3f"|format(summary_after.avg_cost_usd) }}/Artikel, Basis: {{ cost_source_label }})
+      </span>
+    </div>
+
+    {% if batch.aborted %}
+    <div style="margin-top:.65rem; color:var(--pflichtlektuere);">
+      <strong>Abbruch:</strong> {{ batch.abort_reason }}
+    </div>
+    {% else %}
+    <div style="margin-top:.65rem; color:var(--lesenswert);">
+      <strong>Fertig.</strong>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if batch.errors %}
+  <details style="margin-top:.75rem;">
+    <summary><strong>Fehler bei Einzelartikeln</strong></summary>
+    <ul style="margin:.5rem 0 0 1.1rem; font-size:.82rem;">
+      {% for err in batch.errors %}
+      <li>{{ err }}</li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+
+  <details style="margin-top:.75rem;" open>
+    <summary><strong>Log</strong></summary>
+    <pre style="white-space:pre-wrap; font-size:.8rem; line-height:1.45; margin-top:.5rem;">{{ logs|join('\n') }}</pre>
+  </details>
+</div>

@@ -66,9 +66,15 @@ def _extract_year(volume_label: str) -> int | None:
 class DCEFetcher:
     """Scraper for Digital Culture & Education."""
 
-    def __init__(self, jc: JournalConfig, since_year: int | None = None) -> None:
+    def __init__(
+        self,
+        jc: JournalConfig,
+        since_year: int | None = None,
+        end_year: int | None = None,
+    ) -> None:
         self.jc = jc
         self.since_year = since_year or 2018
+        self.end_year = end_year
         self.client = httpx.Client(
             timeout=30,
             headers={"User-Agent": "mojo/1.0 (personal research assistant)"},
@@ -198,6 +204,8 @@ class DCEFetcher:
         for url, label in volumes:
             year = _extract_year(label)
             if year and year < self.since_year:
+                continue
+            if year and self.end_year is not None and year > self.end_year:
                 continue
 
             articles = self._scrape_volume(url, label)

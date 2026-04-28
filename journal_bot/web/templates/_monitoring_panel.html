@@ -1,0 +1,117 @@
+<div class="card">
+  <h2 style="margin-top:0;">Wöchentliches Monitoring</h2>
+  <p style="font-size:.85rem; color:var(--muted); margin-bottom:.75rem;">
+    Führt das bestehende Weekly-Script <code>scripts/run_weekly_digest.sh</code> via launchd aus:
+    zuerst <code>mojo fetch</code>, dann <code>mojo digest --next N --since YYYY</code>.
+  </p>
+  <table class="stats-table">
+    <tr>
+      <td>Status</td>
+      <td>
+        {% if monitoring.installed and monitoring.loaded %}
+        <span class="badge badge-lesenswert">aktiv</span>
+        {% elif monitoring.installed %}
+        <span class="badge badge-scannen">installiert, aber nicht geladen</span>
+        {% else %}
+        <span class="badge badge-ignorieren">nicht aktiv</span>
+        {% endif %}
+      </td>
+    </tr>
+    <tr><td>Zeitplan</td><td>{{ monitoring.weekday_label }} · {{ "%02d:%02d"|format(monitoring.hour, monitoring.minute) }}</td></tr>
+    <tr><td>Batch-Größe</td><td>{{ monitoring.digest_next }}</td></tr>
+    <tr><td>Seit Jahr</td><td>{{ monitoring.since_year }}</td></tr>
+    <tr><td>LaunchAgent</td><td><code style="font-size:.8rem;">{{ monitoring.plist_path }}</code></td></tr>
+    <tr><td>Python</td><td><code style="font-size:.8rem;">{{ monitoring.python_bin }}</code></td></tr>
+  </table>
+  {% if monitoring.error %}
+  <div style="margin-top:.75rem; color:var(--pflichtlektuere); font-size:.85rem;">{{ monitoring.error }}</div>
+  {% endif %}
+  {% if message %}
+  <div style="margin-top:.75rem; color:{% if message_ok %}var(--lesenswert){% else %}var(--pflichtlektuere){% endif %}; font-size:.85rem;">
+    {{ message }}
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0;">Planung</h2>
+  <div class="form-row">
+    <div class="form-group" style="flex:1;">
+      <label>Wochentag</label>
+      <select id="monitoring-weekday" class="form-input">
+        {% for value, label in weekdays %}
+        <option value="{{ value }}" {% if monitoring.weekday == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group" style="flex:1;">
+      <label>Stunde</label>
+      <input type="number" id="monitoring-hour" class="form-input" value="{{ monitoring.hour }}" min="0" max="23">
+    </div>
+    <div class="form-group" style="flex:1;">
+      <label>Minute</label>
+      <input type="number" id="monitoring-minute" class="form-input" value="{{ monitoring.minute }}" min="0" max="59">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group" style="flex:1;">
+      <label>Batch-Größe</label>
+      <input type="number" id="monitoring-digest-next" class="form-input" value="{{ monitoring.digest_next }}" min="1" max="500">
+    </div>
+    <div class="form-group" style="flex:1;">
+      <label>Seit Jahr</label>
+      <input type="number" id="monitoring-since-year" class="form-input" value="{{ monitoring.since_year }}" min="1990" max="2100">
+    </div>
+  </div>
+  <div style="display:flex; gap:.75rem; flex-wrap:wrap; align-items:center;">
+    <button type="button" class="btn btn-primary" onclick="installMonitoringSchedule()">Monitoring aktivieren/aktualisieren</button>
+    <button type="button" class="btn" onclick="runMonitoringNow()">Jetzt ausführen</button>
+    <button type="button" class="btn" onclick="refreshMonitoringPanel()">Status aktualisieren</button>
+    <button type="button" class="btn" style="color:var(--pflichtlektuere);" onclick="disableMonitoringSchedule()">Deaktivieren</button>
+  </div>
+</div>
+
+{% if run_result %}
+<div class="card">
+  <h2 style="margin-top:0;">Letzter manueller Lauf</h2>
+  <div style="font-size:.85rem; margin-bottom:.5rem;">
+    Returncode: <code>{{ run_result.returncode }}</code>
+    {% if run_result.ok %}
+    · <span style="color:var(--lesenswert);">ok</span>
+    {% else %}
+    · <span style="color:var(--pflichtlektuere);">Fehler</span>
+    {% endif %}
+  </div>
+  <details open>
+    <summary><strong>stdout</strong></summary>
+    <pre style="white-space:pre-wrap; font-size:.8rem; line-height:1.45; margin-top:.5rem;">{{ run_result.stdout or "(leer)" }}</pre>
+  </details>
+  <details {% if run_result.stderr %}open{% endif %} style="margin-top:.5rem;">
+    <summary><strong>stderr</strong></summary>
+    <pre style="white-space:pre-wrap; font-size:.8rem; line-height:1.45; margin-top:.5rem;">{{ run_result.stderr or "(leer)" }}</pre>
+  </details>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2 style="margin-top:0;">Launchd-Logs</h2>
+  <div style="font-size:.82rem; color:var(--muted); margin-bottom:.75rem;">
+    stdout: <code>{{ monitoring.stdout_path }}</code>{% if monitoring.stdout_modified %} · {{ monitoring.stdout_modified }}{% endif %}
+    <br>
+    stderr: <code>{{ monitoring.stderr_path }}</code>{% if monitoring.stderr_modified %} · {{ monitoring.stderr_modified }}{% endif %}
+  </div>
+  <details open>
+    <summary><strong>stdout</strong></summary>
+    <pre style="white-space:pre-wrap; font-size:.8rem; line-height:1.45; margin-top:.5rem;">{{ monitoring.stdout_tail or "(noch kein Log)" }}</pre>
+  </details>
+  <details {% if monitoring.stderr_tail %}open{% endif %} style="margin-top:.5rem;">
+    <summary><strong>stderr</strong></summary>
+    <pre style="white-space:pre-wrap; font-size:.8rem; line-height:1.45; margin-top:.5rem;">{{ monitoring.stderr_tail or "(leer)" }}</pre>
+  </details>
+  {% if monitoring.launchctl_message %}
+  <details style="margin-top:.5rem;">
+    <summary><strong>launchctl</strong></summary>
+    <pre style="white-space:pre-wrap; font-size:.8rem; line-height:1.45; margin-top:.5rem;">{{ monitoring.launchctl_message }}</pre>
+  </details>
+  {% endif %}
+</div>

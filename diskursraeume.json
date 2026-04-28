@@ -4,44 +4,44 @@
     "deutsche": {
       "name": "Deutschsprachige Journals",
       "description": "Journals mit primär deutscher Publikationssprache (cross-cutting).",
-      "created": "2026-04-13",
-      "modified": "2026-04-13"
+      "created": "2026-04-21",
+      "modified": "2026-04-21"
     },
     "erziehungswiss": {
       "name": "Erziehungswissenschaftliche Journals",
       "description": "Empirische und theoretische Erziehungswissenschaft, Bildungsforschung.",
-      "created": "2026-04-13",
-      "modified": "2026-04-13"
+      "created": "2026-04-21",
+      "modified": "2026-04-21"
     },
     "digitale_kultur": {
       "name": "Digitale Kultur",
       "description": "Diskursraum digitale/postdigitale Kultur, mit oder ohne Bildungsfokus.",
-      "created": "2026-04-13",
-      "modified": "2026-04-13"
+      "created": "2026-04-21",
+      "modified": "2026-04-21"
     },
     "medienpaed": {
       "name": "Medienpädagogik",
       "description": "Medienpädagogische Fachzeitschriften.",
-      "created": "2026-04-13",
-      "modified": "2026-04-13"
+      "created": "2026-04-21",
+      "modified": "2026-04-21"
     },
     "bildungstheorie": {
       "name": "Bildungstheorie und -philosophie",
       "description": "Theoretische und philosophische Auseinandersetzung mit Bildung / Education.",
-      "created": "2026-04-13",
-      "modified": "2026-04-13"
+      "created": "2026-04-21",
+      "modified": "2026-04-21"
     },
     "aesthetische_kulturelle_bildung": {
       "name": "Ästhetische und kulturelle Bildung",
       "description": "Ästhetische Bildung, kulturelle Bildung, Kunstpädagogik, Kunst-Bildungs-Verhältnis.",
-      "created": "2026-04-13",
-      "modified": "2026-04-13"
+      "created": "2026-04-21",
+      "modified": "2026-04-21"
     },
     "resilienz": {
       "name": "Resilienz & Nachhaltigkeit / Environmental Humanities",
       "description": "Kulturelle und ökologische Resilienz, Nachhaltigkeit, Umweltbildung, Transformation.",
-      "created": "2026-04-13",
-      "modified": "2026-04-13"
+      "created": "2026-04-21",
+      "modified": "2026-04-21"
     }
   },
   "journal_clusters": {
@@ -150,6 +150,15 @@
     "STHV": [
       "digitale_kultur",
       "resilienz"
+    ],
+    "RAeE": [
+      "aesthetische_kulturelle_bildung"
+    ],
+    "ArtsEdPolRev": [
+      "aesthetische_kulturelle_bildung"
+    ],
+    "IJEA": [
+      "aesthetische_kulturelle_bildung"
     ]
   }
 }

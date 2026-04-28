@@ -80,13 +80,26 @@ def run(
     store: Store | None = None,
     verbose: bool = True,
     since_year: int | None = None,
+    end_year: int | None = None,
+    journals: list[str] | None = None,
 ) -> FetchStats:
     store = store or Store()
     stats = FetchStats()
 
     enabled = [j for j in JOURNALS if j.enabled]
+    if journals:
+        requested = {short.strip() for short in journals if short.strip()}
+        enabled = [j for j in enabled if j.short in requested]
+
     if verbose:
-        label = f" (seit {since_year})" if since_year else ""
+        if since_year is not None and end_year is not None:
+            label = f" ({since_year}–{end_year})"
+        elif since_year is not None:
+            label = f" (seit {since_year})"
+        elif end_year is not None:
+            label = f" (bis {end_year})"
+        else:
+            label = ""
         print(f"[fetch] {len(enabled)} aktive Feeds{label}")
 
     for jc in enabled:
@@ -105,11 +118,15 @@ def run(
             )
             if verbose:
                 print(f"\n[fetch] → {jc.short} (openalex-backfill, ISSN {jc.issn})")
-            fetcher = OpenAlexFetcher(backfill_jc, since_year=since_year)
+            fetcher = OpenAlexFetcher(
+                backfill_jc,
+                since_year=since_year,
+                end_year=end_year,
+            )
         else:
             if verbose:
                 print(f"\n[fetch] → {jc.short} ({jc.type})")
-            fetcher = build_fetcher(jc, since_year=since_year)
+            fetcher = build_fetcher(jc, since_year=since_year, end_year=end_year)
 
         try:
             articles = fetcher.fetch()

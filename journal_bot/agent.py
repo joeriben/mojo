@@ -512,6 +512,37 @@ Respond with EXACTLY one line per article in this format:
 When in doubt: weitergeben. Better to pass through than to miss.
 No explanation, no introduction, just the lines."""
 
+SCREENING_BATCH_PREAMBLE = (
+    "You will receive one batch of article candidates in the next user message. "
+    "Apply the screening rules from the system prompt and respond only with the "
+    "required line format."
+)
+
+
+def _build_screening_messages(system_prompt: str, batch_payload: str) -> list[dict[str, Any]]:
+    """Build screening messages with a stable first user turn for cache affinity.
+
+    OpenRouter's sticky routing keys on the first system message and the first
+    non-system message. If the first user message changes for every batch, later
+    requests may be routed to a different provider endpoint and DeepSeek's
+    implicit prompt cache is lost. The batch-specific payload therefore goes
+    into a second user message, while the first one stays constant.
+    """
+    return [
+        {
+            "role": "system",
+            "content": [
+                {
+                    "type": "text",
+                    "text": system_prompt,
+                    "cache_control": {"type": "ephemeral"},
+                }
+            ],
+        },
+        {"role": "user", "content": SCREENING_BATCH_PREAMBLE},
+        {"role": "user", "content": batch_payload},
+    ]
+
 
 def batch_screen(
     articles: list[dict],
@@ -552,19 +583,7 @@ def batch_screen(
 
         resp = client.chat.completions.create(
             model=model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": system_prompt,
-                            "cache_control": {"type": "ephemeral"},
-                        }
-                    ],
-                },
-                {"role": "user", "content": user_msg},
-            ],
+            messages=_build_screening_messages(system_prompt, user_msg),
             max_tokens=2000,
             temperature=0.0,
         )

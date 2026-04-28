@@ -24,15 +24,13 @@ Subcommands:
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 
 from journal_bot import abstract_backfill, corpus, digest, fetch, summarize
+from journal_bot.batch_digest import run_batch_digest
 from journal_bot.settings import (
     CORPUS_JSON,
-    DIGEST_DIR,
-    JOURNALS,
     PROJECT_ROOT,
     SINCE_YEAR,
     SUMMARIES_JSON,
@@ -156,22 +154,7 @@ def cmd_import_raw(args: argparse.Namespace) -> int:
     return 0
 
 
-def _is_junk_title(title: str) -> bool:
-    """Detect non-article entries: editorials, corrections, issue info."""
-    t = (title or "").strip().lower()
-    junk = [
-        "issue information", "correction", "erratum", "retraction",
-        "corrigendum", "table of contents", "editorial board",
-        "reviewer acknowledgement", "books received", "index",
-    ]
-    return any(t == j or t.startswith(j + ":") or t.startswith(j + " ") for j in junk)
-
-
 def cmd_digest(args: argparse.Namespace) -> int:
-    import json
-    from journal_bot import agent as agent_mod
-    from journal_bot.citation_tracker import find_citations, load_authored_all
-
     store = Store()
     model = getattr(args, "model", None) or "deepseek/deepseek-v3.2"
 
@@ -196,254 +179,14 @@ def cmd_digest(args: argparse.Namespace) -> int:
               "Tipp: mojo fetch laufen lassen.")
         return 0
 
-    print(f"[digest] {len(pending)} Artikel gefunden (Modell: {model})")
-
-    # --- Phase 0: Müll-Filter + No-Data-Filter + Auto-Escalation ---
-    junk = [sa for sa in pending if _is_junk_title(sa.title)]
-    if junk:
-        print(f"[digest] {len(junk)} Nicht-Artikel entfernt (Corrections, Issue Info etc.)")
-        pending = [sa for sa in pending if not _is_junk_title(sa.title)]
-
-    # No-data filter: articles without any abstract
-    def _has_abstract(sa):
-        return bool((sa.abstract or "").strip() or (sa.openalex_abstract or "").strip())
-
-    no_data = [sa for sa in pending if not _has_abstract(sa)]
-    with_data = [sa for sa in pending if _has_abstract(sa)]
-
-    if no_data:
-        catchwords = agent_mod.build_catchwords()
-        cw_hits = []
-        cw_miss = []
-        for sa in no_data:
-            matches = agent_mod.title_matches_catchwords(sa.title, catchwords)
-            if matches:
-                cw_hits.append(sa)
-            else:
-                cw_miss.append(sa)
-
-        # No catchword match → ignorieren (zero cost)
-        for sa in cw_miss:
-            store.update_agent_result(
-                sa.id, verdict="ignorieren",
-                entry={"kernthese": "(kein Abstract verfügbar)",
-                       "bezuege": [], "bemerkenswert": [],
-                       "theoretisch_methodisch": "",
-                       "verdict": "ignorieren",
-                       "verdict_begruendung": "Kein Abstract, Titel ohne spezifischen Bezug."},
-                citation_hits=[], tokens_in=0, tokens_out=0,
-                tokens_cached_read=0, tokens_cache_write=0,
-                cost_usd=0.0, iterations=0,
-                selection_mode="screening",
-                discourse_indicator="kein_indikator",
-            )
-
-        # Catchword hits → Haiku triage on title alone
-        triage_scannen = []
-        triage_ignore = []
-        for sa in cw_hits:
-            result = agent_mod.triage_article(
-                {"title": sa.title, "journal": sa.journal_full or sa.journal_short,
-                 "abstract": ""},
-                verbose=False,
-            )
-            if result.get("triage") == "ignorieren":
-                triage_ignore.append(sa)
-                store.update_agent_result(
-                    sa.id, verdict="ignorieren",
-                    entry={"kernthese": "(kein Abstract, Triage: ignorieren)",
-                           "bezuege": [], "bemerkenswert": [],
-                           "theoretisch_methodisch": "",
-                           "verdict": "ignorieren",
-                           "verdict_begruendung": result.get("grund", "Triage: ignorieren")},
-                    citation_hits=[], tokens_in=0, tokens_out=0,
-                    tokens_cached_read=0, tokens_cache_write=0,
-                    cost_usd=result.get("cost_usd", 0.0), iterations=0,
-                    selection_mode="screening",
-                    discourse_indicator="kein_indikator",
-                )
-            else:
-                triage_scannen.append(sa)
-                store.update_agent_result(
-                    sa.id, verdict="scannen",
-                    entry={"kernthese": "(kein Abstract, Triage: relevant)",
-                           "bezuege": [], "bemerkenswert": [],
-                           "theoretisch_methodisch": "",
-                           "verdict": "scannen",
-                           "verdict_begruendung": result.get("grund", "Triage: relevant, kein Abstract für tiefere Analyse.")},
-                    citation_hits=[], tokens_in=0, tokens_out=0,
-                    tokens_cached_read=0, tokens_cache_write=0,
-                    cost_usd=result.get("cost_usd", 0.0), iterations=0,
-                    selection_mode="screening",
-                    discourse_indicator="schwacher_indikator",
-                )
-
-        print(f"\n[digest] Ohne Abstract: {len(no_data)} Artikel")
-        print(f"  → {len(cw_miss)} ohne Catchword-Hit → ignorieren (0 Kosten)")
-        print(f"  → {len(cw_hits)} mit Catchword-Hit → Haiku-Triage")
-        print(f"    → {len(triage_scannen)} scannen, {len(triage_ignore)} ignorieren")
-        pending = with_data
-
-    # Citation auto-pass: articles that cite the researcher → skip screening
-    trigger_authors = ["macgilchrist", "jarke", "wendy chun", "wendy hui kyong"]
-    authored_all = load_authored_all()
-    auto_pass: list = []
-    screen_candidates: list = []
-
-    for sa in pending:
-        # Check citation hits
-        refs = sa.crossref_refs or []
-        citation_hits = find_citations(refs, authored_all) if refs else []
-
-        # Check trigger authors
-        authors_blob = " ".join(sa.authors).lower()
-        is_trigger = any(t in authors_blob for t in trigger_authors)
-
-        if citation_hits or is_trigger:
-            reason = []
-            if citation_hits:
-                reason.append(f"zitiert Forscher*in ({len(citation_hits)}×)")
-            if is_trigger:
-                reason.append("Trigger-Autor*in")
-            auto_pass.append((sa, " + ".join(reason)))
-        else:
-            screen_candidates.append(sa)
-
-    if auto_pass:
-        print(f"\n[digest] Auto-Pass ({len(auto_pass)} Artikel):")
-        for sa, reason in auto_pass:
-            journal_name = sa.journal_full or sa.journal_short
-            print(f"  ★ {journal_name}: {sa.title[:60]} [{reason}]")
-
-    # --- Phase 1: DeepSeek Batch-Screening ---
-    if not args.no_screen and len(screen_candidates) > 1:
-        screen_input = [
-            {
-                "id": sa.id,
-                "title": sa.title,
-                "journal": sa.journal_full or sa.journal_short,
-                "abstract": sa.abstract,
-                "openalex_abstract": sa.openalex_abstract,
-            }
-            for sa in screen_candidates
-        ]
-        screen_results = agent_mod.batch_screen(
-            screen_input, verbose=not args.quiet,
-        )
-
-        passed = [sa for sa in screen_candidates
-                  if screen_results[sa.id]["verdict"] == "weitergeben"]
-        filtered = [sa for sa in screen_candidates
-                    if screen_results[sa.id]["verdict"] == "ignorieren"]
-
-        if filtered:
-            print(f"\n[digest] Aussortiert ({len(filtered)} Artikel):")
-            for sa in filtered:
-                grund = screen_results[sa.id].get("grund", "")[:60]
-                journal_name = sa.journal_full or sa.journal_short
-                print(f"  ⊘ {journal_name}: {sa.title[:65]}")
-                if grund:
-                    print(f"    → {grund}")
-                store.update_agent_result(
-                    sa.id, verdict="ignorieren",
-                    entry={"kernthese": "(Screening: ignorieren)",
-                           "bezuege": [], "bemerkenswert": [],
-                           "theoretisch_methodisch": "",
-                           "verdict": "ignorieren",
-                           "verdict_begruendung": f"Screening: {grund}"},
-                    citation_hits=[], tokens_in=0, tokens_out=0,
-                    tokens_cached_read=0, tokens_cache_write=0,
-                    cost_usd=0.0, iterations=0,
-                    selection_mode="screening",
-                    discourse_indicator="kein_indikator",
-                )
-
-        print(f"\n[digest] Screening: {len(passed)} weitergeben, "
-              f"{len(filtered)} aussortiert")
-    else:
-        passed = screen_candidates
-
-    # --- Split by tier ---
-    from journal_bot.settings import JOURNALS
-    tier_by_short = {j.short: j.tier for j in JOURNALS}
-
-    # All non-C articles go through assess_then_verify pipeline:
-    # Phase 1 (assessment) costs ~$0.009, Phase 2 (verification) only when needed
-    to_analyze = [sa for sa, _ in auto_pass]
-    for sa in passed:
-        tier = tier_by_short.get(sa.journal_short, "B")
-        if tier == "C":
-            pass  # C-tier: screening was enough, no agent
-        else:
-            to_analyze.append(sa)
-
-    c_only = [sa for sa in passed if tier_by_short.get(sa.journal_short, "B") == "C"]
-    if c_only:
-        print(f"[digest] C-Tier: {len(c_only)} Artikel nur gescreent, kein Agent")
-        for sa in c_only:
-            store.update_agent_result(
-                sa.id, verdict="scannen",
-                entry={"kernthese": "(C-Tier: nur Screening, kein Agent)",
-                       "bezuege": [], "bemerkenswert": [],
-                       "theoretisch_methodisch": "",
-                       "verdict": "scannen",
-                       "verdict_begruendung": "C-Tier: Screening-Pass, keine Agent-Analyse."},
-                citation_hits=[], tokens_in=0, tokens_out=0,
-                tokens_cached_read=0, tokens_cache_write=0,
-                cost_usd=0.0, iterations=0,
-                selection_mode="screening",
-                discourse_indicator="schwacher_indikator",
-            )
-
-    if not to_analyze:
-        print("[digest] Keine Artikel für Agent-Analyse übrig.")
-        return 0
-
-    total_cost = 0.0
-    # Cost safety: after the first 3 articles, check if per-article cost is plausible.
-    # With prompt caching, assessment should cost ~$0.01-0.05/article.
-    # Without caching, it costs ~$0.40+/article. If we detect this, abort early.
-    COST_CHECK_AFTER = 3
-    MAX_COST_PER_ARTICLE = 0.15  # $0.15 — generous margin above cached cost
-
-    print(f"\n[digest] === Agent ({len(to_analyze)} Artikel, {model}, assess→verify) ===")
-    for i, sa in enumerate(to_analyze, 1):
-        journal_name = sa.journal_full or sa.journal_short
-        print(f"\n[digest] --- {i}/{len(to_analyze)} --- {journal_name} · {sa.title[:75]}")
-        try:
-            result = digest.process_article(
-                sa, store, verbose=not args.quiet, model=model,
-                mode="assess_verify",
-            )
-            cost = result["agent_result"].get("est_cost_usd", 0.0)
-            total_cost += cost
-            verdict = (result["agent_result"].get("entry") or {}).get("verdict", "?")
-            print(f"[digest] ✓ {verdict}  (${cost:.3f})")
-        except agent_mod.CacheNotHitError as e:
-            print(f"\n[digest] ABBRUCH: Prompt-Cache greift nicht. {e}")
-            print(f"[digest] Bisher: {i-1} Artikel, ${total_cost:.3f}")
-            return 1
-        except Exception as e:
-            print(f"[digest] FEHLER bei {sa.id}: {e}")
-
-        # Cost safety check after first N articles
-        if i == COST_CHECK_AFTER and total_cost > 0:
-            avg_cost = total_cost / i
-            projected = avg_cost * len(to_analyze)
-            if avg_cost > MAX_COST_PER_ARTICLE:
-                print(f"\n[digest] ⚠ KOSTEN-WARNUNG: ${avg_cost:.3f}/Artikel "
-                      f"(erwartet <${MAX_COST_PER_ARTICLE:.2f})")
-                print(f"[digest] Hochrechnung: ${projected:.2f} für {len(to_analyze)} Artikel")
-                print(f"[digest] Prompt-Caching scheint NICHT zu funktionieren.")
-                print(f"[digest] ABBRUCH nach {i} Artikeln. "
-                      f"Bisherige Kosten: ${total_cost:.3f}")
-                return 1
-            else:
-                print(f"[digest] ✓ Kosten-Check: ${avg_cost:.3f}/Artikel — "
-                      f"Cache ok, Hochrechnung: ${projected:.2f}")
-
-    print(f"\n[digest] Gesamtkosten: ${total_cost:.3f}")
-    return 0
+    batch_result = run_batch_digest(
+        pending,
+        store,
+        model=model,
+        no_screen=args.no_screen,
+        verbose=not args.quiet,
+    )
+    return 1 if batch_result.aborted else 0
 
 
 def cmd_trends(args: argparse.Namespace) -> int:

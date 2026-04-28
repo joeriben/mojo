@@ -290,9 +290,11 @@ class ConfigurableFetcher:
         self,
         jc: JournalConfig,
         since_year: int | None = None,
+        end_year: int | None = None,
     ) -> None:
         self.jc = jc
         self.since_year = since_year or 2018
+        self.end_year = end_year
         self.cfg = load_config(jc.short)
         self.client = httpx.Client(
             timeout=30,
@@ -368,6 +370,8 @@ class ConfigurableFetcher:
                 year = int(year_match.group(1))
                 if year < self.since_year:
                     continue
+                if self.end_year is not None and year > self.end_year:
+                    continue
 
             articles = self._fetch_page(issue_url, issue_label=label)
             if articles:
@@ -375,6 +379,21 @@ class ConfigurableFetcher:
                 all_articles.extend(articles)
 
         return all_articles
+
+    def _in_year_window(self, article: Article) -> bool:
+        if self.since_year is None and self.end_year is None:
+            return True
+
+        match = re.search(r"(19|20)\d{2}", article.published or "")
+        if not match:
+            return True
+
+        year = int(match.group(0))
+        if self.since_year is not None and year < self.since_year:
+            return False
+        if self.end_year is not None and year > self.end_year:
+            return False
+        return True
 
     def fetch(self) -> list[Article]:
         """Fetch articles using the configured strategy."""
@@ -393,6 +412,9 @@ class ConfigurableFetcher:
         _enrich_from_detail(articles, self.cfg, self.client)
 
         self.client.close()
+
+        if self.since_year is not None or self.end_year is not None:
+            articles = [article for article in articles if self._in_year_window(article)]
 
         print(f"  [{self.jc.short}] {len(articles)} Artikel total")
         return articles

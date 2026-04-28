@@ -48,7 +48,7 @@
       "short": "AIandSoc",
       "type": "openalex",
       "url": "issn:0951-5666",
-      "tier": "C",
+      "tier": "B",
       "enabled": true
     },
     {
@@ -227,6 +227,42 @@
       "url": "issn:0162-2439",
       "tier": "B",
       "enabled": true
+    },
+    {
+      "name": "Research in Arts and Education",
+      "short": "RAeE",
+      "type": "openalex",
+      "url": "issn:2670-2142",
+      "tier": "B",
+      "enabled": true,
+      "issn": "2670-2142"
+    },
+    {
+      "name": "International Journal for Research in Cultural, Aesthetic, and Arts Education",
+      "short": "IJRAACE",
+      "type": "openalex",
+      "url": "issn:2748-1751",
+      "tier": "A",
+      "enabled": true,
+      "issn": "2748-1751"
+    },
+    {
+      "name": "Arts Education Policy Review",
+      "short": "ArtsEdPolRev",
+      "type": "openalex",
+      "url": "issn:1940-4395",
+      "tier": "B",
+      "enabled": true,
+      "issn": "1940-4395"
+    },
+    {
+      "name": "International journal of education and the arts  Source",
+      "short": "IJEA",
+      "type": "openalex",
+      "url": "issn:1529-8094",
+      "tier": "B",
+      "enabled": true,
+      "issn": "1529-8094"
     }
   ]
 }

@@ -1157,6 +1157,85 @@ def _file_status(path: Path, count_key: str | None = None) -> dict:
     }
 
 
+def _scan_cost_source_label(source: str) -> str:
+    return {
+        "scope_recent": "gleicher Scope, letzte verarbeitete Artikel",
+        "global_recent": "globale letzte verarbeitete Artikel",
+        "fallback": "Fallback-Wert",
+    }.get(source, source)
+
+
+def _resolve_historical_scan_scope(data: dict[str, Any], store: Store) -> dict[str, Any]:
+    from journal_bot.scan_jobs import discover_history_years, get_journal_config
+
+    mode = str(data.get("mode", "") or "").strip()
+    if mode == "year":
+        year = int(data.get("year") or 0)
+        if year < 1900 or year > 2100:
+            raise ValueError("Bitte ein gültiges Jahr angeben.")
+        return {
+            "mode": mode,
+            "label": f"Jahrgang {year} über alle aktiven Journals",
+            "journals": [],
+            "journal_name": "",
+            "selected_years": [year],
+            "available_years": [year],
+            "start_year": year,
+            "end_year": year,
+        }
+
+    if mode == "journal_history":
+        journal_short = str(data.get("journal") or "").strip()
+        max_years = int(data.get("max_years") or 10)
+        if not journal_short:
+            raise ValueError("Bitte ein Journal auswählen.")
+        if max_years < 1:
+            raise ValueError("Max. Jahrgänge muss mindestens 1 sein.")
+
+        journal = get_journal_config(journal_short)
+        if not journal:
+            raise ValueError(f"Journal {journal_short!r} nicht gefunden.")
+
+        available_years = discover_history_years(journal_short, store)
+        if not available_years:
+            raise ValueError(
+                "Für dieses Journal konnten keine verfügbaren Jahrgänge ermittelt werden. "
+                "Automatische Historien-Scans brauchen DB-Treffer oder ISSN/OpenAlex-Abdeckung."
+            )
+
+        selected_years = available_years[:max_years]
+        return {
+            "mode": mode,
+            "label": f"{journal.name} — neueste {len(selected_years)} verfügbare Jahrgänge",
+            "journals": [journal_short],
+            "journal_name": journal.name,
+            "selected_years": selected_years,
+            "available_years": available_years,
+            "start_year": min(selected_years),
+            "end_year": max(selected_years),
+        }
+
+    raise ValueError("Unbekanntes Scan-Szenario.")
+
+
+def _render_monitoring_panel(
+    *,
+    message: str = "",
+    message_ok: bool = True,
+    run_result: dict[str, Any] | None = None,
+) -> str:
+    from journal_bot.monitoring import WEEKDAY_LABELS, monitoring_status
+
+    return render_template(
+        "_monitoring_panel.html",
+        monitoring=monitoring_status(),
+        weekdays=sorted(WEEKDAY_LABELS.items()),
+        message=message,
+        message_ok=message_ok,
+        run_result=run_result,
+    )
+
+
 @app.route("/setup")
 def setup():
     """Setup page with profile, Zotero, journals, system tabs."""
@@ -1203,6 +1282,7 @@ def setup():
         projects=_load_projects(),
         db_stats=db_stats,
         db_size_mb=db_size_mb,
+        current_year=datetime.now().year,
         api_key_status=api_key_status,
         s2_key_status=s2_key_status,
         verdict_label=VERDICT_LABEL,
@@ -1621,6 +1701,7 @@ def api_setup_journal_test():
 def api_openalex_lookup():
     """Check if an ISSN is indexed in OpenAlex.  Returns source metadata."""
     import httpx as _httpx
+    from journal_bot.journal_topics import compute_source_profile_fit, normalize_source_topics
 
     issn = request.args.get("issn", "").strip()
     if not issn:
@@ -1636,16 +1717,43 @@ def api_openalex_lookup():
             return jsonify({"ok": True, "found": False, "message": f"ISSN {issn} nicht in OpenAlex."})
         resp.raise_for_status()
         src = resp.json()
+        top_topics, topics_source = normalize_source_topics(src, limit=5)
+        profile_fit = compute_source_profile_fit(src)
         return jsonify({
             "ok": True,
             "found": True,
             "name": src.get("display_name", ""),
             "works_count": src.get("works_count", 0),
             "openalex_id": src.get("id", ""),
+            "top_topics": top_topics,
+            "topics_source": topics_source,
+            "profile_fit": profile_fit,
             "message": f"{src.get('display_name', '?')} — {src.get('works_count', '?')} Werke",
         })
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)})
+
+
+@app.route("/api/openalex/journal-candidates")
+def api_openalex_journal_candidates():
+    from journal_bot.journal_topics import discover_candidate_journals
+
+    try:
+        max_topics = int(request.args.get("max_topics") or 8)
+        per_topic = int(request.args.get("per_topic") or 6)
+        max_results = int(request.args.get("max_results") or 20)
+        result = discover_candidate_journals(
+            max_topics=max(1, min(max_topics, 12)),
+            per_topic=max(1, min(per_topic, 12)),
+            max_results=max(1, min(max_results, 50)),
+        )
+    except Exception as exc:
+        return (
+            f'<div class="card" style="border-color:var(--pflichtlektuere);">'
+            f'<strong>Fehler:</strong> {html_mod.escape(str(exc))}</div>'
+        )
+
+    return render_template("_journal_candidates.html", result=result)
 
 
 @app.route("/api/setup/journal/custom-config", methods=["POST"])
@@ -1672,6 +1780,175 @@ def api_setup_journal_custom_config():
         return jsonify({"ok": False, "error": str(e)})
 
     return jsonify({"ok": True, "message": f"✓ Config gespeichert: {path.name}"})
+
+
+@app.route("/api/setup/scan/preview", methods=["POST"])
+def api_setup_scan_preview():
+    from journal_bot.scan_jobs import prepare_scan_scope
+
+    data = request.get_json(force=True)
+    store = _store()
+    try:
+        scope = _resolve_historical_scan_scope(data, store)
+        preview = prepare_scan_scope(
+            store,
+            start_year=scope["start_year"],
+            end_year=scope["end_year"],
+            journals=scope["journals"] or None,
+            verbose=False,
+            fetch_metadata=True,
+        )
+    except Exception as exc:
+        return (
+            f'<div class="card" style="border-color:var(--pflichtlektuere);">'
+            f'<strong>Fehler:</strong> {html_mod.escape(str(exc))}</div>'
+        )
+
+    return render_template(
+        "_scan_preview.html",
+        scope=scope,
+        preview=preview,
+        cost_source_label=_scan_cost_source_label(preview["avg_cost_source"]),
+    )
+
+
+@app.route("/api/setup/scan/run", methods=["POST"])
+def api_setup_scan_run():
+    from journal_bot.batch_digest import run_batch_digest
+    from journal_bot.scan_jobs import prepare_scan_scope
+    from journal_bot.settings import MODEL_AGENT
+
+    data = request.get_json(force=True)
+    store = _store()
+
+    try:
+        scope = _resolve_historical_scan_scope(data, store)
+        cost_limit_usd = float(data.get("cost_limit_usd") or 0)
+        if cost_limit_usd <= 0:
+            raise ValueError("Bitte ein positives Kostenlimit angeben.")
+        model = str(data.get("model") or MODEL_AGENT).strip() or MODEL_AGENT
+    except Exception as exc:
+        return (
+            f'<div class="card" style="border-color:var(--pflichtlektuere);">'
+            f'<strong>Fehler:</strong> {html_mod.escape(str(exc))}</div>'
+        )
+
+    try:
+        preview_before = prepare_scan_scope(
+            store,
+            start_year=scope["start_year"],
+            end_year=scope["end_year"],
+            journals=scope["journals"] or None,
+            verbose=False,
+            fetch_metadata=True,
+        )
+    except Exception as exc:
+        return (
+            f'<div class="card" style="border-color:var(--pflichtlektuere);">'
+            f'<strong>Fehler beim Vorziehen der Metadaten:</strong> {html_mod.escape(str(exc))}</div>'
+        )
+
+    pending = store.find_unprocessed(
+        journals=scope["journals"] or None,
+        since_year=scope["start_year"],
+        end_year=scope["end_year"],
+    )
+
+    logs: list[str] = []
+
+    def _capture_log(message: str) -> None:
+        logs.append(message)
+
+    batch = run_batch_digest(
+        pending,
+        store,
+        model=model,
+        no_screen=False,
+        verbose=True,
+        logger=_capture_log,
+        cost_limit_usd=cost_limit_usd,
+    )
+
+    summary_after = prepare_scan_scope(
+        store,
+        start_year=scope["start_year"],
+        end_year=scope["end_year"],
+        journals=scope["journals"] or None,
+        verbose=False,
+        fetch_metadata=False,
+    )
+
+    return render_template(
+        "_scan_run_result.html",
+        scope=scope,
+        preview_before=preview_before,
+        summary_after=summary_after,
+        batch=batch,
+        logs=logs,
+        cost_limit_usd=cost_limit_usd,
+        model=model,
+        cost_source_label=_scan_cost_source_label(summary_after["avg_cost_source"]),
+    )
+
+
+@app.route("/api/setup/monitoring-fragment")
+def api_setup_monitoring_fragment():
+    return _render_monitoring_panel()
+
+
+@app.route("/api/setup/monitoring/install", methods=["POST"])
+def api_setup_monitoring_install():
+    from journal_bot.monitoring import install_monitoring_schedule
+
+    data = request.get_json(force=True)
+    try:
+        install_monitoring_schedule(
+            weekday=int(data.get("weekday") or 1),
+            hour=int(data.get("hour") or 7),
+            minute=int(data.get("minute") or 0),
+            digest_next=int(data.get("digest_next") or 50),
+            since_year=int(data.get("since_year") or datetime.now().year - 1),
+        )
+        return _render_monitoring_panel(
+            message="Monitoring-Zeitplan gespeichert und LaunchAgent geladen.",
+            message_ok=True,
+        )
+    except Exception as exc:
+        return _render_monitoring_panel(message=str(exc), message_ok=False)
+
+
+@app.route("/api/setup/monitoring/disable", methods=["POST"])
+def api_setup_monitoring_disable():
+    from journal_bot.monitoring import disable_monitoring_schedule
+
+    try:
+        disable_monitoring_schedule()
+        return _render_monitoring_panel(
+            message="Monitoring deaktiviert und LaunchAgent entfernt.",
+            message_ok=True,
+        )
+    except Exception as exc:
+        return _render_monitoring_panel(message=str(exc), message_ok=False)
+
+
+@app.route("/api/setup/monitoring/run", methods=["POST"])
+def api_setup_monitoring_run():
+    from journal_bot.monitoring import run_monitoring_now
+
+    data = request.get_json(force=True)
+    try:
+        run_result = run_monitoring_now(
+            digest_next=int(data.get("digest_next") or 50),
+            since_year=int(data.get("since_year") or datetime.now().year - 1),
+        )
+        message = "Monitoring-Lauf beendet." if run_result["ok"] else "Monitoring-Lauf mit Fehler beendet."
+        return _render_monitoring_panel(
+            message=message,
+            message_ok=run_result["ok"],
+            run_result=run_result,
+        )
+    except Exception as exc:
+        return _render_monitoring_panel(message=str(exc), message_ok=False)
 
 
 def _reload_journals() -> None:

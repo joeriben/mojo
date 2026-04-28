@@ -9,6 +9,7 @@
   <button class="tab" onclick="switchTab('zotero', this)">Zotero & Corpus</button>
   <button class="tab" onclick="switchTab('matrix', this)">Journals & Diskursräume</button>
   <button class="tab" onclick="switchTab('projekte', this)">Projekte</button>
+  <button class="tab" onclick="switchTab('monitoring', this)">Monitoring</button>
   <button class="tab" onclick="switchTab('system', this)">System</button>
 </div>
 
@@ -363,6 +364,123 @@
       </div>
     </div>
   </div>
+
+  <div class="card" id="topic-candidate-card">
+    <h2 style="margin-top:0;">Themenbasierte Journal-Kandidaten</h2>
+    <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
+      Nutzt OpenAlex Topics/Sources und das Profil, ohne LLM-Kosten.
+      Bestehende Journals werden markiert; neue Kandidaten können direkt ins Formular übernommen werden.
+    </p>
+
+    <div class="form-group">
+      <label>Profilanker</label>
+      <div style="display:flex; flex-wrap:wrap; gap:.4rem; font-size:.8rem;">
+        {% for topic in profile.triage_topics[:8] %}
+        <span style="padding:.2rem .45rem; border:1px solid var(--border); border-radius:999px; background:var(--code-bg);">
+          {{ topic }}
+        </span>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group" style="flex:1;">
+        <label>Max. Profil-Themen</label>
+        <input type="number" id="candidate-max-topics" class="form-input" value="8" min="1" max="12">
+      </div>
+      <div class="form-group" style="flex:1;">
+        <label>Journals pro Thema</label>
+        <input type="number" id="candidate-per-topic" class="form-input" value="6" min="1" max="12">
+      </div>
+      <div class="form-group" style="flex:1;">
+        <label>Max. Treffer</label>
+        <input type="number" id="candidate-max-results" class="form-input" value="20" min="1" max="50">
+      </div>
+    </div>
+
+    <div style="display:flex; gap:.75rem; align-items:center;">
+      <button type="button" class="btn" onclick="loadJournalCandidates()">Kandidaten suchen</button>
+      <span style="font-size:.8rem; color:var(--muted);">Heuristik: Themenfit aus Source-Topics, kein automatisches Tier-Setzen in der Matrix.</span>
+    </div>
+
+    <div id="journal-candidates-output" style="margin-top:.75rem;"></div>
+  </div>
+
+  <div class="card" id="historical-scan-card">
+    <h2 style="margin-top:0;">Historische Scans</h2>
+    <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
+      Vorschau zieht nur Metadaten in die DB und verursacht keine LLM-Kosten.
+      Der eigentliche Scan verarbeitet danach nur ungeprozessierte Artikel im gewählten Scope
+      und stoppt am Kostenlimit oder früher, falls die Cache-Sicherungen anschlagen.
+    </p>
+
+    <div class="form-row" style="align-items:flex-start;">
+      <div style="flex:1; min-width:280px; border:1px solid var(--border); border-radius:8px; padding:1rem;">
+        <h3 style="margin-top:0;">Zusätzlichen Jahrgang scannen</h3>
+        <p style="font-size:.82rem; color:var(--muted); margin-bottom:.75rem;">
+          Holt Metadaten für alle aktiven Journals in genau diesem Jahr und scannt danach nur diesen Jahrgang.
+        </p>
+        <div class="form-row">
+          <div class="form-group" style="flex:1;">
+            <label>Jahrgang</label>
+            <input type="number" id="year-scan-year" class="form-input" value="{{ current_year - 1 }}"
+                   min="1990" max="{{ current_year }}">
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label>Kostenlimit ($)</label>
+            <input type="number" id="year-scan-cost" class="form-input" value="5.0" min="0.1" step="0.1">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Modell</label>
+          <input type="text" id="year-scan-model" class="form-input" value="{{ profile.model_agent }}">
+        </div>
+        <div style="display:flex; gap:.75rem; align-items:center;">
+          <button type="button" class="btn" onclick="previewHistoricalScan('year')">Vorschau laden</button>
+          <button type="button" class="btn btn-primary" onclick="runHistoricalScan('year')">Scan starten</button>
+        </div>
+        <div id="year-scan-output" style="margin-top:.75rem;"></div>
+      </div>
+
+      <div style="flex:1; min-width:280px; border:1px solid var(--border); border-radius:8px; padding:1rem;">
+        <h3 style="margin-top:0;">Neues Journal historisch scannen</h3>
+        <p style="font-size:.82rem; color:var(--muted); margin-bottom:.75rem;">
+          Nimmt die neuesten verfügbaren Jahrgänge eines Journals, standardmäßig max. 10.
+          Die Verfügbarkeit wird über DB/OpenAlex ermittelt.
+        </p>
+        <div class="form-group">
+          <label>Journal</label>
+          <select id="history-scan-journal" class="form-input">
+            <option value="">Journal wählen…</option>
+            {% for j in journals|sort(attribute='name') %}
+            {% if j.enabled %}
+            <option value="{{ j.short }}">{{ j.name }} ({{ j.short }})</option>
+            {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="flex:1;">
+            <label>Max. Jahrgänge</label>
+            <input type="number" id="history-scan-max-years" class="form-input" value="10" min="1" max="25">
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label>Kostenlimit ($)</label>
+            <input type="number" id="history-scan-cost" class="form-input" value="5.0" min="0.1" step="0.1">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Modell</label>
+          <input type="text" id="history-scan-model" class="form-input" value="{{ profile.model_agent }}">
+        </div>
+        <div style="display:flex; gap:.75rem; align-items:center;">
+          <button type="button" class="btn" onclick="previewHistoricalScan('journal_history')">Vorschau laden</button>
+          <button type="button" class="btn btn-primary" onclick="runHistoricalScan('journal_history')">Scan starten</button>
+        </div>
+        <div id="history-scan-output" style="margin-top:.75rem;"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ═══════════════════════ TAB: Projekte ═══════════════════════ -->
@@ -484,6 +602,18 @@
       <button type="submit" class="btn btn-primary">Projekt anlegen</button>
       <span id="add-project-status" style="font-size:.85rem; margin-left:.5rem;"></span>
     </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════ TAB: Monitoring ═══════════════════════ -->
+<div id="tab-monitoring" class="tab-content">
+  <div id="monitoring-panel"
+       hx-get="/api/setup/monitoring-fragment"
+       hx-trigger="load, monitoring-changed from:body"
+       hx-swap="innerHTML">
+    <div class="card">
+      <span style="font-size:.85rem; color:var(--muted);">Monitoring wird geladen…</span>
+    </div>
   </div>
 </div>
 
@@ -838,6 +968,47 @@ function onTypeChange() {
   }
 }
 
+function _escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function _renderOpenAlexTopics(topics, topicsSource) {
+  if (!Array.isArray(topics) || topics.length === 0) return '';
+
+  var label = topicsSource === 'x_concepts' ? 'Top-Themen (OpenAlex)' : 'Top-Themen';
+  var items = topics.map(function(topic) {
+    var name = _escapeHtml(topic.name || '');
+    if (topic.score === null || topic.score === undefined || topic.score === '') {
+      return name;
+    }
+    return name + ' <span style="color:var(--muted);">(' + _escapeHtml(topic.score) + ')</span>';
+  });
+
+  return '<div style="color:var(--muted); margin-top:.2rem;">' + label + ': ' + items.join(', ') + '</div>';
+}
+
+function _renderProfileFit(profileFit) {
+  if (!profileFit || profileFit.score === null || profileFit.score === undefined) return '';
+
+  var score = _escapeHtml(profileFit.score);
+  var fitLabel = _escapeHtml(profileFit.fit_label || 'unbestimmt');
+  var tierHint = _escapeHtml(profileFit.tier_hint || 'C');
+  var terms = Array.isArray(profileFit.matched_profile_terms) ? profileFit.matched_profile_terms.slice(0, 4) : [];
+  var termsHtml = terms.length ? ' · Profilanker: ' + terms.map(_escapeHtml).join(', ') : '';
+
+  return (
+    '<div style="margin-top:.2rem;">' +
+      '<span class="badge badge-tier-' + tierHint.toLowerCase() + '">~' + tierHint + '</span>' +
+      '<span style="color:var(--muted); margin-left:.35rem;">Themenfit (heuristisch): ' + fitLabel + ' (' + score + ')' + termsHtml + '</span>' +
+    '</div>'
+  );
+}
+
 function lookupISSN() {
   var issn = document.getElementById('add-issn').value.trim();
   if (!issn) { showAddStatus('Bitte ISSN eingeben.', false); return; }
@@ -849,11 +1020,16 @@ function lookupISSN() {
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (!data.ok) {
-        el.innerHTML = '<span style="color:var(--pflichtlektuere);">' + (data.error || 'Fehler') + '</span>';
+        el.innerHTML = '<span style="color:var(--pflichtlektuere);">' + _escapeHtml(data.error || 'Fehler') + '</span>';
         return;
       }
       if (data.found) {
-        el.innerHTML = '<span style="color:var(--lesenswert);">&#10003; ' + data.name + ' (' + data.works_count + ' Werke)</span>';
+        el.innerHTML =
+          '<div style="display:flex; flex-direction:column; gap:.1rem;">' +
+          '<span style="color:var(--lesenswert);">&#10003; ' + _escapeHtml(data.name) + ' (' + _escapeHtml(data.works_count) + ' Werke)</span>' +
+          _renderOpenAlexTopics(data.top_topics, data.topics_source) +
+          _renderProfileFit(data.profile_fit) +
+          '</div>';
         // Auto-fill name
         if (!document.getElementById('add-name').value) {
           document.getElementById('add-name').value = data.name;
@@ -865,8 +1041,39 @@ function lookupISSN() {
       }
     })
     .catch(function(err) {
-      el.innerHTML = '<span style="color:var(--pflichtlektuere);">' + err + '</span>';
+      el.innerHTML = '<span style="color:var(--pflichtlektuere);">' + _escapeHtml(err) + '</span>';
     });
+}
+
+function _candidateQueryString() {
+  return (
+    'max_topics=' + encodeURIComponent(document.getElementById('candidate-max-topics').value) +
+    '&per_topic=' + encodeURIComponent(document.getElementById('candidate-per-topic').value) +
+    '&max_results=' + encodeURIComponent(document.getElementById('candidate-max-results').value)
+  );
+}
+
+function loadJournalCandidates() {
+  var target = document.getElementById('journal-candidates-output');
+  target.innerHTML = '<span style="color:var(--muted); font-size:.85rem;">Suche Kandidaten via OpenAlex Topics…</span>';
+  fetch('/api/openalex/journal-candidates?' + _candidateQueryString())
+    .then(function(r) { return r.text(); })
+    .then(function(html) { target.innerHTML = html; })
+    .catch(function(err) {
+      target.innerHTML = '<span style="color:var(--pflichtlektuere);">' + _escapeHtml(err) + '</span>';
+    });
+}
+
+function applyJournalCandidate(candidate) {
+  document.getElementById('add-name').value = candidate.name || '';
+  document.getElementById('add-issn').value = candidate.issn || '';
+  document.getElementById('add-type').value = 'openalex';
+  if (candidate.tier_hint) {
+    document.getElementById('add-tier').value = candidate.tier_hint;
+  }
+  onTypeChange();
+  document.getElementById('issn-result').innerHTML = '';
+  document.getElementById('add-journal-card').scrollIntoView({behavior: 'smooth', block: 'start'});
 }
 
 function _getAddFormData() {
@@ -1078,6 +1285,113 @@ function addProject(form) {
     } else {
       el.innerHTML = '<span style="color:var(--pflichtlektuere);">' + (res.error || 'Fehler') + '</span>';
     }
+  });
+}
+
+function _historicalScanPayload(mode) {
+  if (mode === 'year') {
+    return {
+      mode: 'year',
+      year: document.getElementById('year-scan-year').value,
+      cost_limit_usd: document.getElementById('year-scan-cost').value,
+      model: document.getElementById('year-scan-model').value.trim()
+    };
+  }
+  return {
+    mode: 'journal_history',
+    journal: document.getElementById('history-scan-journal').value,
+    max_years: document.getElementById('history-scan-max-years').value,
+    cost_limit_usd: document.getElementById('history-scan-cost').value,
+    model: document.getElementById('history-scan-model').value.trim()
+  };
+}
+
+function _historicalScanTarget(mode) {
+  return mode === 'year' ? 'year-scan-output' : 'history-scan-output';
+}
+
+function previewHistoricalScan(mode) {
+  var target = document.getElementById(_historicalScanTarget(mode));
+  target.innerHTML = '<span style="color:var(--muted); font-size:.85rem;">Vorschau lädt Metadaten…</span>';
+  fetch('/api/setup/scan/preview', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(_historicalScanPayload(mode))
+  }).then(function(r) { return r.text(); }).then(function(html) {
+    target.innerHTML = html;
+  }).catch(function(err) {
+    target.innerHTML = '<span style="color:var(--pflichtlektuere);">' + err + '</span>';
+  });
+}
+
+function runHistoricalScan(mode) {
+  var target = document.getElementById(_historicalScanTarget(mode));
+  target.innerHTML = '<span style="color:var(--muted); font-size:.85rem;">Scan läuft… Tab offen lassen.</span>';
+  fetch('/api/setup/scan/run', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(_historicalScanPayload(mode))
+  }).then(function(r) { return r.text(); }).then(function(html) {
+    target.innerHTML = html;
+  }).catch(function(err) {
+    target.innerHTML = '<span style="color:var(--pflichtlektuere);">' + err + '</span>';
+  });
+}
+
+function _monitoringPayload() {
+  return {
+    weekday: document.getElementById('monitoring-weekday').value,
+    hour: document.getElementById('monitoring-hour').value,
+    minute: document.getElementById('monitoring-minute').value,
+    digest_next: document.getElementById('monitoring-digest-next').value,
+    since_year: document.getElementById('monitoring-since-year').value
+  };
+}
+
+function _replaceMonitoringPanel(html) {
+  document.getElementById('monitoring-panel').innerHTML = html;
+}
+
+function refreshMonitoringPanel() {
+  fetch('/api/setup/monitoring-fragment')
+    .then(function(r) { return r.text(); })
+    .then(_replaceMonitoringPanel)
+    .catch(function(err) {
+      _replaceMonitoringPanel('<div class="card"><span style="color:var(--pflichtlektuere);">' + err + '</span></div>');
+    });
+}
+
+function installMonitoringSchedule() {
+  _replaceMonitoringPanel('<div class="card"><span style="font-size:.85rem; color:var(--muted);">Monitoring wird gespeichert…</span></div>');
+  fetch('/api/setup/monitoring/install', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(_monitoringPayload())
+  }).then(function(r) { return r.text(); }).then(_replaceMonitoringPanel).catch(function(err) {
+    _replaceMonitoringPanel('<div class="card"><span style="color:var(--pflichtlektuere);">' + err + '</span></div>');
+  });
+}
+
+function disableMonitoringSchedule() {
+  if (!confirm('Monitoring wirklich deaktivieren?')) return;
+  _replaceMonitoringPanel('<div class="card"><span style="font-size:.85rem; color:var(--muted);">Monitoring wird deaktiviert…</span></div>');
+  fetch('/api/setup/monitoring/disable', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({})
+  }).then(function(r) { return r.text(); }).then(_replaceMonitoringPanel).catch(function(err) {
+    _replaceMonitoringPanel('<div class="card"><span style="color:var(--pflichtlektuere);">' + err + '</span></div>');
+  });
+}
+
+function runMonitoringNow() {
+  _replaceMonitoringPanel('<div class="card"><span style="font-size:.85rem; color:var(--muted);">Monitoring läuft… Tab offen lassen.</span></div>');
+  fetch('/api/setup/monitoring/run', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(_monitoringPayload())
+  }).then(function(r) { return r.text(); }).then(_replaceMonitoringPanel).catch(function(err) {
+    _replaceMonitoringPanel('<div class="card"><span style="color:var(--pflichtlektuere);">' + err + '</span></div>');
   });
 }
 </script>

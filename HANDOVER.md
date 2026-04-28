@@ -4,6 +4,8 @@ Dieses Dokument fasst den Projektzustand und die relevanten Arbeitskontexte zusa
 
 Stand: 2026-04-15
 
+**Aktueller Nachtrag (2026-04-28):** Der neue Strang "OpenAlex Journal Topic Router" ist in `docs/context/project_journal_topic_router.md` dokumentiert. Er beschreibt, wie OpenAlex-Top-Topics zu journalbezogenen Profilen, einem nahezu kostenfreien Retrieval-Routing und einer datenbasierten A/B/C-Intuition ausgebaut werden koennen. Erste UI/API-Bausteine existieren bereits in `journal_bot/journal_topics.py`, `/api/openalex/lookup`, `/api/openalex/journal-candidates` und Setup > "Themenbasierte Journal-Kandidaten".
+
 ---
 
 ## 1. Projekt in Kürze

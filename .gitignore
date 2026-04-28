@@ -14,6 +14,7 @@ profile.md
 .env
 .enrichment_cache/
 .backfill_cache/
+.openalex_cache/
 .agent_context.json
 .agent_context.txt
 

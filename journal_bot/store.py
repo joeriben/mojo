@@ -435,6 +435,7 @@ class Store:
         limit: int | None = None,
         journals: list[str] | None = None,
         since_year: int | None = None,
+        end_year: int | None = None,
     ) -> list[StoredArticle]:
         sql = "SELECT * FROM articles WHERE (agent_processed_at IS NULL OR agent_processed_at = '')"
         params: list[Any] = []
@@ -445,6 +446,9 @@ class Store:
         if since_year is not None:
             sql += " AND year >= ?"
             params.append(since_year)
+        if end_year is not None:
+            sql += " AND year <= ?"
+            params.append(end_year)
         sql += " ORDER BY year DESC, fetched_at DESC"
         if limit:
             sql += " LIMIT ?"
