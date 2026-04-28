@@ -62,9 +62,10 @@
 
 **Beobachtung (extern, SACAnEv-Run, 2026-04-27):** OpenRouter akzeptiert `cache_control: {"type": "ephemeral"}` auch für System-Prompts unter Anthropics Mindestgröße — und cached dann *still* gar nicht. Ergebnis: Vollkosten auf jeden Call statt 10–25 % der Cache-Read-Rate. Konkreter Test mit `claude-sonnet-4.5` und 445-Token-Systemprompt: 0 % cached_tokens auf Call 2 und 3, kein Fehler/Warning.
 
-**Anthropic-Mindestgrößen (Stand 2026-04):**
-- Sonnet / Opus: **1024 Tokens** im cache_control'd Block
-- Haiku: **2048 Tokens** im cache_control'd Block
+**Anthropic/OpenRouter-Mindestgrößen (Stand 2026-04-28):**
+- Claude Opus 4.7 / 4.6 / 4.5 und Claude Haiku 4.5: **4096 Tokens** im cache_control'd Block
+- Claude Sonnet 4.6 und Claude Haiku 3.5: **2048 Tokens** im cache_control'd Block
+- Claude Sonnet 4.5, Opus 4.1, Opus 4, Sonnet 4, Sonnet 3.7: **1024 Tokens** im cache_control'd Block
 
 Unterhalb dieser Schwellen ist `cache_control` ein No-Op.
 
@@ -78,7 +79,7 @@ Unterhalb dieser Schwellen ist `cache_control` ein No-Op.
 1. Audit aller Stellen mit `cache_control` — Token-Größe des cached Blocks dokumentieren, mit Anthropics Schwelle abgleichen
 2. **`CacheNotHitError`-Mechanik aus `agent.py:599–613` universell anwenden**, nicht nur in `batch_screen` — als Helper-Funktion `_verify_cache(usage, batch_num, min_ratio=0.5)` oder als Decorator
 3. **Pre-Flight Cache-Verifikationsskript** (`scripts/cache_verify.py` o.ä.) das vor jedem produktiven Lauf 3 Test-Calls macht und die Cache-Hit-Rate verifiziert. Vorbild: `/Users/joerissen/ai/sacanev/scripts/cache_verify.py`
-4. Dokumentation in `AGENTS.md` ergänzen: „Bei Anthropic ist `cache_control` ein silent No-Op unter 1024 (Sonnet/Opus) bzw. 2048 (Haiku) Tokens"
+4. Dokumentation in `AGENTS.md` ergänzen: „Bei Anthropic/OpenRouter ist `cache_control` ein silent No-Op unter den modellabhängigen Mindestgrößen; Opus 4.6 braucht aktuell 4096 cachebare Tokens."
 
 **Reproduktion (~1¢ Kosten):**
 ```bash

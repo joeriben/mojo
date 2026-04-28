@@ -23,6 +23,72 @@ class CacheNotHitError(RuntimeError):
 # Minimum expected cache-read ratio after the first call (which always writes).
 # If the second+ call reads < 50% from cache, something is wrong.
 _MIN_CACHE_READ_RATIO = 0.5
+_CACHE_CRITICAL_BATCH_COST_USD = 0.05
+
+
+def _rough_token_count(text: str) -> int:
+    """Cheap local estimate used only for cache-threshold guards."""
+    return max(1, len(text) // 4)
+
+
+def _model_input_cost_per_million(model: str) -> float | None:
+    """Known OpenRouter input prices for cache-risk estimates.
+
+    OpenRouter reports actual costs in normal responses; this fallback is only
+    for warning text and deciding whether a no-cache screening batch is costly
+    enough to abort.
+    """
+    m = model.lower()
+    if "deepseek/deepseek-v3.2" in m:
+        return 0.26
+    if "claude-opus" in m:
+        return 15.0
+    if "claude-sonnet" in m:
+        return 3.0
+    if "claude-haiku" in m:
+        return 1.0
+    return None
+
+
+def _anthropic_cache_min_tokens(model: str) -> int | None:
+    """Return Anthropic/OpenRouter's minimum cacheable prompt length.
+
+    Current OpenRouter/Anthropic rules distinguish newer Claude releases:
+    Opus 4.6/4.5 and Haiku 4.5 need 4096 cacheable tokens; Sonnet 4.6
+    and Haiku 3.5 need 2048; older Claude 4/3.7 models need 1024.
+    """
+    m = model.lower()
+    if not m.startswith("anthropic/") or "claude" not in m:
+        return None
+    if any(name in m for name in (
+        "claude-opus-4.7",
+        "claude-opus-4.6",
+        "claude-opus-4.5",
+        "claude-haiku-4.5",
+    )):
+        return 4096
+    if "claude-sonnet-4.6" in m or "claude-haiku-3.5" in m:
+        return 2048
+    return 1024
+
+
+def _should_use_explicit_cache_control(model: str) -> bool:
+    """OpenRouter needs explicit breakpoints for Anthropic Claude only here."""
+    return _anthropic_cache_min_tokens(model) is not None
+
+
+def _estimate_uncached_batch_cost(
+    *,
+    model: str,
+    prompt_tokens: int,
+    reported_cost: float,
+) -> float:
+    if reported_cost > 0:
+        return reported_cost
+    input_price = _model_input_cost_per_million(model)
+    if input_price is None:
+        return 0.0
+    return prompt_tokens / 1_000_000 * input_price
 
 from journal_bot.citation_tracker import find_citations, format_for_agent
 from journal_bot.enrichment import enrich
@@ -519,7 +585,11 @@ SCREENING_BATCH_PREAMBLE = (
 )
 
 
-def _build_screening_messages(system_prompt: str, batch_payload: str) -> list[dict[str, Any]]:
+def _build_screening_messages(
+    system_prompt: str,
+    batch_payload: str,
+    model: str,
+) -> list[dict[str, Any]]:
     """Build screening messages with a stable first user turn for cache affinity.
 
     OpenRouter's sticky routing keys on the first system message and the first
@@ -528,16 +598,17 @@ def _build_screening_messages(system_prompt: str, batch_payload: str) -> list[di
     implicit prompt cache is lost. The batch-specific payload therefore goes
     into a second user message, while the first one stays constant.
     """
+    system_block: dict[str, Any] = {
+        "type": "text",
+        "text": system_prompt,
+    }
+    if _should_use_explicit_cache_control(model):
+        system_block["cache_control"] = {"type": "ephemeral"}
+
     return [
         {
             "role": "system",
-            "content": [
-                {
-                    "type": "text",
-                    "text": system_prompt,
-                    "cache_control": {"type": "ephemeral"},
-                }
-            ],
+            "content": [system_block],
         },
         {"role": "user", "content": SCREENING_BATCH_PREAMBLE},
         {"role": "user", "content": batch_payload},
@@ -558,6 +629,14 @@ def batch_screen(
     """
     summaries_data = json.loads(summaries_path.read_text(encoding="utf-8"))
     system_prompt = build_system_prompt(summaries_data["summaries"]) + SCREENING_SUFFIX
+    cacheable_tokens = _rough_token_count(system_prompt)
+    min_cache_tokens = _anthropic_cache_min_tokens(model)
+    if min_cache_tokens is not None and cacheable_tokens < min_cache_tokens:
+        raise CacheNotHitError(
+            f"[screen] Cache-Block zu klein für {model}: "
+            f"~{cacheable_tokens} Tokens, Minimum {min_cache_tokens}. "
+            "Anthropic ignoriert cache_control unterhalb dieser Schwelle."
+        )
 
     client = build_client()
     all_results: dict[str, dict] = {}
@@ -583,7 +662,7 @@ def batch_screen(
 
         resp = client.chat.completions.create(
             model=model,
-            messages=_build_screening_messages(system_prompt, user_msg),
+            messages=_build_screening_messages(system_prompt, user_msg, model),
             max_tokens=2000,
             temperature=0.0,
         )
@@ -595,18 +674,34 @@ def batch_screen(
             usage_dump = usage.model_dump() if hasattr(usage, "model_dump") else {}
             cost = usage_dump.get("cost") or 0.0
 
-            # Cache safety: after batch 2+, verify cache is hitting
+            # Cache safety: after batch 2+, verify cache is hitting for
+            # models where a miss would materially affect costs. DeepSeek's
+            # implicit cache is useful but cheap enough that a zero cached_tokens
+            # report must not abort the scan.
             if batch_num >= 2:
                 pd = usage_dump.get("prompt_tokens_details") or {}
                 cached = pd.get("cached_tokens") or 0
                 total_prompt = usage.prompt_tokens or 1
                 ratio = cached / total_prompt
-                if ratio < _MIN_CACHE_READ_RATIO:
+                expected_uncached = _estimate_uncached_batch_cost(
+                    model=model,
+                    prompt_tokens=total_prompt,
+                    reported_cost=cost,
+                )
+                cache_required = min_cache_tokens is not None
+                costly_without_cache = expected_uncached >= _CACHE_CRITICAL_BATCH_COST_USD
+                if ratio < _MIN_CACHE_READ_RATIO and (cache_required or costly_without_cache):
+                    min_note = (
+                        f" Cache-Block: ~{cacheable_tokens} Tokens "
+                        f"(Minimum {min_cache_tokens})."
+                        if min_cache_tokens is not None else ""
+                    )
                     msg = (
                         f"[screen] CACHE-WARNUNG: Batch {batch_num} hat nur "
                         f"{ratio:.0%} Cache-Hits ({cached}/{total_prompt} Tokens). "
+                        f"Modell: {model}.{min_note} "
                         f"Erwartete Kosten pro Batch ohne Cache: "
-                        f"~${total_prompt / 1e6 * 15:.2f}. "
+                        f"~${expected_uncached:.2f}. "
                         f"ABBRUCH — bitte Cache-Konfiguration prüfen."
                     )
                     print(msg, file=sys.stderr)

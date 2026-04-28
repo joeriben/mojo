@@ -2,7 +2,8 @@
   <h3 style="margin-top:0; margin-bottom:.5rem;">Scan-Lauf</h3>
   <div style="font-size:.85rem; line-height:1.5;">
     <div><strong>Scope:</strong> {{ scope.label }}</div>
-    <div><strong>Modell:</strong> <code>{{ model }}</code></div>
+    <div><strong>Agent-Modell:</strong> <code>{{ model }}</code></div>
+    <div><strong>Screening-Modell:</strong> <code>{{ screen_model }}</code></div>
     <div><strong>Kostenlimit:</strong> ${{ "%.2f"|format(cost_limit_usd) }}</div>
     <div style="margin-top:.4rem;">
       Vorher: {{ preview_before.pending_articles }} ungeprozessiert

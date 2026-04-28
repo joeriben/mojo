@@ -1847,6 +1847,7 @@ def api_setup_scan_preview():
 
 @app.route("/api/setup/scan/run", methods=["POST"])
 def api_setup_scan_run():
+    from journal_bot import agent as agent_mod
     from journal_bot.batch_digest import run_batch_digest
     from journal_bot.scan_jobs import prepare_scan_scope
     from journal_bot.settings import MODEL_AGENT
@@ -1920,6 +1921,7 @@ def api_setup_scan_run():
         logs=logs,
         cost_limit_usd=cost_limit_usd,
         model=model,
+        screen_model=agent_mod.MODEL_SCREEN,
         cost_source_label=_scan_cost_source_label(summary_after["avg_cost_source"]),
     )
 

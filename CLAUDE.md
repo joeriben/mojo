@@ -42,7 +42,8 @@ Ein persönlicher Forschungsassistent für Benjamin Jörissen (FAU Erlangen-Nür
 - Erst 2-3 Einzelcalls testen, Kosten pro Artikel messen, dem User zeigen
 - Erst nach Bestätigung Batch starten
 - Der Code in `cli.py cmd_digest()` enthält einen Safety-Check: bei >$0.15/Artikel nach den ersten 3 Artikeln wird abgebrochen
-- `batch_screen()` in `agent.py` wirft `CacheNotHitError` bei <50% Cache-Hits ab Batch 2
+- `batch_screen()` in `agent.py` wirft `CacheNotHitError` bei <50% Cache-Hits ab Batch 2 nur für cache-kritische/teure Modelle; DeepSeek-Screening darf wegen fehlender Cache-Metrik nicht hart abbrechen
+- Anthropic/OpenRouter-Cache-Mindestgrößen sind modellabhängig; Opus 4.6 braucht aktuell 4096 cachebare Tokens (`cache_control` ist darunter ein stiller No-Op)
 
 ## Was NICHT tun
 - Keine `.env`-Dateien vorschreiben (User kennt das Konzept nicht / will es nicht)

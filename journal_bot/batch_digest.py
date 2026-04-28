@@ -61,7 +61,12 @@ def run_batch_digest(
         _log(logger, verbose, "[digest] Keine ungeprozessierten Artikel im Scope.")
         return result
 
-    _log(logger, verbose, f"[digest] {len(pending)} Artikel gefunden (Modell: {model})")
+    _log(
+        logger,
+        verbose,
+        f"[digest] {len(pending)} Artikel gefunden "
+        f"(Agent-Modell: {model}; Screening: {agent_mod.MODEL_SCREEN})",
+    )
 
     junk = [sa for sa in pending if _is_junk_title(sa.title)]
     if junk:
