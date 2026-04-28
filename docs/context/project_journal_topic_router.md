@@ -52,10 +52,31 @@ Web-UI:
 - ISSN-Pruefung zeigt jetzt neben Name/Werkzahl auch Top-Themen und einen heuristischen `~A/~B/~C`-Hinweis.
 - Neue Kandidaten koennen ins Journal-Hinzufuegen-Formular uebernommen werden.
 
+Nachtrag Codex 2026-04-28:
+
+- `journal_bot/journal_topics.py` enthaelt jetzt auch einen persistierten JournalProfile-Layer:
+  - `build_journal_profile()` baut Profile fuer getrackte Journals aus OpenAlex-Sources.
+  - `refresh_journal_profiles()` schreibt `journal_profiles.json` als lokale, generierte Persistenz.
+  - `journal_profile_status()` liest Status/Counts fuer UI und CLI.
+  - `route_query_to_journal_profiles()` rankt eine Suchfrage deterministisch gegen gespeicherte Profile.
+- Profile enthalten `topics_raw`, `topic_clusters`, `paradigmatic_signals`, `disciplinary_home`,
+  `methodological_signals`, `fit_to_research_profile`, OpenAlex-Metadaten und Refresh-Zeitpunkt.
+- Setup > Journals & Diskursraeume enthaelt zusaetzlich eine Karte "Journal-Profile-Router" mit
+  Refresh-Button und Profiluebersicht.
+- Neue Routen:
+  - `/api/openalex/journal-profiles`
+  - `/api/openalex/journal-profiles/refresh`
+- Neue CLI:
+  - `mojo journal-topics status`
+  - `mojo journal-topics refresh`
+  - `mojo journal-topics rank "..."`
+- `journal_profiles.json` ist absichtlich in `.gitignore`, wird aber im Nutzer-Backup mitgesichert.
+
 Templates:
 
 - `journal_bot/web/templates/setup.html`
 - `journal_bot/web/templates/_journal_candidates.html`
+- `journal_bot/web/templates/_journal_profiles.html`
 
 ## Validierung
 
@@ -65,41 +86,27 @@ Durchgefuehrt:
 - Flask-Testclient fuer `/setup`
 - Gemockter Route-Test fuer `/api/openalex/lookup`
 - Gemockter Route-Test fuer `/api/openalex/journal-candidates`
+- Codex-Nachtrag: `python3 -m py_compile journal_bot/journal_topics.py journal_bot/web/app.py journal_bot/cli.py journal_bot/backup.py`
+- Codex-Nachtrag: Flask-Testclient fuer `/api/openalex/journal-profiles`
+- Codex-Nachtrag: Gemockter Route-Test fuer `/api/openalex/journal-profiles/refresh`
+- Codex-Nachtrag: Gemockter Profilbau und persistierter Refresh mit Temp-Datei
 
 Nicht durchgefuehrt:
 
 - Kein Live-Lasttest gegen OpenAlex.
 - Keine qualitative Validierung des Topic-Rankings mit echten Journal-Beispielen.
-- Keine Persistierung von Journalprofilen in SQLite oder JSON.
+- Kein echter Refresh ueber alle Journals in `journal_profiles.json` im Projektordner.
 
 ## Naechster sinnvoller Schritt
 
-Aus dem Kandidaten-Tool sollte ein echter Journal-Profile-Router werden.
+Der erste persistierte Router-Layer existiert. Der naechste Schritt ist qualitative Validierung und bessere Query-UX:
 
-Vorgeschlagene Datenstruktur:
+- Einmaliger kontrollierter Live-Refresh ueber alle aktiven Journals.
+- Ranking an echten Beispielanfragen pruefen: AI4ArtsEd, Cultural Resilience, Missed References, Bildungstheorie.
+- Scoring kalibrieren: thematische Naehe, disziplinaere Naehe und produktive Reibung getrennt ausweisen.
+- Kandidaten nicht nur anzeigen, sondern optional als persistierte Candidate-Profile neben getrackten Journals speichern.
 
-```python
-JournalProfile = {
-    "journal_short": "...",
-    "openalex_source_id": "...",
-    "topics_raw": [...],
-    "topic_clusters": [...],
-    "paradigmatic_signals": [...],
-    "disciplinary_home": [...],
-    "methodological_signals": [...],
-    "fit_to_research_profile": {...},
-    "updated_at": "YYYY-MM-DD",
-}
-```
-
-Der erste Schritt kann ohne LLM erfolgen:
-
-- Top 50-200 Topics pro OpenAlex-Journal holen.
-- Topics nach OpenAlex Field/Subfield/Domain und Namensnaehe clustern.
-- Pro Journal ein stabiles Profil mit Gewichtungen persistieren.
-- Bereits getrackte Journals und Kandidaten gleich behandeln.
-
-Der zweite Schritt kann optional ein kleines Modell nutzen:
+Ein spaeterer zweiter Schritt kann optional ein kleines Modell nutzen:
 
 - Aus einem Artikel, Abstract oder Textentwurf Fragestellung, Problemraum, theoretische Lagerung und Begriffsnetz extrahieren.
 - Gegen JournalProfile ranken.

@@ -18,6 +18,8 @@ Subcommands:
                (Kosten ~$0.50–$1 pro Artikel dank Caching)
   trends     — Aggregat-Trendanalyse aus articles.db nach Obsidian
                (gelegentlich, ~$1–3 pro Run je nach Fenster)
+  journal-topics
+             — OpenAlex-Journalprofile refreshen/ranken (keine LLM-Kosten)
   stats      — Kurze Statistik über articles.db
 """
 
@@ -369,6 +371,61 @@ def cmd_journal(args: argparse.Namespace) -> int:
     return 2
 
 
+def cmd_journal_topics(args: argparse.Namespace) -> int:
+    from journal_bot.journal_topics import (
+        journal_profile_status,
+        refresh_journal_profiles,
+        route_query_to_journal_profiles,
+    )
+
+    action = args.action
+
+    if action == "status":
+        status = journal_profile_status()
+        print(f"[journal-topics] Datei: {status['path']}")
+        if not status["exists"]:
+            print("[journal-topics] Noch keine Profile persistiert.")
+            return 0
+        print(
+            f"[journal-topics] Profile: {status['count']} "
+            f"({status['found_count']} gefunden, {status['missing_count']} ohne OpenAlex-Profil)"
+        )
+        print(f"[journal-topics] Aktualisiert: {status['updated_at'] or 'unbekannt'}")
+        return 0
+
+    if action == "refresh":
+        topic_limit = max(10, min(args.topic_limit, 200))
+        refresh_journal_profiles(
+            include_disabled=args.include_disabled,
+            topic_limit=topic_limit,
+        )
+        status = journal_profile_status()
+        print(
+            f"[journal-topics] Aktualisiert: {status['found_count']} gefunden, "
+            f"{status['missing_count']} ohne OpenAlex-Profil."
+        )
+        print(f"[journal-topics] Datei: {status['path']}")
+        return 0
+
+    if action == "rank":
+        results = route_query_to_journal_profiles(args.query, limit=args.limit)
+        if not results:
+            print("[journal-topics] Keine Treffer. Erst `mojo journal-topics refresh` ausführen.")
+            return 0
+        for idx, item in enumerate(results, start=1):
+            print(
+                f"{idx:2d}. {item['routing']:7s} {item['score']:5.1f}  "
+                f"{item['journal_name']} ({item['journal_short']}, Tier {item['journal_tier']})"
+            )
+            if item["matched_topics"]:
+                topics = ", ".join(t["topic"] for t in item["matched_topics"][:3])
+                print(f"    Topics: {topics}")
+        return 0
+
+    print(f"Unbekannte Aktion: {action}")
+    return 2
+
+
 def cmd_web(args: argparse.Namespace) -> int:
     from journal_bot.web.app import app
     print(f"[web] MOJO UI auf http://localhost:{args.port}")
@@ -559,6 +616,27 @@ def main(argv: list[str] | None = None) -> int:
 
     p_jr = journal_sub.add_parser("remove", help="Journal entfernen")
     p_jr.add_argument("short", help="Kurzname des zu entfernenden Journals")
+
+    # --- journal-topics ---
+    p_jtopics = sub.add_parser(
+        "journal-topics",
+        help="OpenAlex-Journalprofile verwalten und für Routing ranken",
+    )
+    p_jtopics.set_defaults(func=cmd_journal_topics)
+    jtopics_sub = p_jtopics.add_subparsers(dest="action", required=True)
+
+    jtopics_sub.add_parser("status", help="Status der persistierten Journalprofile")
+
+    p_jtr = jtopics_sub.add_parser("refresh", help="Journalprofile via OpenAlex aktualisieren")
+    p_jtr.add_argument("--topic-limit", type=int, default=80,
+                       help="Max. Topics pro Journal (Default 80)")
+    p_jtr.add_argument("--include-disabled", action="store_true",
+                       help="Auch deaktivierte Journals profilieren")
+
+    p_jtk = jtopics_sub.add_parser("rank", help="Query gegen persistierte Journalprofile ranken")
+    p_jtk.add_argument("query", help="Suchfrage, Abstract oder kurzer Textauszug")
+    p_jtk.add_argument("--limit", type=int, default=12,
+                       help="Max. Journals im Ranking (Default 12)")
 
     p_backfill = sub.add_parser("backfill",
                                 help="Fehlende Abstracts nachziehen (Crossref/Playwright/Zotero)")

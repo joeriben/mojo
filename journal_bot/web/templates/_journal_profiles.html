@@ -1,0 +1,92 @@
+<div style="padding:.9rem; border:1px solid var(--border); border-radius:8px;">
+  {% if journal_profiles.message %}
+  <div style="color:var(--lesenswert); font-size:.85rem; margin-bottom:.65rem;">
+    {{ journal_profiles.message }}
+  </div>
+  {% endif %}
+
+  <div style="font-size:.82rem; color:var(--muted); margin-bottom:.75rem;">
+    {% if journal_profiles.exists %}
+      {{ journal_profiles.count }} Profile · {{ journal_profiles.found_count }} mit OpenAlex-Daten
+      · {{ journal_profiles.missing_count }} ohne Profil
+      · {{ journal_profiles.size_kb }} KB
+      {% if journal_profiles.updated_at %} · aktualisiert: {{ journal_profiles.updated_at }}{% endif %}
+    {% else %}
+      Noch keine persistierten Journalprofile. Ein Refresh erzeugt <code>journal_profiles.json</code>.
+    {% endif %}
+  </div>
+
+  {% if journal_profiles.profiles %}
+  <div style="overflow-x:auto;">
+    <table class="matrix-table">
+      <thead>
+        <tr>
+          <th style="text-align:left;">Journal</th>
+          <th style="text-align:center;">Tier</th>
+          <th style="text-align:center;">Fit</th>
+          <th style="text-align:left;">Disziplinäre Lagerung</th>
+          <th style="text-align:left;">Signale</th>
+          <th style="text-align:left;">Top-Themen</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in journal_profiles.profiles[:14] %}
+        <tr>
+          <td>
+            <div style="font-weight:600;">{{ p.journal_name }}</div>
+            <div style="font-size:.76rem; color:var(--muted);">
+              {{ p.journal_short }}
+              {% if p.openalex_source_id %} · {{ p.openalex_source_id }}{% endif %}
+              {% if p.source_status != "found" %} · {{ p.source_error }}{% endif %}
+            </div>
+          </td>
+          <td style="text-align:center;">
+            {% if p.journal_tier %}
+            <span class="badge badge-tier-{{ p.journal_tier|lower }}">{{ p.journal_tier }}</span>
+            {% else %}
+            <span style="color:var(--muted);">—</span>
+            {% endif %}
+          </td>
+          <td style="text-align:center;">
+            {% set fit = p.fit_to_research_profile or {} %}
+            <span class="badge badge-tier-{{ (fit.tier_hint or 'c')|lower }}">~{{ fit.tier_hint or "C" }}</span>
+            <div style="font-size:.75rem; color:var(--muted); margin-top:.2rem;">
+              {{ fit.fit_label or "unbestimmt" }} · {{ fit.score or 0 }}
+            </div>
+          </td>
+          <td style="font-size:.8rem;">
+            {% if p.disciplinary_home %}
+              {% for d in p.disciplinary_home[:2] %}
+                <div>{{ d.label }}</div>
+              {% endfor %}
+            {% else %}
+              <span style="color:var(--muted);">—</span>
+            {% endif %}
+          </td>
+          <td style="font-size:.8rem;">
+            {% set signals = (p.paradigmatic_signals or [])[:3] %}
+            {% if signals %}
+              {{ signals|map(attribute='label')|join(', ') }}
+            {% else %}
+              <span style="color:var(--muted);">—</span>
+            {% endif %}
+          </td>
+          <td style="font-size:.8rem;">
+            {% if p.topics_raw %}
+              {{ p.topics_raw[:4]|map(attribute='name')|join(', ') }}
+            {% else %}
+              <span style="color:var(--muted);">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if journal_profiles.count > 14 %}
+  <div style="font-size:.78rem; color:var(--muted); margin-top:.45rem;">
+    Anzeige begrenzt auf die ersten 14 Profile, sortiert nach gefundenen OpenAlex-Daten und Profilfit.
+  </div>
+  {% endif %}
+  {% endif %}
+</div>

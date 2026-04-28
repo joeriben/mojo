@@ -406,6 +406,29 @@
     <div id="journal-candidates-output" style="margin-top:.75rem;"></div>
   </div>
 
+  <div class="card" id="journal-profile-router-card">
+    <h2 style="margin-top:0;">Journal-Profile-Router</h2>
+    <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
+      Persistiert OpenAlex-Themenprofile der aktiven Journals als lokalen Routing-Layer.
+      Das ersetzt keine Matrix-Entscheidung, macht aber Suchbudgets und A/B/C-Hinweise begründbarer.
+    </p>
+
+    <div class="form-row" style="align-items:flex-end;">
+      <div class="form-group" style="max-width:220px;">
+        <label>Topics pro Journal</label>
+        <input type="number" id="profile-topic-limit" class="form-input" value="80" min="10" max="200">
+      </div>
+      <div style="display:flex; gap:.75rem; align-items:center; margin-bottom:.85rem;">
+        <button type="button" class="btn" onclick="refreshJournalProfiles()">Profile aktualisieren</button>
+        <span style="font-size:.8rem; color:var(--muted);">Nutzt OpenAlex + lokalen Cache, keine LLM-Kosten.</span>
+      </div>
+    </div>
+
+    <div id="journal-profiles-output">
+      {% include "_journal_profiles.html" %}
+    </div>
+  </div>
+
   <div class="card" id="historical-scan-card">
     <h2 style="margin-top:0;">Historische Scans</h2>
     <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
@@ -672,7 +695,7 @@
     </div>
     <p style="font-size:.8rem; color:var(--muted); margin-top:.5rem;">
       Das Backup enthält den lokalen Nutzerzustand
-      (DB, Profil, Projekte, Journals, Diskursräume, Corpus, Summaries,
+      (DB, Profil, Projekte, Journals, Journalprofile, Diskursräume, Corpus, Summaries,
       Custom-Fetcher und projektlokale Digest-Ausgaben). API-Keys sind aus Sicherheitsgründen nicht enthalten.
     </p>
     <p style="font-size:.8rem; color:var(--muted); margin-top:.5rem;">
@@ -1057,6 +1080,22 @@ function loadJournalCandidates() {
   var target = document.getElementById('journal-candidates-output');
   target.innerHTML = '<span style="color:var(--muted); font-size:.85rem;">Suche Kandidaten via OpenAlex Topics…</span>';
   fetch('/api/openalex/journal-candidates?' + _candidateQueryString())
+    .then(function(r) { return r.text(); })
+    .then(function(html) { target.innerHTML = html; })
+    .catch(function(err) {
+      target.innerHTML = '<span style="color:var(--pflichtlektuere);">' + _escapeHtml(err) + '</span>';
+    });
+}
+
+function refreshJournalProfiles() {
+  var target = document.getElementById('journal-profiles-output');
+  var limit = document.getElementById('profile-topic-limit').value || '80';
+  target.innerHTML = '<span style="color:var(--muted); font-size:.85rem;">Aktualisiere Journalprofile via OpenAlex…</span>';
+  fetch('/api/openalex/journal-profiles/refresh', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: 'topic_limit=' + encodeURIComponent(limit)
+  })
     .then(function(r) { return r.text(); })
     .then(function(html) { target.innerHTML = html; })
     .catch(function(err) {

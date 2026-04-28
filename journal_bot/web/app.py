@@ -1268,6 +1268,7 @@ def setup():
     space_journal_counts = {
         key: len(journals_in_cluster(key)) for key in DISCOURSE_SPACES
     }
+    from journal_bot.journal_topics import journal_profile_status
 
     return render_template(
         "setup.html",
@@ -1286,6 +1287,7 @@ def setup():
         api_key_status=api_key_status,
         s2_key_status=s2_key_status,
         verdict_label=VERDICT_LABEL,
+        journal_profiles=journal_profile_status(),
     )
 
 
@@ -1749,11 +1751,42 @@ def api_openalex_journal_candidates():
         )
     except Exception as exc:
         return (
-            f'<div class="card" style="border-color:var(--pflichtlektuere);">'
+            f'<div style="padding:.9rem; border:1px solid var(--pflichtlektuere); border-radius:8px;">'
             f'<strong>Fehler:</strong> {html_mod.escape(str(exc))}</div>'
         )
 
     return render_template("_journal_candidates.html", result=result)
+
+
+@app.route("/api/openalex/journal-profiles")
+def api_openalex_journal_profiles():
+    from journal_bot.journal_topics import journal_profile_status
+
+    return render_template(
+        "_journal_profiles.html",
+        journal_profiles=journal_profile_status(),
+    )
+
+
+@app.route("/api/openalex/journal-profiles/refresh", methods=["POST"])
+def api_openalex_journal_profiles_refresh():
+    from journal_bot.journal_topics import journal_profile_status, refresh_journal_profiles
+
+    try:
+        topic_limit = int(request.form.get("topic_limit") or 80)
+        topic_limit = max(10, min(topic_limit, 200))
+        refresh_journal_profiles(topic_limit=topic_limit)
+        status = journal_profile_status()
+        status["message"] = (
+            f"Profile aktualisiert: {status['found_count']} gefunden, "
+            f"{status['missing_count']} ohne OpenAlex-Profil."
+        )
+        return render_template("_journal_profiles.html", journal_profiles=status)
+    except Exception as exc:
+        return (
+            f'<div class="card" style="border-color:var(--pflichtlektuere);">'
+            f'<strong>Fehler:</strong> {html_mod.escape(str(exc))}</div>'
+        )
 
 
 @app.route("/api/setup/journal/custom-config", methods=["POST"])

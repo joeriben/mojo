@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from datetime import datetime
 from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any
@@ -21,10 +22,53 @@ USER_AGENT = f"mojo/0.1 (mailto:{POLITE_MAILTO})"
 HEADERS = {"User-Agent": USER_AGENT, "Accept": "application/json"}
 CACHE_DIR = settings.PROJECT_ROOT / ".openalex_cache"
 CACHE_DIR.mkdir(exist_ok=True)
+JOURNAL_PROFILES_JSON = settings.PROJECT_ROOT / "journal_profiles.json"
 
 _GENERIC_TOKENS = {
     "education", "educational", "research", "studies", "study", "learning",
     "social", "theory", "theoretical", "analysis", "culture", "cultural",
+}
+
+_PARADIGMATIC_SIGNAL_RULES = {
+    "posthuman/material": [
+        "posthuman", "more-than-human", "nonhuman", "material", "sociomaterial",
+        "anthropocene", "ecology", "ecological", "multispecies",
+    ],
+    "digital/ai/data": [
+        "artificial intelligence", "algorithm", "datafication", "digital",
+        "platform", "automation", "machine learning", "technology",
+    ],
+    "aesthetic/cultural": [
+        "arts", "artistic", "aesthetic", "cultural education", "creativity",
+        "museum", "performance", "music", "visual",
+    ],
+    "resilience/transformation": [
+        "resilience", "sustainability", "climate", "environmental",
+        "transformation", "future", "futurity", "planetary",
+    ],
+    "bildungstheorie/philosophy": [
+        "philosophy", "subject", "subjectivation", "bildung", "pedagogy",
+        "ethics", "educational theory", "democracy",
+    ],
+}
+
+_METHODOLOGICAL_SIGNAL_RULES = {
+    "qualitative": [
+        "ethnography", "interview", "case study", "qualitative", "narrative",
+        "participatory", "action research", "discourse analysis",
+    ],
+    "quantitative": [
+        "quantitative", "survey", "statistical", "measurement", "assessment",
+        "regression", "randomized", "experiment",
+    ],
+    "review/synthesis": [
+        "review", "meta-analysis", "systematic", "bibliometric", "scoping",
+        "literature",
+    ],
+    "theoretical": [
+        "philosophy", "theory", "conceptual", "critical theory",
+        "epistemology", "ontology",
+    ],
 }
 
 
@@ -74,10 +118,20 @@ def _normalize_topic_item(item: Any) -> dict[str, Any] | None:
         score = round(float(score), 1)
     except (TypeError, ValueError):
         score = None
+
+    def _nested_name(key: str) -> str:
+        nested = item.get(key)
+        if isinstance(nested, dict):
+            return nested.get("display_name") or ""
+        return ""
+
     return {
         "id": item.get("id") or (item.get("topic") or {}).get("id") or (item.get("concept") or {}).get("id") or "",
         "name": name,
         "score": score,
+        "domain": _nested_name("domain"),
+        "field": _nested_name("field"),
+        "subfield": _nested_name("subfield"),
     }
 
 
@@ -389,3 +443,368 @@ def discover_candidate_journals(
         "resolved_topics": resolved_topics,
         "candidates": candidates[:max_results],
     }
+
+
+def _now_stamp() -> str:
+    return datetime.now().isoformat(timespec="seconds")
+
+
+def _topic_weight(topic: dict[str, Any]) -> float:
+    try:
+        return max(float(topic.get("score") or 0.0), 1.0)
+    except (TypeError, ValueError):
+        return 1.0
+
+
+def _journal_issn(journal: Any) -> str:
+    if getattr(journal, "issn", ""):
+        return str(journal.issn).strip()
+    url = str(getattr(journal, "url", "") or "")
+    if url.startswith("issn:"):
+        return url.removeprefix("issn:").strip()
+    return ""
+
+
+def _journal_openalex_source_key(journal: Any) -> str:
+    url = str(getattr(journal, "url", "") or "")
+    if "openalex.org/" in url:
+        return url.rstrip("/").rsplit("/", 1)[-1]
+    if url.startswith("S") and url[1:].isdigit():
+        return url
+    return ""
+
+
+def fetch_source_for_journal(journal: Any) -> tuple[dict[str, Any] | None, str]:
+    """Fetch a journal/source object from OpenAlex using source id or ISSN."""
+    source_key = _journal_openalex_source_key(journal)
+    if source_key:
+        data = _cached_get(
+            "source_by_id",
+            f"{OPENALEX_SOURCES}/{source_key}",
+            {"mailto": POLITE_MAILTO},
+        )
+        if data:
+            return data, ""
+        return None, f"OpenAlex-Source nicht gefunden: {source_key}"
+
+    issn = _journal_issn(journal)
+    if not issn:
+        return None, "Keine ISSN/OpenAlex-Source am Journal hinterlegt."
+
+    data = _cached_get(
+        "source_by_issn",
+        f"{OPENALEX_SOURCES}/issn:{issn}",
+        {"mailto": POLITE_MAILTO},
+    )
+    if data:
+        return data, ""
+    return None, f"ISSN nicht in OpenAlex gefunden: {issn}"
+
+
+def _cluster_topics(topics: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    buckets: dict[tuple[str, str, str], dict[str, Any]] = {}
+    for topic in topics:
+        domain = topic.get("domain") or ""
+        field = topic.get("field") or ""
+        subfield = topic.get("subfield") or ""
+        key = (domain, field, subfield)
+        label_parts = [part for part in key if part]
+        label = " / ".join(label_parts) if label_parts else "OpenAlex topics"
+        bucket = buckets.setdefault(key, {
+            "label": label,
+            "domain": domain,
+            "field": field,
+            "subfield": subfield,
+            "weight": 0.0,
+            "topic_count": 0,
+            "top_topics": [],
+        })
+        bucket["weight"] += _topic_weight(topic)
+        bucket["topic_count"] += 1
+        if len(bucket["top_topics"]) < 8:
+            bucket["top_topics"].append(topic.get("name", ""))
+
+    clusters = list(buckets.values())
+    clusters.sort(key=lambda item: (item["weight"], item["topic_count"]), reverse=True)
+    for cluster in clusters:
+        cluster["weight"] = round(cluster["weight"], 1)
+    return clusters
+
+
+def _infer_signals(
+    topics: list[dict[str, Any]],
+    rules: dict[str, list[str]],
+) -> list[dict[str, Any]]:
+    signal_hits: list[dict[str, Any]] = []
+    topic_names = [str(topic.get("name", "") or "") for topic in topics]
+    for label, needles in rules.items():
+        matched: list[str] = []
+        score = 0.0
+        for topic_name in topic_names:
+            folded = topic_name.lower()
+            for needle in needles:
+                if needle in folded:
+                    matched.append(topic_name)
+                    score += 1.0
+                    break
+        if matched:
+            signal_hits.append({
+                "label": label,
+                "score": round(score, 1),
+                "matched_topics": list(dict.fromkeys(matched))[:5],
+            })
+    signal_hits.sort(key=lambda item: item["score"], reverse=True)
+    return signal_hits
+
+
+def _dominant_disciplines(topic_clusters: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for cluster in topic_clusters[:6]:
+        label = cluster.get("label") or ""
+        if not label or label == "OpenAlex topics":
+            continue
+        out.append({
+            "label": label,
+            "weight": cluster.get("weight", 0.0),
+            "top_topics": cluster.get("top_topics", [])[:4],
+        })
+    return out
+
+
+def build_profile_from_source(
+    journal_meta: dict[str, Any],
+    source: dict[str, Any],
+    *,
+    topic_limit: int = 80,
+) -> dict[str, Any]:
+    topics, topics_source = normalize_source_topics(source, limit=topic_limit)
+    topic_clusters = _cluster_topics(topics)
+    fit = compute_source_profile_fit(topics, topic_limit=topic_limit)
+    stats = source.get("summary_stats") or {}
+
+    profile = {
+        "journal_short": journal_meta.get("journal_short", ""),
+        "journal_name": journal_meta.get("journal_name") or source.get("display_name", ""),
+        "journal_tier": journal_meta.get("journal_tier", ""),
+        "journal_clusters": journal_meta.get("journal_clusters", []),
+        "source_kind": journal_meta.get("source_kind", "tracked"),
+        "openalex_source_id": source.get("id", ""),
+        "openalex_display_name": source.get("display_name", ""),
+        "issn": journal_meta.get("issn") or source.get("issn_l") or "",
+        "issn_l": source.get("issn_l", ""),
+        "all_issns": list(source.get("issn") or []),
+        "publisher": source.get("host_organization_name", ""),
+        "homepage_url": source.get("homepage_url", ""),
+        "works_count": source.get("works_count", 0),
+        "h_index": stats.get("h_index"),
+        "mean_citedness": stats.get("2yr_mean_citedness"),
+        "topics_source": topics_source,
+        "topics_raw": topics,
+        "topic_clusters": topic_clusters,
+        "paradigmatic_signals": _infer_signals(topics, _PARADIGMATIC_SIGNAL_RULES),
+        "disciplinary_home": _dominant_disciplines(topic_clusters),
+        "methodological_signals": _infer_signals(topics, _METHODOLOGICAL_SIGNAL_RULES),
+        "fit_to_research_profile": fit,
+        "source_status": "found",
+        "source_error": "",
+        "updated_at": _now_stamp(),
+    }
+    return profile
+
+
+def build_journal_profile(journal: Any, *, topic_limit: int = 80) -> dict[str, Any]:
+    meta = {
+        "journal_short": getattr(journal, "short", ""),
+        "journal_name": getattr(journal, "name", ""),
+        "journal_tier": getattr(journal, "tier", ""),
+        "journal_clusters": list(getattr(journal, "clusters", []) or []),
+        "source_kind": "tracked",
+        "issn": _journal_issn(journal),
+    }
+
+    source, error = fetch_source_for_journal(journal)
+    if not source:
+        return {
+            **meta,
+            "openalex_source_id": "",
+            "openalex_display_name": "",
+            "topics_source": "",
+            "topics_raw": [],
+            "topic_clusters": [],
+            "paradigmatic_signals": [],
+            "disciplinary_home": [],
+            "methodological_signals": [],
+            "fit_to_research_profile": compute_source_profile_fit([]),
+            "source_status": "missing",
+            "source_error": error,
+            "updated_at": _now_stamp(),
+        }
+
+    return build_profile_from_source(meta, source, topic_limit=topic_limit)
+
+
+def load_journal_profile_store(path: Path | None = None) -> dict[str, Any]:
+    profile_path = path or JOURNAL_PROFILES_JSON
+    if not profile_path.exists():
+        return {
+            "version": 1,
+            "updated_at": "",
+            "profiles": [],
+        }
+    try:
+        data = json.loads(profile_path.read_text(encoding="utf-8"))
+    except Exception:
+        return {
+            "version": 1,
+            "updated_at": "",
+            "profiles": [],
+        }
+    if not isinstance(data, dict):
+        return {
+            "version": 1,
+            "updated_at": "",
+            "profiles": [],
+        }
+    data.setdefault("version", 1)
+    data.setdefault("updated_at", "")
+    data.setdefault("profiles", [])
+    return data
+
+
+def save_journal_profile_store(
+    profiles: list[dict[str, Any]],
+    path: Path | None = None,
+) -> dict[str, Any]:
+    profile_path = path or JOURNAL_PROFILES_JSON
+    profile_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "version": 1,
+        "updated_at": _now_stamp(),
+        "profiles": profiles,
+    }
+    tmp = profile_path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(profile_path)
+    return payload
+
+
+def refresh_journal_profiles(
+    *,
+    journals: list[Any] | None = None,
+    include_disabled: bool = False,
+    topic_limit: int = 80,
+    path: Path | None = None,
+) -> dict[str, Any]:
+    selected = journals if journals is not None else settings.JOURNALS
+    existing_profiles = list(load_journal_profile_store(path).get("profiles") or [])
+    existing_by_short = {
+        str(profile.get("journal_short", "")): profile
+        for profile in existing_profiles
+        if profile.get("journal_short")
+    }
+    profiles: list[dict[str, Any]] = []
+    for journal in selected:
+        if not include_disabled and not getattr(journal, "enabled", True):
+            continue
+        profile = build_journal_profile(journal, topic_limit=topic_limit)
+        old_profile = existing_by_short.get(str(profile.get("journal_short", "")))
+        if profile.get("source_status") != "found" and old_profile and old_profile.get("source_status") == "found":
+            preserved = dict(old_profile)
+            preserved["journal_tier"] = getattr(journal, "tier", preserved.get("journal_tier", ""))
+            preserved["journal_clusters"] = list(getattr(journal, "clusters", []) or [])
+            preserved["refresh_attempted_at"] = _now_stamp()
+            preserved["refresh_error"] = profile.get("source_error", "")
+            profiles.append(preserved)
+            continue
+        profiles.append(profile)
+
+    profiles.sort(
+        key=lambda item: (
+            item.get("source_status") != "found",
+            -(item.get("fit_to_research_profile", {}).get("score") or 0),
+            str(item.get("journal_name", "")).lower(),
+        )
+    )
+    return save_journal_profile_store(profiles, path=path)
+
+
+def journal_profile_status(path: Path | None = None) -> dict[str, Any]:
+    profile_path = path or JOURNAL_PROFILES_JSON
+    store = load_journal_profile_store(profile_path)
+    profiles = list(store.get("profiles") or [])
+    found = [p for p in profiles if p.get("source_status") == "found"]
+    missing = [p for p in profiles if p.get("source_status") != "found"]
+    return {
+        "path": str(profile_path),
+        "exists": profile_path.exists(),
+        "updated_at": store.get("updated_at", ""),
+        "count": len(profiles),
+        "found_count": len(found),
+        "missing_count": len(missing),
+        "size_kb": round(profile_path.stat().st_size / 1024, 1) if profile_path.exists() else 0,
+        "profiles": profiles,
+    }
+
+
+def route_query_to_journal_profiles(
+    query: str,
+    *,
+    profiles: list[dict[str, Any]] | None = None,
+    limit: int = 12,
+) -> list[dict[str, Any]]:
+    q = " ".join((query or "").split())
+    if not q:
+        return []
+
+    if profiles is None:
+        profiles = list(load_journal_profile_store().get("profiles") or [])
+
+    routed: list[dict[str, Any]] = []
+    for profile in profiles:
+        topics = list(profile.get("topics_raw") or [])[:80]
+        if not topics:
+            continue
+
+        weighted_total = 0.0
+        weighted_hits = 0.0
+        matched_topics: list[dict[str, Any]] = []
+        for topic in topics:
+            weight = _topic_weight(topic)
+            weighted_total += weight
+            sim = _similarity(q, topic.get("name", ""))
+            if sim < 0.16:
+                continue
+            weighted_hits += weight * sim
+            matched_topics.append({
+                "topic": topic.get("name", ""),
+                "score": round(sim * 100, 1),
+            })
+
+        topic_score = (weighted_hits / weighted_total) * 100 if weighted_total else 0.0
+        cluster_score = 0.0
+        for cluster in profile.get("topic_clusters") or []:
+            cluster_score = max(cluster_score, _similarity(q, cluster.get("label", "")) * 100)
+        profile_prior = float(profile.get("fit_to_research_profile", {}).get("score") or 0.0)
+        score = round(min((topic_score * 0.7) + (cluster_score * 0.2) + (profile_prior * 0.1), 100.0), 1)
+
+        if score >= 24:
+            routing = "deep"
+        elif score >= 12:
+            routing = "medium"
+        else:
+            routing = "shallow"
+
+        matched_topics.sort(key=lambda item: item["score"], reverse=True)
+        routed.append({
+            "journal_short": profile.get("journal_short", ""),
+            "journal_name": profile.get("journal_name", ""),
+            "journal_tier": profile.get("journal_tier", ""),
+            "routing": routing,
+            "score": score,
+            "matched_topics": matched_topics[:5],
+            "profile_fit": profile.get("fit_to_research_profile", {}),
+            "dominant_disciplines": profile.get("disciplinary_home", [])[:3],
+        })
+
+    routed.sort(key=lambda item: item["score"], reverse=True)
+    return routed[:limit]

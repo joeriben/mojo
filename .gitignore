@@ -15,6 +15,7 @@ profile.md
 .enrichment_cache/
 .backfill_cache/
 .openalex_cache/
+journal_profiles.json
 .agent_context.json
 .agent_context.txt
 

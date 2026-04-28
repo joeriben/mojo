@@ -25,6 +25,7 @@ from journal_bot.fetchers.configurable_fetcher import CUSTOM_CONFIG_DIR
 
 
 PROJECTS_JSON = PROJECT_ROOT / "projects.json"
+JOURNAL_PROFILES_JSON = PROJECT_ROOT / "journal_profiles.json"
 AGENT_CONTEXT_JSON = PROJECT_ROOT / ".agent_context.json"
 LEGACY_AGENT_CONTEXT_TXT = PROJECT_ROOT / ".agent_context.txt"
 BACKUP_DIR = PROJECT_ROOT / "backups"
@@ -80,6 +81,7 @@ def create_backup_archive(
     - profile.json
     - projects.json
     - journals.json
+    - journal_profiles.json
     - diskursraeume.json
     - corpus.json
     - summaries.json
@@ -228,6 +230,7 @@ def _collect_entries(
         ("profile", PROFILE_JSON),
         ("projects", PROJECTS_JSON),
         ("journals", JOURNALS_JSON),
+        ("journal_profiles", JOURNAL_PROFILES_JSON),
         ("diskursraeume", DISKURSRAEUME_JSON),
         ("corpus", CORPUS_JSON),
         ("summaries", SUMMARIES_JSON),
