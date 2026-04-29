@@ -1,10 +1,10 @@
 {
-  "raw_text": "IN der Literatur werden Zusammenhänge zwischen Barad und Whitehead gezogen. Wir finden jedoch eher auch Zusammenhänge zwischen Barad und Dewey/Bently (Knowing and the Known). Nun haben Whitehead und Dewey ja dirket konträe ontologische Vorstellungen, insbesondere iN Bezug auf die Bedeutung von Sprache.",
-  "raw_chars": 303,
-  "prompt_context": "IN der Literatur werden Zusammenhänge zwischen Barad und Whitehead gezogen. Wir finden jedoch eher auch Zusammenhänge zwischen Barad und Dewey/Bently (Knowing and the Known). Nun haben Whitehead und Dewey ja dirket konträe ontologische Vorstellungen, insbesondere iN Bezug auf die Bedeutung von Sprache.\n\n## Argumenteinheiten\n- IN der Literatur werden Zusammenhänge zwischen Barad und Whitehead gezogen. Wir finden jedoch eher auch Zusammenhänge zwischen Barad und Dewey/Bently (Knowing and the Known). Nun haben Whitehead und Dewey ja dirket konträe ontologische Vorstellungen, insbesondere iN Bezug auf die Bedeutung von Sprache.",
-  "prompt_chars": 631,
+  "raw_text": "Gesucht wird eine Forschungslinie, die Dewey und Schelling diskutiert (gerne auch mit Bezug zu Barad, oder Barad-Schelling).",
+  "raw_chars": 124,
+  "prompt_context": "Gesucht wird eine Forschungslinie, die Dewey und Schelling diskutiert (gerne auch mit Bezug zu Barad, oder Barad-Schelling).\n\n## Argumenteinheiten\n- Gesucht wird eine Forschungslinie, die Dewey und Schelling diskutiert (gerne auch mit Bezug zu Barad, oder Barad-Schelling).",
+  "prompt_chars": 273,
   "argument_units": [
-    "IN der Literatur werden Zusammenhänge zwischen Barad und Whitehead gezogen. Wir finden jedoch eher auch Zusammenhänge zwischen Barad und Dewey/Bently (Knowing and the Known). Nun haben Whitehead und Dewey ja dirket konträe ontologische Vorstellungen, insbesondere iN Bezug auf die Bedeutung von Sprache."
+    "Gesucht wird eine Forschungslinie, die Dewey und Schelling diskutiert (gerne auch mit Bezug zu Barad, oder Barad-Schelling)."
   ],
   "source": "raw_short",
   "model": "",
