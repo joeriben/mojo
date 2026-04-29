@@ -15,3 +15,4 @@
 - [project_journal_topic_router.md](project_journal_topic_router.md) — OpenAlex-Journal-Top-Topics als kostenfreier Routing-Layer für Suchprozesse und A/B/C-Intuition
 - [feedback_citation_disambiguation.md](feedback_citation_disambiguation.md) — Citation-Tracker muss Vornamen-Initial prüfen, nicht nur Nachnamen
 - [feedback_kosten_kontrolle.md](feedback_kosten_kontrolle.md) — NIEMALS Batch-API-Tests ohne vorherige Einzelkosten-Verifikation
+- [decision_llm_scan_tool_architecture.md](decision_llm_scan_tool_architecture.md) — DS3.2 bleibt Default für Scan-Agent; V4 Flash/Pro nicht belegt; Tool-Calling ist möglicher Qualitätsfaktor und darf nicht blind entfernt werden

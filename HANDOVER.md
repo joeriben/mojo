@@ -6,6 +6,8 @@ Stand: 2026-04-15
 
 **Aktueller Nachtrag (2026-04-28):** Der neue Strang "OpenAlex Journal Topic Router" ist in `docs/context/project_journal_topic_router.md` dokumentiert. Er beschreibt, wie OpenAlex-Top-Topics zu journalbezogenen Profilen, einem nahezu kostenfreien Retrieval-Routing und einer datenbasierten A/B/C-Intuition ausgebaut werden koennen. UI/API-Bausteine existieren in `journal_bot/journal_topics.py`, `/api/openalex/lookup`, `/api/openalex/journal-candidates`, `/api/openalex/journal-profiles` und Setup > "Themenbasierte Journal-Kandidaten" / "Journal-Profile-Router". `journal_profiles.json` ist lokale, generierte Persistenz und wird im Backup mitgesichert.
 
+**Aktueller Nachtrag (2026-04-29):** MOJO ist vorerst als funktional ausentwickelt zu behandeln. Der produktive Scan bleibt beim wiederhergestellten, validierten Stand: `mojo digest` nutzt fuer Batch-Screening und Agent-Analyse (`assess_then_verify`) `deepseek/deepseek-v3.2`; die Tool-Architektur (`submit_digest_entry`, `read_publication`) bleibt bestehen. DeepSeek V4 Flash/Pro wurden nicht als Default uebernommen: Flash zeigte im Tool-Pfad Qualitaets-/Loop-Probleme, Pro war durch Provider-/Tool-Routing nicht belastbar. Details und spaetere A/B-Testanforderungen stehen in `docs/context/decision_llm_scan_tool_architecture.md`.
+
 ---
 
 ## 1. Projekt in Kürze
