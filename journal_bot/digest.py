@@ -79,12 +79,17 @@ def process_article(
     signal_resources = load_signal_resources()
 
     if mode == "assess_verify":
-        kwargs = {"verbose": verbose}
+        kwargs = {"verbose": verbose, "article_id": sa.id}
         if model:
             kwargs["model"] = model
         result = agent_mod.assess_then_verify(article, **kwargs)
     else:
-        kwargs = {"verbose": verbose, "allow_read": allow_read}
+        kwargs = {
+            "verbose": verbose,
+            "allow_read": allow_read,
+            "article_id": sa.id,
+            "log_endpoint": "digest_agent",
+        }
         if model:
             kwargs["model"] = model
         if max_iterations is not None:

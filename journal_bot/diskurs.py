@@ -590,14 +590,27 @@ Für jeden Vorschlag: key, name, description, Begründung mit konkretem Datenbez
 
     usage = resp.usage
     cost = 0.0
+    usage_dump: dict = {}
     if usage:
-        cost = (
-            (usage.prompt_tokens / 1_000_000) * 0.80
-            + (usage.completion_tokens / 1_000_000) * 4.00
+        usage_dump = (
+            usage.model_dump() if hasattr(usage, "model_dump") else {}
         )
+        cost = float(usage_dump.get("cost") or 0.0)
+        if cost == 0.0:
+            cost = (
+                (usage.prompt_tokens / 1_000_000) * 0.80
+                + (usage.completion_tokens / 1_000_000) * 4.00
+            )
         if verbose:
             print(f"[diskurs] Tokens: {usage.prompt_tokens} in, "
                   f"{usage.completion_tokens} out — ${cost:.3f}")
+
+    from journal_bot.llm_log import record_llm_call
+    record_llm_call(
+        endpoint="diskurs_discover", model=MODEL_SUMMARIZE,
+        usage=usage_dump, cost_usd=cost, status="ok",
+        window_years=window_years,
+    )
 
     llm_output = resp.choices[0].message.content or ""
 

@@ -14,6 +14,7 @@ import time
 from pathlib import Path
 
 from journal_bot.llm_client import build_client
+from journal_bot.llm_log import record_llm_call
 from journal_bot.settings import CORPUS_JSON, MODEL_SUMMARIZE, SUMMARIES_JSON
 
 
@@ -243,9 +244,26 @@ def run(
             continue
 
         usage = getattr(resp, "usage", None)
+        usage_dump: dict = {}
+        per_call_cost = 0.0
         if usage:
             total_in += usage.prompt_tokens or 0
             total_out += usage.completion_tokens or 0
+            usage_dump = (
+                usage.model_dump() if hasattr(usage, "model_dump") else {}
+            )
+            per_call_cost = float(usage_dump.get("cost") or 0.0)
+            if per_call_cost == 0.0:
+                # Opus 4.6: ~$15 in / $75 out per M tokens
+                per_call_cost = (
+                    (usage.prompt_tokens or 0) / 1_000_000 * 15.0
+                    + (usage.completion_tokens or 0) / 1_000_000 * 75.0
+                )
+        record_llm_call(
+            endpoint="summarize", model=model,
+            usage=usage_dump, cost_usd=per_call_cost, status="ok",
+            pub_id=pub_id,
+        )
 
         existing[pub_id] = {
             "title": pub["title"],

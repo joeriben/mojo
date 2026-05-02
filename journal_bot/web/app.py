@@ -2240,6 +2240,138 @@ def api_agent_clear():
     return jsonify({"ok": True})
 
 
+# ============================================================== Costs ===
+
+
+@app.route("/api/costs/summary")
+def api_costs_summary():
+    """JSON aggregation of LLM costs from llm_calls.
+
+    Query params:
+      since=YYYY-MM-DD (default: 30 days ago)
+      by=endpoint|model|day (default: endpoint)
+    """
+    from datetime import timedelta
+    from journal_bot.llm_log import summarize_costs, total_cost_since
+
+    since_param = (request.args.get("since") or "").strip()
+    by = (request.args.get("by") or "endpoint").strip()
+    if by not in ("endpoint", "model", "day"):
+        return jsonify({"error": "by must be endpoint|model|day"}), 400
+
+    if not since_param:
+        since_param = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+
+    try:
+        rows = summarize_costs(since=since_param, by=by)
+        total = total_cost_since(since_param)
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+    return jsonify({"since": since_param, "by": by, "total": total, "rows": rows})
+
+
+@app.route("/api/costs/recent")
+def api_costs_recent():
+    """JSON list of the most recent LLM calls."""
+    from journal_bot.llm_log import recent_calls
+
+    limit = max(1, min(int(request.args.get("limit") or 50), 500))
+    return jsonify({"calls": recent_calls(limit=limit)})
+
+
+@app.route("/api/costs/fragment")
+def api_costs_fragment():
+    """HTMX fragment: cost panel for the setup page."""
+    from datetime import timedelta
+    from journal_bot.llm_log import summarize_costs, total_cost_since, recent_calls
+
+    since_7d = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+    since_30d = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+    since_today = datetime.now().strftime("%Y-%m-%d")
+
+    by_endpoint = summarize_costs(since=since_30d, by="endpoint")
+    by_day = summarize_costs(since=since_30d, by="day")
+    by_model = summarize_costs(since=since_30d, by="model")
+    last_calls = recent_calls(limit=20)
+    total_today = total_cost_since(since_today)
+    total_7d = total_cost_since(since_7d)
+    total_30d = total_cost_since(since_30d)
+
+    esc = html_mod.escape
+    parts: list[str] = []
+    parts.append(
+        f'<div class="card" style="margin-top:.75rem;">'
+        f'<h3 style="margin-bottom:.5rem;">LLM-Kosten</h3>'
+    )
+    parts.append(
+        f'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:.75rem;">'
+        f'<div><div style="font-size:.75rem;color:var(--muted);">Heute</div>'
+        f'<div style="font-size:1.2rem;font-weight:600;">${total_today:.3f}</div></div>'
+        f'<div><div style="font-size:.75rem;color:var(--muted);">Letzte 7 Tage</div>'
+        f'<div style="font-size:1.2rem;font-weight:600;">${total_7d:.2f}</div></div>'
+        f'<div><div style="font-size:.75rem;color:var(--muted);">Letzte 30 Tage</div>'
+        f'<div style="font-size:1.2rem;font-weight:600;">${total_30d:.2f}</div></div>'
+        f'</div>'
+    )
+
+    if by_endpoint:
+        parts.append('<details open style="margin-top:.5rem;"><summary><strong>Nach Endpoint (30 Tage)</strong></summary>')
+        parts.append('<table style="width:100%;font-size:.85rem;margin-top:.4rem;border-collapse:collapse;">')
+        parts.append('<thead><tr><th style="text-align:left;">Endpoint</th><th style="text-align:right;">Calls</th><th style="text-align:right;">Total</th></tr></thead><tbody>')
+        for r in by_endpoint:
+            parts.append(
+                f'<tr><td>{esc(r["bucket"] or "?")}</td>'
+                f'<td style="text-align:right;">{r["calls"]}</td>'
+                f'<td style="text-align:right;">${r["total_cost"]:.3f}</td></tr>'
+            )
+        parts.append('</tbody></table></details>')
+
+    if by_model:
+        parts.append('<details style="margin-top:.5rem;"><summary><strong>Nach Modell (30 Tage)</strong></summary>')
+        parts.append('<table style="width:100%;font-size:.85rem;margin-top:.4rem;border-collapse:collapse;">')
+        parts.append('<thead><tr><th style="text-align:left;">Modell</th><th style="text-align:right;">Calls</th><th style="text-align:right;">Total</th></tr></thead><tbody>')
+        for r in by_model:
+            parts.append(
+                f'<tr><td>{esc(r["bucket"] or "?")}</td>'
+                f'<td style="text-align:right;">{r["calls"]}</td>'
+                f'<td style="text-align:right;">${r["total_cost"]:.3f}</td></tr>'
+            )
+        parts.append('</tbody></table></details>')
+
+    if by_day:
+        parts.append('<details style="margin-top:.5rem;"><summary><strong>Nach Tag (30 Tage)</strong></summary>')
+        parts.append('<table style="width:100%;font-size:.85rem;margin-top:.4rem;border-collapse:collapse;">')
+        parts.append('<thead><tr><th style="text-align:left;">Tag</th><th style="text-align:right;">Calls</th><th style="text-align:right;">Total</th></tr></thead><tbody>')
+        for r in sorted(by_day, key=lambda x: x["bucket"], reverse=True):
+            parts.append(
+                f'<tr><td>{esc(r["bucket"] or "?")}</td>'
+                f'<td style="text-align:right;">{r["calls"]}</td>'
+                f'<td style="text-align:right;">${r["total_cost"]:.3f}</td></tr>'
+            )
+        parts.append('</tbody></table></details>')
+
+    if last_calls:
+        parts.append('<details style="margin-top:.5rem;"><summary><strong>Letzte 20 Calls</strong></summary>')
+        parts.append('<table style="width:100%;font-size:.75rem;margin-top:.4rem;border-collapse:collapse;">')
+        parts.append('<thead><tr><th style="text-align:left;">Zeit</th><th>Endpoint</th><th>Modell</th><th style="text-align:right;">Cost</th><th>Status</th></tr></thead><tbody>')
+        for c in last_calls:
+            ts = (c["timestamp"] or "")[:19].replace("T", " ")
+            cost_str = f'${c["cost_usd"]:.4f}'
+            status = c["status"] or "?"
+            color = "var(--lesenswert)" if status == "ok" else "var(--pflichtlektuere)"
+            parts.append(
+                f'<tr><td>{esc(ts)}</td>'
+                f'<td>{esc(c["endpoint"])}</td>'
+                f'<td>{esc((c["model"] or "")[:25])}</td>'
+                f'<td style="text-align:right;">{cost_str}</td>'
+                f'<td style="color:{color};">{esc(status)}</td></tr>'
+            )
+        parts.append('</tbody></table></details>')
+
+    parts.append('</div>')
+    return "\n".join(parts)
+
+
 # ============================================================== Main ===
 
 

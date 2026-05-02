@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from journal_bot.llm_client import build_client
+from journal_bot.llm_log import record_llm_call
 from journal_bot.settings import (
     DIGEST_DIR,
     DISCOURSE_SPACES,
@@ -220,6 +221,12 @@ def run(
     usage_dump = usage.model_dump() if hasattr(usage, "model_dump") else {}
     cost = usage_dump.get("cost") or 0.0
     pd = usage_dump.get("prompt_tokens_details") or {}
+
+    record_llm_call(
+        endpoint="trends", model=MODEL_AGENT,
+        usage=usage_dump, cost_usd=cost, status="ok",
+        cluster=cluster, articles=len(articles),
+    )
 
     if verbose:
         print(f"[trends] Tokens: {usage.prompt_tokens} in / {usage.completion_tokens} out")

@@ -26,6 +26,7 @@ from pathlib import Path
 import httpx
 
 from journal_bot.llm_client import build_client
+from journal_bot.llm_log import record_llm_call
 from journal_bot.settings import (
     JOURNALS, MODEL_AGENT, MODEL_SUMMARIZE, RESEARCHER_AREAS,
     RESEARCHER_INSTITUTION, RESEARCHER_NAME, SUMMARIES_JSON,
@@ -764,13 +765,24 @@ def _run_lens(
         return result
 
     usage = resp.usage
+    usage_dump: dict = {}
     if usage:
         result.tokens_in = usage.prompt_tokens
         result.tokens_out = usage.completion_tokens
-        result.est_cost_usd = (
-            (usage.prompt_tokens / 1_000_000) * 0.80
-            + (usage.completion_tokens / 1_000_000) * 4.00
+        usage_dump = (
+            usage.model_dump() if hasattr(usage, "model_dump") else {}
         )
+        result.est_cost_usd = float(usage_dump.get("cost") or 0.0)
+        if result.est_cost_usd == 0.0:
+            result.est_cost_usd = (
+                (usage.prompt_tokens / 1_000_000) * 0.80
+                + (usage.completion_tokens / 1_000_000) * 4.00
+            )
+    record_llm_call(
+        endpoint="scout_lens", model=MODEL_SUMMARIZE,
+        usage=usage_dump, cost_usd=result.est_cost_usd, status="ok",
+        lens=lens_name,
+    )
 
     msg = resp.choices[0].message
     if msg.tool_calls:
@@ -978,14 +990,25 @@ Rufe das Tool `synthesis` auf — einmal pro Zeitschrift, in der Reihenfolge der
 
     usage = resp.usage
     opus_cost = 0.0
+    usage_dump_opus: dict = {}
     if usage:
-        opus_cost = (
-            (usage.prompt_tokens / 1_000_000) * 10.00
-            + (usage.completion_tokens / 1_000_000) * 50.00
+        usage_dump_opus = (
+            usage.model_dump() if hasattr(usage, "model_dump") else {}
         )
+        opus_cost = float(usage_dump_opus.get("cost") or 0.0)
+        if opus_cost == 0.0:
+            opus_cost = (
+                (usage.prompt_tokens / 1_000_000) * 10.00
+                + (usage.completion_tokens / 1_000_000) * 50.00
+            )
         if verbose:
             print(f"[scout] Opus: {usage.prompt_tokens} in, "
                   f"{usage.completion_tokens} out — ${opus_cost:.3f}")
+    record_llm_call(
+        endpoint="scout_synthesis", model=MODEL_AGENT,
+        usage=usage_dump_opus, cost_usd=opus_cost, status="ok",
+        journals=len(verdicts),
+    )
 
     # Distribute Opus cost evenly across verdicts
     evaluable = [v for v in verdicts if v.lens_results]

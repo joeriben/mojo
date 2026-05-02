@@ -10,6 +10,7 @@
   <button class="tab" onclick="switchTab('matrix', this)">Journals & Diskursräume</button>
   <button class="tab" onclick="switchTab('projekte', this)">Projekte</button>
   <button class="tab" onclick="switchTab('monitoring', this)">Monitoring</button>
+  <button class="tab" onclick="switchTab('kosten', this)">Kosten</button>
   <button class="tab" onclick="switchTab('system', this)">System</button>
 </div>
 
@@ -636,6 +637,18 @@
        hx-swap="innerHTML">
     <div class="card">
       <span style="font-size:.85rem; color:var(--muted);">Monitoring wird geladen…</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ TAB: Kosten ═══════════════════════ -->
+<div id="tab-kosten" class="tab-content">
+  <div id="costs-panel"
+       hx-get="/api/costs/fragment"
+       hx-trigger="load, costs-changed from:body"
+       hx-swap="innerHTML">
+    <div class="card">
+      <span style="font-size:.85rem; color:var(--muted);">Kosten werden geladen…</span>
     </div>
   </div>
 </div>

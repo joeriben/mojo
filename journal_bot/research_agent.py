@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from journal_bot.llm_client import build_client
+from journal_bot.llm_log import record_llm_call
 from journal_bot.settings import (
     CORPUS_JSON,
     MODEL_AGENT,
@@ -25,6 +26,13 @@ from journal_bot.settings import (
     SUMMARIES_JSON,
 )
 from journal_bot.store import ARTICLES_DB, Store
+
+# Hard cost caps for the research agent — same philosophy as agent.batch_screen:
+# circuit breakers that fire regardless of cache reporting, to prevent the
+# kind of $43-incident we had in April from re-occurring through this path.
+_MAX_RESEARCH_CHAT_COST_USD = 1.00       # full main chat() call
+_MAX_RESEARCH_FOCUSED_COST_USD = 0.50    # focused_db_chat() call
+_MAX_RESEARCH_PREPARE_COST_USD = 0.10    # prepare_context() call
 
 CONTEXT_SUMMARY_MODEL = "deepseek/deepseek-v3.2"
 SHORT_CONTEXT_CHARS = 4000
@@ -1325,6 +1333,25 @@ def prepare_context(
                 usage = getattr(response, "usage", None)
                 prompt_tokens = usage.prompt_tokens if usage else 0
                 completion_tokens = usage.completion_tokens if usage else 0
+                cost_val = _usage_cost(
+                    usage, model, prompt_tokens, completion_tokens,
+                ) if usage else 0.0
+                usage_dump = (
+                    usage.model_dump() if usage and hasattr(usage, "model_dump") else {}
+                )
+                record_llm_call(
+                    endpoint="research_prepare_context", model=model,
+                    usage=usage_dump, cost_usd=cost_val, status="ok",
+                )
+                if cost_val > _MAX_RESEARCH_PREPARE_COST_USD:
+                    # Logged, but don't abort — prepare_context already returns;
+                    # this surfaces the spike in llm_calls for later inspection.
+                    record_llm_call(
+                        endpoint="research_prepare_context", model=model,
+                        usage={}, cost_usd=0.0, status="exceeded_soft_cap",
+                        cap_usd=_MAX_RESEARCH_PREPARE_COST_USD,
+                        actual_usd=cost_val,
+                    )
                 prompt_context = _trim_text(content, CONTEXT_SUMMARY_OUTPUT_CHARS)
                 prompt_context, argument_units = _ensure_argument_units(prompt_context)
                 return {
@@ -1336,15 +1363,14 @@ def prepare_context(
                     "source": "llm_summary",
                     "model": model,
                     "tokens_used": prompt_tokens + completion_tokens,
-                    "cost_usd": _usage_cost(
-                        usage,
-                        model,
-                        prompt_tokens,
-                        completion_tokens,
-                    ) if usage else 0.0,
+                    "cost_usd": cost_val,
                 }
-        except Exception:
-            pass
+        except Exception as exc:
+            record_llm_call(
+                endpoint="research_prepare_context", model=model,
+                usage={}, cost_usd=0.0, status="error",
+                error=str(exc)[:200],
+            )
 
     prompt_context = _fallback_context_digest(raw_text)
     prompt_context, argument_units = _ensure_argument_units(prompt_context)
@@ -1596,7 +1622,8 @@ def focused_db_chat(
     tool_call_count = 0
     system_message = {"role": "system", "content": system_prompt}
 
-    for _ in range(max_tool_rounds):
+    aborted_reason = ""
+    for round_num in range(1, max_tool_rounds + 1):
         response = client.chat.completions.create(
             model=model,
             messages=[system_message] + messages,
@@ -1607,12 +1634,38 @@ def focused_db_chat(
 
         choice = response.choices[0]
         usage = getattr(response, "usage", None)
+        iter_cost = 0.0
+        usage_dump: dict[str, Any] = {}
         if usage:
             prompt_tokens = usage.prompt_tokens or 0
             completion_tokens = usage.completion_tokens or 0
             total_input += prompt_tokens
             total_output += completion_tokens
-            total_cost += _usage_cost(usage, model, prompt_tokens, completion_tokens)
+            iter_cost = _usage_cost(usage, model, prompt_tokens, completion_tokens)
+            total_cost += iter_cost
+            usage_dump = (
+                usage.model_dump() if hasattr(usage, "model_dump") else {}
+            )
+        record_llm_call(
+            endpoint="research_focused_db", model=model,
+            usage=usage_dump, cost_usd=iter_cost, status="ok",
+            round=round_num, total_cost_so_far=total_cost,
+        )
+
+        # Hard cap — stop before the next round if budget exceeded.
+        if total_cost > _MAX_RESEARCH_FOCUSED_COST_USD:
+            aborted_reason = (
+                f"focused_db Cost-Cap ${_MAX_RESEARCH_FOCUSED_COST_USD:.2f} "
+                f"überschritten (${total_cost:.3f})"
+            )
+            record_llm_call(
+                endpoint="research_focused_db", model=model,
+                usage={}, cost_usd=0.0, status="aborted_total_cap",
+                cap_usd=_MAX_RESEARCH_FOCUSED_COST_USD,
+                actual_usd=total_cost,
+            )
+            content = choice.message.content or ""
+            break
 
         tool_calls = getattr(choice.message, "tool_calls", None) or []
         if not tool_calls:
@@ -1655,7 +1708,7 @@ def focused_db_chat(
         if tool_call_count >= max_tool_calls or total_cost >= 0.45:
             break
 
-    if not content and tool_call_count:
+    if not content and tool_call_count and not aborted_reason:
         messages.append({
             "role": "user",
             "content": (
@@ -1671,12 +1724,23 @@ def focused_db_chat(
             extra_body={"transforms": ["middle-out"]},
         )
         usage = getattr(response, "usage", None)
+        final_cost = 0.0
+        usage_dump_f: dict[str, Any] = {}
         if usage:
             prompt_tokens = usage.prompt_tokens or 0
             completion_tokens = usage.completion_tokens or 0
             total_input += prompt_tokens
             total_output += completion_tokens
-            total_cost += _usage_cost(usage, model, prompt_tokens, completion_tokens)
+            final_cost = _usage_cost(usage, model, prompt_tokens, completion_tokens)
+            total_cost += final_cost
+            usage_dump_f = (
+                usage.model_dump() if hasattr(usage, "model_dump") else {}
+            )
+        record_llm_call(
+            endpoint="research_focused_db_final", model=model,
+            usage=usage_dump_f, cost_usd=final_cost, status="ok",
+            total_cost_so_far=total_cost,
+        )
         content = response.choices[0].message.content or ""
     else:
         if not content:
@@ -1685,12 +1749,20 @@ def focused_db_chat(
                 "Bitte die Frage enger formulieren oder eine lokale Trefferliste anfordern."
             )
 
+    if aborted_reason and not content:
+        content = (
+            f"_Recherche-Lauf vorzeitig abgebrochen ({aborted_reason}). "
+            f"Bisherige Treffer wurden nicht zu einer finalen Antwort verdichtet._"
+        )
+
     return {
         "content": content,
         "tokens_used": total_input + total_output,
         "tokens_in": total_input,
         "tokens_out": total_output,
         "cost_usd": total_cost,
+        "aborted": bool(aborted_reason),
+        "abort_reason": aborted_reason,
     }
 
 
@@ -1742,6 +1814,8 @@ def chat(
     total_output = 0
     total_cost = 0.0
     max_iterations = 5
+    aborted_reason = ""
+    content = ""
     system_message = {
         "role": "system",
         "content": [
@@ -1753,7 +1827,7 @@ def chat(
         ],
     }
 
-    for _ in range(max_iterations):
+    for iter_num in range(1, max_iterations + 1):
         response = client.chat.completions.create(
             model=model,
             messages=[system_message] + messages,
@@ -1764,17 +1838,40 @@ def chat(
 
         choice = response.choices[0]
         usage = getattr(response, "usage", None)
+        iter_cost = 0.0
+        usage_dump: dict[str, Any] = {}
         if usage:
             prompt_tokens = usage.prompt_tokens or 0
             completion_tokens = usage.completion_tokens or 0
             total_input += prompt_tokens
             total_output += completion_tokens
-            total_cost += _usage_cost(
-                usage,
-                model,
-                prompt_tokens,
-                completion_tokens,
+            iter_cost = _usage_cost(
+                usage, model, prompt_tokens, completion_tokens,
             )
+            total_cost += iter_cost
+            usage_dump = (
+                usage.model_dump() if hasattr(usage, "model_dump") else {}
+            )
+        record_llm_call(
+            endpoint="research_chat", model=model,
+            usage=usage_dump, cost_usd=iter_cost, status="ok",
+            iteration=iter_num, total_cost_so_far=total_cost,
+        )
+
+        # Hard cost cap — circuit breaker against runaway tool loops.
+        if total_cost > _MAX_RESEARCH_CHAT_COST_USD:
+            aborted_reason = (
+                f"chat Cost-Cap ${_MAX_RESEARCH_CHAT_COST_USD:.2f} "
+                f"überschritten (${total_cost:.3f})"
+            )
+            record_llm_call(
+                endpoint="research_chat", model=model,
+                usage={}, cost_usd=0.0, status="aborted_total_cap",
+                cap_usd=_MAX_RESEARCH_CHAT_COST_USD,
+                actual_usd=total_cost,
+            )
+            content = choice.message.content or ""
+            break
 
         # If no tool calls, we're done
         tool_calls = getattr(choice.message, "tool_calls", None) or []
@@ -1818,10 +1915,19 @@ def chat(
         if hasattr(messages[-1], "content"):
             content = messages[-1].content or content
 
+    if aborted_reason and not content:
+        content = (
+            f"_Recherche-Chat vorzeitig abgebrochen ({aborted_reason})._ "
+            "Bitte die Frage konkreter formulieren oder den Cost-Cap in "
+            "research_agent.py erhöhen."
+        )
+
     return {
         "content": content,
         "tokens_used": total_input + total_output,
         "tokens_in": total_input,
         "tokens_out": total_output,
         "cost_usd": total_cost,
+        "aborted": bool(aborted_reason),
+        "abort_reason": aborted_reason,
     }

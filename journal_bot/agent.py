@@ -25,6 +25,14 @@ class CacheNotHitError(RuntimeError):
 _MIN_CACHE_READ_RATIO = 0.5
 _CACHE_CRITICAL_BATCH_COST_USD = 0.05
 
+# Hard cost caps for batch_screen — apply regardless of cache reporting.
+# These are last-resort circuit breakers: they trigger BEFORE the cache-ratio
+# heuristic can fail silently for providers that don't report cached_tokens
+# reliably (notably DeepSeek via OpenRouter).
+_MAX_SINGLE_BATCH_COST_USD = 0.30   # one batch of 25 articles
+_MAX_TOTAL_BATCH_COST_CHEAP_USD = 0.50    # DeepSeek/Haiku — total per batch_screen call
+_MAX_TOTAL_BATCH_COST_EXPENSIVE_USD = 5.00  # Opus/Sonnet — total per batch_screen call
+
 
 def _rough_token_count(text: str) -> int:
     """Cheap local estimate used only for cache-threshold guards."""
@@ -48,6 +56,18 @@ def _model_input_cost_per_million(model: str) -> float | None:
     if "claude-haiku" in m:
         return 1.0
     return None
+
+
+def _max_total_batch_screen_cost_usd(model: str) -> float:
+    """Hard total budget per batch_screen() invocation, by model class.
+
+    Returns the cheap-tier limit by default so unknown models inherit the
+    stricter cap. Override only by changing the constants above.
+    """
+    price = _model_input_cost_per_million(model)
+    if price is not None and price >= 2.0:
+        return _MAX_TOTAL_BATCH_COST_EXPENSIVE_USD
+    return _MAX_TOTAL_BATCH_COST_CHEAP_USD
 
 
 def _anthropic_cache_min_tokens(model: str) -> int | None:
@@ -93,6 +113,7 @@ def _estimate_uncached_batch_cost(
 from journal_bot.citation_tracker import find_citations, format_for_agent
 from journal_bot.enrichment import enrich
 from journal_bot.llm_client import build_client
+from journal_bot.llm_log import record_llm_call
 from journal_bot.settings import (
     CORPUS_JSON, MODEL_AGENT, MODEL_SUMMARIZE, PROJECT_ROOT, SINCE_YEAR,
     SUMMARIES_JSON, RESEARCHER_AREAS, RESEARCHER_INSTITUTION,
@@ -471,11 +492,21 @@ def triage_article(
     )
     raw = resp.choices[0].message.content.strip()
     cost = 0.0
+    usage_dump: dict[str, Any] = {}
     if resp.usage:
-        # Haiku pricing: ~$0.80/M input, $4/M output via OpenRouter
-        cost = (resp.usage.prompt_tokens / 1_000_000) * 0.80 + (
-            resp.usage.completion_tokens / 1_000_000
-        ) * 4.0
+        usage_dump = (
+            resp.usage.model_dump() if hasattr(resp.usage, "model_dump") else {}
+        )
+        # Prefer reported cost; fall back to Haiku-style estimate.
+        cost = float(usage_dump.get("cost") or 0.0)
+        if cost == 0.0:
+            cost = (resp.usage.prompt_tokens / 1_000_000) * 0.80 + (
+                resp.usage.completion_tokens / 1_000_000
+            ) * 4.0
+    record_llm_call(
+        endpoint="triage", model=model, usage=usage_dump,
+        cost_usd=cost, status="ok",
+    )
 
     # Parse JSON from response
     result = None
@@ -641,6 +672,7 @@ def batch_screen(
     client = build_client()
     all_results: dict[str, dict] = {}
     total_cost = 0.0
+    total_budget = _max_total_batch_screen_cost_usd(model)
 
     for i in range(0, len(articles), batch_size):
         batch = articles[i:i + batch_size]
@@ -670,43 +702,79 @@ def batch_screen(
         raw = resp.choices[0].message.content or ""
         usage = getattr(resp, "usage", None)
         cost = 0.0
+        usage_dump: dict[str, Any] = {}
         if usage:
             usage_dump = usage.model_dump() if hasattr(usage, "model_dump") else {}
             cost = usage_dump.get("cost") or 0.0
-
-            # Cache safety: after batch 2+, verify cache is hitting for
-            # models where a miss would materially affect costs. DeepSeek's
-            # implicit cache is useful but cheap enough that a zero cached_tokens
-            # report must not abort the scan.
-            if batch_num >= 2:
-                pd = usage_dump.get("prompt_tokens_details") or {}
-                cached = pd.get("cached_tokens") or 0
-                total_prompt = usage.prompt_tokens or 1
-                ratio = cached / total_prompt
-                expected_uncached = _estimate_uncached_batch_cost(
-                    model=model,
-                    prompt_tokens=total_prompt,
-                    reported_cost=cost,
-                )
-                cache_required = min_cache_tokens is not None
-                costly_without_cache = expected_uncached >= _CACHE_CRITICAL_BATCH_COST_USD
-                if ratio < _MIN_CACHE_READ_RATIO and (cache_required or costly_without_cache):
-                    min_note = (
-                        f" Cache-Block: ~{cacheable_tokens} Tokens "
-                        f"(Minimum {min_cache_tokens})."
-                        if min_cache_tokens is not None else ""
-                    )
-                    msg = (
-                        f"[screen] CACHE-WARNUNG: Batch {batch_num} hat nur "
-                        f"{ratio:.0%} Cache-Hits ({cached}/{total_prompt} Tokens). "
-                        f"Modell: {model}.{min_note} "
-                        f"Erwartete Kosten pro Batch ohne Cache: "
-                        f"~${expected_uncached:.2f}. "
-                        f"ABBRUCH — bitte Cache-Konfiguration prüfen."
-                    )
-                    print(msg, file=sys.stderr)
-                    raise CacheNotHitError(msg)
         total_cost += cost
+
+        # Hard cost caps — fire BEFORE the cache-ratio heuristic so we cannot
+        # be tricked by providers that report cached_tokens unreliably (e.g.
+        # DeepSeek via OpenRouter). These are circuit breakers, not warnings.
+        if cost > _MAX_SINGLE_BATCH_COST_USD:
+            msg = (
+                f"[screen] HARD-CAP: Batch {batch_num} kostet ${cost:.3f} "
+                f"(Einzelbatch-Limit ${_MAX_SINGLE_BATCH_COST_USD:.2f}). "
+                f"Modell: {model}. Sehr wahrscheinlich Cache-Miss oder "
+                f"teures Provider-Routing. ABBRUCH."
+            )
+            print(msg, file=sys.stderr)
+            record_llm_call(
+                endpoint="batch_screen", model=model, usage=usage_dump,
+                cost_usd=cost, status="aborted_single_cap",
+            )
+            raise CacheNotHitError(msg)
+        if total_cost > total_budget:
+            msg = (
+                f"[screen] HARD-CAP: Gesamtbudget ${total_budget:.2f} "
+                f"überschritten (${total_cost:.3f} nach {batch_num} Batches). "
+                f"Modell: {model}. ABBRUCH."
+            )
+            print(msg, file=sys.stderr)
+            record_llm_call(
+                endpoint="batch_screen", model=model, usage=usage_dump,
+                cost_usd=cost, status="aborted_total_cap",
+            )
+            raise CacheNotHitError(msg)
+
+        # Track this call (must come after cap-check so aborted calls are
+        # logged with the correct status above).
+        record_llm_call(
+            endpoint="batch_screen", model=model, usage=usage_dump,
+            cost_usd=cost, status="ok", batch_num=batch_num,
+        )
+
+        if usage and batch_num >= 2:
+            # Cache-ratio diagnostic (informational + abort for Anthropic).
+            # Kept in addition to the hard caps because it gives a clearer
+            # error message when cached_tokens is reported reliably.
+            pd = usage_dump.get("prompt_tokens_details") or {}
+            cached = pd.get("cached_tokens") or 0
+            total_prompt = usage.prompt_tokens or 1
+            ratio = cached / total_prompt
+            expected_uncached = _estimate_uncached_batch_cost(
+                model=model,
+                prompt_tokens=total_prompt,
+                reported_cost=cost,
+            )
+            cache_required = min_cache_tokens is not None
+            costly_without_cache = expected_uncached >= _CACHE_CRITICAL_BATCH_COST_USD
+            if ratio < _MIN_CACHE_READ_RATIO and (cache_required or costly_without_cache):
+                min_note = (
+                    f" Cache-Block: ~{cacheable_tokens} Tokens "
+                    f"(Minimum {min_cache_tokens})."
+                    if min_cache_tokens is not None else ""
+                )
+                msg = (
+                    f"[screen] CACHE-WARNUNG: Batch {batch_num} hat nur "
+                    f"{ratio:.0%} Cache-Hits ({cached}/{total_prompt} Tokens). "
+                    f"Modell: {model}.{min_note} "
+                    f"Erwartete Kosten pro Batch ohne Cache: "
+                    f"~${expected_uncached:.2f}. "
+                    f"ABBRUCH — bitte Cache-Konfiguration prüfen."
+                )
+                print(msg, file=sys.stderr)
+                raise CacheNotHitError(msg)
 
         # Parse response
         valid_ids = {a["id"]: a["id"][:8] for a in batch}
@@ -879,6 +947,8 @@ def run_agent(
     allow_read: bool = True,
     system_outro: str | None = None,
     extra_user_content: str = "",
+    log_endpoint: str = "run_agent",
+    article_id: str | None = None,
 ) -> dict:
     """new_article: dict mit title, authors, abstract, doi, url, journal.
 
@@ -886,6 +956,8 @@ def run_agent(
     summaries only, no fulltext verification).
     system_outro: replaces the default SYSTEM_OUTRO in the system prompt.
     extra_user_content: appended to the user message (e.g. verification context).
+    log_endpoint: endpoint label written to llm_calls (e.g. "assess", "verify").
+    article_id: optional articles.id for cost-attribution per article.
     """
     corpus_index = _load_corpus_index(corpus_path)
     authored_all = _load_authored_all(corpus_path)
@@ -963,6 +1035,8 @@ def run_agent(
             tools=TOOLS if allow_read else TOOLS_SUBMIT_ONLY,
         )
         usage = getattr(resp, "usage", None)
+        iter_cost = 0.0
+        usage_dump: dict[str, Any] = {}
         if usage:
             total_in += usage.prompt_tokens or 0
             total_out += usage.completion_tokens or 0
@@ -972,7 +1046,8 @@ def run_agent(
             cached = pd.get("cached_tokens") or 0
             total_cached_read += cached
             total_cache_write += pd.get("cache_write_tokens") or 0
-            total_cost_usd += usage_dump.get("cost") or 0.0
+            iter_cost = float(usage_dump.get("cost") or 0.0)
+            total_cost_usd += iter_cost
             if verbose and (cached or pd.get("cache_write_tokens")):
                 print(
                     f"[agent] cache: read={cached}, "
@@ -981,6 +1056,19 @@ def run_agent(
             # Mark cache as verified once we see a successful read
             if cached > 0:
                 _cache_verified = True
+
+        # Per-iteration logging — needed to detect cost spikes inside long
+        # agent loops (e.g. tool-call ping-pong or runaway iterations).
+        record_llm_call(
+            endpoint=log_endpoint,
+            model=model,
+            usage=usage_dump,
+            cost_usd=iter_cost,
+            status="ok",
+            article_id=article_id,
+            iteration=it,
+            allow_read=allow_read,
+        )
 
         msg = resp.choices[0].message
         finish = resp.choices[0].finish_reason
@@ -1168,6 +1256,7 @@ def assess_then_verify(
     summaries_path: Path = SUMMARIES_JSON,
     model: str = MODEL_AGENT,
     verbose: bool = True,
+    article_id: str | None = None,
 ) -> dict:
     """Two-phase pipeline: assessment from summaries, then targeted verification.
 
@@ -1192,6 +1281,8 @@ def assess_then_verify(
         verbose=verbose,
         allow_read=False,
         system_outro=ASSESSMENT_OUTRO,
+        log_endpoint="assess",
+        article_id=article_id,
     )
 
     entry = assessment.get("entry") or {}
@@ -1223,6 +1314,8 @@ def assess_then_verify(
         verbose=verbose,
         allow_read=True,
         extra_user_content=_format_verification_context(entry, candidates),
+        log_endpoint="verify",
+        article_id=article_id,
     )
 
     # Combine costs from both phases
