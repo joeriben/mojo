@@ -157,8 +157,10 @@ def cmd_import_raw(args: argparse.Namespace) -> int:
 
 
 def cmd_digest(args: argparse.Namespace) -> int:
+    from journal_bot.settings import MODEL_AGENT
     store = Store()
-    model = getattr(args, "model", None) or "deepseek/deepseek-v3.2"
+    model = getattr(args, "model", None) or MODEL_AGENT
+    cost_limit = getattr(args, "cost_limit", None)
 
     if args.doi:
         result = digest.process_by_doi(
@@ -187,6 +189,7 @@ def cmd_digest(args: argparse.Namespace) -> int:
         model=model,
         no_screen=args.no_screen,
         verbose=not args.quiet,
+        cost_limit_usd=cost_limit,
     )
     return 1 if batch_result.aborted else 0
 
@@ -506,6 +509,9 @@ def main(argv: list[str] | None = None) -> int:
     p_digest.add_argument("--model", default=None,
                           help="Agent-Modell via OpenRouter-ID (z.B. deepseek/deepseek-v3.2, "
                                "anthropic/claude-opus-4.6)")
+    p_digest.add_argument("--cost-limit", type=float, default=None,
+                          help="Hartes USD-Gesamtbudget für den Batch-Lauf "
+                               "(zusätzlich zu den Per-Call-Caps in agent.py).")
     p_digest.add_argument("--quiet", action="store_true")
     p_digest.set_defaults(func=cmd_digest)
 

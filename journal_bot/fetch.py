@@ -56,7 +56,7 @@ def _article_to_stored(art: Article, enrichment: dict) -> StoredArticle:
         year = oa["publication_year"]
 
     return StoredArticle(
-        id=make_article_id(art.doi, art.url, art.title),
+        id=make_article_id(art.doi, art.url, art.title, journal_short=art.journal),
         journal_short=art.journal,
         journal_full=art.journal_full,
         title=art.title,
@@ -142,7 +142,7 @@ def run(
 
         for art in articles:
             stats.total_fetched += 1
-            aid = make_article_id(art.doi, art.url, art.title)
+            aid = make_article_id(art.doi, art.url, art.title, journal_short=art.journal)
 
             # Skip wenn schon enriched im Store (aber nicht-enriched updaten)
             existing = store.get(aid)

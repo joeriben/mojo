@@ -121,9 +121,33 @@ MIGRATIONS = [
 ]
 
 
-def make_article_id(doi: str | None, url: str | None, title: str) -> str:
-    key = (doi or url or title or "").strip().lower()
-    return hashlib.sha256(key.encode("utf-8")).hexdigest()[:32]
+def make_article_id(
+    doi: str | None,
+    url: str | None,
+    title: str,
+    journal_short: str = "",
+) -> str:
+    """Stable id derived from (in priority): DOI, URL, then journal+title.
+
+    DOI and URL are globally unique. Title alone is NOT — two journals can
+    publish papers with the same title, and HTML feeds without DOI/URL would
+    silently collapse them into one row. Falling back to journal_short+title
+    keeps title-only IDs at least journal-disjoint, which is the right
+    granularity for MOJO (one journal-issue = one entry).
+
+    Older callers that don't pass journal_short keep their previous id, so
+    this is backward compatible for the existing DB.
+    """
+    doi_key = (doi or "").strip().lower()
+    if doi_key:
+        return hashlib.sha256(doi_key.encode("utf-8")).hexdigest()[:32]
+    url_key = (url or "").strip().lower()
+    if url_key:
+        return hashlib.sha256(url_key.encode("utf-8")).hexdigest()[:32]
+    title_key = (title or "").strip().lower()
+    if journal_short:
+        title_key = f"{journal_short.strip().lower()}::{title_key}"
+    return hashlib.sha256(title_key.encode("utf-8")).hexdigest()[:32]
 
 
 @dataclass

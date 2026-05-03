@@ -63,33 +63,38 @@ def _build_wrong_name_re(last: str) -> re.Pattern:
 
 
 def _text_is_researcher_citation(ref: dict, right_patterns: list[re.Pattern],
-                                  wrong_re: re.Pattern, last_name_re: re.Pattern) -> bool:
+                                  wrong_re: re.Pattern, last_name_re: re.Pattern) -> str:
     """Check if reference cites the researcher, not a namesake.
 
+    Returns one of: "strong" | "weak" | "reject".
+
     Logic:
-    1. Last name must appear in the text
-    2. If any of the 4 canonical name forms match → accept
-    3. If last name appears with a different initial → reject
-    4. Last name alone (no initial) → accept (ambiguous, benefit of doubt)
+    1. Last name must appear in the text                       → else "reject"
+    2. If any of the 4 canonical name forms match              → "strong"
+    3. If last name appears with a different initial / first   → "reject"
+    4. Last name alone (no initial / no first name nearby)     → "weak"
+       (caller must downgrade confidence — last name alone is unsafe for
+       common names like "Smith" or "Müller", which becomes a real risk
+       once MOJO ships beyond the original user.)
     """
     blob = " ".join([
         ref.get("raw", "") or "",
         " ".join(ref.get("authors", []) or []),
     ])
     if not last_name_re.search(blob):
-        return False
+        return "reject"
 
     # Check if any canonical form matches → definite yes
     for pat in right_patterns:
         if pat.search(blob):
-            return True
+            return "strong"
 
     # Check if a wrong-initial form exists → definite no
     if wrong_re.search(blob):
-        return False
+        return "reject"
 
-    # Last name alone, no initial → accept
-    return True
+    # Last name alone, no initial → ambiguous, downgrade to weak
+    return "weak"
 
 
 # Stopwörter für die Titel-Disambiguierung (DE + EN)
@@ -198,7 +203,10 @@ def find_citations(
             continue
 
         # --- 2. Researcher name mention + year ---
-        if not _text_is_researcher_citation(ref, right_patterns, wrong_re, last_name_re):
+        name_match = _text_is_researcher_citation(
+            ref, right_patterns, wrong_re, last_name_re,
+        )
+        if name_match == "reject":
             continue
 
         year = _year_from_ref(ref)
@@ -218,6 +226,16 @@ def find_citations(
 
         candidates = by_year[year]
 
+        # If only the last name was found (no initial / first name nearby),
+        # cap confidence at "low" regardless of year/title evidence — this
+        # is the namesake-protection layer.
+        weak_match = name_match == "weak"
+
+        def _cap(level: str) -> str:
+            if not weak_match:
+                return level
+            return "low" if level in ("high", "medium") else level
+
         # --- 2a. Title disambiguation: distinctive words from candidate titles
         #         matched against the raw text ---
         scored: list[tuple[int, dict]] = []
@@ -236,22 +254,22 @@ def find_citations(
             winners = [p for s, p in scored if s == top_score]
             if len(winners) == 1:
                 add(_mk_hit(winners[0], match_type="author_year_title",
-                            confidence="high", ref=ref))
+                            confidence=_cap("high"), ref=ref))
             else:
                 for pub in winners:
                     add(_mk_hit(pub, match_type="author_year_title",
-                                confidence="medium", ref=ref))
+                                confidence=_cap("medium"), ref=ref))
             continue
 
         # --- 2b. No title overlap: researcher name + year only ---
         if len(candidates) == 1:
             add(_mk_hit(candidates[0], match_type="author_year",
-                        confidence="high", ref=ref))
+                        confidence=_cap("high"), ref=ref))
         else:
             # ambiguous — all candidates with medium confidence (agent decides)
             for pub in candidates:
                 add(_mk_hit(pub, match_type="author_year",
-                            confidence="medium", ref=ref))
+                            confidence=_cap("medium"), ref=ref))
 
     return list(hits_by_key.values())
 

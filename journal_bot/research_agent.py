@@ -1058,6 +1058,26 @@ FOCUSED_DB_TOOL_DEFINITIONS = [
 ]
 
 
+# Cap how much text a single tool-call may return to the LLM. Without this,
+# 5 iterations × multiple tool calls can accumulate 100KB+ of repeated context
+# in the message history, defeating the cache and inflating token cost.
+# 4000 chars ≈ 1000 tokens — generous enough for a search-result list or an
+# article excerpt, tight enough to keep dialogues bounded.
+_MAX_TOOL_RESULT_CHARS = 4000
+
+
+def _truncate_tool_result(text: str, label: str = "tool result") -> str:
+    if not isinstance(text, str):
+        text = str(text)
+    if len(text) <= _MAX_TOOL_RESULT_CHARS:
+        return text
+    return (
+        text[:_MAX_TOOL_RESULT_CHARS]
+        + f"\n\n…[{label} gekürzt nach {_MAX_TOOL_RESULT_CHARS} Zeichen, "
+        + f"original: {len(text)}]"
+    )
+
+
 def _execute_tool(name: str, args: dict, user_context: str | None = None) -> str:
     """Execute a tool call and return result as string."""
     if name == "search_mojo_db":
@@ -1620,8 +1640,20 @@ def focused_db_chat(
     max_tool_rounds = 3
     max_tool_calls = 8
     tool_call_count = 0
-    system_message = {"role": "system", "content": system_prompt}
 
+    # Cache-fähig: Anthropic-Cache greift nur wenn der System-Block stabil bleibt
+    # zwischen den Iterationen. focused_db_chat hatte das vorher nicht — jeder
+    # Tool-Round hat den 600+ token system_prompt neu bezahlt.
+    system_message = {
+        "role": "system",
+        "content": [
+            {
+                "type": "text",
+                "text": system_prompt,
+                "cache_control": {"type": "ephemeral"},
+            }
+        ],
+    }
     aborted_reason = ""
     for round_num in range(1, max_tool_rounds + 1):
         response = client.chat.completions.create(
@@ -1702,7 +1734,7 @@ def focused_db_chat(
             messages.append({
                 "role": "tool",
                 "tool_call_id": tc.id,
-                "content": result,
+                "content": _truncate_tool_result(result, label=tc.function.name),
             })
 
         if tool_call_count >= max_tool_calls or total_cost >= 0.45:
@@ -1908,7 +1940,7 @@ def chat(
             messages.append({
                 "role": "tool",
                 "tool_call_id": tc.id,
-                "content": result,
+                "content": _truncate_tool_result(result, label=tc.function.name),
             })
     else:
         content = messages[-1].get("content", "") if messages else "Max iterations erreicht."

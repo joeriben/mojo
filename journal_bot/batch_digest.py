@@ -398,8 +398,13 @@ def run_batch_digest(
             _log(logger, verbose, f"[digest] FEHLER bei {sa.id}: {exc}")
             continue
 
-        if index == cost_check_after and result.total_cost_usd > 0:
-            avg_cost = result.total_cost_usd / index
+        # Use processed_articles (not loop index) — exceptions skip the
+        # increment, so an early failure must not bypass the cost check.
+        if (
+            result.processed_articles == cost_check_after
+            and result.total_cost_usd > 0
+        ):
+            avg_cost = result.total_cost_usd / result.processed_articles
             projected = avg_cost * len(to_analyze)
             if avg_cost > max_cost_per_article:
                 result.aborted = True
@@ -410,7 +415,7 @@ def run_batch_digest(
                 _log(logger, verbose, f"\n[digest] ⚠ KOSTEN-WARNUNG: ${avg_cost:.3f}/Artikel "
                                        f"(erwartet <${max_cost_per_article:.2f})")
                 _log(logger, verbose, f"[digest] Hochrechnung: ${projected:.2f} für {len(to_analyze)} Artikel")
-                _log(logger, verbose, f"[digest] ABBRUCH nach {index} Artikeln. "
+                _log(logger, verbose, f"[digest] ABBRUCH nach {result.processed_articles} Artikeln. "
                                        f"Bisherige Kosten: ${result.total_cost_usd:.3f}")
                 return result
             _log(
