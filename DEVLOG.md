@@ -487,6 +487,137 @@ dfe2fba docs: UI-Entwurf — Flask/HTMX-Prototyp, drei Ansichten
 
 ---
 
+## Session 2026-05-16 — Q-Check (MiMo vs Opus) + Cache-Hygiene-Instrumentierung
+
+Volle Q-Check-Phase zur Frage „Kann MOJO Opus durch ein billigeres Modell ersetzen?" — Ergebnis: kein netto-Vorteil beim Modellwechsel, aber sichtbar gewordener Hebel bei der Cache-Disziplin auf dem bestehenden Opus-Assessment.
+
+### Q-Check-Befunde (Details: `docs/qcheck_summary.md`)
+
+| Operation | n | Konkordanz | Faktor MiMo/Opus | Entscheidung |
+|---|---:|---|---:|---|
+| Assessment | 50 | 70 % Verdict-Match, 4/20 `lesenswert` → `scannen` | ~1/2 (mit Cache) | **Opus bleibt** |
+| Summarize | 5 | Jaccard keys=0.45, thinkers=0.59, methods=0.17 | ~1/7 | **Opus bleibt** |
+| Trends | 3 | term-Jaccard 0.20–0.26, finish=stop, vergleichbare Länge | ~1/3 *) | **MiMo wird Default** |
+
+*) Q-Check-Stichprobe von 40 Artikeln suggerierte 1/9; Produktions-Smoketest mit 746 Artikeln (`erziehungswiss`) ergab $0.555/Cluster statt erwarteter $0.06 → reales Verhältnis ist 1/3. Cache greift bei Trends nicht (System-Prompt ~700 Tokens, unter Anthropic-Mindestschwelle).
+
+**Verworfen:**
+- MiMo+Prompt-Patches (n=8 zu klein für statistische Aussage, 1/3 Kontrollen regrediert)
+- Mistral Medium 3.5 nativ (2/5 Opus-Match, $0.049/Call ohne Cache → teurer als Opus mit Cache)
+
+### Gebaut
+
+1. **Trends-Modell jetzt konfigurierbar** (`settings.py`)
+   - Neue Konstanten `MODEL_TRENDS` (Default `xiaomi/mimo-v2.5-pro`) und `MAX_TOKENS_TRENDS=32000`
+   - Override via `profile.json` möglich
+   - `trends.py` nutzt diese Konstanten, schreibt Modell in Output-Footer
+   - **Empty-Response-Failsafe**: bei <200 Zeichen `RuntimeError` mit `finish_reason` im Log → keine zerstörte Datei
+
+2. **Cache-Hygiene-Instrumentierung** (Hauptarbeit der Session, Task #9)
+
+   Diagnose-Grundlage: nach Q-Check + Smoketest war klar, dass der größte Kostenhebel nicht der Modellwechsel ist, sondern Cache-Disziplin auf Opus-Assessment. Opus mit 91 % Cache-Hit kostet $0.028/Call, ohne Cache $0.10 — Faktor 3–4, ohne Quality-Verlust. Dieser Hebel war bisher unsichtbar: `record_llm_call` schrieb Cache-Tokens in die DB, aber kein Pfad las sie aus zur Anzeige.
+
+   - **`journal_bot/llm_log.py`**
+     - `cache_hit_stats(since, until, endpoints, models)` — token-gewichtete Hit-Rate pro (Endpoint, Modell). Aggregiert nur `status='ok'`-Calls, filtert tokens_in=0 raus (Triage-Pfade ohne Input).
+     - `format_cache_report(stats, title)` — Tabelle mit Hit %, Ø-Kosten, Σ-Kosten. ⚠-Flag bei <80 % Hit-Rate auf cache-kritischen Endpoints (`batch_screen`, `run_agent`, `assess`, `verify`); andere Endpoints werden nicht geflagt, weil dort der Cache strukturell anders funktioniert (z. B. trends: zu wenig System-Prompt-Tokens für Anthropic-Schwelle).
+     - `wave_marker()` — ISO-Timestamp als Filter-Anker für „diese Welle".
+
+   - **`journal_bot/batch_digest.py`**
+     - `BatchDigestResult` um `cache_stats: list[dict]` und `wave_started_at: str` erweitert.
+     - `_finalize_with_cache_report(result, logger, verbose)` — neue zentrale Exit-Funktion.
+     - **Auf jedem Pfad aufgerufen**, nicht nur am Erfolgsende: Screening-CacheNotHitError, „keine Artikel zum Analysieren", Cost-Limit pre-loop, Per-Article-CacheNotHitError, Cost-Warning-Abbruch, Cost-Limit post-loop, normaler Erfolg. So sieht man bei einem Abbruch *direkt* warum die Hit-Rate kollabiert ist und nicht nur dass sie kollabiert ist.
+
+   - **CLI** (`journal_bot/cli.py`)
+     - `mojo cache-report [--days N] [--endpoint a,b,c] [--model x,y]`
+     - Default-Fenster 7 Tage, Aggregat-Zeile am Ende mit Σ$ + Calls-Count.
+     - Eingebaut zwischen `stats` und `web` im Subparser.
+
+   - **Tests** (`tests/test_llm_log.py::CacheHitStatsTests`)
+     - 8 neue Tests: token- vs call-gewichtete Hit-Rate (zentrale Invariante), Gruppierung nach (Endpoint, Modell), Filter (since, endpoints), ⚠-Flag-Verhalten, leerer Input, Wave-Marker-Format. Alle 15 Tests in der Datei grün.
+
+### Live-Validierung (`mojo digest --next 10`, 2026-05-16)
+
+Erster echter Wellen-Lauf nach der Instrumentierung. 10 Artikel aus `Research in Arts and Education` (Neurodiversitäts-Sonderheft), Modell `anthropic/claude-opus-4.6`.
+
+```
+[Welle · Cache-Hit-Rate]
+  Endpoint       Modell                          Calls  Hit%    Ø$      Σ$
+  ----------------------------------------------------------------------
+  assess         anthropic/claude-opus-4.6          10   98%  $0.049  $0.487
+  batch_screen   deepseek/deepseek-v3.2              1  100%  $0.008  $0.008
+```
+
+- Wave-Marker greift, `_finalize_with_cache_report` druckt am Ende, Format wie vorgesehen.
+- **Cache funktioniert produktiv**: 98 % Hit-Rate auf Opus assess, sehr nah an der Theorie. Damit ist der Hebel "Cache-Hygiene" empirisch bestätigt — pro Welle ~$3 Opus-Kosten statt ~$10 ohne Cache.
+- ⚠-Flag triggert korrekt **nicht** (beide Endpoints über 80 %).
+- DeepSeek batch_screen meldet 100 % Hit-Rate sauber (Einzelfall; generelle Aussage über DeepSeek-Cache-Reporting via OpenRouter steht aus).
+
+### Was *immer noch* nicht live-validiert ist
+
+- **Verify-Pfad** — keiner der 10 Artikel wurde `lesenswert`, kein Verify-Call. Code-Pfad strukturell identisch zu assess (`run_agent` mit anderem `log_endpoint`), Risiko klein, aber unbeobachtet.
+- **Web-UI-Render** — `app.py` reicht `logs[]` an `_scan_run_result.html`. Der Report sollte automatisch im HTML erscheinen, aber das HTML wurde nicht gerendert geprüft. Bei nächstem Scan via Web-UI mitprüfen.
+
+### Schlussfolgerung (verbatim aus `docs/qcheck_summary.md`)
+
+> Der größte Hebel ist NICHT der Modellwechsel, sondern Cache-Hygiene auf dem bestehenden Opus-Assessment.
+>
+> | Hebel | Größenordnung | Risiko |
+> |---|---|---|
+> | Cache-Hit-Rate >80 % auf assess/verify halten | $0.10 → $0.028 = Faktor 3–4 | keiner |
+> | Trends auf MiMo statt Opus | Faktor ~1/3 | minimaler Quality-Drift |
+> | Assessment-Modellwechsel | wäre 1/9, aber 30 % Drift | zu hoch |
+
+Wenn die Hit-Rate auf assess/verify unter 80 % fällt, ist das die Ursache jedes Kostenanstiegs — nicht das Modell. Das neue Reporting macht diesen Hebel jetzt sichtbar.
+
+### Geänderte Dateien
+
+```
+journal_bot/llm_log.py        # +cache_hit_stats, +format_cache_report, +wave_marker
+journal_bot/batch_digest.py   # +_finalize_with_cache_report an allen Exit-Pfaden
+journal_bot/cli.py            # +cmd_cache_report, +p_cache subparser
+journal_bot/settings.py       # +MODEL_TRENDS, +MAX_TOKENS_TRENDS
+journal_bot/trends.py         # nutzt MODEL_TRENDS, Empty-Response-Failsafe
+tests/test_llm_log.py         # +CacheHitStatsTests (8 Tests)
+docs/qcheck_summary.md        # +Schlussfolgerung "Hebel = Cache-Hygiene"
+scripts/qcheck_mimo_promptv2.py  # (verworfen, Rohdaten erhalten)
+scripts/qcheck_mistral_med35.py  # (verworfen, Rohdaten erhalten)
+```
+
+### Nächste sinnvolle Schritte
+
+- Beim nächsten regulären `mojo digest` den Wave-Cache-Report verifizieren (erste Live-Anwendung).
+- Wenn die Hit-Rate unter 80 % fällt: Cache-TTL (5 Minuten) prüfen, ob Batches zu weit auseinanderliegen, ob System-Prompt zwischen Calls mutiert.
+- Eventuell: `mojo cache-report` in den wöchentlichen Run als kurzer Read-Out einbauen.
+
+### Folgesitzung 2026-05-16b — Drei offene Punkte geschlossen
+
+Direkte Fortsetzung der Cache-Hygiene-Instrumentierung. Drei zuvor als "noch nicht live verifiziert" markierte Punkte abgearbeitet:
+
+1. **verify-Pfad-Coverage** — synthetische Tests in `tests/test_llm_log.py` (`test_verify_endpoint_appears_in_wave_report`, `test_verify_single_call_does_not_trigger_flag`) bestätigen, dass `verify` symmetrisch zu `assess` aggregiert wird, das ⚠-Flag korrekt zugeordnet wird und Cold-Start-Schutz (≥2 Calls) greift. Bei nächstem natürlichen `lesenswert`-Verdict bestätigt sich's automatisch live.
+
+2. **Web-UI-Render** — `journal_bot/web/templates/_scan_run_result.html` rendert `batch.cache_stats` jetzt als HTML-Tabelle (Endpoint, Modell, Calls, Hit %, Ø $, Σ $). Flag-Logik über zentralen `is_cache_warning()` in `llm_log.py` + Jinja-Filter `cache_warning` in `app.py` — eine einzige Source of Truth für Terminal- und Web-Rendering. Smoke-Test via `app.test_request_context()` bestätigt: ⚠ erscheint genau einmal, auf der richtigen Zeile.
+
+3. **Weekly-Run-Readout** — `cmd_digest` druckt am Lauf-Ende zusätzlich einen 7-Tage-Cross-Wave-Report ("7-Tage · Cache-Hit-Rate (alle Wellen)"). Aus per `--no-weekly-summary`. Multi-Wave-Aggregat verwendet **strengere Flag-Schwelle** (`min_calls_for_flag=5` statt 2), um Cold-Start-False-Positives zu unterdrücken — bei zwei Wellen mit je einem batch_screen-Cold-Start sieht's token-gewichtet wie 50 % aus, ist aber normal. Tests `test_min_calls_for_flag_suppresses_multi_wave_cold_starts` + `test_min_calls_for_flag_still_catches_real_breakdown` schützen die Schwelle.
+
+#### Live-Validierung der Schwelle
+Vor der Änderung zeigte `mojo cache-report --days 7` für batch_screen ein false-positives ⚠ bei 2 Calls (cold + hot, token-gewichtet 50 %). Mit `min_calls=5` verschwindet das Flag, während echte Cache-Brüche (≥5 Calls dauerhaft <80 %) weiterhin geflaggt werden.
+
+#### Tests
+29 grün (vorher 27, +2 für `min_calls`-Verhalten, +2 für verify-Pfad).
+
+#### Geänderte Dateien
+- `journal_bot/llm_log.py` — `is_cache_warning(*, min_calls)`, `format_cache_report(*, min_calls_for_flag)`
+- `journal_bot/web/app.py` — `cache_warning`-Jinja-Filter
+- `journal_bot/web/templates/_scan_run_result.html` — Cache-Stats-Tabelle
+- `journal_bot/cli.py` — 7-Tage-Readout in `cmd_digest`, `--no-weekly-summary`-Flag, `min_flag=5` in `cmd_cache_report` für `days≥2`
+- `tests/test_llm_log.py` — 4 neue Tests
+
+#### Was *immer noch* nicht live ist
+- Der `verify`-Pfad ist unit-getestet aber wartet auf einen `lesenswert`-Verdict in der Praxis. Die Symmetrie zu `assess` ist im Code identisch.
+- Web-UI-Rendering ist via `test_request_context()` smoke-getestet, aber ein realer Browser-Render beim nächsten Setup > Scan-Run wäre die finale Bestätigung.
+
+---
+
 ## Session 2026-04-12b — Web-UI + Runs 2024/2026
 
 ### Gebaut

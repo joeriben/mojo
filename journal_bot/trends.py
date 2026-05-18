@@ -22,7 +22,8 @@ from journal_bot.llm_log import record_llm_call
 from journal_bot.settings import (
     DIGEST_DIR,
     DISCOURSE_SPACES,
-    MODEL_AGENT,
+    MAX_TOKENS_TRENDS,
+    MODEL_TRENDS,
     RESEARCHER_NAME,
     journals_in_cluster,
 )
@@ -192,11 +193,12 @@ def run(
     if verbose:
         print(f"[trends] User-Content: ~{len(user_content)//4} Tokens")
 
-    # LLM-Call (kein Tool-Use, direkt Markdown als Antwort)
+    # LLM-Call (kein Tool-Use, direkt Markdown als Antwort).
+    # Modell ist via MODEL_TRENDS konfigurierbar; Default seit Q-Check 2026-05: MiMo.
     client = build_client()
     resp = client.chat.completions.create(
-        model=MODEL_AGENT,
-        max_tokens=5000,
+        model=MODEL_TRENDS,
+        max_tokens=MAX_TOKENS_TRENDS,
         messages=[
             {
                 "role": "system",
@@ -221,22 +223,44 @@ def run(
     usage_dump = usage.model_dump() if hasattr(usage, "model_dump") else {}
     cost = usage_dump.get("cost") or 0.0
     pd = usage_dump.get("prompt_tokens_details") or {}
+    finish_reason = resp.choices[0].finish_reason
+
+    # Empty-Response-Failsafe: MiMo (und gelegentlich Opus) liefern leere completions,
+    # wenn max_tokens zu knapp gesetzt ist oder das Modell intern abbricht. Lieber hart
+    # fehlschlagen als eine leere Trend-Datei nach Obsidian schreiben.
+    md_clean = md.strip()
+    if len(md_clean) < 200:
+        record_llm_call(
+            endpoint="trends", model=MODEL_TRENDS,
+            usage=usage_dump, cost_usd=cost, status="empty_response",
+            cluster=cluster, articles=len(articles),
+            finish_reason=finish_reason, response_len=len(md_clean),
+        )
+        raise RuntimeError(
+            f"[trends] LLM-Antwort zu kurz ({len(md_clean)} chars, "
+            f"finish_reason={finish_reason!r}). Modell={MODEL_TRENDS}, "
+            f"max_tokens={MAX_TOKENS_TRENDS}. Keine Datei geschrieben. "
+            f"Tipp: max_tokens_trends in profile.json erhöhen oder Modell wechseln."
+        )
 
     record_llm_call(
-        endpoint="trends", model=MODEL_AGENT,
+        endpoint="trends", model=MODEL_TRENDS,
         usage=usage_dump, cost_usd=cost, status="ok",
         cluster=cluster, articles=len(articles),
+        finish_reason=finish_reason,
     )
 
     if verbose:
-        print(f"[trends] Tokens: {usage.prompt_tokens} in / {usage.completion_tokens} out")
+        print(f"[trends] Modell: {MODEL_TRENDS}")
+        print(f"[trends] Tokens: {usage.prompt_tokens} in / {usage.completion_tokens} out  ({finish_reason})")
         print(f"[trends] Kosten: ${cost:.3f}")
 
     # Footer anhängen
     footer = (
         f"\n\n---\n_Cluster: {cluster_meta['name']} · Fenster: {window_label} · "
         f"{len(articles)} Artikel aus {journal_list} · "
-        f"{usage.prompt_tokens:,} in / {usage.completion_tokens:,} out · ${cost:.3f}_\n"
+        f"{usage.prompt_tokens:,} in / {usage.completion_tokens:,} out · ${cost:.3f} · "
+        f"Modell: {MODEL_TRENDS}_\n"
     )
     full_md = md + footer
 

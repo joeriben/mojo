@@ -171,6 +171,18 @@ def format_number_filter(value):
     except (ValueError, TypeError):
         return str(value)
 
+
+@app.template_filter("cache_warning")
+def cache_warning_filter(row):
+    """Mirror llm_log.is_cache_warning so templates can render the ⚠ flag
+    using the same threshold (<80 % hit, cache-critical endpoint, >= 2 calls)
+    as the terminal report. Single source of truth lives in llm_log.py."""
+    from journal_bot.llm_log import is_cache_warning
+    try:
+        return is_cache_warning(row)
+    except Exception:
+        return False
+
 VERDICT_ORDER = ["pflichtlektuere", "lesenswert", "scannen", "ignorieren"]
 VERDICT_RANK = {verdict: rank for rank, verdict in enumerate(VERDICT_ORDER)}
 VERDICT_LABEL = {

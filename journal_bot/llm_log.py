@@ -206,3 +206,150 @@ def total_cost_since(since: str) -> float:
     except Exception as exc:
         print(f"[llm_log] total_cost_since failed: {exc}", file=sys.stderr)
         return 0.0
+
+
+def wave_marker() -> str:
+    """Return an ISO timestamp suitable as 'since' filter at wave start.
+
+    Call this *before* the wave begins and pass the result to
+    `cache_hit_stats(since=...)` after it finishes — that scopes the report
+    to exactly this run.
+    """
+    return datetime.now(timezone.utc).isoformat()
+
+
+def cache_hit_stats(
+    *,
+    since: str | None = None,
+    until: str | None = None,
+    endpoints: list[str] | None = None,
+    models: list[str] | None = None,
+) -> list[dict]:
+    """Cache effectiveness aggregated per (endpoint, model).
+
+    A call counts toward `cache_hit_rate` only if its tokens_in > 0 — calls
+    with zero input (errors, no-cost paths) would otherwise distort the ratio.
+
+    Returns one row per (endpoint, model) with fields:
+      endpoint, model, calls, total_cost, total_in, total_cached_read,
+      cache_hit_rate (cached_read / total_in, float 0..1),
+      avg_cost_per_call, avg_cached_read_per_call.
+
+    Sort: total_cost DESC — the rows where cache matters most for the wallet
+    appear first.
+    """
+    sql = (
+        "SELECT endpoint, model, "
+        "COUNT(*) AS calls, "
+        "COALESCE(SUM(cost_usd), 0) AS total_cost, "
+        "COALESCE(SUM(tokens_in), 0) AS total_in, "
+        "COALESCE(SUM(tokens_cached_read), 0) AS total_cached_read, "
+        "COALESCE(SUM(tokens_cache_write), 0) AS total_cache_write "
+        "FROM llm_calls WHERE 1=1"
+    )
+    params: list[Any] = []
+    if since:
+        sql += " AND timestamp >= ?"
+        params.append(since)
+    if until:
+        sql += " AND timestamp <= ?"
+        params.append(until)
+    if endpoints:
+        placeholders = ",".join("?" for _ in endpoints)
+        sql += f" AND endpoint IN ({placeholders})"
+        params.extend(endpoints)
+    if models:
+        placeholders = ",".join("?" for _ in models)
+        sql += f" AND model IN ({placeholders})"
+        params.extend(models)
+    # Status filter: only successful calls — aborted ones report
+    # questionable usage data.
+    sql += " AND (status = 'ok' OR status IS NULL)"
+    sql += " GROUP BY endpoint, model ORDER BY total_cost DESC"
+
+    try:
+        conn = sqlite3.connect(LLM_LOG_DB)
+        try:
+            _ensure_schema(conn)
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(sql, params).fetchall()
+        finally:
+            conn.close()
+    except Exception as exc:
+        print(f"[llm_log] cache_hit_stats failed: {exc}", file=sys.stderr)
+        return []
+
+    out: list[dict] = []
+    for r in rows:
+        d = dict(r)
+        total_in = d["total_in"] or 0
+        cached = d["total_cached_read"] or 0
+        d["cache_hit_rate"] = (cached / total_in) if total_in > 0 else 0.0
+        d["avg_cost_per_call"] = (d["total_cost"] / d["calls"]) if d["calls"] else 0.0
+        d["avg_cached_read_per_call"] = (cached / d["calls"]) if d["calls"] else 0.0
+        out.append(d)
+    return out
+
+
+# Endpoints whose cost is dominated by a cacheable system prompt — drift
+# below the threshold here is the canary for the $43-class incident.
+_CACHE_CRITICAL_ENDPOINTS = ("batch_screen", "run_agent", "assess", "verify")
+_CACHE_HEALTHY_THRESHOLD = 0.80
+
+
+def is_cache_warning(row: dict, *, min_calls: int = 2) -> bool:
+    """Return True if an aggregated cache_hit_stats row deserves the ⚠ flag.
+
+    Single source of truth for terminal report (format_cache_report) and the
+    web UI (_scan_run_result.html via the cache_warning Jinja filter).
+
+    Cold-start protection via min_calls:
+    - In a per-wave report, min_calls=2 is fine — within one wave there's
+      typically exactly one cold-start call, so 2+ calls below 80 % means
+      the *non-cold* calls are also bad → real cache problem.
+    - In a multi-wave (e.g. 7-day) report, min_calls=5 makes more sense —
+      otherwise every 2-wave window with one cold-start call per wave would
+      show up as a token-weighted ~50 % hit rate and trigger a false alarm.
+    """
+    return (
+        row.get("endpoint") in _CACHE_CRITICAL_ENDPOINTS
+        and (row.get("cache_hit_rate") or 0.0) < _CACHE_HEALTHY_THRESHOLD
+        and (row.get("calls") or 0) >= min_calls
+    )
+
+
+def format_cache_report(
+    stats: list[dict],
+    *,
+    title: str = "Cache-Hit-Rate",
+    min_calls_for_flag: int = 2,
+) -> str:
+    """Render a human-readable table for the CLI / wave footer.
+
+    Marks cache-critical endpoints below 80 % hit rate with a ⚠ flag —
+    that's the signal to investigate, not the signal to abort (hard caps
+    in agent.py already enforce abort).
+
+    `min_calls_for_flag` controls cold-start sensitivity: use 2 for
+    per-wave reports, 5+ for multi-wave aggregates (see is_cache_warning).
+    """
+    if not stats:
+        return f"[{title}] keine LLM-Calls im Fenster."
+
+    lines = [f"[{title}]"]
+    header = f"  {'Endpoint':<14} {'Modell':<32} {'Calls':>5} {'Hit%':>5} {'Ø$':>7} {'Σ$':>8}"
+    lines.append(header)
+    lines.append("  " + "-" * (len(header) - 2))
+    for r in stats:
+        endpoint = r["endpoint"][:14]
+        model = (r["model"] or "")[:32]
+        calls = r["calls"]
+        hit = r["cache_hit_rate"] * 100
+        avg = r["avg_cost_per_call"]
+        tot = r["total_cost"]
+        flag = "  ⚠ unter 80%" if is_cache_warning(r, min_calls=min_calls_for_flag) else ""
+        lines.append(
+            f"  {endpoint:<14} {model:<32} {calls:>5} {hit:>4.0f}% "
+            f"${avg:>6.3f} ${tot:>7.3f}{flag}"
+        )
+    return "\n".join(lines)

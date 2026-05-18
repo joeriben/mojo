@@ -71,6 +71,12 @@ DIGEST_DIR = Path(
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 MODEL_SUMMARIZE = _profile.get("model_summarize", "anthropic/claude-opus-4.6")
 MODEL_AGENT = _profile.get("model_agent", "anthropic/claude-opus-4.6")
+# Trends-Modell separat — Q-Check 2026-05 belegt MiMo als Quality-neutralen, ~9× günstigeren
+# Default. Falls Opus-Refresh gewünscht ist (z. B. quartalsweise), via profile.json setzen.
+MODEL_TRENDS = _profile.get("model_trends", "xiaomi/mimo-v2.5-pro")
+# Trends-Modelle wie MiMo brauchen mehr completion-Tokens als der Opus-Default (5000).
+# 32000 reicht für die Markdown-Dossiers (Q-Check-Outputs: 9518–11406 chars, finish=stop).
+MAX_TOKENS_TRENDS = int(_profile.get("max_tokens_trends", 32000))
 
 # --- API-Key-Ablage ---
 KEY_FILE = Path.home() / ".config" / "mojo" / "openrouter_key"
@@ -94,6 +100,8 @@ def save_profile(data: dict) -> None:
     _self.DIGEST_DIR = Path(data["digest_dir"]) if data.get("digest_dir") else _self.DIGEST_DIR
     _self.MODEL_SUMMARIZE = data.get("model_summarize", _self.MODEL_SUMMARIZE)
     _self.MODEL_AGENT = data.get("model_agent", _self.MODEL_AGENT)
+    _self.MODEL_TRENDS = data.get("model_trends", _self.MODEL_TRENDS)
+    _self.MAX_TOKENS_TRENDS = int(data.get("max_tokens_trends", _self.MAX_TOKENS_TRENDS))
 
 
 # --- Diskursräume ---

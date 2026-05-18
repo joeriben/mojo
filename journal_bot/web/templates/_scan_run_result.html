@@ -50,6 +50,47 @@
   </details>
   {% endif %}
 
+  {% if batch.cache_stats %}
+  <details style="margin-top:.75rem;" open>
+    <summary><strong>Cache-Hit-Rate (Welle)</strong></summary>
+    <table style="width:100%; margin-top:.5rem; font-size:.82rem; border-collapse:collapse;">
+      <thead>
+        <tr style="text-align:left; border-bottom:1px solid var(--muted);">
+          <th style="padding:.25rem .4rem;">Endpoint</th>
+          <th style="padding:.25rem .4rem;">Modell</th>
+          <th style="padding:.25rem .4rem; text-align:right;">Calls</th>
+          <th style="padding:.25rem .4rem; text-align:right;">Hit%</th>
+          <th style="padding:.25rem .4rem; text-align:right;">Ø$</th>
+          <th style="padding:.25rem .4rem; text-align:right;">Σ$</th>
+          <th style="padding:.25rem .4rem;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in batch.cache_stats %}
+        <tr style="border-bottom:1px solid var(--code-bg);">
+          <td style="padding:.2rem .4rem;"><code>{{ row.endpoint }}</code></td>
+          <td style="padding:.2rem .4rem;"><code>{{ row.model }}</code></td>
+          <td style="padding:.2rem .4rem; text-align:right;">{{ row.calls }}</td>
+          <td style="padding:.2rem .4rem; text-align:right;">{{ "%.0f"|format(row.cache_hit_rate * 100) }}%</td>
+          <td style="padding:.2rem .4rem; text-align:right;">${{ "%.3f"|format(row.avg_cost_per_call) }}</td>
+          <td style="padding:.2rem .4rem; text-align:right;">${{ "%.3f"|format(row.total_cost) }}</td>
+          <td style="padding:.2rem .4rem;">
+            {% if row|cache_warning %}
+            <span style="color:var(--pflichtlektuere); font-weight:600;">⚠ unter 80%</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div style="margin-top:.35rem; font-size:.75rem; color:var(--muted);">
+      ⚠ markiert cache-kritische Endpoints (batch_screen, run_agent, assess, verify)
+      unter 80&nbsp;% Hit-Rate ab 2 Calls. Token-gewichtet
+      (cached&nbsp;/&nbsp;total&nbsp;prompt).
+    </div>
+  </details>
+  {% endif %}
+
   <details style="margin-top:.75rem;" open>
     <summary><strong>Log</strong></summary>
     <pre style="white-space:pre-wrap; font-size:.8rem; line-height:1.45; margin-top:.5rem;">{{ logs|join('\n') }}</pre>

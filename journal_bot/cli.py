@@ -191,6 +191,25 @@ def cmd_digest(args: argparse.Namespace) -> int:
         verbose=not args.quiet,
         cost_limit_usd=cost_limit,
     )
+
+    # 7-Tage-Cross-Wave-Cache-Report nach jedem Lauf — Welle-Tabelle zeigt
+    # nur diese Welle, hier ist der Trend über alle Wellen der letzten Woche.
+    # Erlaubt zu sehen, ob ein einzelner Cache-Einbruch isoliert war oder
+    # ob sich was systematisch verschlechtert. Reine SQL-Aggregation, kostet
+    # nichts. Aus mit --no-weekly-summary. Schwelle min_calls=5 schützt vor
+    # Cold-Start-False-Positives über mehrere Wellen.
+    if not args.quiet and not getattr(args, "no_weekly_summary", False):
+        from datetime import datetime, timedelta, timezone
+        from journal_bot.llm_log import cache_hit_stats, format_cache_report
+        since = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+        weekly = cache_hit_stats(since=since)
+        if weekly:
+            print("\n" + format_cache_report(
+                weekly,
+                title="7-Tage · Cache-Hit-Rate (alle Wellen)",
+                min_calls_for_flag=5,
+            ))
+
     return 1 if batch_result.aborted else 0
 
 
@@ -467,6 +486,46 @@ def cmd_stats(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_cache_report(args: argparse.Namespace) -> int:
+    """Historische Cache-Hit-Rate aus llm_calls.
+
+    Standard: letzte 7 Tage, gruppiert nach Endpoint+Modell. Mit --days N
+    anderes Fenster, mit --endpoint filtern. Bei <80 % Hit-Rate auf
+    cache-kritischen Endpoints (batch_screen/run_agent/assess/verify) wird
+    eine ⚠-Warnung pro Zeile gesetzt.
+    """
+    from datetime import datetime, timedelta, timezone
+
+    from journal_bot.llm_log import cache_hit_stats, format_cache_report
+
+    days = max(1, int(args.days))
+    since_dt = datetime.now(timezone.utc) - timedelta(days=days)
+    since = since_dt.isoformat()
+
+    endpoints = [e.strip() for e in (args.endpoint or "").split(",") if e.strip()] or None
+    models = [m.strip() for m in (args.model or "").split(",") if m.strip()] or None
+
+    stats = cache_hit_stats(since=since, endpoints=endpoints, models=models)
+    if not stats:
+        print(f"[cache-report] keine Calls seit {since} (Filter: "
+              f"endpoint={endpoints}, model={models}).")
+        return 0
+
+    title = f"Cache-Hit-Rate · letzte {days} Tag(e)"
+    # Multi-wave aggregate: strenger gegen Cold-Start-Verzerrung. Eine
+    # Welle hat typischerweise 1 cold + N hot Calls; bei zwei Wellen
+    # sieht batch_screen sonst false-positiv geflaggt aus.
+    min_flag = 5 if days >= 2 else 2
+    print(format_cache_report(stats, title=title, min_calls_for_flag=min_flag))
+
+    # Aggregierte Bottom-Line: wo liegt das Geld?
+    total = sum(r["total_cost"] for r in stats)
+    total_calls = sum(r["calls"] for r in stats)
+    print(f"\n[cache-report] Σ ${total:.3f} über {total_calls} Calls "
+          f"({days} Tage).")
+    return 0
+
+
 # --------------------------------------------------------------- Parser ----
 
 
@@ -513,6 +572,8 @@ def main(argv: list[str] | None = None) -> int:
                           help="Hartes USD-Gesamtbudget für den Batch-Lauf "
                                "(zusätzlich zu den Per-Call-Caps in agent.py).")
     p_digest.add_argument("--quiet", action="store_true")
+    p_digest.add_argument("--no-weekly-summary", action="store_true",
+                          help="Unterdrückt den 7-Tage-Cache-Hit-Report am Ende des Laufs.")
     p_digest.set_defaults(func=cmd_digest)
 
     p_trends = sub.add_parser("trends",
@@ -725,6 +786,18 @@ def main(argv: list[str] | None = None) -> int:
 
     p_stats = sub.add_parser("stats", help="Store-Statistik")
     p_stats.set_defaults(func=cmd_stats)
+
+    p_cache = sub.add_parser(
+        "cache-report",
+        help="Cache-Hit-Rate pro Endpoint/Modell (Kostenhebel-Diagnose)",
+    )
+    p_cache.add_argument("--days", type=int, default=7,
+                         help="Fenster in Tagen (Default 7)")
+    p_cache.add_argument("--endpoint", default="",
+                         help="Komma-Liste: batch_screen,assess,verify,trends,…")
+    p_cache.add_argument("--model", default="",
+                         help="Komma-Liste von Modell-IDs (z.B. anthropic/claude-opus-4.6)")
+    p_cache.set_defaults(func=cmd_cache_report)
 
     p_web = sub.add_parser("web", help="Web-UI starten (localhost:5000)")
     p_web.add_argument("--port", type=int, default=5555)

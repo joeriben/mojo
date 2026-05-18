@@ -8,6 +8,23 @@ Stand: 2026-04-15
 
 **Aktueller Nachtrag (2026-04-29):** MOJO ist vorerst als funktional ausentwickelt zu behandeln. Der produktive Scan bleibt beim wiederhergestellten, validierten Stand: `mojo digest` nutzt fuer Batch-Screening und Agent-Analyse (`assess_then_verify`) `deepseek/deepseek-v3.2`; die Tool-Architektur (`submit_digest_entry`, `read_publication`) bleibt bestehen. DeepSeek V4 Flash/Pro wurden nicht als Default uebernommen: Flash zeigte im Tool-Pfad Qualitaets-/Loop-Probleme, Pro war durch Provider-/Tool-Routing nicht belastbar. Details und spaetere A/B-Testanforderungen stehen in `docs/context/decision_llm_scan_tool_architecture.md`.
 
+**Aktueller Nachtrag (2026-05-16):** Q-Check-Phase abgeschlossen — Volltext-Befund in `docs/qcheck_summary.md`, Detail-Eintrag im DEVLOG. Drei Operationen einzeln geprüft (Assessment n=50, Summarize n=5, Trends n=3):
+- **Assessment bleibt Opus** (30 % Drift bei MiMo, kein netto-Vorteil bei Mistral 3.5 nativ).
+- **Summarize bleibt Opus** (methods-Jaccard 0.17 ist zu niedrig — MiMo verfehlt methodische Anschlüsse).
+- **Trends Default jetzt MiMo** (`xiaomi/mimo-v2.5-pro`, via `MODEL_TRENDS` + `MAX_TOKENS_TRENDS=32000` in `settings.py`, override per `profile.json`). Empty-Response-Failsafe in `trends.py`. Reales Spar-Verhältnis MiMo/Opus bei Trends ist **~1/3, nicht 1/9** — die Q-Check-Stichprobe hatte unwillkürlich Cache-Effekte vortäuschen lassen, die im Produktionsvolumen (746 Artikel/Cluster) nicht greifen (System-Prompt unter Anthropic-Cache-Mindestschwelle).
+
+**Folgearbeit Cache-Hygiene-Instrumentierung (Task #9, ebenfalls 2026-05-16):** Die Q-Check-Erkenntnis war, dass der eigentliche Kostenhebel nicht der Modellwechsel ist, sondern die Cache-Disziplin auf dem bestehenden Opus-Assessment (Opus mit 91 % Cache-Hit kostet $0.028/Call, ohne Cache $0.10 — Faktor 3–4 ohne Quality-Verlust). Dieser Hebel war bisher unsichtbar. Neu:
+- `journal_bot/llm_log.py` enthält `cache_hit_stats()`, `format_cache_report()`, `wave_marker()`. Token-gewichtete Aggregation pro (Endpoint, Modell), ⚠-Flag bei <80 % Hit-Rate auf cache-kritischen Endpoints (`batch_screen`, `run_agent`, `assess`, `verify`).
+- `journal_bot/batch_digest.py::_finalize_with_cache_report` druckt am **Ende jeder Welle** (auch bei Abbruch) eine Tabelle mit Hit-Rate pro Endpoint. Damit ist beim nächsten Digest-Lauf sofort sichtbar, ob die Hit-Rate gefallen ist.
+- CLI: `mojo cache-report [--days N] [--endpoint …] [--model …]` zeigt historischen Trend.
+- Tests: `tests/test_llm_log.py::CacheHitStatsTests` (8 neue, alle grün).
+- **Live-validiert (2026-05-16, `mojo digest --next 10`):** Opus 4.6 assess erreicht 98 % token-gewichtete Hit-Rate über 10 Calls; Wave-Footer rendert die Tabelle exakt wie geplant; Kostenstruktur $0.049/Artikel mit aktivem Cache bestätigt (Hochrechnung ~$3/Woche statt $6–10 ohne Cache).
+
+**Folge-Nachtrag 2026-05-16b — drei offene Punkte geschlossen:**
+- **verify-Pfad** unit-getestet (synthetische Test-Welle assess+verify → beide gerendert, Flag korrekt platziert). Live-Bestätigung folgt automatisch beim nächsten `lesenswert`-Verdict.
+- **Web-UI-Render** in `_scan_run_result.html` als HTML-Tabelle. Zentrale `is_cache_warning()` in `llm_log.py` + Jinja-Filter `cache_warning` in `app.py` als single source of truth zwischen Terminal- und Web-Output. Smoke-Test via `app.test_request_context()` grün.
+- **Weekly-Cross-Wave-Readout** in `cmd_digest` (7-Tage-Aggregat am Lauf-Ende, Aus per `--no-weekly-summary`). Multi-Wave-Aggregat nutzt strengere `min_calls_for_flag=5` gegen Cold-Start-False-Positives — zwei Wellen mit je 1× Cold-Start ergeben token-gewichtet ~50 %, ist aber normal. Echte Cache-Brüche (≥5 Calls dauerhaft <80 %) bleiben geflaggt. 29 Tests grün.
+
 ---
 
 ## 1. Projekt in Kürze

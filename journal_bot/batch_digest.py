@@ -8,6 +8,7 @@ from typing import Callable
 from journal_bot import agent as agent_mod
 from journal_bot import digest
 from journal_bot.citation_tracker import find_citations, load_authored_all
+from journal_bot.llm_log import cache_hit_stats, format_cache_report, wave_marker
 from journal_bot.settings import JOURNALS, MODEL_AGENT
 from journal_bot.store import Store, StoredArticle
 
@@ -27,6 +28,10 @@ class BatchDigestResult:
     aborted: bool = False
     abort_reason: str = ""
     errors: list[str] = field(default_factory=list)
+    # Cache-Hygiene-Report: pro Endpoint/Modell aggregierte Stats für genau
+    # diese Welle (gefüllt am Ende von run_batch_digest).
+    cache_stats: list[dict] = field(default_factory=list)
+    wave_started_at: str = ""
 
 
 def _is_junk_title(title: str) -> bool:
@@ -44,6 +49,33 @@ def _log(logger: LogFn | None, verbose: bool, message: str) -> None:
         logger(message)
 
 
+def _finalize_with_cache_report(
+    result: BatchDigestResult,
+    *,
+    logger: LogFn | None,
+    verbose: bool,
+) -> BatchDigestResult:
+    """Attach per-wave cache stats and print the report.
+
+    Always called before returning — both on success and on abort — so the
+    user can see *why* a CacheNotHitError-style abort happened (cache fell
+    below 80 % on assess/verify? screening miss? wrong model?).
+    """
+    if result.wave_started_at:
+        try:
+            result.cache_stats = cache_hit_stats(since=result.wave_started_at)
+        except Exception as exc:  # pragma: no cover — never break callers
+            _log(logger, verbose, f"[digest] cache_hit_stats failed: {exc}")
+            result.cache_stats = []
+        if result.cache_stats:
+            _log(
+                logger,
+                verbose,
+                "\n" + format_cache_report(result.cache_stats, title="Welle · Cache-Hit-Rate"),
+            )
+    return result
+
+
 def run_batch_digest(
     pending: list[StoredArticle],
     store: Store,
@@ -56,6 +88,7 @@ def run_batch_digest(
 ) -> BatchDigestResult:
     """Run the existing screening + assess/verify pipeline on pending articles."""
     result = BatchDigestResult(total_candidates=len(pending))
+    result.wave_started_at = wave_marker()
     model = model or MODEL_AGENT
 
     if not pending:
@@ -249,7 +282,7 @@ def run_batch_digest(
             result.aborted = True
             result.abort_reason = f"Prompt-Cache greift im Screening nicht: {exc}"
             _log(logger, verbose, f"[digest] ABBRUCH: {result.abort_reason}")
-            return result
+            return _finalize_with_cache_report(result, logger=logger, verbose=verbose)
 
         passed = [
             sa
@@ -340,7 +373,7 @@ def run_batch_digest(
 
     if not to_analyze:
         _log(logger, verbose, "[digest] Keine Artikel für Agent-Analyse übrig.")
-        return result
+        return _finalize_with_cache_report(result, logger=logger, verbose=verbose)
 
     cost_check_after = 3
     max_cost_per_article = 0.15
@@ -365,7 +398,7 @@ def run_batch_digest(
                     f"(bisher ${result.total_cost_usd:.3f})."
                 )
                 _log(logger, verbose, f"[digest] ABBRUCH: {result.abort_reason}")
-                return result
+                return _finalize_with_cache_report(result, logger=logger, verbose=verbose)
 
         journal_name = sa.journal_full or sa.journal_short
         _log(logger, verbose, f"\n[digest] --- {index}/{len(to_analyze)} --- {journal_name} · {sa.title[:75]}")
@@ -391,7 +424,7 @@ def run_batch_digest(
                 verbose,
                 f"[digest] Bisher: {result.processed_articles} Artikel, ${result.total_cost_usd:.3f}",
             )
-            return result
+            return _finalize_with_cache_report(result, logger=logger, verbose=verbose)
         except Exception as exc:
             msg = f"{sa.id}: {exc}"
             result.errors.append(msg)
@@ -417,7 +450,7 @@ def run_batch_digest(
                 _log(logger, verbose, f"[digest] Hochrechnung: ${projected:.2f} für {len(to_analyze)} Artikel")
                 _log(logger, verbose, f"[digest] ABBRUCH nach {result.processed_articles} Artikeln. "
                                        f"Bisherige Kosten: ${result.total_cost_usd:.3f}")
-                return result
+                return _finalize_with_cache_report(result, logger=logger, verbose=verbose)
             _log(
                 logger,
                 verbose,
@@ -432,7 +465,7 @@ def run_batch_digest(
                 f"Artikeln erreicht ({result.total_cost_usd:.3f})."
             )
             _log(logger, verbose, f"[digest] ABBRUCH: {result.abort_reason}")
-            return result
+            return _finalize_with_cache_report(result, logger=logger, verbose=verbose)
 
     _log(logger, verbose, f"\n[digest] Gesamtkosten: ${result.total_cost_usd:.3f}")
-    return result
+    return _finalize_with_cache_report(result, logger=logger, verbose=verbose)
