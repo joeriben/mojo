@@ -48,9 +48,26 @@ def _load_or_prompt_key() -> str:
 
 
 def build_client() -> OpenAI:
+    # timeout/max_retries: Hard-Limits gegen hängende Verbindungen.
+    #
+    # Vorfall 2026-05-23: Trends-Call (MiMo) lief 33+ min mit 100% CPU,
+    # während die TCP-Verbindung zu OpenRouter bereits in CLOSE_WAIT war.
+    # Ohne explizites timeout fällt die OpenAI-SDK auf ihren Default zurück
+    # (kann je nach Version >10 min oder gar None sein) und retried zudem
+    # transparent — was bei einem hängenden Stream zu Endlos-Loops führt.
+    #
+    # 600s = 10 min Hard-Cap. Trends ist der teuerste Call und liegt
+    # normalerweise bei 60–180s; assess/verify/screen/summarize deutlich
+    # darunter. 10 min ist großzügiges Sicherheitsnetz, schneidet aber
+    # 30-min-Hänger sofort ab.
+    #
+    # max_retries=1: ein einziger Retry bei transientem Netzwerk-Fehler,
+    # kein stilles Mehrfach-Wiederholen langlaufender Calls.
     return OpenAI(
         base_url=OPENROUTER_BASE_URL,
         api_key=_load_or_prompt_key(),
+        timeout=600.0,
+        max_retries=1,
         default_headers={
             "HTTP-Referer": "https://localhost/mojo",
             "X-Title": "mojo",

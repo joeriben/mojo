@@ -1,0 +1,2007 @@
+{
+  "results": [
+    {
+      "i": 1,
+      "article_id": "768f89ebd1e7b5cc9fa66b353df343ba",
+      "journal": "PCS",
+      "title": "Towards a school-based ‘critical data education’",
+      "opus": {
+        "verdict": "scannen",
+        "kernthese": "(C-Tier: nur Screening, kein Agent)",
+        "verdict_begruendung": "C-Tier: Screening-Pass, keine Agent-Analyse.",
+        "bezuege": [],
+        "bemerkenswert": [],
+        "cost_usd": 0.0
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel adressiert die zunehmende Datafizierung der Gesellschaft und deren Implikationen für Schulen, insbesondere die Notwendigkeit einer ‚critical data education‘. Die Autor*innen berichten von drei Forschungsprojekten, die darauf abzielen, Jugendlichen ein kritisches Verständnis von digitalen Daten, deren Verarbeitung sowie den damit verbundenen ökonomischen und überwachungskapitalistischen Strukturen zu vermitteln. Die zentralen Lernziele umfassen: die Materialisierung von Daten und Datenverarbeitungsprozessen, das Verständnis der Implikationen dieser Prozesse sowie die Erprobung von Strategien zum Schutz persönlicher Daten. Der Beitrag diskutiert technologische, ethische und soziale Herausforderungen und plädiert für eine Neuausrichtung der dominierenden ‚Cybersafety‘-Ansätze in Schulen.",
+        "verdict_begruendung": "Der Artikel bietet produktive Anregungen für die aktiven Forschungsprojekte [diaes_kubi] (digitale-aesthetische Souveränität) und [metakubi] (Transformationen in der kulturellen Bildung), insbesondere durch die kritische Auseinandersetzung mit Datafizierung und deren pädagogischen Implikationen. Die Forderung nach einer Neuausrichtung schulischer Bildung hin zu einer kritischen Datenbildung berührt zentrale Fragen der digitalen Kultivierung und relationalen Subjektivierung.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Artikel verbindet das Thema Datafizierung explizit mit schulischer Bildung und fordert eine kritische Datenbildung, die über technische Kompetenzvermittlung hinausgeht. Dies schließt an aktuelle Debatten um Surveillance Capitalism (Zuboff) und datenbasierte Steuerung an.",
+          "Die Autor*innen problematisieren die Diskrepanz zwischen schulischen Cybersafety-Programmen und den lebensweltlichen Erwartungen Jugendlicher an Mediennutzung – ein bemerkenswerter Befund für die Diskussion um digitale Souveränität und Schulkultur.",
+          "Der Fokus auf Strategien und Taktiken zum Schutz persönlicher Daten (z. B. Privacy-Management) könnte für die Diskussion um digitale-aesthetische Souveränität im Projekt DiäS-KuBi relevant sein."
+        ],
+        "cost_usd": 0.01603,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 29617,
+        "tokens_out": 816,
+        "latency_s": 20.04,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 2,
+      "article_id": "07bb2ede01951ed1899eba1d66a753d7",
+      "journal": "LMT",
+      "title": "Fixing higher education through technology: Canadian media coverage of massive open online courses",
+      "opus": {
+        "verdict": "scannen",
+        "kernthese": "(C-Tier: nur Screening, kein Agent)",
+        "verdict_begruendung": "C-Tier: Screening-Pass, keine Agent-Analyse.",
+        "bezuege": [],
+        "bemerkenswert": [],
+        "cost_usd": 0.0
+      },
+      "mistral": {
+        "verdict": "scannen",
+        "kernthese": "Der Artikel untersucht die mediale Darstellung von Massive Open Online Courses (MOOCs) in kanadischen Printmedien (2012–2014) und analysiert, wie sowohl digitale Bildungstechnologien als auch Hochschulen durch einen ökonomischen Rahmen konstruiert werden. Während Tageszeitungen MOOCs als einfache Lösung für ein angeblich ineffizientes und veraltetes Hochschulsystem präsentieren, hinterfragen Fachmagazine die Verbindung von Technologie, Hochschule und ökonomischen Interessen. Damit zeigt der Beitrag einen ideologischen Konflikt um die Deutung von Technologie und Hochschulbildung auf und verweist auf Bemühungen akademischer Communities, alternative soziale Imaginarien von Bildung als öffentliches Gut innerhalb eines dominant neoliberalen Diskurses zu entwickeln.",
+        "verdict_begruendung": "Der Artikel ist für die Diskursübersicht im Bereich Digitalisierung und Hochschulbildung relevant, da er die ideologische Aufladung von Technologie in Bildungskontexten aufzeigt. Allerdings bietet er keine direkten Anknüpfungspunkte zu den spezifischen theoretischen oder empirischen Schwerpunkten von Benjamin Jörissens Arbeit, insbesondere nicht zu den aktiven Forschungsprojekten wie Cultural Resilience, AI4ArtsEd oder MetaKuBi.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die Studie identifiziert einen klaren Gegensatz zwischen der Darstellung von MOOCs in Tageszeitungen (als technologische Lösung für systemische Probleme) und Fachmagazinen (als kritische Reflexion über ökonomische Interessen und öffentliche Güter).",
+          "Der Beitrag verweist auf die Rolle akademischer Communities als Akteure, die alternative Diskursräume jenseits neoliberaler Framings schaffen können.",
+          "Die Analyse zeigt, wie Technologie in der Hochschulbildung nicht neutral, sondern als Teil ideologischer Auseinandersetzungen um die Zukunft von Bildung verhandelt wird."
+        ],
+        "cost_usd": 0.01545,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 29291,
+        "tokens_out": 539,
+        "latency_s": 18.26,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": true
+    },
+    {
+      "i": 3,
+      "article_id": "2c44a6fbe0a3524d43935e4842d48d6e",
+      "journal": "merz",
+      "title": "Zur empirischen und theoretischen Kritik der Datensouveränität anhand der Smart-Speaker-Nutzung",
+      "opus": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Beitrag kritisiert die Konzepte der digitalen bzw. Datensouveränität sowohl empirisch (anhand qualitativer Studien zur Smart-Speaker-Nutzung) als auch theoretisch mittels praxistheoretischer Perspektive auf Daten und kritisch-theoretischer Perspektive (Adorno/Horkheimer) auf den Souveränitätsbegriff. Die zentrale These ist, dass diese Konzepte problematisch sind, wenn sie eine Stärkung der Nutzenden gegenüber Staat und Online-Oligopolen fordern.",
+        "verdict_begruendung": "Direkte argumentative Verbindung zu Jörissens Konzeptualisierung von digitaler Souveränität in der Schulkultur, die eine konkrete Ressourcentransferprüfung erfordert. (Verifikation ohne Ergebnis abgebrochen, Assessment-Verdict übernommen)",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Kritische Auseinandersetzung mit dem viel verwendeten Begriff der 'Datensouveränität' durch Verknüpfung von Adorno/Horkheimer's kritischer Theorie mit praxistheoretischer Datenanalyse.",
+          "Empirische Grundlage durch qualitative Studien zur Smart-Speaker-Nutzung im Alltagskontext."
+        ],
+        "cost_usd": 0.05731950000000001
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Beitrag kritisiert die Konzepte der digitalen Souveränität und Datensouveränität als unzureichend für die Beschreibung und Stärkung der Handlungsfähigkeit von Nutzer*innen digitaler Dienste, insbesondere im Kontext der Nutzung von Smart Speakern. Waldecker verbindet eine praxistheoretische Perspektive auf Daten mit einer kritisch-theoretischen Analyse des Souveränitätsbegriffs (im Anschluss an Adorno und Horkheimer) und stützt sich auf qualitative Studien zur Smart-Speaker-Nutzung, um zu zeigen, dass Souveränitätskonzepte die komplexen, oft unbewussten und in soziale Praktiken eingebetteten Umgangsweisen mit digitalen Technologien nicht erfassen.",
+        "verdict_begruendung": "Der Beitrag adressiert ein zentrales Konzept der aktuellen Debatten um Digitalität und Bildung – die digitale Souveränität – und unterzieht es einer fundierten theoretischen und empirischen Kritik. Dies ist besonders anregend für die Projekte **DiäS-KuBi** (digitale-aesthetische Souveränität) und **ai4artsed** (kritische Perspektiven auf KI in der kulturellen Bildung), da er die Grenzen individualistischer und technikzentrierter Ansätze aufzeigt.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die Kritik an den Konzepten der digitalen Souveränität und Datensouveränität als ideologisch aufgeladene Begriffe, die individuelle Handlungsfähigkeit suggerieren, ohne die strukturellen Machtasymmetrien und die Einbettung digitaler Praktiken in soziale Kontexte zu berücksichtigen.",
+          "Die Bezugnahme auf Adorno und Horkheimer zur Dekonstruktion des Souveränitätsbegriffs als Ausdruck eines veralteten, aufklärerischen Freiheitsverständnisses, das den Bedingungen digitaler Überwachung und Datenökonomien nicht gerecht wird.",
+          "Die empirische Fundierung der Kritik durch qualitative Studien zur Smart-Speaker-Nutzung, die zeigen, wie Nutzer*innen mit den Widersprüchen zwischen Kontrolle und Bequemlichkeit umgehen."
+        ],
+        "cost_usd": 0.01627,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 30213,
+        "tokens_out": 773,
+        "latency_s": 19.67,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": true
+    },
+    {
+      "i": 4,
+      "article_id": "eb0cc5c0f8dd9472cbd170b7d628a711",
+      "journal": "MedienPaed",
+      "title": "Big Data als datenbasierte Programmierung",
+      "opus": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel analysiert datenbasierte Programmierung als Technologie aus der Perspektive der relationalen Medienpädagogik. Er untersucht die medienpädagogische Relevanz von Big Data und datenbasierten Programmierungstechnologien, indem er die Technologie selbst (statt nur gesellschaftlicher Entwicklungen oder Medieninhalte) in den Blick nimmt und damit einen technologiefokussierten Ansatz innerhalb der relationalen Medienpädagogik entwickelt.",
+        "verdict_begruendung": "Der Artikel entwickelt die relationale Medienbildungskonzeption von Jörissen weiter und importiert sie für eine konkrete technologiefokussierte Analyse datenbasierter Programmierung als medienpädagogischen Gegenstand.",
+        "bezuege": [
+          {
+            "pub_id": "U6RW4WMN",
+            "pub_kurz": "Bettinger/Jörissen (2022) Medienbildung",
+            "bezug": "Der Artikel greift das relationale Verständnis von Medienbildung auf, das in der Publikation entwickelt wird, und überträgt es auf die Analyse datenbasierter Programmierung als Technologie. Während die Publikation Medienbildung als relationale Arbeit an Relationierungsweisen begreift, die auf anti-essentialistischen Theorieparadigmen basiert, wendet der neue Artikel diese relationale Perspektive konkret auf Big Data und datenbasierte Programmierungstechnologien an.",
+            "relation": "erweitert"
+          },
+          {
+            "pub_id": "XTJR5DRD",
+            "pub_kurz": "Jörissen (2018) Subjektivation und ästhetische Bildung in der post-digitalen Kultur",
+            "bezug": "Der Artikel greift die grundlegende relationale Perspektive auf Medienbildung auf, die in der Publikation entwickelt wird, und adaptiert sie für eine technologiezentrierte Analyse. Während die Publikation ästhetische Bildung als artikulative Relationierung und kritisches Moment in Subjektivationsprozessen konzipiert, fokussiert der neue Artikel spezifisch auf die Technologieanalyse datenbasierter Programmierung als medienpädagogischen Gegenstand.",
+            "relation": "importiert"
+          }
+        ],
+        "bemerkenswert": [
+          "Der Artikel zitiert explizit zwei frühere Werke von Benjamin Jörissen (2009 und 2016), was auf eine direkte Auseinandersetzung mit seiner Medienbildungskonzeption hindeutet.",
+          "Die Fokussierung auf die Technologie von Medien (datenbasierte Programmierung) als Analysegegenstand entspricht der von Jörissen mehrfach thematisierten relationalen Perspektive auf Medienbildung und Digitalität.",
+          "Der Artikel transferiert Jörissens relationale Medienbildungskonzeption auf einen spezifischen technologischen Gegenstand (Big Data/datenbasierte Programmierung) und entwickelt damit eine technologiefokussierte Variante der relationalen Medienpädagogik."
+        ],
+        "cost_usd": 0.0599725
+      },
+      "mistral": {
+        "verdict": "scannen",
+        "kernthese": "Der Beitrag untersucht das Phänomen der datenbasierten Programmierung (Big Data und Machine Learning) aus einer medienpädagogischen Perspektive, die sich als „relationale Medienpädagogik“ versteht. Zentral ist die These, dass datenbasierte Programmierung nicht nur als technologisches Werkzeug, sondern als konstitutive Technologie moderner Medien verstanden werden muss, die gesellschaftliche Strukturen, Subjektivationsprozesse und pädagogische Praktiken prägt. Swertz analysiert diese Technologie als Teil eines medienpädagogischen Dispositivs, das über die bloße Anwendung von Algorithmen hinausgeht und Fragen der Macht, Kontrolle und Bildung aufwirft.",
+        "verdict_begruendung": "Der Beitrag bewegt sich im Beobachtungsfeld der Medienpädagogik und berührt zentrale Themen wie die Technologie von Medien und deren gesellschaftliche Implikationen. Allerdings bietet er keine substantiellen Anknüpfungspunkte für Jörissens aktuelle Projekte oder veröffentlichte Argumente, da die bildungstheoretische Dimension kaum ausgearbeitet wird und die Bezugnahme auf Jörissens Arbeiten oberflächlich bleibt.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Beitrag zitiert explizit Jörissen/Marotzki (2009) und positioniert sich damit im Diskurs der Medienbildung, allerdings ohne eine vertiefte Auseinandersetzung mit deren relationaler Bildungstheorie zu führen. Die Bezugnahme bleibt oberflächlich und dient primär der Legitimierung des eigenen Ansatzes.",
+          "Die Analyse datenbasierter Programmierung als Technologie und nicht als bloßes Werkzeug ist ein bemerkenswerter Perspektivwechsel, der für medienpädagogische Debatten über KI und Big Data relevant ist. Allerdings fehlt eine bildungstheoretische Vertiefung, die über die Beschreibung technologischer Effekte hinausgeht.",
+          "Der Beitrag verweist auf die Notwendigkeit, medienpädagogische Theorien um technologische Analysen zu ergänzen, bleibt jedoch in der Darstellung der technologischen Grundlagen (z. B. Machine Learning) sehr allgemein und wenig konkret."
+        ],
+        "cost_usd": 0.01606,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 30288,
+        "tokens_out": 608,
+        "latency_s": 14.68,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 5,
+      "article_id": "f7effb3600bca9989e1ce001da967f6d",
+      "journal": "merz",
+      "title": "Inkommunikabilität",
+      "opus": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel schlägt vor, den Begriff der Inkommunikabilität (nicht-Kommunizierbarkeit) systematisch in die Theorie der Medienbildung zu integrieren. Er argumentiert, dass Netzwerke nicht nur Konnektivität, sondern auch konstitutive Grenzen der Kommunikation produzieren, und entwickelt daraus die Kontur eines virtuellen, passiven Subjekts, das sich nicht auf Partizipationsnachweise reduzieren lässt.",
+        "verdict_begruendung": "Der Artikel zitiert Jörissens Arbeit direkt und entwickelt substantielle theoretische Erweiterungen: Er importiert das Konzept der Inkommunikabilität in Jörissens relationale Medienbildungstheorie und erweitert dessen Subjektivationstheorie um die Dimension des Nicht-Kommunizierbaren als konstitutives Grenzphänomen.",
+        "bezuege": [
+          {
+            "pub_id": "XTJR5DRD",
+            "pub_kurz": "Jörissen 2018: Subjektivation und ästhetische Bildung in der post-digitalen Kultur",
+            "bezug": "Der Artikel nimmt Jörissens relationale Subjektivationstheorie in post-digitaler Kultur auf, erweitert sie jedoch um die systematische Integration von 'Inkommunikabilität' als konstitutivem Grenzphänomen der Kommunikation. Während Jörissen Subjektivation als aus relationalen Prozessen hervorgehend versteht und ästhetische Bildung als artikulative Relationierung konzipiert, fügt der Artikel die Dimension des Nicht-Kommunizierbaren hinzu und entwickelt daraus ein 'virtuelles, passives Subjekt'.",
+            "relation": "erweitert"
+          },
+          {
+            "pub_id": "U6RW4WMN",
+            "pub_kurz": "Bettinger/Jörissen 2022: Medienbildung",
+            "bezug": "Der Artikel knüpft an Jörissens relationales Medienbildungskonzept an, das hybride Subjektivation und verteilte Agency betont, und importiert das Konzept der Inkommunikabilität als systematisches Element. Während Jörissen/Bettinger Medienbildung als Arbeit an Relationierungsweisen entwickeln, die anti-essentialistische Theorieparadigmen aufgreifen, integriert der Artikel das Nicht-Kommunizierbare als konstitutives Anderes der Konnektivität in die Medienbildungstheorie.",
+            "relation": "importiert"
+          }
+        ],
+        "bemerkenswert": [
+          "Der Begriff 'Inkommunikabilität' als systematisches Konzept für Medienbildung ist ein ungewöhnlicher, aber potentiell fruchtbarer theoretischer Import, der die Aufmerksamkeit auf das 'Andere der Konnektivität' lenkt.",
+          "Die Verknüpfung von Luhmanns Systemtheorie mit Fragen der Subjektbildung in digitalen Netzwerken stellt eine interessante Kreuzung dar, die für relationale Bildungstheorien relevant sein könnte."
+        ],
+        "cost_usd": 0.0469795
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Beitrag adressiert die Grenzen des souveränen Subjekts der klassischen Bildungstheorie in der Netzwerkgesellschaft und schlägt vor, den Begriff der *Inkommunikabilität* systematisch in die Theorie der Medienbildung zu integrieren. Dabei wird das Subjekt als Resultat vielschichtiger Subjektivierungsprozesse gefasst, das sich nicht auf seine Partizipation in digitalen Netzwerken reduzieren lässt. Vielmehr wird ein *virtuelles, passives Subjekt* konturiert, das sich aus den Erfahrungen der Begrenztheit und des Scheiterns von Kommunikation in vernetzten Kontexten speist.",
+        "verdict_begruendung": "Der Beitrag bietet ein innovatives Konzept (*Inkommunikabilität*), das für die aktiven Forschungsprojekte *Cultural Resilience* und *DiäS-KuBi* (insbesondere *Post-digital Cultural Resilience* und *Digital-aesthetic Sovereignty*) produktive Anregungen liefern könnte. Die Fokussierung auf das *passive Subjekt* und die Grenzen der Vernetzung erweitert die Diskussion um relationale und posthumanistische Bildungstheorien um eine kritische Perspektive.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Begriff *Inkommunikabilität* wird als systematische Leerstelle in der Medienbildungstheorie eingeführt und könnte eine produktive Ergänzung zu bestehenden Konzepten wie *Konnektivität*, *Partizipation* oder *Agency* darstellen.",
+          "Der Beitrag greift die Debatte um ein *passives Subjekt* auf, das sich der Logik der Vernetzung entzieht – ein Gedanke, der in posthumanistischen und relationalen Bildungstheorien (z. B. bei Barad oder Haraway) bisher kaum explizit thematisiert wird.",
+          "Die Auseinandersetzung mit der *Tücke des Subjekts* (Luhmann) und der *Negativen Dialektik* (Adorno) bietet Anknüpfungspunkte für eine kritische Reflexion der Grenzen digitaler Bildungspraktiken, insbesondere im Hinblick auf die Unsichtbarkeit und Unverfügbarkeit bestimmter Subjektivierungsprozesse."
+        ],
+        "cost_usd": 0.01626,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 30430,
+        "tokens_out": 700,
+        "latency_s": 16.97,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": true
+    },
+    {
+      "i": 6,
+      "article_id": "063f00c2fd4ed025da945015a759cb92",
+      "journal": "BJET",
+      "title": "Promoting students' artwork appreciation: An experiential learning‐based virtual reality approach",
+      "opus": {
+        "verdict": "ignorieren",
+        "kernthese": "(Screening: ignorieren)",
+        "verdict_begruendung": "Screening: VR for artwork appreciation, applied art education tech.",
+        "bezuege": [],
+        "bemerkenswert": [],
+        "cost_usd": 0.0
+      },
+      "mistral": {
+        "verdict": "scannen",
+        "kernthese": "Der Artikel untersucht die Wirksamkeit eines auf experiential learning basierenden Virtual-Reality-Ansatzes (EL-SVVR) zur Förderung der Kunstwerkanerkennung und -wertschätzung bei Studierenden. Die zentrale These ist, dass sphärische Video-basierte Virtual Reality (SVVR) im Vergleich zu herkömmlichen Lehrmethoden (z. B. Vorträge mit Präsentationen oder Videos) nicht nur die Lernerfolge, Motivation und Selbstwirksamkeit der Studierenden steigert, sondern auch deren kritisches Denken und Fähigkeiten in der digitalen Bildgestaltung verbessert. Der Ansatz nutzt die immersive Erfahrung, um Studierende in die Kontexte der Kunstwerke einzubetten und so ein tieferes Verständnis und eine intensivere ästhetische Erfahrung zu ermöglichen.",
+        "verdict_begruendung": "Der Artikel ist für die Diskursübersicht im Bereich der digitalen und post-digitalen ästhetischen Bildung relevant, da er die Potenziale immersiver Technologien für die kulturelle Bildung aufzeigt. Allerdings bietet er keine direkten Anknüpfungspunkte an die theoretischen oder empirischen Schwerpunkte der aktiven Forschungsprojekte von Benjamin Jörissen, insbesondere nicht an die kritisch-relationalen oder posthumanistischen Perspektiven der Projekte **cultural_resilience**, **ai4artsed** oder **diaes_kubi**.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Artikel zeigt, dass Virtual Reality (SVVR) als **low-tech und low-cost-Lösung** in der kulturellen Bildung eingesetzt werden kann, um immersive ästhetische Erfahrungen zu ermöglichen. Dies ist besonders relevant für formale Bildungscontexten, in denen physische Ausstellungsbesuche nicht realisierbar sind.",
+          "Die Studie verbindet **experiential learning** mit digitalen Technologien und demonstriert, wie immersive Medien ästhetische Bildungspraktiken erweitern können. Dies könnte als Beispiel für die **Materialitäten des Digitalen** und deren Einfluss auf ästhetische Subjektivierungsprozesse gelesen werden.",
+          "Die Ergebnisse deuten darauf hin, dass VR-Technologien nicht nur kognitive, sondern auch **affektive und kreative Dimensionen** der Kunstrezeption und -produktion ansprechen. Dies könnte für die Diskussion über **post-digitale ästhetische Praktiken** und deren Bildungsrelevanz von Interesse sein."
+        ],
+        "cost_usd": 0.01572,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 29436,
+        "tokens_out": 670,
+        "latency_s": 16.66,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 7,
+      "article_id": "87f44a03f395a5e2ddbcf1307becf491",
+      "journal": "BDS",
+      "title": "Data artivism and feminicide",
+      "opus": {
+        "verdict": "scannen",
+        "kernthese": "Der Artikel führt das Konzept \"Data Artivism\" ein – künstlerisch-handwerkliche Arbeiten, die Daten visualisieren und als Widerstandsform mobilisieren, um soziale Probleme (hier Femizid) sichtbar zu machen und anzuprangern. Anhand von drei Fallbeispielen plädiert er für eine vertiefte Auseinandersetzung der kritischen Daten \n- und Visualisierungsstudien mit Kunst und für eine gemeinsame Sprache mit lateinamerikanischen Aktivist*innen und Künstler*innen.",
+        "verdict_begruendung": "Der Artikel berührt das Beobachtungsfeld (künstlerische Widerstandspraktiken, dekoloniale Perspektiven), bietet aber keine konkreten argumentativen Anschlüsse an Jörissens spezifische Publikationen; shared reference frames allein reichen nicht für 'lesenswert'.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Data Artivism als cross-disziplinärer Import: Verbindet kritische Datenwissenschaft, partizipative visuelle Forschungsmethoden und aktivistische Kunst – eine Schnittstelle, die für Forschungen zu hybriden kreativen Praktiken und postdigitaler Kunstbildung relevant sein könnte.",
+          "Expliziter Fokus auf lateinamerikanische Aktivist*innen und dekoloniale Perspektiven – berührt Jörissens Interesse an postkolonialen Irritationen bildungstheoretischer Diskurse (vgl. 'Territorien der Theorie')."
+        ],
+        "cost_usd": 0.0098105
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Beitrag führt den Begriff des „Data Artivism“ ein, um künstlerisch-aktivistische Praktiken zu beschreiben, die Daten und visuelle Kunst kombinieren, um soziale Probleme – insbesondere Feminizide – sichtbar zu machen und zu politisieren. Die Autor*innen argumentieren, dass solche Praktiken über konventionelle Datenvisualisierungen hinausgehen und alternative Wege eröffnen, Daten als Mittel des Widerstands und der advocacy zu mobilisieren. Am Beispiel von drei Projekten aus Lateinamerika wird gezeigt, wie Kunst, Handwerk und Datenanalyse ineinandergreifen, um feministische Anliegen zu stärken und neue Formen der kollektiven Sichtbarmachung zu ermöglichen.",
+        "verdict_begruendung": "Der Beitrag bietet produktive Anregungen für das Projekt [cultural_resilience], insbesondere durch die Verknüpfung von Daten, Kunst und aktivistischem Widerstand. Die Beispiele und theoretischen Konzepte (z. B. Data Feminism, affektive Politizität von Daten) erweitern die Diskussion über „Resistance“ als kollektive, kreative Praxis und „Rootedness“ als sinnlich-leibliche Verankerung in politischen Kämpfen.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Begriff „Data Artivism“ ist ein innovativer Brückenbegriff zwischen Kunst, Aktivismus und Datenwissenschaft, der für die Diskussion über ästhetisch-politische Praktiken in digitalen Kontexten relevant ist.",
+          "Die Beispiele stammen primär aus Lateinamerika und zeigen, wie feministische Bewegungen in der Region Daten und Kunst nutzen, um hegemoniale Narrative zu durchbrechen und marginalisierte Perspektiven sichtbar zu machen – ein wichtiger Beitrag zu dekolonialen und postkolonialen Diskursen.",
+          "Der Text thematisiert die affektive und politische Dimension von Daten, was für die Diskussion über „Rootedness“ und „Resistance“ im Rahmen des Cultural Resilience-Projekts anschlussfähig ist.",
+          "Die Autor*innen plädieren für eine stärkere Zusammenarbeit zwischen kritischen Datenwissenschaftler*innen, Künstler*innen und Aktivist*innen – ein Ansatz, der für partizipative und transdisziplinäre Forschungsdesigns (z. B. in AI4ArtsEd) inspirierend sein könnte."
+        ],
+        "cost_usd": 0.01561,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 29288,
+        "tokens_out": 642,
+        "latency_s": 16.02,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 8,
+      "article_id": "126ed69489dc33a0465fd80bceb44209",
+      "journal": "MedienPaed",
+      "title": "Eine kritische Bildungstheorie post-digitaler Subjektivität",
+      "opus": {
+        "verdict": "lesenswert",
+        "kernthese": "Leineweber's article outlines a programmatic framework for a critical education theory of post-digital subjectivity. Based on post-digital paradigms and the premise that digital media embed specific decision-making powers, it interrogates and reinterprets the core subject-theoretical concepts of autonomy and alienation through a relational approach, aiming to combine theoretical examinations of the subject with practical attempts at subjective liberation.",
+        "verdict_begruendung": "The article directly imports and engages with Jörissen's relational media education framework, applying it to the reinterpretation of critical theory concepts (autonomy, alienation) in post-digital contexts, which represents a substantive theoretical connection.",
+        "bezuege": [
+          {
+            "pub_id": "U6RW4WMN",
+            "pub_kurz": "Bettinger & Jörissen (2022) Medienbildung",
+            "bezug": "Leineweber cites this work, which develops a relational understanding of media education that de-centers the human subject and emphasizes distributed agency in heterogeneous constellations. While I could not find specific mentions of Leineweber in the text, the citation indicates engagement with Jörissen's relational media education framework, particularly the shift from individualistic to hybrid subjectivation approaches in post-digital contexts.",
+            "relation": "importiert"
+          }
+        ],
+        "bemerkenswert": [
+          "The article explicitly cites Benjamin Jörissen's publications on media education and design/subjectivation (Bettinger & Jörissen 2022, Jörissen 2015), indicating direct engagement with his work.",
+          "It attempts to bridge critical theory with post-digital paradigms by reinterpreting autonomy and alienation - core concepts of Frankfurt School critical theory - through relational approaches relevant to post-digital conditions.",
+          "The focus on 'decision-making powers inscribed in digital media' resonates with Jörissen's work on algorithmic subjectivation and distributed agencies in post-digital culture."
+        ],
+        "cost_usd": 0.0482895
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Beitrag entwickelt in programmatischer Absicht eine kritische Bildungstheorie post-digitaler Subjektivität. Ausgehend von der Prämisse, dass digitalen Medien spezifische Entscheidungsmächte eingeschrieben sind, werden klassische subjekttheoretische Begriffe wie Autonomie und Entfremdung relational reinterpretiert. Ziel ist es, eine Bildungstheorie zu konturieren, die theoretische Analysen des Subjekts mit praktischen Ansätzen subjektiver Befreiung verbindet und dabei die post-digitale Bedingtheit von Subjektivationsprozessen berücksichtigt.",
+        "verdict_begruendung": "Der Beitrag bietet produktive Anregungen für die aktiven Forschungsprojekte **DiäS-KuBi** (digitale-aesthetische Souveränität) und **AI4ArtsEd** (kritisch-kreative Praxis im Kontext generativer KI). Zudem setzt er sich explizit mit Jörissens relationalem Medienbildungsverständnis auseinander und entwickelt dieses weiter, was für die Diskursübersicht und die Weiterentwicklung der eigenen Argumentation von Bedeutung ist.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Beitrag zitiert explizit Publikationen von Benjamin Jörissen (U6RW4WMN, NDZFTDYB) und setzt sich mit dessen relationalem Medienbildungsverständnis auseinander, was auf eine direkte Auseinandersetzung mit dessen Argumenten hindeutet.",
+          "Die Reinterpretation von Autonomie und Entfremdung als relationale Kategorien im post-digitalen Kontext bietet einen produktiven Anknüpfungspunkt für die Diskussion um digitale Souveränität und ästhetische Bildung, wie sie in den Projekten **DiäS-KuBi** und **AI4ArtsEd** verhandelt wird.",
+          "Der Beitrag verbindet kritische Theorie mit post-digitalen Subjekttheorien und adressiert damit eine Lücke in der erziehungswissenschaftlichen Diskussion, die für die Reflexion über **kulturelle Resilienz** und **post-anthropozentrische Bildungstheorien** relevant ist."
+        ],
+        "cost_usd": 0.01617,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 30145,
+        "tokens_out": 733,
+        "latency_s": 16.63,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": true
+    },
+    {
+      "i": 9,
+      "article_id": "72da8be9352e51272ef3a73d606dc8b3",
+      "journal": "EPT",
+      "title": "Michel Serres: Divergences",
+      "opus": {
+        "verdict": "scannen",
+        "kernthese": "Der Artikel untersucht Michel Serres' Philosophie als Abkehr von der germanischen Bildungstradition (als egozentrischer, apolitischer Selbstkultivierung) und als Hinwendung zu einem ökologischen, ökozentrischen Denken im Sinne von Gregory Batesons \"ecology of mind\". Serres integriert auf ökologische Weise Poesie, Wissenschaft, Kunst, Ökologie und Politik, um philosophische Fragen zu stellen. Sein Stil und Inhalt durchbrechen die Grenzen traditioneller Philosophie und eröffnen ein neues Paradigma.",
+        "verdict_begruendung": "Der Artikel berührt Jörissens Beobachtungsfeld (Kritik individualistischer Bildung, ökologisch-relationale Wende), bietet aber keine konkrete Argumenttransfer oder Zitation, die eine substantielle Verbindung begründet.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Explizite Gegenüberstellung von Serres' ökozentrischem Denken mit der germanischen Bildungstradition (Bildung als egozentrische, apolitische Selbstkultivierung) – eine direkte philosophische Formulierung, die Jörissens Kritik an individualistischen Bildungskonzepten parallelisiert.",
+          "Verwendung von Gregory Batesons 'ecology of mind' als Referenzrahmen für Serres' ökologischen Ansatz – ein Konzept, das für relationale, posthumane Bildungstheorie anschlussfähig ist."
+        ],
+        "cost_usd": 0.0095065
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel untersucht das Werk des französischen Philosophen Michel Serres und dessen Abweichung von der traditionellen westlichen Philosophie, insbesondere von der germanischen Bildungstradition des 18. und 19. Jahrhunderts. Serres wird als eco-zentrischer Denker dargestellt, der Poesie, Wissenschaft, Kunst, Ökologie und Politik integriert, um philosophische Fragen zu stellen. Sein Werk wird mit der Figur des Pierrot Lunaire assoziiert, der als Symbol für den Bruch mit traditionellen Grenzen und die Eröffnung eines neuen philosophischen Paradigmas steht.",
+        "verdict_begruendung": "Der Artikel bietet eine produktive Auseinandersetzung mit Michel Serres' Philosophie, die für das Projekt [cultural_resilience] von besonderem Interesse ist. Serres' eco-zentrisches Denken und seine Betonung von Relationalität, Bruch mit traditionellen Grenzen und Integration multipler Wissensformen korrespondieren mit den zentralen Konzepten von Rootedness, Resourcefulness und Resistance. Zudem könnte seine Philosophie als theoretische Ressource für die Weiterentwicklung einer post-anthropozentrischen Bildungstheorie dienen.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die explizite Gegenüberstellung von Serres' eco-zentrischem Denken mit der germanischen Bildungstradition (Bildung) und deren individualistischen, introspektiven Ansätzen.",
+          "Die Verwendung des Pierrot Lunaire als Tropus für Serres' Philosophie, die traditionelle Grenzen der Disziplinen und Denkweisen aufbricht.",
+          "Die Betonung von Serres' Integration von Kunst, Wissenschaft und Ökologie als Grundlage für eine neue philosophische Perspektive, die für posthumanistische und relationale Ansätze anschlussfähig ist."
+        ],
+        "cost_usd": 0.01557,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 29602,
+        "tokens_out": 510,
+        "latency_s": 12.71,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 10,
+      "article_id": "6a8feec999224400b1ef801b200ad3ac",
+      "journal": "merz",
+      "title": "Friedrich, Jörg Phil (2023). Degenerierte Vernunft. Künstliche Intelligenz und die Natur des Denkens. München: Claudius. 125 S., 20,00 €",
+      "opus": {
+        "verdict": "lesenswert",
+        "kernthese": "Rezension des Buches \"Degenerierte Vernunft\" von Jörg Phil Friedrich, das eine philosophische Abgrenzung von KI und menschlicher Vernunft vornimmt. KI wird als algorithmische, sinn- und bewusstseinslose Datenverarbeitung charakterisiert, die grundsätzlich von menschlichem Denken (Besinnung, Reflexion, Sinnsuche) verschieden sei. Die Unterscheidung soll helfen, mit Ängsten vor KI-Ersetzung umzugehen.",
+        "verdict_begruendung": "Stellt eine prägnante philosophische Gegenposition zu Jörissens posthumanistischen, relationalen KI-Konzeptualisierungen dar – relevant als Kontrastfolie und zur Schärfung der eigenen Argumentation.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Rezension einer Monographie, die eine explizit anti-posthumanistische, bewusstseinsphilosophische Position zu KI vertritt – direkter Kontrast zu Jörissens relationalen, agentiell-realistischen und posthumanistischen Zugängen.",
+          "Thematisiert die öffentliche Wahrnehmungskrise („Warum halten wir KI-Produkte für besser?“), die Jörissen ebenfalls als „Wahrnehmungskrise“ analysiert (LEHKCH59), aber aus diametral entgegengesetzter theoretischer Perspektive."
+        ],
+        "cost_usd": 0.01800456
+      },
+      "mistral": {
+        "verdict": "scannen",
+        "kernthese": "Jörg Phil Friedrichs Buch »Degenerierte Vernunft. Künstliche Intelligenz und die Natur des Denkens« hinterfragt den Begriff der KI und grenzt ihn von der natürlichen menschlichen Vernunft ab. Der Autor argumentiert, dass KI-Systeme keine Bewusstseins-, Intuitions- oder Sinnstiftungsfähigkeiten besitzen, sondern auf algorithmischen und datenverarbeitenden Methoden basieren. Ziel ist es, die Unterschiede zwischen menschlicher Vernunft – die durch Besinnung, Reflexion und Sinnsuche gekennzeichnet ist – und KI herauszuarbeiten, um deren scheinbare Überlegenheit einzuordnen und den Umgang mit dieser Technologie zu reflektieren.",
+        "verdict_begruendung": "Der Beitrag ist für die Diskursübersicht im Themenfeld KI und Bildung relevant, da er eine philosophische Perspektive auf die Differenz zwischen menschlicher Vernunft und maschineller Datenverarbeitung einbringt. Allerdings bietet er keine direkten Anknüpfungspunkte an die spezifischen theoretischen oder empirischen Arbeiten von Benjamin Jörissen oder die aktiven Forschungsprojekte, sondern bleibt auf einer allgemeinen Ebene.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die Publikation adressiert eine zentrale gesellschaftliche Wahrnehmungskrise im Umgang mit KI: die Überschätzung maschineller Leistungen durch die Unterschätzung der Komplexität menschlicher Vernunft.",
+          "Friedrichs These, dass KI keine Sinnstiftung betreibt, sondern lediglich statistische Muster reproduziert, bietet einen prägnanten Gegenentwurf zu solutionistischen Narrativen, die KI als universelles Problemlösungsinstrument framet."
+        ],
+        "cost_usd": 0.01533,
+        "cost_is_estimate": true,
+        "cache_pct": 97.7,
+        "tokens_in": 29115,
+        "tokens_out": 513,
+        "latency_s": 13.43,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 11,
+      "article_id": "f035990cc4e302bc50e22e0e1feed55c",
+      "journal": "MedienPaed",
+      "title": "Die Dualität von Kompetenz in tiefgreifend mediatisierten Welten",
+      "opus": {
+        "verdict": "scannen",
+        "kernthese": "Der Artikel rekonzeptualisiert \"Medienkompetenz\" in tiefgreifend mediatisierten Welten, indem er die definitorischen Wendungen des Begriffs im medienpädagogischen Diskurs nachzeichnet und schließlich ein eigenes Verständnis vorlegt, das Kompetenz und Performanz nach Giddens als zwei sich gegenseitig bedingende Dimensionen unterscheidet und zusätzlich zwischen Wirklichkeitskonstruktionen erster und zweiter Ordnung differenziert.",
+        "verdict_begruendung": "Der Beitrag berührt medienpädagogische Grundlagendebatten im Beobachtungsfeld, zeigt jedoch keine konkreten argumentativen Anschlüsse an Jörissens spezifische Publikationen.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Versuch, den stark kritisierten und teils verworfenen Begriff 'Medienkompetenz' durch eine Giddens-inspirierte Dualitätstheorie zu revitalisieren, stellt eine interessante Intervention in den deutschsprachigen medienpädagogischen Grundlagendiskurs dar.",
+          "Die Unterscheidung zwischen Wirklichkeitskonstruktionen erster und zweiter Ordnung in Verbindung mit Kompetenz/Performanz könnte Anschlüsse an Diskussionen über implizites Wissen und habituelle Dimensionen digitaler Praxis bieten."
+        ],
+        "cost_usd": 0.009804
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Beitrag adressiert die Kontroversen um den Begriff der Medienkompetenz in tiefgreifend mediatisierten Welten und schlägt eine Neukonzeption vor. Die Autor*innen zeichnen die historischen und definitorischen Wendungen des Medienkompetenzbegriffs nach und kritisieren dessen Reduktion auf einzelne, medienbezogene Fertigkeiten. Stattdessen wird ein duales Verständnis von Kompetenz und Performanz im Anschluss an Anthony Giddens' Theorie der Strukturierung entwickelt, das beide Dimensionen als sich gegenseitig bedingend und reproduzierend fasst. Zudem wird zwischen Wirklichkeitskonstruktionen erster und zweiter Ordnung unterschieden, um implizite Denkweisen über Kompetenz sichtbar zu machen und eine ganzheitlichere Perspektive auf Medienkompetenz in mediatisierten Welten zu ermöglichen.",
+        "verdict_begruendung": "Der Beitrag bietet Anregungspotenzial für das Projekt **ai4artsed**, insbesondere durch die kritische Reflexion von Kompetenzbegriffen und die Betonung der Dualität von Kompetenz und Performanz. Diese Perspektive könnte produktiv mit den Fragen nach kritisch-kreativen Praktiken im Umgang mit generativer KI (z. B. Prompt Interception) und der Rolle von Agency in human-algorithmischen Kollektiven verknüpft werden. Zudem ist die konzeptionelle Neukonzeption von Medienkompetenz relevant für die Diskussionen um **digitale Souveränität** und **ästhetische Bildung** in post-digitalen Kontexten.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die Autor*innen führen eine Unterscheidung zwischen Wirklichkeitskonstruktionen erster und zweiter Ordnung ein, um die oft unsichtbaren Prämissen in der Medienkompetenzdebatte zu explizieren.",
+          "Der Beitrag plädiert für eine Abkehr von der Zergliederung von Medienkompetenz in einzelne Fertigkeiten und stattdessen für eine Fokussierung auf die Dualität von Kompetenz und Performanz in mediatisierten Welten.",
+          "Die Bezugnahme auf Giddens' Strukturierungstheorie bietet einen theoretischen Rahmen, der über traditionelle medienpädagogische Ansätze hinausgeht und die Wechselwirkung von Struktur und Handlung betont."
+        ],
+        "cost_usd": 0.0162,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 29802,
+        "tokens_out": 863,
+        "latency_s": 21.71,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 12,
+      "article_id": "90652e050b8e67a8a4e0d44bbef46f4e",
+      "journal": "BJET",
+      "title": "Youths' relationship with culture: Tracing sixth graders' learning through designing culturally centred multimedia projects",
+      "opus": {
+        "verdict": "scannen",
+        "kernthese": "Der Artikel untersucht, wie Sechstklässler*innen durch das Erstellen kulturspezifischer Multimedia-Projekte (Remixing) ihre Beziehung zu Kultur entwickeln und darstellen. Anhand einer Fallstudie mit 36 Projekten von 12 Schüler*innen zeigt er drei Formen der Symbolisierung auf, die vielfältige, reziproke Beziehungen zur eigenen und zu anderen Kulturen offenbaren. Die Arbeit plädiert dafür, die festgefahrenen Erwartungen der Dominanzkultur in formalen Lernumgebungen zu überwinden und stattdessen die Wissensbestände und Erfahrungen der Jugendlichen durch multimediales Remixen einzuladen.",
+        "verdict_begruendung": "Der Artikel berührt das Beobachtungsfeld Digitalität und kulturelle Bildung, bietet aber keine konkreten argumentativen Anschlüsse zu Jörissens spezifischen Publikationen (z.B. kulturelle Resilienz, Post-Digitalität, agentieller Realismus).",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Empirische Fallstudie zu Remixing als Mittel der kulturellen Artikulation in formalen Schulsettings – konkrete Anschauung für Diskurse um digitale Artikulation und kulturelle Hybridisierung in Bildungskontexten."
+        ],
+        "cost_usd": 0.0091545
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel untersucht, wie sechste Klassen durch die Gestaltung kulturell zentrierter Multimedia-Projekte ihre Beziehung zu Kultur entwickeln. Die Autor*innen argumentieren, dass formale Lernumgebungen oft von dominanten kulturellen Normen geprägt sind und dadurch die vielfältigen Zukunftsperspektiven von Jugendlichen einschränken. Am Beispiel von zwölf Schüler*innen wird gezeigt, wie diese durch das Remixen von Multimedia-Ressourcen ihre kulturellen Beziehungen symbolisch ausdrücken und weiterentwickeln. Dabei werden drei Formen der Symbolisierung identifiziert, die auf vielfältige und wechselseitige Beziehungen zu eigenen und anderen Kulturen verweisen.",
+        "verdict_begruendung": "Der Artikel bietet produktive Anregungen für die Projekte [cultural_resilience] und [metakubi], insbesondere durch die Betonung kultureller Artikulation als relationaler und transformativer Praxis. Die Verbindung von kultureller Bildung, digitalen Praktiken und der Entwicklung kultureller Resilienz ist direkt anschlussfähig an die strukturellen Momente von Rootedness, Resourcefulness und Resistance. Zudem liefert die Studie empirische Belege für die Bedeutung von Remixing als kulturelle Praxis, die in postdigitalen Kontexten relevant ist.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die Studie verbindet explizit kulturelle Bildung mit digitalen Remixing-Praktiken und zeigt, wie Multimedia-Projekte als Werkzeuge für kulturelle Artikulation und Reflexion genutzt werden können.",
+          "Die Autor*innen betonen die Wechselseitigkeit der kulturellen Beziehungen, die durch die Projekte entstehen – ein Aspekt, der in der Diskussion über kulturelle Bildung oft vernachlässigt wird.",
+          "Die Arbeit lehnt sich an Stuart Halls Konzept der kulturellen Repräsentation an und überträgt es auf digitale Lernumgebungen, was eine produktive Erweiterung des Diskurses darstellt.",
+          "Die Studie ist ein Beispiel für die Umsetzung partizipativer und kultursensibler Ansätze in formalen Bildungskontexten, die über bloße Inklusion hinausgehen und kulturelle Agency stärken."
+        ],
+        "cost_usd": 0.01592,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 29416,
+        "tokens_out": 806,
+        "latency_s": 19.61,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 13,
+      "article_id": "fcf7903515402abec1d3c1f28f26e153",
+      "journal": "MedienPaed",
+      "title": "Die epistemische Krise am Beispiel der AfD und die Verantwortung der Medienpädagogik",
+      "opus": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel diskutiert die epistemische Krise als gesellschaftliches Krisensymptom am Beispiel der medialen Positionierungen der AfD. Ausgehend von der Prämisse, dass Digitalität und Postdigitalität nicht nur Handlungsweisen, sondern auch kulturelle Normen und politische Stabilität transformieren, analysiert er die Aushandlungsformen im Korridor von Desinformation/Populismus und vermachteten Kommunikationsräumen. Der Beitrag zeigt zentrale Merkmale der epistemischen Krise aus Sicht von Medialität und Digitalität auf und erörtert, wie sich die Medienpädagogik dazu verhalten kann.",
+        "verdict_begruendung": "Der Artikel importiert explizit Jörissens relationales Medienbildungskonzept und transferiert es in den politischen Kontext der epistemischen Krise. Dies stellt eine substantielle Verbindung und Erweiterung dar, die für Jörissens eigene Arbeiten zur Digitalität und politischen Dimensionen von Medienbildung relevant ist.",
+        "bezuege": [
+          {
+            "pub_id": "U6RW4WMN",
+            "pub_kurz": "Bettinger & Jörissen 2022: Medienbildung",
+            "bezug": "Der Artikel zitiert den Beitrag von Bettinger & Jörissen im Handbuch Medienpädagogik und greift damit explizit auf Jörissens relationales Verständnis von Medienbildung zurück. Er überträdt dieses Konzept auf die politische Dimension der epistemischen Krise und versteht Medienpädagogik als Arbeit an Relationierungsweisen im Kontext digitaler Plattformlogiken und politischer Aushandlungsprozesse.",
+            "relation": "importiert"
+          }
+        ],
+        "bemerkenswert": [
+          "Der Artikel operationalisiert den abstrakten Begriff der 'epistemischen Krise' konkret anhand der AfD als politischem Akteur und deren medialer Strategien.",
+          "Er versucht, medienpädagogische Verantwortung in einem politisch hoch aufgeladenen Feld zu definieren – ein eher seltenes Unterfangen in der Medienpädagogik.",
+          "Der Beitrag stellt eine direkte Verbindung zwischen relationaler Medienbildungstheorie und konkreter politischer Gegenwartsdiagnose her, was eine ungewöhnliche Anwendung darstellt."
+        ],
+        "cost_usd": 0.04314849999999999
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Beitrag untersucht die epistemische Krise als gesellschaftliches Phänomen, das durch die postdigitale Transformation von Öffentlichkeit, Desinformation und Populismus verstärkt wird. Am Beispiel der AfD wird analysiert, wie mediale Inszenierungen und politische Positionierungen diese Krise befördern. Dabei wird die Rolle der Medienpädagogik diskutiert, die sich angesichts vermachteter Kommunikationsräume und geschwächter demokratischer Institutionen neu verorten muss. Der Fokus liegt auf der Frage, wie Medienpädagogik zur Stabilisierung rationaler Diskurse und zur Förderung epistemischer Verantwortung beitragen kann.",
+        "verdict_begruendung": "Der Beitrag ist lesenswert, weil er die epistemische Krise als zentrales Problem postdigitaler Öffentlichkeit und demokratischer Institutionen thematisiert und dabei konkrete Anknüpfungspunkte für die Medienpädagogik bietet. Die Auseinandersetzung mit der AfD als Fallbeispiel und die Bezugnahme auf Jörissens theoretische Arbeiten machen den Text besonders relevant für die Diskursübersicht und die aktive Projektarbeit im Bereich **MetaKuBi** (Transformationen von Bildung und ästhetischen Praktiken) sowie **DiäS-KuBi** (digitale Souveränität und kulturelle Resilienz).",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Beitrag adressiert die epistemische Krise als zentrales Symptom postdigitaler Öffentlichkeit und verbindet sie mit konkreten politischen Akteuren (AfD), was in dieser Form ein relativ neues Phänomen in der medienpädagogischen Diskussion darstellt.",
+          "Die Auseinandersetzung mit der Verantwortung der Medienpädagogik in vermachteten Kommunikationsräumen ist ein bemerkenswerter Impuls, der über klassische Medienkompetenzdebatten hinausgeht und epistemische Dimensionen von Bildung in den Blick nimmt.",
+          "Die explizite Bezugnahme auf Jörissens und Bettingers Konzept der Medienbildung (2022) sowie auf strukturale Medienbildung (Marotzki/Jörissen 2010) zeigt, dass der Beitrag an aktuelle theoretische Diskurse anknüpft und diese auf politische Krisenphänomene anwendet."
+        ],
+        "cost_usd": 0.01682,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 31449,
+        "tokens_out": 728,
+        "latency_s": 17.5,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": true
+    },
+    {
+      "i": 14,
+      "article_id": "641bb1ec866e734027416bca2aa2c992",
+      "journal": "EPT",
+      "title": "Educating the temporal imagination: Teaching time for justice in a warming world",
+      "opus": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel argumentiert, dass Klimawandel ein „temporales Problem“ darstellt, das Spannungen zwischen menschlichen und nicht-menschlichen Zeitlichkeiten erzeugt und unterschiedliche Gemeinschaften zu unterschiedlichen Zeitregimen zwingt. Um Klima(un)gerechtigkeit zu verstehen, benötigen Schüler*innen eine „temporale Imagination“, die sensibilisiert für die politische Rolle von Zeit in einer erwärmenden Welt. Der Artikel entwickelt eine „temporale Pädagogik“ mit fünf Praktiken (relationale Zeit, Rhythmus, Antizipation und Reparation, temporale Suspension, kritisches Timekeeping) und drei pädagogischen Bewegungen (Interruption, Attention, Encounter), um dominante Zeitrahmen zu unterbrechen, pluralen Zeitlichkeiten Aufmerksamkeit zu schenken und kollektive Urteilsbildung über gerechtere Zeitpraktiken zu ermöglichen.",
+        "verdict_begruendung": "Der Artikel erweitert Jörissens Konzept kultureller Resilienz substantiell um eine explizite temporale Dimension und bietet mit seinen fünf Zeitpraktiken und drei pädagogischen Bewegungen einen konkreten operationalisierbaren Rahmen für Bildungsprozesse im Anthropozän.",
+        "bezuege": [
+          {
+            "pub_id": "3W9X5QLZ",
+            "pub_kurz": "Jörissen & Klepacki (2025): Cultural Resilience and the Cultivation of a Postdigital Planetary Dissensus",
+            "bezug": "Der Artikel von Facer entwickelt eine explizite temporale Dimension von Bildung für Nachhaltigkeit, die Jörissens Konzept kultureller Resilienz konkret um Zeitpraktiken erweitert. Während Jörissen Resilienz als relationales, kollektives Bildungsgeschehen mit den drei Momenten rootedness, resourcefulness, resistance fasst (basierend auf Brown), fokussiert Facer spezifisch auf temporale Praktiken: relational time, rhythm, anticipation and reparation, temporal suspension, critical timekeeping. Dies bietet eine operationalisierbare Ergänzung zu Jörissens bildungstheoretischem Ansatz.",
+            "relation": "erweitert"
+          },
+          {
+            "pub_id": "A93WTEZQ",
+            "pub_kurz": "Jörissen (2022): Digitale Sympoiesis und kulturelle Resilienz: Alternative Perspektiven auf Digitalisierung im Anthropozän",
+            "bezug": "Facers Ansatz der „temporal imagination“ und „temporal pedagogy“ liefert eine konkrete pädagogische Methodik, die Jörissens Forderung nach einer relationalen Bildungstheorie im Anthropozän substantiell ausfüllt. Während Jörissen digitale Sympoiesis als kollektive Weltungsprozesse diskutiert, bietet Facer mit ihren fünf Zeitpraktiken und drei pädagogischen Bewegungen einen konkreten Handlungsrahmen für Bildungsprozesse in planetaren Krisen. Beide teilen die Kritik an individualistischen Ansätzen und betonen kollektive, relationale Lernprozesse.",
+            "relation": "importiert"
+          }
+        ],
+        "bemerkenswert": [
+          "Die explizite Verbindung von Zeitlichkeit und Klimagerechtigkeit im pädagogischen Kontext stellt einen originären Beitrag dar, der bildungstheoretisch bisher unterbelichtet ist.",
+          "Die Integration indigener und dekolonialer Zeitkonzepte („relational time“, „rhythm“) mit westlichen Zukunftsforschungsansätzen zeigt eine cross-disziplinäre und epistemisch pluralistische Herangehensweise.",
+          "Die Konkretisierung der temporalen Pädagogik in fünf Praktiken und drei Bewegungen bietet einen operationalisierbaren Rahmen für Unterricht und Bildungsprogramme."
+        ],
+        "cost_usd": 0.05350494
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel adressiert die Notwendigkeit, eine „temporale Imagination“ in der Bildung zu fördern, um Schüler*innen zu befähigen, die komplexen zeitlichen Dimensionen der Klimakrise und damit verbundene (Un-)Gerechtigkeiten zu verstehen und zu bearbeiten. Zentral ist die These, dass Zeit nicht neutral, sondern politisch und konstitutiv für klimabezogene Ungerechtigkeiten ist. Facer entwickelt fünf bildungspraktische Ansätze – relationale Zeit, Rhythmus, Antizipation und Reparation, temporale Suspension sowie kritisches Zeitmanagement –, die in einer „temporalen Pädagogik“ zusammengeführt werden. Diese Pädagogik zielt darauf ab, dominante zeitliche Rahmen zu unterbrechen, Aufmerksamkeit für pluralistische Zeitlichkeiten zu schärfen und kollektive Handlungsfähigkeit in der Klimakrise zu ermöglichen.",
+        "verdict_begruendung": "Der Artikel bietet produktive Anregungen für das aktive Forschungsprojekt **Cultural Resilience**, insbesondere durch die Verbindung von Zeitlichkeit, Gerechtigkeit und planetarer Bildung. Die vorgeschlagenen temporal-pädagogischen Praktiken lassen sich strukturell auf die drei Momente kultureller Resilienz (Rootedness, Resourcefulness, Resistance) beziehen und erweitern diese um eine explizit zeitliche Dimension. Zudem adressiert der Artikel die politische und ästhetische Dimension von Zeitlichkeit, die für eine post-anthropozentrische Bildungstheorie zentral ist.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Artikel importiert den Begriff der „temporalen Attunement“ (Jensen, 2023) und verbindet ihn mit dekolonialen und indigenen Zeitkonzepten, was eine produktive Erweiterung postkolonialer und posthumanistischer Diskurse in der Bildungstheorie darstellt.",
+          "Die fünf vorgeschlagenen temporal-pädagogischen Praktiken (relationale Zeit, Rhythmus, Antizipation/Reparation, temporale Suspension, kritisches Zeitmanagement) bieten konkrete Anknüpfungspunkte für ästhetische und kulturelle Bildungsprozesse, insbesondere im Kontext von Klimagerechtigkeit und planetarer Verantwortung.",
+          "Die Betonung von „temporaler Suspension“ als pädagogische Praxis korrespondiert mit Konzepten der Entschleunigung und Reflexivität, die in postdigitalen und posthumanistischen Bildungstheorien zunehmend an Bedeutung gewinnen.",
+          "Der Artikel verweist auf die politische Dimension von Zeitlichkeit, etwa in der Gegenüberstellung von „langsamen Notfällen“ und „dringenden Krisen“, was für die Diskussion um kulturelle Resilienz und planetare Bildung relevant ist."
+        ],
+        "cost_usd": 0.01621,
+        "cost_is_estimate": true,
+        "cache_pct": 96.4,
+        "tokens_in": 29520,
+        "tokens_out": 968,
+        "latency_s": 21.48,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": true
+    },
+    {
+      "i": 15,
+      "article_id": "85a2cee01c0d403c3e83dedf6fc8f911",
+      "journal": "PCS",
+      "title": "Neoliberalism and the social imaginary: interpreting study abroad policy in Japanese higher education",
+      "opus": {
+        "verdict": "ignorieren",
+        "kernthese": "(Screening: ignorieren)",
+        "verdict_begruendung": "Screening: Japanese study abroad, neoliberalism, English proficiency, n",
+        "bezuege": [],
+        "bemerkenswert": [],
+        "cost_usd": 0.0
+      },
+      "mistral": {
+        "verdict": "scannen",
+        "kernthese": "Der Artikel untersucht die neoliberalen und marktgetriebenen Diskurse, die die Internationalisierung und die Förderung von Auslandsstudienprogrammen (Study Abroad, SA) in der japanischen Hochschulbildung prägen. Im Zentrum steht die Analyse, wie der Staat durch die Propagierung von Englisch als dominanter Lingua franca und die Konstruktion eines ,globalen Humankapitals‘ soziale Imaginarien schafft, die individuelle Mobilität als ökonomische Notwendigkeit und soziale Pflicht rahmen. Dabei werden essentialistische Kulturverständnisse reproduziert, und die Erwartungen an Rückkehrende bleiben vage, was zu einer informellen sozialen Verschuldung der Akteur*innen gegenüber dem Staat führt.",
+        "verdict_begruendung": "Der Artikel bewegt sich im weiteren Feld der kritischen Bildungsforschung und berührt Themen wie neoliberale Bildungspolitik, sprachliche Hegemonie und soziale Imaginarien, die für die Diskursübersicht relevant sind. Allerdings fehlen direkte Anknüpfungspunkte zu den zentralen theoretischen oder empirischen Schwerpunkten von Jörissens veröffentlichtem Werk oder den aktiven Forschungsprojekten.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die Studie zeigt, wie neoliberale Diskurse in der japanischen Bildungspolitik essentialistische Kulturverständnisse reproduzieren und dabei eine informelle soziale Verschuldung der Studierenden gegenüber dem Staat erzeugen.",
+          "Der Artikel thematisiert die Spannung zwischen multikulturellen Rhetoriken und der faktischen Privilegierung von Englisch als hegemonialer Sprache, was für postkoloniale und dekoloniale Perspektiven auf Bildung und Sprache relevant ist.",
+          "Die Analyse der sozialen Imaginarien und deren Auswirkungen auf individuelle Handlungsweisen bietet Anknüpfungspunkte für eine kritische Auseinandersetzung mit globalen Bildungsdiskursen und deren lokalen Ausprägungen."
+        ],
+        "cost_usd": 0.01558,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 29497,
+        "tokens_out": 552,
+        "latency_s": 14.22,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 16,
+      "article_id": "a1d1395d112b8315a528a3a46f1dd7a7",
+      "journal": "ZfE",
+      "title": "Individuelle Schüler*innenprofile des situationalen und dispositionalen Interesses und ihre Bedeutung für die Wahrnehmung der Unterrichtsqualität im Fach Mathematik",
+      "opus": {
+        "verdict": "ignorieren",
+        "kernthese": "(Screening: ignorieren)",
+        "verdict_begruendung": "Screening: Empirical motivation study, no theoretical connection.",
+        "bezuege": [],
+        "bemerkenswert": [],
+        "cost_usd": 0.0
+      },
+      "mistral": {
+        "verdict": "scannen",
+        "kernthese": "Der Artikel untersucht die Bedeutung individueller Profile des situationalen und dispositionalen Interesses von Schüler*innen der 8. Jahrgangsstufe für ihre Wahrnehmung der Unterrichtsqualität im Fach Mathematik. Mit einem personenzentrierten Ansatz werden vier charakteristische Profile identifiziert: konsistent hohes oder niedriges Interesse sowie Mischprofile mit hohem situationalem bei niedrigem dispositionalem Interesse (und umgekehrt). Die Studie zeigt, dass Schüler*innen mit konsistent positiven motivational-affektiven Voraussetzungen oder hohem situationalem Interesse die Unterrichtsqualität signifikant positiver wahrnehmen.",
+        "verdict_begruendung": "Der Artikel bewegt sich im Feld der empirischen Unterrichtsforschung und berührt Themen wie Unterrichtsqualität, Motivation und Interesse, die für die Erziehungswissenschaft generell relevant sind. Allerdings gibt es keine direkten oder produktiven Anknüpfungspunkte zu den zentralen theoretischen oder projektbezogenen Schwerpunkten von Benjamin Jörissen (z. B. kulturelle Resilienz, postdigitale Bildung, ästhetische oder relationale Bildungstheorie).",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die Studie betont die Relevanz des *situationalen Interesses* als zentralen Faktor für die Wahrnehmung von Unterrichtsqualität, was für die Gestaltung von Lernumgebungen und die Lehrer*innenbildung von praktischer Bedeutung sein könnte.",
+          "Die Identifikation von Mischprofilen (z. B. hohes situationales bei niedrigem dispositionalem Interesse) wirft Fragen nach der Dynamik und Kontextabhängigkeit von Interesse auf, die für die Bildungsforschung anschlussfähig sind."
+        ],
+        "cost_usd": 0.01613,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 30717,
+        "tokens_out": 514,
+        "latency_s": 12.36,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 17,
+      "article_id": "19df0fcd7d882d336505ff720613788a",
+      "journal": "RAeE",
+      "title": "Ecologies of Death, Ecologies of Mourning: A Biophilosophy of Non/Living Arts",
+      "opus": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel untersucht aus der Perspektive der „Queer Death Studies\" gegenwärtige Trauer-Imaginationen und die Auseinandersetzung mit mehr-als-menschlichem Tod, Sterben und Artensterben im Kontext planetarischer Umweltkrisen. Zeitgenössische Kunst dient als Ort, an dem eine ökologische Ontologie des Todes sichtbar und ethische Territorien des Eco-Grief entfaltet werden. Eine „Biophilosophie des Nicht/Lebenden\" rahmt Tod und Verlust als relationale, ökologische (nicht individuell-psychologische) Phänomene im Anthropozän.",
+        "verdict_begruendung": "Der Artikel operiert aus einer anderen theoretischen Tradition (Queer Death Studies, posthumanistische Biophilosophie) auf einem Problemfeld, das strukturell direkt an die Cultural-Resilience-Theorie anschließt: mehr-als-menschliche Vulnerabilität, ökologische Trauer, Kunst als Ort ethisch-ästhetischer Verhandlung im Anthropozän. Die thanato-ökologische Perspektive bietet produktive Reibung für die lebensorientierte Resilienztheorie und könnte insbesondere die Rootedness-Dimension um die Dimension des Verlusts und der Extinktion erweitern.",
+        "bezuege": [
+          {
+            "pub_id": "ZSSJ4BPL",
+            "pub_kurz": "Klepacki/Jörissen 2023 – Freiheit und Entanglement",
+            "bezug": "In ZSSJ4BPL wird Rootedness als ‚sinnlich-leibliches und zugleich kritisch-ästhetisches Gewahrwerden von Entanglement' konzipiert, wobei kulturell erzeugte ‚Resonanzunfähigkeiten' und ‚Anästhetisierungen' als Problemdiagnosen dienen. Das im neuen Artikel entfaltete Eco-Grief – die affektive Erfahrung mehr-als-menschlichen Verlusts und Sterbens – kann als konkreter Phänomenbereich gelesen werden, in dem Anästhetisierung durchbrochen und Rootedness als schmerzhafte Erfahrung von Entanglement manifest wird. Der neue Artikel liefert damit eine thanato-ökologische Konkretion dessen, was im Cultural-Resilience-Modell strukturell als Rootedness angelegt ist, operiert dabei allerdings aus einer anderen Tradition (Queer Death Studies statt agentiellem Realismus).",
+            "relation": "parallelisiert"
+          },
+          {
+            "pub_id": "AC9GZ3JY",
+            "pub_kurz": "Jörissen/Klepacki 2021 – Krise, Kultur und die Fortsetzung des Lebens",
+            "bezug": "In AC9GZ3JY wird Kultur als auf ‚die Fortsetzung des Lebens' hinwirkend bestimmt und kulturelle Nachhaltigkeit als untrennbare Einheit von Fortsetzung von Kultur und Fortsetzung von Leben gefasst. Die ‚Biophilosophie des Nicht/Lebenden' des neuen Artikels bietet hierzu eine produktive Gegenfigur: Wo kulturelle Resilienz auf das Fortbestehen kultureller Lebensformen abzielt, insistiert Radomska auf dem konstitutiven Stellenwert von Tod, Verlust und Extinktion innerhalb ökologischer Verflechtungen. Dies ist weniger ein Widerspruch als eine komplementäre Perspektive, die den blinden Fleck einer vitalistisch orientierten Resilienztheorie beleuchten könnte.",
+            "relation": "parallelisiert"
+          }
+        ],
+        "bemerkenswert": [
+          "‚Queer Death Studies' als theoretischer Rahmen für die Analyse ökologischer Trauer in den Künsten ist ein ungewöhnlicher cross-disziplinärer Import, der Tod/Sterben/Extinktion als relationales, ökologisches Phänomen (nicht individuell-psychologisch) rekonzeptualisiert.",
+          "Die Figur einer ‚Biophilosophie des Nicht/Lebenden' (non/living) bietet einen konzeptuellen Gegenpol zur ‚Fortsetzung des Lebens' in der Kulturellen Resilienz: Wo Cultural Resilience auf das Fortbestehen kultureller Lebensformen abzielt, fragt dieser Ansatz nach dem konstitutiven Stellenwert von Tod, Verlust und Extinktion innerhalb ökologischer Verflechtungen.",
+          "Die Verbindung von Anthropozän-Affekten (Angst, Wut, Trauer) mit zeitgenössischer Kunst als ethisch-ästhetischem Verhandlungsraum schließt phänomenal an die Rootedness-Dimension der Cultural Resilience an, operiert dort allerdings von einer thanato-ökologischen statt einer Nachhaltigkeitsperspektive."
+        ],
+        "cost_usd": 0.23328100000000002
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel adressiert die drängenden ökologischen Krisen, Gewalt und Kriege, die zur Vernichtung ganzer Ökosysteme, zur Entstehung unbewohnbarer Räume und zur Verstärkung gemeinsamer „more-than-human“ Verwundbarkeiten führen. Vor diesem Hintergrund werden Tod und Verlust als zentrale umweltbezogene Themen behandelt. Die Autorin untersucht, wie zeitgenössische Kunst imaginäre und praktische Zugänge zu mehr-als-menschlichem Tod, Sterben und Aussterben schafft, die in ökologischen Ontologien des Todes und ethischen Territorien des „eco-grief“ münden. Dabei stützt sie sich auf das theoretische Framework der „queer death studies“.",
+        "verdict_begruendung": "Der Artikel bietet produktives Anregungspotenzial für das aktive Forschungsprojekt **Cultural Resilience**, insbesondere für die Dimensionen **Rootedness** (sinnlich-leibliches Gewahrwerden von Entanglement mit nicht-menschlichen Anderen) und **Resistance** (performative Destabilisierung hegemonialer Normen durch künstlerische Praktiken). Die Verbindung von ökologischer Trauer, Kunst und posthumanistischer Theorie eröffnet neue Perspektiven für eine bildungstheoretische Auseinandersetzung mit planetaren Krisen.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Artikel führt den Begriff „eco-grief“ ein und verbindet ihn mit künstlerischen Praktiken, die Trauer um nicht-menschliche Entitäten thematisieren – ein selten explizit behandelter Aspekt in der Bildungs- und Kulturforschung.",
+          "Die Autorin nutzt „queer death studies“ als theoretischen Rahmen, um ökologische Trauer und Tod jenseits anthropozentrischer Perspektiven zu denken – ein innovativer Ansatz, der posthumanistische und queere Theorie verbindet.",
+          "Die Analyse zeitgenössischer Kunst als Medium ökologischer Ontologien und ethischer Reflexion bietet einen konkreten Anknüpfungspunkt für ästhetische Bildung und kulturelle Resilienzforschung."
+        ],
+        "cost_usd": 0.01551,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 28716,
+        "tokens_out": 766,
+        "latency_s": 19.19,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": true
+    },
+    {
+      "i": 18,
+      "article_id": "050f065cb58259d9f55f40caa420ca8d",
+      "journal": "BDS",
+      "title": "Generating reality and silencing debate: Synthetic data as discursive device",
+      "opus": {
+        "verdict": "scannen",
+        "kernthese": "Der Artikel analysiert synthetische Daten nicht nur als technisches, sondern als diskursives und politisches Phänomen. Die Autoren kritisieren, dass synthetische Daten oft als \"technical solutionism\" präsentiert werden, der ethisch-politische Debatten um KI-Bias, Privatsphäre und Plattformökonomie zu schließen versucht, statt sie zu führen. Sie zeigen, wie synthetische Daten selbst politisch sind und als diskursive Geräte wirken.",
+        "verdict_begruendung": "Der Artikel berührt Jörissens Beobachtungsfeld (KI-Ethik, Solutionismus-Kritik), zeigt aber keine spezifischen argumentativen Bezüge zu seinen konkreten Publikationen.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die Perspektive auf synthetische Daten als 'discursive device' (nicht nur technisches) ist ein innovativer konzeptueller Zugang zur KI-Ethik.",
+          "Die These des 'silencing debate' durch solutionistische Ansätze verbindet technische mit politischen Analysen auf produktive Weise.",
+          "Die integrative Betrachtung von algorithmischem Bias, Privatsphäre und Plattformökonomie unter einem Dach bietet eine holistische Kritik der Dateneconomy."
+        ],
+        "cost_usd": 0.009843
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel untersucht synthetische Daten als technisches und diskursives Phänomen im Kontext der KI-Entwicklung. Die Autor*innen argumentieren, dass synthetische Daten nicht nur als Lösung für ethische Probleme wie algorithmischen Bias oder Datenschutz (Privacy) vermarktet werden, sondern selbst politische und diskursive Effekte entfalten, indem sie ethisch-politische Debatten über KI ‚schließen‘ und damit zum Schweigen bringen. Synthetische Daten werden dabei als Teil eines technologischen Solutionismus analysiert, der soziale Probleme durch technische Mittel zu lösen verspricht, ohne deren politische Dimensionen zu reflektieren.",
+        "verdict_begruendung": "Der Artikel bietet produktive Anregungspotenziale für das Projekt **AI4ArtsEd**, insbesondere durch seine kritische Analyse der politischen und diskursiven Dimensionen synthetischer Daten. Die Thematisierung von Solutionismus und der Entpolitisierung ethischer Debatten durch technische Lösungen berührt zentrale Fragen des Projekts, etwa die kritisch-kreative Auseinandersetzung mit KI-Technologien und deren hegemonialen Strukturen. Zudem ist die Perspektive auf synthetische Daten als diskursives Device anschlussfähig an die Diskussionen über Bias, Repräsentation und dekoloniale Ansätze in der KI-Forschung.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Artikel adressiert synthetische Daten als diskursives Phänomen und nicht nur als technische Lösung, was eine ungewöhnliche Perspektive auf KI-Dateninfrastrukturen eröffnet.",
+          "Die Autor*innen problematisieren die Entpolitisierung ethischer Debatten durch technische Lösungen wie synthetische Daten, was für kritische KI-Forschung und Medienbildung relevant ist.",
+          "Die Verbindung von synthetischen Daten mit Plattformökonomie und algorithmischem Bias zeigt die Verflechtung technischer, ökonomischer und politischer Dimensionen von KI auf."
+        ],
+        "cost_usd": 0.01562,
+        "cost_is_estimate": true,
+        "cache_pct": 96.1,
+        "tokens_in": 29594,
+        "tokens_out": 548,
+        "latency_s": 12.8,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 19,
+      "article_id": "565369f1d279ba6bb15958d2774979f5",
+      "journal": "EPT",
+      "title": "The smiling philosopher: Emotional labor, gender, and harassment in conference spaces",
+      "opus": {
+        "verdict": "ignorieren",
+        "kernthese": "(Screening: ignorieren)",
+        "verdict_begruendung": "Screening: gender/emotional labor at conferences, no digital/cultural/a",
+        "bezuege": [],
+        "bemerkenswert": [],
+        "cost_usd": 0.0
+      },
+      "mistral": {
+        "verdict": "scannen",
+        "kernthese": "Der Artikel untersucht aus philosophischer Perspektive, wie Frauen in akademischen Konferenzumgebungen ungleiche Bedingungen erfahren, insbesondere im Hinblick auf emotionale Arbeit, Geschlechterrollen und Belästigung. Zentral wird die These vertreten, dass Konferenzen als soziale Räume von strukturellen Ungleichheiten durchzogen sind, die sich in emotionaler Arbeit (nach Arlie Hochschild) und affektiven Dynamiken (nach Sara Ahmed) manifestieren. Frauen werden demnach systematisch in Rollen gedrängt, die emotionale Managementleistungen erfordern, während gleichzeitig ihre fachliche Autorität infrage gestellt wird.",
+        "verdict_begruendung": "Der Artikel berührt ein relevantes Thema für die Diskursübersicht, insbesondere im Hinblick auf strukturelle Ungleichheiten in akademischen und pädagogischen Kontexten. Allerdings bietet er keine direkten Anknüpfungspunkte zu den veröffentlichten Arbeiten oder aktiven Projekten von Benjamin Jörissen, die über eine allgemeine Sensibilisierung für Geschlechterdynamiken hinausgehen.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Artikel adressiert ein strukturelles Problem akademischer Kultur, das in der erziehungswissenschaftlichen und bildungstheoretischen Diskussion selten explizit thematisiert wird: die affektive und emotionale Dimension von Ungleichheit in professionellen Räumen.",
+          "Die Autorin nutzt Sara Ahmeds Konzept der „feminist killjoy“ und des „affect alien“, um zu zeigen, wie Frauen in Konferenzsettings durch Widerstand gegen hegemoniale Normen zu „Störfaktoren“ werden.",
+          "Der Fokus auf emotionale Arbeit als unsichtbare, aber strukturell wirksame Dimension von Geschlechterungleichheit bietet einen produktiven Anknüpfungspunkt für die Analyse pädagogischer und bildungstheoretischer Praktiken."
+        ],
+        "cost_usd": 0.0153,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 29058,
+        "tokens_out": 517,
+        "latency_s": 13.92,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 20,
+      "article_id": "ad2626dd8e30357526d6041db761ee8c",
+      "journal": "MedienPaed",
+      "title": "Das Design der digitalen Mediengesellschaft",
+      "opus": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Beitrag integriert Medien- und Designtheorie, um eine medienpädagogische Theorie der digitalen Gesellschaft zu entwerfen. Er argumentiert, dass digitale Anwendungen subjektive Handlungs1 und Entscheidungsspielräume durch designte Vermittlungsweisen und Aufforderungsstrukturen konfigurieren. Medienbildung wird als Fähigkeit zur kritischen Distanznahme, Einschätzung und gegebenenfalls Ablehnung dieser technisch-medialen Strukturen definiert, was die Relevanz einer zeitgemäßen allgemeinen (Medien)Bildungstheorie unterstreicht.",
+        "verdict_begruendung": "Der Artikel erweitert Jörissens relationalen Medienbildungsansatz durch die Integration von Designtheorie und entwickelt konkrete pädagogische Implikationen für eine medienpädagogische Theorie der digitalen Gesellschaft, wobei er direkt auf Jörissens Publikationen Bezug nimmt.",
+        "bezuege": [
+          {
+            "pub_id": "U6RW4WMN",
+            "pub_kurz": "Bettinger & Jörissen 2022: Medienbildung",
+            "bezug": "Der neue Artikel zitiert explizit Jörissens Medienbildung-Beitrag und greift dessen relationalen Ansatz auf, der Medienbildung als Arbeit an Relationierungsweisen in heterogenen Konstellationen versteht. Er erweitert diesen Ansatz durch die Integration von Designtheorie, um zu zeigen, wie 'designte Vermittlungsweisen und Aufforderungsstrukturen' subjektive Handlungs- und Entscheidungsspielräume konfigurieren und damit die pädagogische Dimension digitaler Medien sichtbar machen.",
+            "relation": "erweitert"
+          },
+          {
+            "pub_id": "XTJR5DRD",
+            "pub_kurz": "Jörissen 2018: Subjektivation und ästhetische Bildung in der post-digitalen Kultur",
+            "bezug": "Der neue Artikel entwickelt Jörissens Analysen der Transformation von Subjektivationsprozessen durch digitale Designs weiter, indem er spezifisch auf die Rolle von Design als Formgeber materialisierter Verhaltenserwartungen und Handlungsimperative fokussiert. Während Jörissen ästhetische Bildung als Zugang zu diesen Transformationsprozessen diskutiert, konkretisiert der neue Artikel die medienpädagogische Dimension durch die Verbindung von Medien- und Designtheorie.",
+            "relation": "erweitert"
+          }
+        ],
+        "bemerkenswert": [
+          "Der Beitrag explizit zitiert zwei von Jörissens Schlüsseltexten zu Design/Subjektivation (2015) und Medienbildung (2022), was eine direkte Auseinandersetzung signalisiert.",
+          "Die Konvergenz von Medien- und Designtheorie zur Formulierung einer medienpädagogischen Gesellschaftstheorie stellt einen ungewöhnlichen, interdisziplinären Import dar, der für Jörissens design– und medientheoretisch fundierte Arbeiten relevant sein könnte.",
+          "Die Definition von Medienbildung als Fähigkeit zur kritischen Distanznahme, Einschätzung und gegebenenfalls Ablehnung technisch-medialer Strukturen qua Design operationalisiert Jörissens relationalen Medienbildungsansatz in einer konkreten pädagogischen Handlungslogik."
+        ],
+        "cost_usd": 0.062204
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Beitrag untersucht, wie digitale Medien und deren Design subjektive Handlungs- und Entscheidungsspielräume in der medienpädagogischen Praxis konfigurieren. Dabei wird eine Konvergenz von Medien- und Designtheorie vorgeschlagen, um die pädagogischen Inskriptionen digitaler Medien sichtbar zu machen. Design wird als materialisierte Verhaltenserwartung und Handlungsimperativ verstanden, der mediale Vermittlungsweisen und Aufforderungsstrukturen (Affordanzen) prägt. Medienbildung wird vor diesem Hintergrund als kritische Distanznahme zu diesen Strukturen gefasst, um technisch-mediale Vermittlungsweisen einschätzen, ihnen entgehen oder sie ablehnen zu können.",
+        "verdict_begruendung": "Der Beitrag bietet Anregungspotenzial für die aktiven Forschungsprojekte [ai4artsed] und [diaes_kubi], insbesondere durch die designtheoretische Erweiterung der Diskussion um digitale Souveränität und ästhetische Bildung. Die Auseinandersetzung mit Design als pädagogischer Formbildung könnte produktive Impulse für die Konzeptualisierung von digital-aesthetischer Souveränität und kritisch-kreativen Praktiken im Umgang mit KI und digitalen Medien liefern.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Beitrag verbindet explizit Designtheorie mit Medienpädagogik und erweitert damit den Diskurs um eine Perspektive, die Design als pädagogisch wirksame Kraft fasst. Dies ist ein ungewöhnlicher, aber produktiver Brückenschlag, der für die Diskussion um digitale Souveränität und ästhetische Bildung relevant ist.",
+          "Die Betonung von Design als materialisierte Verhaltenserwartung und Handlungsimperativ bietet einen konkreten Ansatzpunkt, um die oft abstrakte Diskussion um Algorithmen und Digitalität in pädagogische Praxis zu übersetzen.",
+          "Die Autor*innen zitieren Benjamin Jörissens Arbeit zu \"Bildung der Dinge: Design und Subjektivation\" (2015) und greifen damit ein zentrales Argument aus dessen Designtheorie auf, ohne es jedoch systematisch weiterzuentwickeln."
+        ],
+        "cost_usd": 0.01687,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 31497,
+        "tokens_out": 747,
+        "latency_s": 18.21,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": true
+    },
+    {
+      "i": 21,
+      "article_id": "b5df9c7e962cbf61b3e99f5e0d085318",
+      "journal": "ZfPaed",
+      "title": "What is the Relationship Between Knowledge in Mathematics and Knowledge in Economics?",
+      "opus": {
+        "verdict": "ignorieren",
+        "kernthese": "(Screening: ignorieren)",
+        "verdict_begruendung": "Screening: Relationship between math and economics knowledge in teacher",
+        "bezuege": [],
+        "bemerkenswert": [],
+        "cost_usd": 0.0
+      },
+      "mistral": {
+        "verdict": "scannen",
+        "kernthese": "Der Artikel untersucht die Zusammenhänge zwischen fachlichem Wissen (CK) und fachdidaktischem Wissen (PCK) bei Lehrkräften, die sowohl in Mathematik als auch in Wirtschaftswissenschaften ausgebildet werden oder unterrichten. Die zentrale These ist, dass尽管 die Wissensstrukturen fachspezifisch organisiert sind, fachliches Wissen in Mathematik auch mit fachdidaktischem Wissen in Wirtschaftswissenschaften korreliert und potenziell förderlich für dessen Vermittlung sein könnte.",
+        "verdict_begruendung": "Der Artikel ist für die Diskursübersicht im Bereich der Lehrkräftebildung und Kompetenzforschung relevant, bietet jedoch keine direkten Anknüpfungspunkte zu den zentralen Themen oder Projekten von Benjamin Jörissen (z. B. kulturelle Resilienz, Medienbildung, postdigitale Ästhetik oder kulturelle Bildung). Die methodische Ausrichtung und die fachliche Fokussierung liegen außerhalb der aktuellen Forschungsschwerpunkte.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die Studie adressiert eine Forschungslücke zur fachübergreifenden Wissensentwicklung in der Lehrkräftebildung, insbesondere für die wenig erforschte Fächerkombination Mathematik und Wirtschaftswissenschaften.",
+          "Die Ergebnisse deuten auf eine mögliche Transferwirkung von mathematischem Fachwissen auf fachdidaktische Kompetenzen in Wirtschaftswissenschaften hin, was für die Gestaltung von Lehramtsstudiengängen relevant sein könnte."
+        ],
+        "cost_usd": 0.0151,
+        "cost_is_estimate": true,
+        "cache_pct": 98.7,
+        "tokens_in": 28814,
+        "tokens_out": 461,
+        "latency_s": 11.05,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 22,
+      "article_id": "332c5b6047a06ea69481233edf6b3e84",
+      "journal": "BJET",
+      "title": "Learning to work with the black box: Pedagogy for a world with artificial intelligence",
+      "opus": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel definiert Künstliche Intelligenz relational-epistemologisch als eine spezifische Interaktion, in der ein computergestütztes Artefakt ein nicht nachvollziehbares Urteil über einen optimalen Handlungsverlauf liefert – und damit per Definition als Black Box agiert. Statt die Black Box erklären zu wollen, plädiert er für eine Pädagogik, die den Umgang mit opaken, partiellen und ambivalenten Situationen lehrt, welche die verstrickten Beziehungen zwischen Menschen und Technologien widerspiegeln. Konkret werden zwei Ansätze skizziert: die Orientierung an Qualitätsstandards („Spielregeln“) und die Bereitstellung bedeutsamer Interaktionen mit KI-Systemen.",
+        "verdict_begruendung": "Der Artikel bietet eine konkrete pädagogische Positionierung zum Umgang mit KI-Opazität, die die in Jörissens Publikationen entwickelten Konzepte der relationalen Bildungstheorie, der Wahrnehmungskrise und des agentiellen Realismus direkt aufgreifen, erweitern oder kontrastieren könnte. (Verifikation ohne Ergebnis abgebrochen, Assessment-Verdict übernommen)",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Artikel operationalisiert das Black-Box-Problem als definitionsgemäße Eigenschaft von KI („cannot be traced“) und leitet daraus eine pädagogische Grundhaltung der Arbeit mit Opazität ab – ein bemerkenswerter Gegenentwurf zu den dominanten Explainable AI (XAI)-Diskursen.",
+          "Die explizite Bezugnahme auf eine „relational epistemology“ und die Betonung von „entangled relationships“ weist auf eine theoretische Nähe zu posthumanistischen und neomaterialistischen Ansätzen hin, wie sie in Jörissens Forschung verwendet werden."
+        ],
+        "cost_usd": 0.0936992
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel adressiert die Integration von Künstlicher Intelligenz (KI) in die Hochschulbildung und definiert KI aus einer relationalen Epistemologie heraus als eine Interaktion, bei der ein computationales Artefakt eine nicht nachvollziehbare Entscheidung über einen optimalen Handlungsverlauf trifft. Damit wird KI zwangsläufig zur 'Black Box'. Die Autor*innen argumentieren, dass eine Pädagogik für eine KI-vermittelte Welt nicht darauf abzielen sollte, diese Black Boxes zu erklären, sondern darauf, Lernende darin zu befähigen, mit opaken, ambivalenten und unvollständigen Situationen umzugehen. KI wird dabei als sozial eingebettet verstanden, und es werden zwei pädagogische Ansätze vorgeschlagen: die Orientierung an Qualitätsstandards, die KI umgeben, und die Ermöglichung sinnvoller Interaktionen mit KI-Systemen als Teil soziotechnischer Ensembles.",
+        "verdict_begruendung": "Der Artikel bietet einen konzeptionell innovativen Zugang zum Umgang mit KI in der Bildung, der sich produktiv zu Benjamin Jörissens Arbeiten im Projekt **AI4ArtsEd** verhält. Die relationale Perspektive auf KI und die Betonung von Opazität und sozialer Einbettung korrespondieren mit den kritisch-kreativen und dekolonialen Ansätzen des Projekts, insbesondere mit der Idee der 'Prompt Interception' und der Auseinandersetzung mit kulturellen Biases in KI-Systemen. Zudem berührt der Artikel die Frage nach ästhetischer und kultureller Bildung in digitalen Kontexten, die für **DiäS-KuBi** und **ComeArts** relevant ist.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die Autor*innen definieren KI relational und betonen die Unmöglichkeit, KI-Entscheidungen vollständig nachzuvollziehen, was sie als konstitutives Merkmal von KI fasst.",
+          "Der Artikel schlägt vor, Lernende nicht in die Erklärung von KI, sondern in den Umgang mit deren Opazität und Ambivalenz einzuführen – ein Ansatz, der sich von gängigen 'Explainable AI'-Diskursen abgrenzt.",
+          "Die Betonung von Qualitätsstandards und sozialen Regulierungsmechanismen als pädagogische Ansatzpunkte ist ein ungewöhnlicher, aber potenziell produktiver Fokus.",
+          "Der Artikel verweist auf die Notwendigkeit, KI als Teil eines soziotechnischen Ensembles zu verstehen, was für die Diskussion über KI in der Bildung relevant ist."
+        ],
+        "cost_usd": 0.01609,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 29474,
+        "tokens_out": 899,
+        "latency_s": 20.41,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": true
+    },
+    {
+      "i": 23,
+      "article_id": "2b060f4a6c3ed89a76d9ee24916d64b7",
+      "journal": "PDSE",
+      "title": "Stressing Out the ‘Damsel in Distress’: Intersectional Shifts in Women’s Representation in Video Games",
+      "opus": {
+        "verdict": "scannen",
+        "kernthese": "Der Artikel untersucht die sich wandelnde Repräsentation von Frauen in Videospielen durch eine postdigitale feministische Linse. Er zeigt, dass alltägliche Aushandlungen von Misogynie im kompetitiven Spiel durch die infrastrukturelle Gestaltung postdigitaler Plattformen bedingt sind, nicht nur durch textuelle Repräsentation. Empirisch wird intersectionelles Self-Positioning von Spielerinnen als prägend für die Rezeption weiblicher Avatare herausgearbeitet. Die Studie argumentiert, dass Repräsentation, digitale Infrastrukturen und Communities/Policy eine Triade bilden, die bestehende Machtstrukturen verstärkt.",
+        "verdict_begruendung": "Das Thema (postdigitale Kulturen, Videospiele) berührt das Beobachtungsfeld, aber es gibt keine spezifischen argumentativen Anschlüsse an Jörissens publizierte Positionen (kulturelle Resilienz, kritische KI-Praxis, Bildungstheorie).",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Artikel zeigt empirisch, wie die infrastrukturelle Gestaltung von Plattformen (nicht nur Repräsentation) die alltägliche Aushandlung von Misogynie im kompetitiven Spiel bedingt – eine materialistische Perspektive auf postdigitale Geschlechterverhältnisse."
+        ],
+        "cost_usd": 0.009692
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel untersucht die sich wandelnde Repräsentation von Frauen in Videospielen unter intersectionellen Gesichtspunkten. Anhand qualitativer Interviews mit 19 Teilnehmenden analysiert die Studie, wie traditionelle Geschlechterklischees wie die ‚Damsel in Distress‘ fortbestehen, gleichzeitig aber komplexere weibliche Protagonistinnen an Bedeutung gewinnen. Die Autor*innen verorten diese Entwicklungen in postdigitalen feministischen Rahmenwerken, die zeigen, wie offline bestehende Vorurteile in digitale Räume übertragen werden und dort sowohl misogyne Strukturen verstärken als auch Widerstandspotenziale eröffnen. Die Studie argumentiert, dass infrastrukturelle Designs postdigitaler Plattformen, intersectionelle Selbstpositionierungen der Spieler*innen und Repräsentationspraktiken in einem triadischen Verhältnis stehen, das Machtstrukturen und misogyne Erfahrungen reproduziert oder herausfordert.",
+        "verdict_begruendung": "Der Artikel bietet produktive Anknüpfungspunkte für die Projekte **ai4artsed**, **comearts** und **diaes_kubi**, insbesondere durch seine Fokussierung auf intersectionelle Repräsentationspraktiken, postdigitale Infrastrukturen und ästhetische Subjektivierungsprozesse. Die Studie erweitert die Diskussion um digitale Souveränität und kulturelle Resilienz um eine geschlechtertheoretische Perspektive, die für die kritische Auseinandersetzung mit KI-Trainingsdaten, diversitätssensibler Fortbildung und digital-ästhetischer Bildung relevant ist.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die Studie verbindet postdigitale Infrastrukturen mit intersectionellen Analysen von Geschlechterrepräsentation in Videospielen – ein seltener Fokus in der Game Studies, der über textuelle Repräsentation hinausgeht und die Rolle von Plattformdesign und Community-Praktiken betont.",
+          "Empirisch wird gezeigt, wie Spieler*innen ihre eigenen Identitäten und Erfahrungen in die Rezeption von Charakteren und Spielumgebungen einbringen, was neue Perspektiven für die Analyse von Subjektivierungsprozessen in digitalen Räumen eröffnet.",
+          "Die Autor*innen entwickeln ein triadisches Modell (Repräsentation – Infrastrukturen – Praktiken/Policies), das die Komplexität postdigitaler Geschlechterdynamiken systematisch erfasst und für weitere Studien anschlussfähig ist."
+        ],
+        "cost_usd": 0.01662,
+        "cost_is_estimate": true,
+        "cache_pct": 93.1,
+        "tokens_in": 30541,
+        "tokens_out": 897,
+        "latency_s": 20.25,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 24,
+      "article_id": "392a1473ce0c10a0ae59332160bd1529",
+      "journal": "EthicsEd",
+      "title": "‘Equipping students with an ethical compass.’ What does it mean, and what does it imply?",
+      "opus": {
+        "verdict": "ignorieren",
+        "kernthese": "(Screening: ignorieren)",
+        "verdict_begruendung": "Screening: Generic ethics education discourse, no digital/material/rela",
+        "bezuege": [],
+        "bemerkenswert": [],
+        "cost_usd": 0.0
+      },
+      "mistral": {
+        "verdict": "scannen",
+        "kernthese": "Der Artikel untersucht die Metapher des „ethischen Kompasses“ als Leitbild für die Ausbildung von Professionellen, insbesondere an niederländischen Hochschulen für angewandte Wissenschaften (UAS). Die Autor*innen identifizieren drei Interpretationscluster des Begriffs: den Inhalt (z. B. Werte, Tugenden, Prinzipien), die Form (z. B. innere Haltung, Reflexionsfähigkeit, Intuition) und die Nutzung (z. B. Orientierungshilfe in Entscheidungssituationen). Auf dieser Grundlage wird evaluiert, welche Art von ethischem Kompass sinnvoll in der Ausbildung vermittelt werden kann und welche Grenzen dabei bestehen. Der Fokus liegt auf der Frage, wie Bildungseinrichtungen zur Entwicklung eines solchen Kompasses beitragen können.",
+        "verdict_begruendung": "Der Artikel bewegt sich im Diskursfeld der Berufsethik und moralischen Bildung, das für die erziehungswissenschaftliche und bildungstheoretische Arbeit von Benjamin Jörissen relevant ist. Allerdings bietet er keine direkten Anknüpfungspunkte an dessen zentrale Themen wie Postdigitalität, kulturelle Resilienz, ästhetische Bildung oder relationale Bildungstheorie. Die konzeptuelle Auseinandersetzung mit dem „ethischen Kompass“ ist jedoch für die Diskursübersicht im Bereich ethischer Bildung und Professionalisierung von Interesse.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die Metapher des „ethischen Kompasses“ wird systematisch dekonstruiert und in drei Cluster (Inhalt, Form, Nutzung) unterteilt, was eine differenzierte Auseinandersetzung mit einem oft unscharf verwendeten Begriff ermöglicht.",
+          "Der Artikel thematisiert explizit die Rolle von Bildungseinrichtungen bei der Vermittlung ethischer Orientierung und reflektiert dabei die Grenzen institutioneller Einflussnahme auf die moralische Entwicklung von Studierenden.",
+          "Es wird ein Bezug zur Tugendethik und professionellen Identitätsbildung hergestellt, der für diskursive Auseinandersetzungen in der Bildungsforschung anschlussfähig ist."
+        ],
+        "cost_usd": 0.01556,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 29390,
+        "tokens_out": 578,
+        "latency_s": 15.03,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 25,
+      "article_id": "7bf4e3fc9b71aebf70a34428c0c94806",
+      "journal": "EERJ",
+      "title": "Educating for anti-complicity: A pedagogical response to political and structural violence",
+      "opus": {
+        "verdict": "ignorieren",
+        "kernthese": "Der Artikel von Michalinos Zembylas behandelt die pädagogische Herausforderung der Komplizenschaft in politischer und struktureller Gewalt. Er argumentiert für die Entwicklung von Anti-Komplizenschafts-Pädagogiken, die die Komplexität „geteilter Komplizenschaften“ anerkennen und durch affekttheoretische Ansätze ein nicht-binäres Verständnis von Komplizenschaft und Widerstand ermöglichen.",
+        "verdict_begruendung": "Der Artikel behandelt politische Gewalt und Anti-Komplizenschafts-Pädagogik, die thematisch nicht mit Jörissens Forschungsschwerpunkten (kulturelle Resilienz, Digitalität, post-digitale Jugendkulturen, generative KI) verbunden sind.",
+        "bezuege": [],
+        "bemerkenswert": [],
+        "cost_usd": 0.009074
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel adressiert die pädagogische Herausforderung, Komplizenschaft in politischen und strukturellen Gewaltverhältnissen zu thematisieren und zu überwinden. Zentral ist die Frage, wie eine Pädagogik der „Anti-Komplizenschaft“ (anti-complicity) gestaltet werden kann, wenn Lehrende, Lernende und ihre Gemeinschaften bereits in Institutionen, Normen und Praktiken verstrickt sind, die politische oder strukturelle Gewalt reproduzieren – sei es als Täter*innen, Kollaborateur*innen oder Zuschauende. Der Beitrag argumentiert, dass eine nicht-binäre Perspektive auf Komplizenschaft und Widerstand, die affektive Praktiken einbezieht, notwendig ist, um die Komplexität „geteilter Komplizenschaften“ zu verstehen und pädagogisch zu bearbeiten.",
+        "verdict_begruendung": "Der Artikel bietet **produktives Anregungspotenzial für das Projekt [cultural_resilience]**, insbesondere für die Dimensionen **Rootedness** (sinnlich-leibliche Verstrickung in Gewaltverhältnisse) und **Resistance** (kollektive affektive Praktiken der Kritik und Transformation). Die nicht-binäre Perspektive auf Komplizenschaft und Widerstand korrespondiert mit der relationalen Freiheitstheorie in ZSSJ4BPL und AC9GZ3JY, ohne diese direkt zu zitieren. Zudem berührt der Beitrag **affektive und ethische Dimensionen von Bildung**, die in Jörissens posthumanistischen und postkolonialen Ansätzen zentral sind.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Beitrag führt den Begriff **„anti-complicity“** als pädagogische Zielkategorie ein und diskutiert ihn im Spannungsfeld von Affekttheorie und politischer Bildung.",
+          "Er problematisiert die **Verstrickung von Pädagogik selbst in strukturelle Gewaltverhältnisse** und fragt nach den Risiken affektiver Praktiken im Klassenzimmer, z.B. Schuldzuweisungen oder moralische Überforderung.",
+          "Die Auseinandersetzung mit **„shared complicities“** als kollektive, oft unsichtbare Verstrickungen bietet einen produktiven Anknüpfungspunkt für postkoloniale und post-anthropozentrische Bildungstheorien.",
+          "Der Artikel bezieht sich auf **Judith Butler** (Precarious Life, Frames of War) und **Sara Ahmed** (The Cultural Politics of Emotion), die auch in Jörissens Arbeiten zu kultureller Resilienz und affektiver Gerechtigkeit eine Rolle spielen."
+        ],
+        "cost_usd": 0.01601,
+        "cost_is_estimate": true,
+        "cache_pct": 96.7,
+        "tokens_in": 29419,
+        "tokens_out": 866,
+        "latency_s": 18.61,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 26,
+      "article_id": "35296fb7ecff14df6afa037b1ed68e67",
+      "journal": "EduTheory",
+      "title": "Signature of Attention: Historical Ambiguities and Elisions in Contemporary Psychological Framings of Attending",
+      "opus": {
+        "verdict": "scannen",
+        "kernthese": "Der Artikel untersucht die historische Genealogie des Aufmerksamkeitsbegriffs und zeigt, wie gegenwärtige Diskurse über eine \"Aufmerksamkeitskrise\" im Kontext von Digitalisierung, Medien und KI auf lange vernachlässigte spirituelle Signaturen zurückzuführen sind. Die Autoren rekonstruieren, wie das europäisch-christliche Mönchtum Praktiken zur Disziplinierung von Aufmerksamkeit entwickelte, die mit Prozessen des Othering und der Kritik verbunden waren, und argumentieren, dass heutige pädagogische Ansätze zur \"Aufmerksamkeitskrise\" noch immer von diesen spirituellen Signaturen, binären Logiken und Othering-Prozessen geprägt sind.",
+        "verdict_begruendung": "Der Artikel berührt Jörissens Beobachtungsfeld (Aufmerksamkeitskrise, Digitalisierung, KI), bietet aber keine konkrete argumentative Anschlussstelle zu seinen spezifischen Analysen algorithmischer Aufmerksamkeit oder transformer-Architekturen.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Artikel verbindet aktuelle Diskurse über digitale Aufmerksamkeitskrisen mit mittelalterlichen monastischen Praktiken der Aufmerksamkeitsdisziplin – ein ungewöhnlicher historischer Tiefenblick, der die gegenwärtigen Debatten um Digital Detox und Meditation in einen langen spirituellen Kontext stellt.",
+          "Die Analyse zeigt, wie Othering-Prozesse (sowohl spirituell als auch demografisch) bereits in mittelalterlichen Aufmerksamkeitspraktiken eingeschrieben waren und wie diese in christliche Reichsbildung und gewaltsame Verfolgungen eingebettet waren – eine kritische Perspektive auf die politischen Implikationen von Aufmerksamkeitstechnologien."
+        ],
+        "cost_usd": 0.009142
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel untersucht die historischen Wurzeln und Auslassungen (Elisionen) in zeitgenössischen psychologischen und pädagogischen Diskursen über Aufmerksamkeit, insbesondere im Kontext von Digitalisierung, Medienvielfalt und generativer KI. Die Autor*innen argumentieren, dass aktuelle Debatten über die sogenannte „Aufmerksamkeitskrise“ – und die damit verbundenen Lösungsvorschläge wie Meditation, Naturerfahrung oder digitales Detoxing – auf eine längere, oft ausgeblendete „Signatur“ des Spirituellen zurückgehen. Diese Signatur verknüpft Aufmerksamkeit mit Vorstellungen tiefer persönlicher Transformation und Technologien des Selbst, wie sie in europäischen christlichen Mönchstumspraktiken entwickelt wurden. Dabei werden historische Ambivalenzen aufgezeigt: Die Disziplinierung von Aufmerksamkeit war zugleich mit Prozessen des Othering, der Herrschaft über Seelen und gewaltsamer Verfolgung verbunden.",
+        "verdict_begruendung": "Der Artikel bietet produktives Anregungspotenzial für das Projekt [cultural_resilience], insbesondere durch seine historische und kritische Perspektive auf Aufmerksamkeit als kulturell und spirituell geprägtes Phänomen. Die Verbindung von spirituellen Praktiken, Machtstrukturen und pädagogischen Diskursen lässt sich strukturell auf die Dimensionen Rootedness (Verwurzelung in historischen und kulturellen Traditionen) und Resistance (kritische Hinterfragung hegemonialer Normen) beziehen. Zudem ergänzt der Artikel die posthumanistischen und relationalen Ansätze in Jörissens Arbeit durch eine historische Tiefendimension.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die Autor*innen zeigen auf, wie aktuelle pädagogische und psychologische Diskurse über Aufmerksamkeit – oft unbewusst – auf spirituelle Traditionen und deren binäre Logiken (z. B. Innerlichkeit vs. Äußerlichkeit, Selbst vs. Anderes) zurückgreifen, die historisch mit kolonialen und gewaltsamen Praktiken verwoben waren.",
+          "Der Artikel problematisiert die Ausblendung dieser historischen Ambivalenzen in zeitgenössischen „Life Hacks“ zur Steigerung von Aufmerksamkeit, die häufig als neutral oder universell gültig präsentiert werden.",
+          "Die Analyse verbindet postkoloniale Perspektiven mit erziehungswissenschaftlichen Fragestellungen und bietet damit einen ungewöhnlichen, aber produktiven Blick auf die Historizität pädagogischer Konzepte."
+        ],
+        "cost_usd": 0.01572,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 28852,
+        "tokens_out": 861,
+        "latency_s": 23.62,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 27,
+      "article_id": "8b7aa60331dd3262becfb6fb6207fbeb",
+      "journal": "PDSE",
+      "title": "Generative AI and the Automating of Academia",
+      "opus": {
+        "verdict": "scannen",
+        "kernthese": "Der Artikel untersucht die Einführung generativer KI in der britischen Hochschulbildung vor dem Hintergrund neoliberaler Audit-Kulturen und prekärer Arbeitsbedingungen. Basierend auf einer Umfrage unter 284 UK-Akademiker:innen argumentiert er, dass KI-Werkzeuge die Dysfunktionen neoliberaler Logik nicht lindern, sondern verlängern und die akademische Krise vertiefen. Gleichzeitig sehen die Autor:innen Potenzial für positive Disruption der Arbeitsindustrialisierung und Re-Engagement mit wissenschaftlichem Handwerk.",
+        "verdict_begruendung": "Der Artikel berührt Jörissens Beobachtungsfeld (KI in Bildung), bleibt aber in einem spezifischen arbeitssoziologischen und hochschulpolitischen Diskurs verhaftet, der nicht substantiell mit seinen Argumenten zu kultureller Resilienz, ästhetischer Bildung oder epistemologischen KI-Krisen verbunden ist.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Empirischer Fokus auf akademische Arbeitsbedingungen unter KI-Nutzung – ein spezifischer Ausschnitt der KI-Diskussion, der in Jörissens Arbeiten weniger prominent ist.",
+          "Kombination von Prekaritätsforschung mit KI-Diskurs – ungewöhnliche Verknüpfung von Arbeitssoziologie und Technology Studies im Hochschulkontext."
+        ],
+        "cost_usd": 0.01882832
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel untersucht die Auswirkungen generativer Künstlicher Intelligenz (GAI), insbesondere großer Sprachmodelle wie ChatGPT, auf die Arbeitsbedingungen und Selbstverständnisse von Akademiker*innen im UK. Die zentrale These lautet, dass GAI-Tools die neoliberalen Dysfunktionen der Hochschulbildung nicht lindern, sondern verstärken: Sie automatisieren und intensivieren die auditkulturellen Logiken von Effizienz, Produktivität und Prestige, während sie gleichzeitig die Prekarität und Überlastung akademischer Arbeit vertiefen. Die Autor*innen argumentieren jedoch, dass GAI auch als potenzieller Katalysator für eine positive Disruption akademischer Arbeitsverhältnisse und eine Rückbesinnung auf handwerkliche Wissenschaftspraxis genutzt werden könnte.",
+        "verdict_begruendung": "Der Artikel ist für Benjamin Jörissens aktuelle Projekte **AI4ArtsEd** und **metakubi** hochgradig anregend, da er die kritisch-pädagogischen und kulturellen Implikationen von GAI in Bildungs- und Wissenschaftskontexten analysiert. Die Verbindung von neoliberaler Auditkultur, Digitalisierung und akademischer Prekarität berührt zentrale Themen seiner Forschung zu **kultureller Resilienz** (z. B. Widerstand als kollektive Praxis) und **postdigitaler Bildung**.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die Studie zeigt, wie GAI-Tools als Verstärker neoliberaler Logiken in der Wissenschaft fungieren, indem sie z. B. die Erwartung beschleunigter Publikationszyklen und standardisierter Outputs verstärken.",
+          "Die Autor*innen plädieren für eine subversive Nutzung von GAI, um akademische Arbeitsprozesse zu de-automatisieren und handwerkliche Wissenschaftspraxis zurückzugewinnen – ein Ansatz, der an kritisch-pädagogische und postdigitale Diskurse anschließt.",
+          "Der Fokus auf die UK-Hochschullandschaft bietet eine vergleichende Perspektive zu deutschen Debatten über Prekarität, Digitalisierung und die Rolle von KI in der Wissenschaft."
+        ],
+        "cost_usd": 0.01678,
+        "cost_is_estimate": true,
+        "cache_pct": 91.4,
+        "tokens_in": 31128,
+        "tokens_out": 810,
+        "latency_s": 19.19,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 28,
+      "article_id": "4042cb9b0f78b891066dcacbcd065906",
+      "journal": "LMT",
+      "title": "Mapping pedagogies: applying cartographic practice to the public sphere",
+      "opus": {
+        "verdict": "scannen",
+        "kernthese": "(C-Tier: nur Screening, kein Agent)",
+        "verdict_begruendung": "C-Tier: Screening-Pass, keine Agent-Analyse.",
+        "bezuege": [],
+        "bemerkenswert": [],
+        "cost_usd": 0.0
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel untersucht, wie demokratisierte Formen der partizipativen Kartographie – insbesondere durch Open-Source-Plattformen wie OpenStreetMap – in pädagogische Praktiken übersetzt werden können. Im Fokus stehen Bildungsprojekte im Global South, die feministische und gemeinschaftsorientierte Ansätze verfolgen und eine Ethik der Sorgfalt, des Handwerks und der Kultivierung gegenüber korporativen oder externen Forschungsparadigmen betonen. Der Autor analysiert, wie solche Projekte, etwa Crowd2Map Tanzania oder YouthMappers, durch Mentoring und partizipative Methoden räumliches Wissen produzieren und dabei Machtverhältnisse in der Wissensgenerierung verschieben.",
+        "verdict_begruendung": "Der Artikel bietet produktive Anknüpfungspunkte für die Projekte **MetaKuBi** (insbesondere TP 1: Diskursanalyse kultureller Bildung und TP 3: Big-Data-Forschungssynthese) und **DiäS-KuBi** (digitale-aesthetische Souveränität). Die Betonung partizipativer, feministischer und postkolonialer Perspektiven auf räumliches Wissen und digitale Kartographie erweitert die Diskussion um **kulturelle Resilienz** (Rootedness, Resourcefulness, Resistance) und **postdigitale Bildungspraktiken** um eine räumliche Dimension.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Artikel führt den Begriff der **„Ethik des Handwerks, der Sorgfalt und Kultivierung“ (craft, care, cultivation)** als Gegenentwurf zu korporativen oder externen Forschungsparadigmen ein – ein Konzept, das für postkoloniale und feministische Perspektiven in der kulturellen Bildung anschlussfähig ist.",
+          "Die dokumentierten Projekte (z. B. Crowd2Map Tanzania, YouthMappers) zeigen, wie **räumliches Wissen als kollektive Praxis** in Bildungszusammenhängen erzeugt wird, was für die Diskussion um **digitale Souveränität** und **partizipative Wissensproduktion** in der kulturellen Bildung relevant ist.",
+          "Die Verbindung von **Kartographie und Pädagogik** als kritische Praxis bietet einen innovativen Zugang zu Fragen der **Repräsentation, Macht und Agency** in digitalen Räumen – ein Thema, das in der Medienbildung und kulturellen Bildung bisher selten explizit behandelt wird.",
+          "Der Artikel verweist auf die **Bedeutung von Mentoring und Peer-Learning** in digitalen Bildungsprojekten, insbesondere für die Förderung von Mädchen und jungen Frauen in technologischen Kontexten."
+        ],
+        "cost_usd": 0.01616,
+        "cost_is_estimate": true,
+        "cache_pct": 95.8,
+        "tokens_in": 29695,
+        "tokens_out": 875,
+        "latency_s": 21.59,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 29,
+      "article_id": "d0400090247ee6dafb78c786b5e07dab",
+      "journal": "AIandSoc",
+      "title": "From 'objectivity' to obedience: LLMs as discourse, discipline, and power",
+      "opus": {
+        "verdict": "scannen",
+        "kernthese": "(C-Tier: nur Screening, kein Agent)",
+        "verdict_begruendung": "C-Tier: Screening-Pass, keine Agent-Analyse.",
+        "bezuege": [],
+        "bemerkenswert": [],
+        "cost_usd": 0.0
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel untersucht Large Language Models (LLMs) nicht als technische Fehlfunktionen, sondern als strukturelle Effekte epistemischer und institutioneller Regime. Mit Rückgriff auf Michel Foucaults Macht/Wissen-Konzept und postkoloniale Theorie werden LLMs als produktive diskursive Apparate analysiert, die bestimmte Weisen des Wissens, Sprechens und Denkens normalisieren. Besonderes Augenmerk liegt auf Reinforcement Learning from Human Feedback (RLHF), das situierte menschliche Urteile in skalierbare Optimierungsziele übersetzt und dabei historische Normen in algorithmisch stabilisierte Standards überführt. Bias wird nicht als korrigierbare Anomalie, sondern als konstitutives Moment der Normalisierung, Subjektformation und Reorganisation von Wahrheitsregimen verstanden.",
+        "verdict_begruendung": "Der Artikel bietet ein hohes Anregungspotenzial für das Projekt **AI4ArtsEd**, insbesondere durch seine kritische Epistemologie der KI, die Normalisierungsprozesse und Subjektformationen in den Blick nimmt. Die Verbindung von Foucault und postkolonialer Theorie ermöglicht eine produktive Reibung mit den im Projekt verhandelten Fragen zu kultureller Hegemonie, Bias in Trainingsdaten und dekolonialen Perspektiven auf KI in der kulturellen Bildung.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Artikel verschiebt die Debatte um KI-Bias von technischen Fairness-Metriken hin zu einer grundlegenden Frage nach der Rolle generativer KI in der Hervorbringung von Wahrheitsregimen und den Bedingungen autoritativer Wissensproduktion.",
+          "RLHF wird als zentraler Mechanismus der Übersetzung kontingenter menschlicher Urteile in algorithmische Standards herausgestellt, was die Normalisierung historisch situierter Normen sichtbar macht.",
+          "Die Analyse verbindet foucaultsche Machtanalytik mit postkolonialen Perspektiven und bietet damit einen theoretisch anspruchsvollen Rahmen für die Kritik an KI-Systemen, der über gängige ethische Diskurse hinausgeht."
+        ],
+        "cost_usd": 0.01679,
+        "cost_is_estimate": true,
+        "cache_pct": 91.3,
+        "tokens_in": 31152,
+        "tokens_out": 810,
+        "latency_s": 17.41,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 30,
+      "article_id": "30634074641508931bfd8dcaf0ce345f",
+      "journal": "merz",
+      "title": "Möslein-Tröppner, Bodo/Bernhard, Willi (2018). Digitale Gamebooks in der Bildung. Spielerisch lehren und lernen mit interaktiven Stories. Wiesbaden: Springer Gabler. 171 S., 24,99 €.",
+      "opus": {
+        "verdict": "ignorieren",
+        "kernthese": "(Screening: ignorieren)",
+        "verdict_begruendung": "Screening: Gamebooks in education, applied, no theory",
+        "bezuege": [],
+        "bemerkenswert": [],
+        "cost_usd": 0.0
+      },
+      "mistral": {
+        "verdict": "scannen",
+        "kernthese": "Der Beitrag stellt das Konzept der „Digitalen Gamebooks“ als innovatives Instrument für game-based Learning vor, das spielerische und kollaborative Elemente mit digitalen Möglichkeiten verbindet. Möslein-Tröppner und Bernhard beschreiben, wie Gamebooks – ursprünglich aus der Unterhaltungsliteratur und Computerspielindustrie stammend – für Bildungszwecke adaptiert werden können. Der Fokus liegt auf der Erstellung interaktiver Stories, die durch individuelle Entscheidungen der Spielenden geformt werden und so motivationale Lernprozesse anregen. Der Band bietet eine praxisorientierte Anleitung zur Entwicklung eigener Gamebooks, inklusive historischer Kontextualisierung, technischer Umsetzung und didaktischer Einsatzmöglichkeiten.",
+        "verdict_begruendung": "Der Beitrag ist praxisnah und innovativ, bietet jedoch keine direkten theoretischen Anknüpfungspunkte an die veröffentlichten Arbeiten von Benjamin Jörissen. Er ist dennoch relevant für die Diskursübersicht, da er ein konkretes Tool für post-digitale und kollaborative Lernformen vorstellt, das in Projekten wie [metakubi] oder [diaes_kubi] indirekt von Interesse sein könnte.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Das Konzept der digitalen Gamebooks verbindet kollaborative und spielerische Lernformen mit digitalen Technologien und könnte als niedrigschwelliges Tool für partizipative und kreative Bildungsprozesse interessant sein.",
+          "Die Autoren bieten eine konkrete Handlungsanleitung zur Erstellung von Gamebooks, inklusive technischer Templates und Musterbeispiele, was für Praktiker*innen in der kulturellen Bildung oder Schule direkt anwendbar ist.",
+          "Der Fokus auf Kollaboration und individuelle Entscheidungsfindung als zentrale Elemente des Lernprozesses könnte Anknüpfungspunkte für post-digitale oder relationale Bildungskonzepte bieten, auch wenn diese nicht explizit thematisiert werden."
+        ],
+        "cost_usd": 0.01549,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 29250,
+        "tokens_out": 575,
+        "latency_s": 16.61,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 31,
+      "article_id": "6229d32572e6ba7a31aefe2feba078fe",
+      "journal": "STHV",
+      "title": "Mythologies of Wealth in Platform Economies: The Case of the Ride-Hailing Platform Didi in China",
+      "opus": {
+        "verdict": "ignorieren",
+        "kernthese": "Der Artikel reaktiviert den Mythos-Begriff aus den Sozialwissenschaften, um digitale Technologien und Plattformökonomien zu untersuchen. Anhand einer ethnografischen Studie der chinesischen Ride-Hailing-Plattform Didi zeigt er, wie Mythologien mit vergangenheitsorientierten Erzählstrukturen Individuen helfen, Technologien und Geschäftspraktiken zu verstehen und daran zu glauben. Diese Plattform-Mythologien werden von kulturellen Rahmungen und dominanten Narrativen geformt, spiegeln die Hoffnungen und kollektiven Erfahrungen der Akteure wider und mobilisieren Individuen, wodurch die Plattform ihre Nutzerbasis erweitert und für Investoren attraktiv wird. Der Artikel argumentiert, dass Mythen und Myth-Making durch kollektives Storytelling ein wesentlicher Bestandteil von Plattformökonomien sind, indem sie die Verzauberung digitaler Technologien aufrechterhalten.",
+        "verdict_begruendung": "Keine substantiellen Bezüge zu den Forschungsbereichen des Empfängers (kulturelle Resilienz, postdigitale Jugendkulturen, ästhetische Bildung, generative KI); der Artikel behandelt wirtschaftssoziologische Fragen der Plattformökonomie und Spekulation im chinesischen Kontext.",
+        "bezuege": [],
+        "bemerkenswert": [],
+        "cost_usd": 0.008836
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel untersucht die Rolle von Mythen und kollektivem Storytelling in der Plattformökonomie am Beispiel der chinesischen Ride-Hailing-Plattform Didi. Die Autor*innen argumentieren, dass Plattformen wie Didi nicht nur durch technische oder ökonomische Logiken, sondern maßgeblich durch Mythen geprägt sind, die vergangene Erfahrungen, kulturelle Narrative und kollektive Hoffnungen aufgreifen. Diese Mythen ermöglichen es Akteur*innen ohne technisches Fachwissen, die Technologien und Geschäftspraktiken der Plattformökonomie zu verstehen und an sie zu glauben. Sie stützen zudem spekulative Investitionen, etwa durch den Mythos der „Tech-Einhörner“, und tragen so zur Expansion und Attraktivität der Plattformen bei.",
+        "verdict_begruendung": "Der Artikel bietet eine produktive Perspektive für das Projekt [ai4artsed], da er die kulturelle und narrative Dimension von Plattformökonomien und digitalen Technologien beleuchtet. Die Analyse von Mythen und kollektivem Storytelling als konstitutive Elemente der Plattformökonomie kann Anregungen für die kritische Auseinandersetzung mit generativer KI und deren kulturellen Hegemonien liefern.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die Studie lenkt den Blick auf die kulturelle und narrative Dimension von Plattformökonomien, die oft auf technische oder ökonomische Aspekte reduziert werden.",
+          "Die Verbindung von Mythen, spekulativem Kapital und Plattformexpansion bietet eine ungewöhnliche Perspektive auf die Funktionsweise digitaler Ökonomien.",
+          "Der Artikel zeigt, wie kollektive Erzählungen und kulturelle Frames die Wahrnehmung und Akzeptanz von Technologien prägen, was für die Analyse postdigitaler Kulturen relevant ist.",
+          "Die Autor*innen verweisen auf die Bedeutung von „Tech-Einhörnern“ als finanziellen Mythos, der Investitionen trotz fehlender Profitabilität ermöglicht – ein Phänomen, das auch in westlichen Plattformökonomien beobachtbar ist."
+        ],
+        "cost_usd": 0.01567,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 29527,
+        "tokens_out": 605,
+        "latency_s": 15.02,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 32,
+      "article_id": "f87fc203d5897e90b5616ed8d120b55a",
+      "journal": "PCS",
+      "title": "Relational trouble and student victimisation at schools – categorisation, caring and institutionalisation",
+      "opus": {
+        "verdict": "ignorieren",
+        "kernthese": "(Screening: ignorieren)",
+        "verdict_begruendung": "Screening: school victimisation study, no theoretical connection",
+        "bezuege": [],
+        "bemerkenswert": [],
+        "cost_usd": 0.0
+      },
+      "mistral": {
+        "verdict": "scannen",
+        "kernthese": "Der Artikel untersucht, wie schwedische Schulen Opfer von Gewalt und Missbrauch unter Schüler*innen kategorisieren und institutionell bearbeiten. Die zentrale These lautet, dass Schulverantwortliche Schwierigkeiten haben, solche Vorfälle klar zu definieren und einzuordnen. Gleichzeitig zeigt sich eine Ambivalenz im Umgang mit externen Institutionen wie Polizei und Sozialdiensten: Einerseits wird die Übernahme durch Professionelle als Entlastung erlebt, andererseits führt sie zu einem Kontrollverlust und Informationsdefiziten seitens der Schulen. Die Studie verdeutlicht damit einen soziopolitischen Aushandlungsprozess um die Deutung und Lösung von relationalen Konflikten in schulischen Kontexten.",
+        "verdict_begruendung": "Der Artikel berührt zwar zentrale Themen wie Institutionalisierung, Kategorisierung und pädagogische Verantwortung, die für die Analyse von Schulkultur und Digitalität relevant sind. Allerdings bietet er keine spezifischen Anknüpfungspunkte an die aktiven Forschungsprojekte oder die veröffentlichten Argumente von Benjamin Jörissen, die über eine allgemeine Diskursübersicht hinausgehen.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die Studie thematisiert die **Institutionalisierung von Opferrollen** und die damit verbundenen Macht- und Kontrollverluste der Schulen im Umgang mit externen Akteur*innen wie Polizei und Sozialdiensten.",
+          "Sie zeigt, wie **Kategorisierungsprozesse** in Schulen nicht nur pädagogische, sondern auch **soziopolitische Dimensionen** haben, die über die schulische Praxis hinausweisen.",
+          "Die Ambivalenz der Schulen gegenüber externen Institutionen verweist auf strukturelle Spannungen zwischen **pädagogischer Verantwortung** und **bürokratischer Entlastung**."
+        ],
+        "cost_usd": 0.0154,
+        "cost_is_estimate": true,
+        "cache_pct": 97.3,
+        "tokens_in": 29242,
+        "tokens_out": 516,
+        "latency_s": 11.46,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 33,
+      "article_id": "f226c988e32e9a73020916c00343a443",
+      "journal": "ZfPaed",
+      "title": "Funktionalität und Normativität als bildungstheoretische Perspektiven auf Bildung für Nachhaltige Entwicklung",
+      "opus": {
+        "verdict": "scannen",
+        "kernthese": "Der Artikel analysiert das Verhältnis von Bildung und Nachhaltigkeit als Dialektik zwischen funktionaler und normativer Perspektive. Er kritisiert die gegenwärtige Konzentration auf Sachinhalte nachhaltigen Handelns (funktionale Ebene) und plädiert dafür, Prinzipien wie Mündigkeit und soziale Gerechtigkeit als bildungsphilosophische Grundlage einer an Nachhaltigkeit normierten Bildung zu etablieren.",
+        "verdict_begruendung": "Thematisch relevant im Beobachtungsfeld Nachhaltigkeit und Bildungstheorie, aber keine konkreten argumentativen Anschlüsse an Jörissens posthumanistische, relationale und kulturelle Resilienz-Perspektive erkennbar.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die funktional-normative Dialektik als analytisches Rahmenkonzept für Bildung für nachhaltige Entwicklung stellt eine klare systematische Unterscheidung bereit, die in der bildungstheoretischen Diskussion zu Nachhaltigkeit möglicherweise unterrepräsentiert ist."
+        ],
+        "cost_usd": 0.0164875
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel adressiert das Verhältnis von Bildung und Nachhaltiger Entwicklung (BNE) und untersucht, wie sich pädagogische Ansätze zwischen einer funktionalen und einer normativen Perspektive positionieren. Die zentrale These lautet, dass eine einseitige Fokussierung auf die Vermittlung von Sachinhalten nachhaltigen Handelns (funktionale Ebene) zu kurz greift und stattdessen eine bildungsphilosophische Fundierung durch Prinzipien wie Mündigkeit und soziale Gerechtigkeit (normative Ebene) notwendig ist, um Bildung als Teil einer nachhaltigen Gesellschaft zu gestalten.",
+        "verdict_begruendung": "Der Artikel bietet produktives Anregungspotenzial für das aktive Forschungsprojekt [cultural_resilience], insbesondere durch seine normative Fundierung von BNE und die Betonung von Prinzipien wie Mündigkeit und soziale Gerechtigkeit. Diese Perspektive lässt sich strukturell mit den Dimensionen von Rootedness, Resourcefulness und Resistance verbinden und könnte die theoretische Auseinandersetzung mit kultureller Resilienz als post-anthropozentrischer Bildungstheorie erweitern.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die explizite Gegenüberstellung von Funktionalität und Normativität in der BNE bietet eine klare analytische Unterscheidung, die in der aktuellen Debatte um BNE selten so pointiert herausgearbeitet wird.",
+          "Der Artikel verweist auf die Gefahr einer Reduktion von BNE auf instrumentelle Wissensvermittlung und plädiert für eine Rückbesinnung auf bildungsphilosophische Grundlagen wie Mündigkeit und Gerechtigkeit, was als kritischer Impuls für die Diskussion um transformative Bildung relevant ist."
+        ],
+        "cost_usd": 0.01512,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 28804,
+        "tokens_out": 477,
+        "latency_s": 14.16,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 34,
+      "article_id": "368171a729ec5ac2f58b9027d128131b",
+      "journal": "merz",
+      "title": "Computerspiele im Kindes- und Jugendalter",
+      "opus": {
+        "verdict": "ignorieren",
+        "kernthese": "(Screening: ignorieren)",
+        "verdict_begruendung": "Screening: Entwicklungspsychologische Studie zu Serious Games, eher ang",
+        "bezuege": [],
+        "bemerkenswert": [],
+        "cost_usd": 0.0
+      },
+      "mistral": {
+        "verdict": "scannen",
+        "kernthese": "Der Artikel fasst aktuelle Forschungsbefunde zu geschlechtsspezifischen Präferenzen, Spielgenres, Spielanforderungen und Spielfiguren von Computerspieler*innen im Kindes- und Jugendalter zusammen. Dabei werden medienkonzeptionelle und entwicklungspsychologische Implikationen für Serious Games kritisch reflektiert. Der Fokus liegt auf der Frage, wie geschlechtsspezifische Unterschiede in der Nutzung von Computerspielen verstanden und für pädagogische sowie therapeutische Zwecke (z. B. Serious Games) nutzbar gemacht werden können.",
+        "verdict_begruendung": "Der Artikel bewegt sich im Rahmen klassischer medienpädagogischer und entwicklungspsychologischer Forschung zu Computerspielen und bietet keine spezifischen Anknüpfungspunkte an die theoretischen oder projektbezogenen Schwerpunkte von Benjamin Jörissen. Allerdings liefert er nützliche Diskurshinweise zu geschlechtsspezifischen Nutzungsmustern, die für die Beobachtung post-digitaler Jugendkulturen relevant sein könnten.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Artikel dokumentiert eine deutliche geschlechtsspezifische Segregation in der Nutzung von Computerspielen, die sich in Genrepräferenzen, Spielstilen und der Darstellung von Spielfiguren manifestiert. Diese Befunde sind für die Diskussion über geschlechtsspezifische Subjektivationsprozesse in digitalen Kontexten relevant.",
+          "Serious Games werden als pädagogisches und therapeutisches Instrument diskutiert, was auf eine zunehmende Verschränkung von Spiel, Lernen und Gesundheit hindeutet. Dies könnte für Projekte wie **ComeArts** oder **DiäS-KuBi** von Interesse sein, die sich mit post-digitalen ästhetischen Praktiken und digitaler Souveränität befassen."
+        ],
+        "cost_usd": 0.01619,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 30740,
+        "tokens_out": 549,
+        "latency_s": 16.51,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 35,
+      "article_id": "d0fcbba89342a4b5470af8efab7a997e",
+      "journal": "SAE",
+      "title": "Artistic and Cultural Impacts of Western-Style Art Instruction in Yoruba Schools in Nigeria",
+      "opus": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel untersucht die künstlerischen und kulturellen Auswirkungen westlich geprägter Kunstunterrichtspraktiken in Yoruba-Schulen in Nigeria. Er zeichnet den Einfluss westlicher Missionare, Kolonialpolitik und postkolonialer Bildungspolitik nach, diskutiert die modernistisch geprägte Kunstpädagogik von Aina Onabolu (die traditionelle Praktiken durch moderne Methoden ersetzen wollte) und stellt diesem Ansatz Übergangspraktiken indigener Yoruba-Künstler*innen gegenüber, die sowohl den Modernismus als auch etablierte traditionelle Methoden überschreiten. Als philosophische Grundlage für diese Übergangspraktiken wird das Konzept des Transmodernismus (Dussel) vorgeschlagen.",
+        "verdict_begruendung": "Der Artikel erweitert substantiell Jörissens Kritik an eurozentrischer Bildungstheorie durch konkrete empirische Fallstudie zur Kolonialisierung des Kunstunterrichts und bietet mit Transmodernismus eine theoretische Alternative, die das Konzept kultureller Resilienz bereichern kann.",
+        "bezuege": [
+          {
+            "pub_id": "6WYG2HJG",
+            "pub_kurz": "Jörissen 2019: Territorien der Theorie: Post-koloniale Irritationen meiner bildungstheoretischen Praxis",
+            "bezug": "Der Artikel bietet eine konkrete historische Fallstudie, die Jörissens Kritik an der eurozentrischen, kolonial geprägten Tiefenstruktur europäischer Bildungstheorie empirisch unterfüttert. Während Jörissen anhand von Schillers Briefen über ästhetische Erziehung zeigt, wie ästhetische Bildung auf kolonial konstruierten \"Anderen\" aufruht, demonstriert Adejumo am Beispiel der Yoruba-Kunstpädagogik, wie westliche modernistische Kunstpädagogik (Aina Onabolu) aktiv traditionelle Praktiken ersetzen sollte. Dies ist eine substantielle Erweiterung von Jörissens theoretischer Kritik durch empirisches Material zur konkreten Kolonialisierung von Kunstunterricht.",
+            "relation": "erweitert"
+          },
+          {
+            "pub_id": "A93WTEZQ",
+            "pub_kurz": "Jörissen 2022: Digitale Sympoiesis und kulturelle Resilienz: Alternative Perspektiven auf Digitalisierung im Anthropozän",
+            "bezug": "Der Artikel zeigt ähnliche Muster kultureller Resilienz und kreativer Transformation unter kolonialen Bedingungen, wie sie Jörissen an digitalen Medien analysiert. Während Jörissen \"Never Alone\" als Beispiel sympoietischer Praxis indigener Gemeinschaften untersucht, die tradiertes Wissen in digitale Medien übersetzen, zeigt Adejumo \"transitional practices\" von Yoruba-Künstler*innen, die sowohl Modernismus als auch Traditionalismus überschreiten. Die philosophische Rahmung durch Transmodernismus (Dussel) bietet eine theoretische Alternative, die Jörissens Konzept kultureller Resilienz bereichern könnte.",
+            "relation": "parallelisiert"
+          }
+        ],
+        "bemerkenswert": [
+          "Der Artikel bietet eine konkrete historische Fallstudie zur Kolonialisierung von Kunstunterricht in Westafrika (Yoruba/Nigeria), die für postkoloniale Bildungstheorie hochrelevant ist.",
+          "Die Einführung von Transmodernismus (Dussel) als philosophische Alternative zu Modernismus/Traditionalismus stellt einen interessanten theoretischen Import dar, der über die übliche postkoloniale Kritik hinausgeht und eine positive Perspektive auf hybride kulturelle Praktiken entwickelt.",
+          "Die Analyse der \"transitional practices\" indigener Künstler*innen, die weder rein traditionalistisch noch modernistisch sind, zeigt Muster kreativer Resilienz, die auch für nicht-digitale Kontexte relevant sind."
+        ],
+        "cost_usd": 0.05485302
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel untersucht die künstlerischen und kulturellen Auswirkungen westlicher Kunstpädagogik in Yoruba-Schulen in Nigeria. Dabei wird die historische Entwicklung von der christlichen Missionierung über die Kolonialzeit bis hin zu postkolonialen Anpassungen der nationalen Bildungspolitik nachgezeichnet. Im Zentrum steht die Kritik an der Verdrängung traditioneller künstlerischer Praktiken durch modernistische Ansätze, wie sie von Aina Onabolu geprägt wurden. Gleichzeitig werden transitionalistische künstlerische Praktiken vorgestellt, die sich jenseits von Modernismus und Tradition bewegen und als Ausdruck eines transmodernistischen Paradigmas gedeutet werden.",
+        "verdict_begruendung": "Der Artikel bietet produktives Anregungspotenzial für das aktive Forschungsprojekt **Cultural Resilience**, insbesondere durch die empirische und theoretische Auseinandersetzung mit transitionalistischen künstlerischen Praktiken und dem Konzept der Transmodernität. Die Diskussion um die Verdrängung indigenen Wissens durch westliche Kunstpädagogik berührt zentrale Fragen von Rootedness, Resourcefulness und Resistance.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Artikel thematisiert explizit die Spannung zwischen westlichen Kunstpädagogik-Modellen und indigenen künstlerischen Praktiken in Nigeria, was für die Diskussion um dekoloniale Ansätze in der kulturellen Bildung relevant ist.",
+          "Die Bezugnahme auf das Konzept der Transmodernität (Dussel) bietet einen theoretischen Rahmen, der über postkoloniale Kritik hinausgeht und für die Diskussion um kulturelle Resilienz und transformative Bildungspraktiken anschlussfähig sein könnte.",
+          "Der Fokus auf Yoruba-Künstler*innen, die hybride Praktiken entwickeln, illustriert empirisch, wie kulturelle Resilienz als kreativ-transformative Praxis (Resourcefulness) in konkreten künstlerischen Kontexten Gestalt annimmt."
+        ],
+        "cost_usd": 0.01592,
+        "cost_is_estimate": true,
+        "cache_pct": 95.6,
+        "tokens_in": 29755,
+        "tokens_out": 695,
+        "latency_s": 15.29,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": true
+      },
+      "verdict_match": true
+    },
+    {
+      "i": 36,
+      "article_id": "f32d82c001f2c005e38942b688469729",
+      "journal": "merz",
+      "title": "Hass und Hetze im Internet - Analyse und Intervention",
+      "opus": {
+        "verdict": "ignorieren",
+        "kernthese": "(Screening: ignorieren)",
+        "verdict_begruendung": "Screening: Hass im Internet, pädagogische Intervention",
+        "bezuege": [],
+        "bemerkenswert": [],
+        "cost_usd": 0.0
+      },
+      "mistral": {
+        "verdict": "scannen",
+        "kernthese": "Der Beitrag adressiert das Phänomen von Hass und Hetze im Internet, insbesondere rechtsextreme und rassistische Äußerungen, und stellt das Format „Counter Speech“ als medienpädagogische Interventionsstrategie vor. Zentral wird die Sensibilisierung Jugendlicher für rassistische Äußerungen und die Förderung demokratischer Gegenrede in digitalen Räumen behandelt. Der Fokus liegt auf der praktischen Umsetzung in der (medien-)pädagogischen Arbeit, um Jugendliche zu befähigen, sich aktiv gegen Hass im Netz zu engagieren.",
+        "verdict_begruendung": "Der Beitrag ist praxisnah und behandelt ein relevantes Thema für die Diskursübersicht, bietet jedoch keine substantiellen theoretischen oder konzeptionellen Anknüpfungspunkte an die veröffentlichten Arbeiten oder aktiven Forschungsprojekte von Benjamin Jörissen. Die Thematik ist zwar bemerkenswert, aber nicht lesenswert im Sinne eines Anregungspotenzials für die laufenden Projekte.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Beitrag thematisiert ein hochaktuelles und gesellschaftlich relevantes Problemfeld (Hass und Hetze im Netz), das auch für die kulturelle und ästhetische Bildung in digitalen Kontexten von Bedeutung ist.",
+          "Counter Speech als pädagogisches Format könnte für Projekte im Bereich der digitalen Souveränität (z. B. DiäS-KuBi) oder postdigitaler Jugendkulturen (z. B. ComeArts) anschlussfähig sein, auch wenn der Beitrag selbst keine theoretische Vertiefung bietet."
+        ],
+        "cost_usd": 0.01515,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 28955,
+        "tokens_out": 449,
+        "latency_s": 13.58,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 37,
+      "article_id": "bd3ab96b623ecc9f0983d6344be490a2",
+      "journal": "Resilience",
+      "title": "&lt;em&gt;36.5 / Bodo Inlet&lt;/em&gt;, Kenya, 2019",
+      "opus": {
+        "verdict": "ignorieren",
+        "kernthese": "(Screening: ignorieren)",
+        "verdict_begruendung": "Screening: Photo essay, no substantive content.",
+        "bezuege": [],
+        "bemerkenswert": [],
+        "cost_usd": 0.0
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel dokumentiert und reflektiert das künstlerisch-partizipative Projekt »36.5 / Bodo Inlet« in Kenia, das 2019 in Bodo Village durchgeführt wurde. Im Zentrum steht eine performative Intervention, bei der lokale Gemeinschaften und Künstler*innen gemeinsam den steigenden Meeresspiegel und dessen ökologische sowie kulturelle Auswirkungen auf die Küstenregion thematisieren. Das Projekt verbindet ökologische Sensibilisierung mit ästhetischen Praktiken und kollektiven Ritualen, um Resilienz als gemeinschaftlichen, transformativen Prozess erfahrbar zu machen.",
+        "verdict_begruendung": "Der Artikel bietet produktives Anregungspotenzial für das aktive Forschungsprojekt [cultural_resilience], insbesondere durch seine Betonung kollektiver, ästhetisch-performativer Praktiken als Formen kultureller Resilienz. Die Verbindung von ökologischer Krise, lokaler Gemeinschaft und künstlerischer Intervention korrespondiert strukturell mit den Dimensionen »Rootedness« und »Resourcefulness« und erweitert die Perspektive um einen dekolonialen, nicht-westlichen Kontext.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Das Projekt »36.5 / Bodo Inlet« ist ein seltenes Beispiel für die Verbindung von partizipativer Kunst, ökologischer Bildung und kultureller Resilienz in einem dekolonialen Kontext (Kenia).",
+          "Die Dokumentation betont die Rolle ästhetischer Praktiken als Medium der kollektiven Verarbeitung ökologischer Krisen und der Aktivierung lokaler Wissensbestände.",
+          "Der Fokus auf performative Rituale als Form der Resilienzbildung bietet einen konkreten Anknüpfungspunkt für die Diskussion über »Rootedness« und »Resourcefulness« im Rahmen des Projekts [cultural_resilience]."
+        ],
+        "cost_usd": 0.01547,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 28673,
+        "tokens_out": 755,
+        "latency_s": 18.05,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 38,
+      "article_id": "1e9d80cf1ffe08ff1e628c04dcc82e47",
+      "journal": "BDS",
+      "title": "Data infrastructure studies on an unequal planet",
+      "opus": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel analysiert Datenzentren als infrastrukturelle Werkzeuge des multinationalen digitalen Kapitalismus und argumentiert, dass deren Energie- und Extraktions-Dynamiken ein Assemblage von Umweltbeziehungen organisieren, das ungleiche kapitalistische Systeme durch Energie- und Umweltpolitiken reproduziert. Die energiezentrierte Analyse ermöglicht es, die planetaren ökologischen Folgen digitaler Daten für Subjekte jenseits einzelner Technologien zu theoretisieren.",
+        "verdict_begruendung": "Der Artikel erweitert konkret Jörissens Argumente zu materiellen Grundlagen digitaler Technologien im Anthropozän und liefert empirische Phänomene für die Entwicklung kultureller Resilienz, insbesondere für das Widerstandsmoment (Resistance).",
+        "bezuege": [
+          {
+            "pub_id": "BRYT324Y",
+            "pub_kurz": "Jörissen (2023) Digitalization/Digital Transformation",
+            "bezug": "Der Artikel von Brodie erweitert Jörissens Diskussion der materiellen und energetischen Grundlagen digitaler Technologien im Anthropozän. Während Jörissen die ökologischen Implikationen digitaler Infrastrukturen (Energieverbrauch, geplante Obsoleszenz, Elektroschrott) als allgemeines Phänomen beschreibt, liefert Brodie eine konkrete, politisch-ökonomische Analyse von Datenzentren als spezifische Infrastrukturen des extraktiven Kapitalismus. Brodies Fokus auf Energie-Rahmen, Extraktions-Dynamiken und Datenkolonialismus vertieft Jörissens Kritik an \"solutionistischen\" Ansätzen durch empirische Konkretisierung.",
+            "relation": "erweitert"
+          },
+          {
+            "pub_id": "A93WTEZQ",
+            "pub_kurz": "Jörissen (2022) Digitale Sympoiesis und kulturelle Resilienz",
+            "bezug": "Brodies Analyse von Datenzentren als Extraktionsmaschinen des ungleichen globalen Kapitalismus liefert konkrete empirische Phänomene, die Jörissens Konzept kultureller Resilienz entgegenstehen. Während Jörissen kulturelle Resilienz als kollektiven, transformatorischen Bildungsprozess mit den Elementen Rootedness, Resourcefulness und Resistance entwickelt, zeigt Brodie die systematischen Kräfte (Energievakuums, extraktive Fußabdrücke, Datenkolonialismus), gegen die solche Resilienzpraktiken kämpfen müssen. Der Artikel bietet damit eine empirische Grundlage für das Widerstandsmoment (Resistance) innerhalb kultureller Resilienz.",
+            "relation": "erweitert"
+          }
+        ],
+        "bemerkenswert": [
+          "Fokus auf Energie-Rahmen als analytische Linse für Dateninfrastrukturen – verschiebt Perspektive von einzelnen Technologien zu systemischen Umweltwirkungen und Kapitalismus-Reproduktion.",
+          "Explizite Verbindung von Datenkolonialismus, Extraktivismus und ungleichen Kapitalismen – relevant für postkoloniale und resilienztheoretische Perspektiven in der Bildungsforschung.",
+          "Verbindung von Infrastrukturstudien mit Umweltgeographie – interdisziplinärer Import in Medien-/Bildungsforschung, der die materiell-energetische Dimension digitaler Technologien konkretisiert."
+        ],
+        "cost_usd": 0.047059039999999996
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel untersucht Datenzentren als zentrale Infrastrukturen des multinationalen digitalen Kapitalismus und analysiert deren ökologische und energetische Auswirkungen im globalen Maßstab. Dabei wird aufgezeigt, wie Datenzentren als „Energievakuum“ fungieren und durch ihren Kohlenstoff- sowie extraktiven Fußabdruck ungleiche kapitalistische Systeme reproduzieren. Der Fokus liegt auf der Verflechtung digitaler Systeme mit Umweltpolitik und globalen Lieferketten, die bestehende Ungleichheiten verstärken und neue Formen kolonialer Ausbeutung hervorbringen.",
+        "verdict_begruendung": "Der Artikel bietet produktive Anknüpfungspunkte für das Projekt **Cultural Resilience**, insbesondere durch seine Analyse der Verflechtung digitaler Infrastrukturen mit ökologischen und kolonialen Ungleichheiten. Die Perspektive auf Datenzentren als materielle und politische Akteure erweitert die Diskussion um **Rootedness** (Verwurzelung in ökologischen und sozialen Kontexten) und **Resistance** (Widerstand gegen hegemoniale Strukturen) im Rahmen einer post-anthropozentrischen Bildungstheorie.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Artikel führt den Begriff des **Datenkolonialismus** ein und verbindet ihn mit ökologischen Ungleichheiten, was eine Brücke zu postkolonialen und posthumanistischen Diskursen schlägt.",
+          "Er thematisiert die **materiellen Grundlagen digitaler Technologien** (z. B. Energieverbrauch, extraktive Rohstoffe) und deren oft unsichtbare ökologische und soziale Externalitäten, was für eine kritische Medienbildung relevant ist.",
+          "Die Analyse der **globalen Lieferketten von Dateninfrastrukturen** zeigt, wie digitale Technologien bestehende Ungleichheiten reproduzieren und neue Abhängigkeiten schaffen – ein zentrales Thema für eine post-anthropozentrische Bildungstheorie.",
+          "Der Artikel verweist auf die **Verflechtung von Digitalisierung und Umweltpolitik**, was für die Diskussion um kulturelle Resilienz und Nachhaltigkeit im Anthropozän von Bedeutung ist."
+        ],
+        "cost_usd": 0.01592,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 29475,
+        "tokens_out": 788,
+        "latency_s": 18.83,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": true
+    },
+    {
+      "i": 39,
+      "article_id": "483ad5bbf8ce98def4504f6156f854c4",
+      "journal": "AIandSoc",
+      "title": "The hopes and fears of artificial intelligence: a comparative computational discourse analysis",
+      "opus": {
+        "verdict": "scannen",
+        "kernthese": "(C-Tier: nur Screening, kein Agent)",
+        "verdict_begruendung": "C-Tier: Screening-Pass, keine Agent-Analyse.",
+        "bezuege": [],
+        "bemerkenswert": [],
+        "cost_usd": 0.0
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel untersucht mittels computergestützter Diskursanalyse, wie verschiedene Akteursgruppen (Politiker*innen, Beratungsfirmen, Laienexpert*innen auf Reddit) Künstliche Intelligenz (KI) als gesellschaftliches Phänomen deuten und bewerten. Die zentrale These ist, dass KI als umkämpftes „Issue Field“ verstanden werden kann, in dem heterogene Akteure konkurrierende Deutungen, Hoffnungen und Ängste artikulieren. Politiker*innen betonen ethische und gesellschaftliche Implikationen, Beratungsfirmen sehen KI primär als wirtschaftliche Chance, während Laienexpert*innen technische Aspekte in den Vordergrund stellen. Die Studie zeigt, wie diese Diskurse die Handlungsoptionen und Wahrnehmungen von KI prägen.",
+        "verdict_begruendung": "Der Artikel ist für Benjamin Jörissens Arbeit im Projekt **AI4ArtsEd** von besonderem Interesse, da er die diskursive Konstruktion von KI als umkämpftes Feld analysiert. Die Studie bietet Anregungspotenzial für die kritische Reflexion von KI in ästhetischen und kulturellen Bildungskontexten, insbesondere hinsichtlich der Frage, wie hegemoniale Deutungen (z. B. ökonomische Verwertungslogiken) durch pädagogische Praktiken wie **Prompt Interception** unterlaufen werden können.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die Studie nutzt **BERTopic**, ein neuartiges Verfahren des Topic Modelings, das auf Transformer-basierten Sprachmodellen (z. B. BERT) aufbaut und eine feingranulare Analyse von Diskursen ermöglicht.",
+          "Die Differenzierung der Diskurse nach Akteursgruppen (Politik, Wirtschaft, Laien) zeigt, wie stark die Deutung von KI von institutionellen und sozialen Kontexten abhängt – ein Befund, der für die kritische Auseinandersetzung mit KI in Bildungskontexten relevant ist.",
+          "Die Studie verweist auf die **performative Wirkung von Diskursen**: Die Art und Weise, wie über KI gesprochen wird, formt nicht nur Wahrnehmungen, sondern auch politische und wirtschaftliche Handlungsräume."
+        ],
+        "cost_usd": 0.01653,
+        "cost_is_estimate": true,
+        "cache_pct": 91.3,
+        "tokens_in": 31157,
+        "tokens_out": 633,
+        "latency_s": 15.61,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 40,
+      "article_id": "34c6602217cbeafbd040e435a6b17a1c",
+      "journal": "EPT",
+      "title": "Bild, Bildung and the ‘romance of the soul’: Reflections upon the image of Meister Eckhart",
+      "opus": {
+        "verdict": "ignorieren",
+        "kernthese": "(Screening: ignorieren)",
+        "verdict_begruendung": "Screening: Religious ethics, image of Meister Eckhart, no digital/cultu",
+        "bezuege": [],
+        "bemerkenswert": [],
+        "cost_usd": 0.0
+      },
+      "mistral": {
+        "verdict": "scannen",
+        "kernthese": "Der Artikel untersucht das Bild des Bildhauers, das von Plotin geprägt und von Meister Eckhart adaptiert wurde, um die religiös-transzendente Dimension von Ethik und Bildung zu reflektieren. Im Zentrum steht der Begriff der ‚Bildung‘ (Bild) als Prozess des ‚Ent-bildens‘ (Loslösung von weltlichen Bindungen) und der Rückwendung des Selbst zu seinem göttlichen Urbild. Dieser Prozess wird als dynamische Transformation verstanden, die das Individuum zu seiner wahren Identität und Würde als Abbild des Göttlichen führt. Bildung wird dabei als ein spiritueller und ethischer Vorgang gefasst, der über funktionalistische oder reduktionistische Auffassungen hinausgeht.",
+        "verdict_begruendung": "Der Artikel bewegt sich thematisch im Grenzbereich von Philosophie, Theologie und Bildungstheorie und bietet eine historische Perspektive auf den Bildungsbegriff, die für die Reflexion über aktuelle Bildungskonzepte anregend sein könnte. Allerdings gibt es keine direkten Bezüge zu den zentralen Forschungsprojekten oder den veröffentlichten Argumenten von Benjamin Jörissen, sodass der Text eher für die Diskursübersicht relevant ist als für eine vertiefte Auseinandersetzung.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die Bezugnahme auf Meister Eckhart und Plotin bietet eine historische Tiefendimension für den Bildungsbegriff, die in aktuellen erziehungswissenschaftlichen Debatten selten explizit aufgegriffen wird.",
+          "Der Artikel thematisiert die spirituelle Dimension von Bildung als Gegenentwurf zu funktionalistischen oder reduktionistischen Bildungskonzeptionen, was für eine kritische Reflexion des Bildungsbegriffs in postsekulären Kontexten anregend sein könnte.",
+          "Die Metapher des Bildhauers als Prozess des ‚Ent-bildens‘ und der Rückwendung zum Urbild könnte produktiv für Diskussionen über ästhetische Bildung und Selbsttransformation sein, insbesondere im Kontext posthumanistischer oder relationaler Bildungstheorien."
+        ],
+        "cost_usd": 0.01544,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 29166,
+        "tokens_out": 572,
+        "latency_s": 15.23,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 41,
+      "article_id": "7c14b4aa513c7730df4be67079ebfd67",
+      "journal": "merz",
+      "title": "Zwischen 0 und 1",
+      "opus": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Beitrag untersucht, wie Konzeptionen subjektivierender Digitalisierung in allgemein- und medienpädagogischen Forschungen dargestellt werden und hinterfragt, ob individuelle Souveränität angesichts des digitalen Wandels als medienpädagogische Zielkategorie noch tragfähig und praktisch umsetzbar ist.",
+        "verdict_begruendung": "Der Artikel setzt sich explizit mit Jörissens Publikation zur Subjektivation in post-digitaler Kultur auseinander und hinterfragt medienpädagogische Zielkategorien, die Jörissens relationale Bildungstheorie direkt betreffen und seine Kritik individualistischer Subjektkonzeptionen aufgreifen.",
+        "bezuege": [
+          {
+            "pub_id": "XTJR5DRD",
+            "pub_kurz": "Jörissen 2018: Subjektivation und ästhetische Bildung in der post-digitalen Kultur",
+            "bezug": "Der neue Beitrag zitiert explizit Jörissens Arbeit zur Subjektivation in post-digitaler Kultur und setzt sich mit seiner Kritik individualistischer Subjektkonzeptionen auseinander. Während Jörissen Subjektivation als relationalen Prozess aus artikulativen Relationierungen fasst und ästhetische Bildung als kritisches Moment in Subjektivationsprozessen begreift, hinterfragt der neue Artikel die Tragfähigkeit individueller Souveränität als medienpädagogische Zielkategorie – eine Frage, die Jörissens relationaler Bildungstheorie direkt entgegenkommt.",
+            "relation": "importiert"
+          },
+          {
+            "pub_id": "ZSSJ4BPL",
+            "pub_kurz": "Klepacki/Jörissen 2023: Freiheit und Entanglement: Kulturelle Resilienz als relationale Bildungstheorie",
+            "bezug": "Der neue Beitrag thematisiert implizit die von Jörissen entwickelte Kritik individualistischer Freiheits- und Subjektkonzeptionen. Jörissens relationale Freiheitstheorie, die Freiheit nicht als Position außerhalb von Bindungen, sondern als Möglichkeit der Rekonfiguration von Bindungsgefügen innerhalb materieller Kollektive fasst, bildet den theoretischen Hintergrund für die Infragestellung individueller Souveränität als medienpädagogisches Ziel.",
+            "relation": "parallelisiert"
+          }
+        ],
+        "bemerkenswert": [
+          "Der Beitrag zitiert explizit Jörissens Arbeit zur Subjektivation in der post-digitalen Kultur, was eine direkte Auseinandersetzung mit seinen Argumenten signalisiert.",
+          "Die Fragestellung nach der (Un-)Tragfähigkeit individueller Souveränität im digitalen Wandel berührt zentrale Spannungsfelder in Jörissens relationaler Bildungstheorie und Kritik individualistischer Subjektkonzeptionen."
+        ],
+        "cost_usd": 0.06544699999999999
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Beitrag untersucht, wie subjektivierende Prozesse der Digitalisierung in allgemein- und medienpädagogischen Forschungen konzipiert werden. Im Zentrum steht die Frage, ob und inwiefern individuelle Souveränität angesichts des digitalen Wandels als medienpädagogische Zielkategorie noch tragfähig und praktisch umsetzbar ist. Dabei werden Konzepte der Subjektivation, insbesondere unter Rückgriff auf poststrukturalistische und kritische Theorieansätze (z. B. Althusser, Butler, Foucault), diskutiert und deren Bedeutung für die Analyse digitaler Bildungsprozesse herausgearbeitet.",
+        "verdict_begruendung": "Der Beitrag bietet produktive Anregungen für die aktiven Forschungsprojekte **ai4artsed** und **diaes_kubi**, indem er die Kritik an individualistischen Souveränitätskonzepten im digitalen Kontext zuspitzt und mit poststrukturalistischen Subjektivationstheorien verbindet. Dies ermöglicht eine fruchtbare Auseinandersetzung mit den relationalen und kritischen Perspektiven, die in diesen Projekten zentral sind.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Beitrag setzt sich explizit mit der Frage auseinander, ob individuelle Souveränität als Zielkategorie der Medienpädagogik im digitalen Zeitalter noch haltbar ist – ein Thema, das in der aktuellen Debatte um digitale Mündigkeit und agency hochrelevant ist.",
+          "Die Autor*innen beziehen sich auf poststrukturalistische Subjektivationstheorien (Butler, Foucault, Althusser) und diskutieren deren Implikationen für die Medienpädagogik, was eine seltene, aber produktive Verknüpfung darstellt.",
+          "Die Kritik an der „digitalen Souveränität“ als pädagogischer Zielkategorie berührt zentrale Fragen der Projekte **ai4artsed** (Kritik an hegemonialen Subjektivierungslogiken) und **diaes_kubi** (digitale-aesthetische Souveränität als relationales Konzept)."
+        ],
+        "cost_usd": 0.01637,
+        "cost_is_estimate": true,
+        "cache_pct": 92.3,
+        "tokens_in": 30809,
+        "tokens_out": 643,
+        "latency_s": 16.02,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": true
+    },
+    {
+      "i": 42,
+      "article_id": "1fd641480a35c7e58c8865cb887e2846",
+      "journal": "REPCS",
+      "title": "The (academic) chair: Embodied relations of arrival, place, and hospitality",
+      "opus": {
+        "verdict": "scannen",
+        "kernthese": "Der Artikel untersucht den Stuhl als alltäglichen Gegenstand durch die Linse feministischer Neuer Materialismen und Affekttheorie. Die Autorinnen argumentieren, dass Stühle vitale Objekte mit affektiven und symbolischen Bedeutungen sind, die verkörperte Praktiken des \"Mattering\" und Fragen von Ankunft, Ort und Gastfreundschaft aufwerfen. Anhand persönlicher Erfahrungen und experimentellen Schreibens entfalten sie, wie Stühle Beziehungen zwischen Körpern und nicht-menschlichen Akteuren konstituieren.",
+        "verdict_begruendung": "Der Artikel berührt thematisch Neue Materialismen (geteilter Referenzrahmen), bietet aber keine konkreten argumentativen Anschlüsse an Jörissens spezifische Publikationen zu Digitalität, kultureller Resilienz oder KI.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Kreative Anwendung neomaterialistischer Theorie auf einen banalen Alltagsgegenstand (Stuhl) im akademisch-organisationalen Kontext; untersucht, wie institutionelle Sitzordnungen verkörperte Macht- und Gastfreundlichkeitsverhältnisse materialisieren."
+        ],
+        "cost_usd": 0.008951
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel untersucht den alltäglichen Gegenstand „Stuhl“ aus einer feministisch-neomaterialistischen Perspektive und schreibt ihm eine lebendige, affektive und relationale Vitalität zu. Dabei wird der Stuhl nicht als bloßer funktionaler Gegenstand, sondern als aktiver Teil von verkörperten Ankunfts-, Orts- und Gastfreundschaftspraktiken verstanden. Am Beispiel des „akademischen Stuhls“ werden symbolische und affektive Bedeutungen analysiert, die sich aus der Besetzung und Nutzung von Stühlen in akademischen Kontexten ergeben. Durch experimentelles Schreiben und persönliche Reflexionen werden die Beziehungen zwischen menschlichen Körpern, nicht-menschlichen Akteuren (Stühlen) und Arbeitswelten neu gedacht.",
+        "verdict_begruendung": "Der Artikel bietet produktives Anregungspotenzial für das Projekt **Cultural Resilience**, insbesondere durch seine neomaterialistische und affekttheoretische Perspektive auf verkörperte Relationalität und agency. Die Analyse von Stühlen als Teil von Praktiken der Ankunft, Gastfreundschaft und Macht lässt sich strukturell auf die Dimensionen **Rootedness** (Verwurzelung in materiell-symbolischen Gefügen) und **Resistance** (Widerstand gegen hegemoniale Ordnungen) beziehen. Zudem ergänzt der Artikel die in **KGZXSKKC** und **ZSSJ4BPL** entwickelte relationale Ontologie um eine konkrete, alltagsnahe Fallstudie.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Artikel importiert feministisch-neomaterialistische Theorie (u.a. Barad, Bennett) in die Analyse eines scheinbar banalen Alltagsgegenstands und zeigt, wie dieser als aktiver Teil von relationalen Praktiken der Gastfreundschaft, Macht und Ankunft fungiert.",
+          "Die Fokussierung auf den „akademischen Stuhl“ als Symbol für institutionelle Macht, Zugehörigkeit und Ausschluss bietet eine ungewöhnliche Perspektive auf akademische Kulturen und deren materielle Verfasstheit.",
+          "Die Methode des experimentellen Schreibens und die autoethnographische Herangehensweise könnten als Inspiration für posthumanistische oder neomaterialistische Forschungsdesigns in der Bildungs- und Kulturforschung dienen."
+        ],
+        "cost_usd": 0.0158,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 29161,
+        "tokens_out": 814,
+        "latency_s": 20.64,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    },
+    {
+      "i": 43,
+      "article_id": "8401709869b600169d595df5035231a7",
+      "journal": "MedienPaed",
+      "title": "Zwischen Optimierung und ludischen Gegenstrategien",
+      "opus": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Beitrag analysiert post-digitale Regime der Optimierung auf Social Media Plattformen am Beispiel TikTok-Nutzung zweier 12-jähriger Mädchen aus der DiKuJu-Studie. Er zeigt, wie algorithmisch gesteuerte Optimierungsappelle strukturell in Plattformen eingelagert sind und spezifische Affizierungsrelationen erzeugen. Die Analyse verdeutlicht, dass an der Schnittstelle zwischen Plattform und Jugendlichen Freundschaft gleichzeitig in Prozesse der Optimierung und ludische Gegenstrategien eingebettet ist.",
+        "verdict_begruendung": "Der Beitrag erweitert und importiert konkrete Konzepte aus Jörissens Forschung: Er vertieft die empirische Fallstudie aus der gemeinsamen DiKuJu-Studie und operationalisiert das Konzept des 'Regime des Komputablen' für die TikTok-Analyse. Als Koautorin ist Anna Carnap direkt an der Weiterentwicklung der Forschung beteiligt.",
+        "bezuege": [
+          {
+            "pub_id": "8MLTG7RB",
+            "pub_kurz": "Jörissen, Schröder & Carnap (2020): Postdigitale Jugendkultur: Kernergebnisse einer qualitativen Studie",
+            "bezug": "Der neue Beitrag verwendet direkt das empirische Material aus dieser Studie - die Fallstudie zu 'Lara und Lara' - und vertieft sie mit spezifischem Fokus auf TikTok und Optimierungslogiken. Er erweitert die ursprüngliche Analyse der hybriden Kreativpraktiken um eine detaillierte Untersuchung von Optimierungsregimen und ludischen Gegenstrategien auf der Plattform TikTok.",
+            "relation": "erweitert"
+          },
+          {
+            "pub_id": "M8RZJRHN",
+            "pub_kurz": "Jörissen (2020): Ästhetische Bildung im Regime des Komputablen",
+            "bezug": "Der neue Beitrag operationalisiert Jörissens Konzept des 'Regime des Komputablen' für die empirische Analyse von TikTok-Nutzung. Während Jörissen das Regime des Komputablen als hegemoniale Transformation von Wahrnehmungsordnungen durch digitale Technologien diskutiert, wendet der Beitrag dieses Konzept konkret auf Optimierungslogiken sozialer Medien an und zeigt deren Affizierungswirkungen auf jugendliche Subjektivierungsprozesse.",
+            "relation": "importiert"
+          }
+        ],
+        "bemerkenswert": [
+          "Empirische Vertiefung und Weiterentwicklung der DiKuJu-Studie durch eine der Koautorinnen (Anna Carnap), was eine interne Fortführung der Forschung darstellt.",
+          "Kombination von Optimierungslogik und ludischen Gegenstrategien als analytische Perspektive für die Erforschung post-digitaler Jugendkulturen - eine innovative Erweiterung der Diskussion um widerständige Praktiken.",
+          "Konkrete Anwendung von Jörissens Konzept des 'Regime des Komputablen' auf Social Media Plattformen, was eine empirische Operationalisierung des theoretischen Rahmens ermöglicht."
+        ],
+        "cost_usd": 0.0489225
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel untersucht post-digitale Regime der Optimierung, wie sie insbesondere durch Social-Media-Plattformen wie TikTok erzeugt werden. Dabei wird analysiert, wie algorithmisch gesteuerte Optimierungsappelle spezifische Affizierungsrelationen und Selbstbezüglichkeiten hervorbringen und welche digital grammatisierten Positionierungspraktiken Jugendliche an der Schnittstelle zwischen Plattform und eigenem Medienhandeln entwickeln. Am Beispiel des Medienhandelns zweier 12-jähriger Mädchen auf TikTok wird gezeigt, wie Prozesse der Optimierung mit ludischen Gegenstrategien verschränkt sind und Freund*innenschaften dabei eine zentrale Rolle spielen.",
+        "verdict_begruendung": "Der Beitrag bietet produktive Anregungen für die aktiven Forschungsprojekte **ai4artsed**, **comearts** und **diaes_kubi**, insbesondere durch die Analyse von algorithmischen Optimierungsregimen und deren ludischer Unterwanderung. Die Verschränkung von Subjektivationstheorie und empirischer Jugendforschung macht ihn zudem anschlussfähig an die theoretischen Grundlagen von Jörissens Arbeiten zur post-digitalen Kultur und ästhetischen Bildung.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die Studie fokussiert explizit auf die Verschränkung von Optimierungsimperativen und ludischen Gegenstrategien, was eine produktive Erweiterung des Diskurses über post-digitale Subjektivation darstellt.",
+          "Die Analyse von TikTok als Plattform, die algorithmische Optimierung mit spielerischen und kollektiven Praktiken verbindet, bietet einen konkreten Einblick in die Hybridisierung von Affizierungsrelationen und Selbsttechnologien.",
+          "Die Autorinnen arbeiten heraus, wie Freund*innenschaften als sozialer Rahmen sowohl Optimierungsprozesse verstärken als auch subversive Praktiken ermöglichen – ein bemerkenswerter Befund für die Diskussion über post-digitale Jugendkulturen."
+        ],
+        "cost_usd": 0.0163,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 30469,
+        "tokens_out": 713,
+        "latency_s": 19.16,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": true
+    },
+    {
+      "i": 44,
+      "article_id": "75641a28b53daef73187d6754027e3ac",
+      "journal": "MedienPaed",
+      "title": "Zur Bedeutung des Nichtwissens und die Suche nach Problemlösungen",
+      "opus": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel argumentiert, dass Nichtwissen ein entscheidendes Unterscheidungsmerkmal zwischen Mensch und KI ist und den Menschen in unsicheren Situationen zu Problemlösungen und Urteilen befähigt. Diese einzigartigen menschlichen Fähigkeiten stellen laut den Autoren eine zentrale Bildungsaufgabe dar, bei der Medienpädagogik eine Aufklärungs- und Gestaltungsfunktion zwischen individuell-sozialem Kontingentem und technischen Umwelten übernimmt.",
+        "verdict_begruendung": "Die explizite Zitation von Jörissens früherer Grundlagenarbeit erfordert eine Prüfung, wie die Autoren seine Positionen aufgreifen oder kritisieren – dies könnte argumentative Anschlüsse oder Widersprüche zu seinen jüngeren KI-bezogenen Arbeiten aufdecken. (Verifikation ohne Ergebnis abgebrochen, Assessment-Verdict übernommen)",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Explizite Zitation von Jörissen/Marotzki (2009) 'Medienbildung – Eine Einführung', was eine direkte Auseinandersetzung mit grundlegenden Positionen des Forschers signalisiert.",
+          "Anthropologische Fokussierung auf Nichtwissen als zentrales Differenzkriterium Mensch/Maschine – ein ungewöhnlicher Zugang in der KI-Debatte, der eher philosophisch-kybernetisch als technologisch argumentiert."
+        ],
+        "cost_usd": 0.0581015
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Beitrag untersucht die Rolle des Nichtwissens als konstitutives Element menschlicher Urteils- und Problemlösungsfähigkeit im Kontext der zunehmenden Durchdringung menschlicher Lebensbereiche durch Künstliche Intelligenz (KI). Die Autor*innen argumentieren, dass Nichtwissen kein Defizit, sondern ein zentraler Antrieb für menschliche Kreativität, Bildung und Selbstbestimmung ist. Vor diesem Hintergrund wird Medienpädagogik als Disziplin positioniert, die eine Aufklärungs- und Gestaltungsfunktion einnimmt, um die Verbindung zwischen kontingenten menschlichen Erfahrungen und technischen Umwelten zu reflektieren und zu vermitteln.",
+        "verdict_begruendung": "Der Beitrag bietet produktive Anregungen für die aktiven Forschungsprojekte **AI4ArtsEd** und **DiäS-KuBi**, insbesondere durch die Fokussierung auf Nichtwissen als konstitutives Moment menschlicher Bildung und Urteilsfähigkeit im Kontext von KI. Die systemtheoretische und bildungstheoretische Fundierung ermöglicht eine produktive Auseinandersetzung mit den strukturellen Momenten kultureller Resilienz (Rootedness, Resourcefulness, Resistance) und der Frage nach digital-aesthetischer Souveränität.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Beitrag führt den Begriff des **Nichtwissens** als produktives Moment menschlicher Bildung und Urteilsfähigkeit ein und setzt ihn in Beziehung zu KI, die als technologische Umwelt menschliche Kontingenz herausfordert.",
+          "Die Autor*innen rekurrieren auf **Dirk Baecker**, dessen systemtheoretische Perspektiven auf die „nächste Gesellschaft“ und die „Lücke, die der Rechner lässt“ als zentraler Referenzrahmen dienen. Dies könnte für die Diskussion um **postdigitale Kulturen** und **kulturelle Resilienz** anschlussfähig sein.",
+          "Der Text positioniert **Medienpädagogik** als kritische Instanz, die zwischen menschlicher Kontingenz und technologischen Umwelten vermittelt. Dies könnte für die Projekte **DiäS-KuBi** (digitale-aesthetische Souveränität) und **AI4ArtsEd** (kritisch-kreative KI-Pädagogik) relevant sein.",
+          "Die Betonung von **Urteilsfähigkeit** und **Problemlösungsfähigkeit** als menschliche Alleinstellungsmerkmale im Kontext von KI berührt die Frage nach **ästhetischer Bildung** und **Subjektivation** in postdigitalen Kontexten, wie sie in Jörissens Arbeiten diskutiert werden."
+        ],
+        "cost_usd": 0.01647,
+        "cost_is_estimate": true,
+        "cache_pct": 93.6,
+        "tokens_in": 30402,
+        "tokens_out": 847,
+        "latency_s": 22.22,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": true
+    },
+    {
+      "i": 45,
+      "article_id": "2559fb92116e641805878c2be9485fb4",
+      "journal": "MedienPaed",
+      "title": "Dream Machine",
+      "opus": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel beschreibt ein künstlerisch-forschendes Projekt mit Studierenden, die mithilfe von XR-Technologien (Luma 3D Capture) ästhetische Utopien für nachhaltige Stadtentwicklung im Anthropozän entwerfen. Der Beitrag fragt nach den Potenzialen hochimmersiver digitaler Medientechnologien für zukunftsorientiertes Denken und deren Einsatz im Kunstunterricht.",
+        "verdict_begruendung": "Der Artikel erweitert konkret das Konzept der Post Internet Art Education und Cultural Hacking aus Meyer/Jörissen 2018 durch Anwendung auf XR-Technologien und nachhaltige Stadtutopien, was eine substantielle Ressource für Jörissens Arbeit zur post-digitalen ästhetischen Bildung darstellt.",
+        "bezuege": [
+          {
+            "pub_id": "Y3R8HWUA",
+            "pub_kurz": "Meyer/Jörissen 2018: Post Internet Art Education",
+            "bezug": "Der neue Artikel zitiert explizit Meyer/Jörissen 2018 und übernimmt dessen zentrale Konzepte: 1) Die Auflösung der Grenze zwischen digital und real (post-digitale Kultur), 2) Cultural Hacking als subversives Spiel mit kulturellen Codes und Kontrollprojekten, und 3) die Notwendigkeit, technologische Veränderungen auf der Ebene von Codes, Materialitäten und Affordanzen aufzugreifen. Während Meyer/Jörissen Cultural Hacking als allgemeines Praxisprinzip für Bildung unter post-digitalen Bedingungen entwickeln, konkretisiert der neue Artikel dies für XR-Technologien und nachhaltige Stadtutopien.",
+            "relation": "erweitert"
+          }
+        ],
+        "bemerkenswert": [
+          "Direkte Zitation von Meyer/Jörissen 2018 ('Post Internet Art Education') – explizite Auseinandersetzung mit einem zentralen Text des Forschers.",
+          "Verbindung von Anthropozän-Diskurs, Nachhaltigkeit und XR-Technologien in der kunstpädagogischen Praxis – ungewöhnliche Konstellation.",
+          "Fokus auf 'hostile design'/Gentrifizierung und Gegenentwürfe via digitaler Utopien – konkrete politisch-Lästhetische Intervention.",
+          "Anwendung des Cultural-Hacking-Konzepts auf konkrete XR-Technologien und Stadtutopien – operationalisiert ein theoretisches Konzept für die Praxis."
+        ],
+        "cost_usd": 0.038382
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel untersucht, wie hochimmersive digitale Medientechnologien (XR-Technologien) in einem künstlerisch-forschenden Projekt eingesetzt werden, um zukunftsorientierte und inklusive Utopien für urbane Räume zu entwickeln. Studierende identifizieren zunächst Problemlagen in Städten, verhandeln gemeinschaftlich Interessenschwerpunkte und entwerfen mithilfe von XR-Technologien (z. B. Luma 3D Capture) künstlerisch-ästhetische Visionen für ein nachhaltiges und gemeinschaftsorientiertes Zusammenleben. Dabei wird gefragt, wie digitale Technologien als Werkzeuge im Kunstunterricht genutzt werden können, um Verantwortung für Natur- und Umweltpolitik zu stärken und ästhetische Bildungspraktiken kritisch-reflexiv zu transformieren.",
+        "verdict_begruendung": "Der Artikel bietet Anregungspotenzial für das aktive Forschungsprojekt **ai4artsed**, insbesondere durch die Auseinandersetzung mit XR-Technologien als Werkzeuge für künstlerisch-ästhetische Bildung und die kritische Reflexion ihrer Einsatzmöglichkeiten. Zudem verbindet er das Thema kultureller Resilienz (Rootedness, Resourcefulness, Resistance) mit urbanen und ökologischen Fragestellungen, was für das Projekt **cultural_resilience** relevant ist.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Artikel verbindet das Konzept des Anthropozäns mit urbanen Transformationsprozessen und nutzt XR-Technologien als Medium für künstlerisch-ästhetische Utopien. Dies ist ein innovativer Ansatz, der digitale Technologien nicht nur als Werkzeuge, sondern als Katalysatoren für zukunftsorientierte, inklusive und nachhaltige Bildungsprozesse begreift.",
+          "Die kritische Reflexion der Applikation Luma 3D Capture als künstlerisch-gestalterisches und pädagogisches Werkzeug ist bemerkenswert, da sie die Potenziale und Grenzen digitaler Technologien im Kunstunterricht konkret benennt.",
+          "Der Artikel zitiert die Publikation von Meyer und Jörissen (2018) zu Post Internet Art Education und knüpft damit an die Diskussion über ästhetische Bildung in post-digitalen Kontexten an."
+        ],
+        "cost_usd": 0.01671,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 31209,
+        "tokens_out": 738,
+        "latency_s": 16.58,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": true
+    },
+    {
+      "i": 46,
+      "article_id": "3fbfe623753fe0802b92c9e47ad10a96",
+      "journal": "BDS",
+      "title": "Dashboard stories: How narratives told by predictive analytics reconfigure roles, risk and sociality in education",
+      "opus": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel untersucht, wie predictive Analytics in der Bildung – insbesondere über Data Dashboards – persuasive Narrative erzeugt, die Lehrer*innen als Manager, Schüler*innen als Risiken rekonfigurieren und Sozialität auf maschinenlesbare Interaktionen reduzieren. Durch narrative Analyse eines führenden Systems zeigt er, wie Dashboards Kausalität zwischen visualisierten ‚Fakten‘ implizieren und strukturelle Ungleichheiten unsichtbar machen. Abschließend werden Möglichkeiten skizziert, solche Geschichten zu unterbrechen und umzugestalten.",
+        "verdict_begruendung": "Der Artikel liefert konkrete empirische und theoretische Ressourcen, die Jörissen bereits in seiner eigenen Arbeit importiert hat – die Analyse von Jarke und Macgilchrist wird in Jörissens Publikation zitiert und für seine Argumentation zur Invisibilisierung durch Dashboards genutzt.",
+        "bezuege": [
+          {
+            "pub_id": "62A5VC7E",
+            "pub_kurz": "Jörissen (2025) Digitalität im erziehungstheoretischen Blick: Strukturelle und epistemische Perspektiven",
+            "bezug": "Jörissen zitiert explizit Jarke und Macgilchrist (2021) zur Analyse von Daten-Dashboards und deren Invisibilisierungseffekten. Er übernimmt ihre Argumentation, dass Dashboards pädagogische Wahrnehmungsweisen verändern und das 'Innere' der pädagogischen Zeigeprozesse zum 'Äußeren' des Datenraums machen. Diese Analyse integriert er in seine erziehungstheoretische Betrachtung von Digitalität und Educational Governance, insbesondere im Kontext von 'augmented educational decision making' und der Invisibilisierung pädagogischer Vollzüge durch Dateninfrastrukturen.",
+            "relation": "importiert"
+          }
+        ],
+        "bemerkenswert": [
+          "Narratologische Analyse von Data Dashboards als Methode, um persuasive und kausale Implikationen von Lernanalysesystemen zu entschlüsseln.",
+          "Fokus auf die Rekonfiguration von pädagogischen Rollen (Lehrer als Manager) und Sozialität durch predictive Analytics – ein konkreter Beitrag zur Debatte um Datafizierung und educational governance."
+        ],
+        "cost_usd": 0.052144
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel untersucht, wie predictive Analytics und darauf basierende Daten-Dashboards in Lernunterstützungssystemen narrative Strukturen erzeugen, die Rollen, Risikowahrnehmungen und soziale Interaktionen in Bildungskontexten rekonfigurieren. Am Beispiel eines führenden predictive Analytics-Systems wird analysiert, wie diese Technologien kausale Zusammenhänge zwischen visualisierten Daten implizieren und dabei spezifische Erzählungen über Lehrende, Lernende und deren soziale Beziehungen konstruieren. Lehrkräfte werden als Manager*innen, Schüler*innen als Risikoträger*innen und soziale Interaktionen auf maschinenlesbare Interaktionen reduziert. Strukturelle Ungleichheiten werden dabei unsichtbar gemacht.",
+        "verdict_begruendung": "Der Artikel bietet produktive Anregungen für das Projekt **MetaKuBi** (insbesondere TP 1 zu Diskursanalysen und TP 3 zu Big-Data-Forschungssynthesen) sowie für die Auseinandersetzung mit **Digitalität in der Schulkultur** (vgl. BXCLZ5M7). Die narratologische Perspektive auf predictive Analytics erweitert zudem die Diskussion über **kulturelle Resilienz** (Rootedness, Resistance) um eine kritische Analyse der normativen und epistemischen Effekte datenbasierter Steuerung.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Artikel adressiert die **Invisibilisierung von Verdatungsprozessen** und deren narrative Rahmung, ein zentrales Thema in Jörissens Arbeiten zu Digitalität und Schulkultur (vgl. pub_id: 62A5VC7E, BXCLZ5M7).",
+          "Die Reduktion sozialer Interaktionen auf maschinenlesbare Daten und die damit verbundene **Unsichtbarmachung struktureller Ungleichheiten** korrespondiert mit der Kritik an neoliberalen Freiheitskonzeptionen und der Forderung nach relationaler Freiheit in der kulturellen Resilienztheorie (vgl. ZSSJ4BPL).",
+          "Die Analyse der **narrativen Konstruktion von Risiko** in predictive Analytics-Systemen bietet eine konkrete Fallstudie für die Diskussion über **augmented educational decision making** und die epistemischen Verschiebungen durch datenbasierte Steuerung (vgl. 62A5VC7E)."
+        ],
+        "cost_usd": 0.01615,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 29913,
+        "tokens_out": 793,
+        "latency_s": 18.57,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": true
+    },
+    {
+      "i": 47,
+      "article_id": "1ff89357567aad3e039e6656e91c15ab",
+      "journal": "MedienPaed",
+      "title": "Für eine ‹technologiebewusste Medienpädagogik› jenseits der Digitalisierung",
+      "opus": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel plädiert für eine technologiebewusste Medienpädagogik, die digitale Technologien nicht nur instrumentell versteht, sondern als eigen- und widerständige Größen. Er entwickelt eine technikgenetische Position, die digitale Technologieentwicklung als sukzessive Ausbildung technischer Objekte und damit verbundener praktischer und soziokultureller Milieus begreift, wobei Technologien als kulturhistorisch kontingenter Rückgriff auf «Archive der Technizität» verstanden werden. Exemplarisch analysiert er ChatGPT und die Experience API (xAPI).",
+        "verdict_begruendung": "Der Artikel erweitert Jörissens relationale Medienbildungskonzeption substantiell durch eine technikgenetische Perspektive, die explizit auf seine Arbeiten Bezug nimmt und diese weiterentwickelt.",
+        "bezuege": [
+          {
+            "pub_id": "U6RW4WMN",
+            "pub_kurz": "Bettinger & Jörissen 2022: Medienbildung",
+            "bezug": "Der neue Artikel zitiert Jörissens relationale Medienbildungskonzeption, nimmt aber eine spezifisch technikgenetische Position ein. Während Jörissen Medienbildung als Arbeit an Relationierungsweisen in hybriden Subjektkonfigurationen mit verteilter Agency konzipiert, fokussiert der neue Artikel stärker auf die technische Eigenlogik digitaler Technologien und deren kulturhistorische Kontingenz als «Archive der Technizität». Es handelt sich um eine fokussierte Weiterentwicklung, die Jörissens relationalen Ansatz durch technikgenetische Perspektiven ergänzt.",
+            "relation": "erweitert"
+          }
+        ],
+        "bemerkenswert": [
+          "Artikel zitiert explizit zwei Jörissen-Publikationen zur Medienbildung und zu Critical Software Studies - deutet auf direkte argumentative Auseinandersetzung hin.",
+          "Entwickelt ein spezifisches technikgenetisches Konzept der «Archive der Technizität», das kulturhistorische Kontingenz digitaler Technologien betont.",
+          "Operationalisiert theoretische Position an zwei konkreten technischen Objekten (ChatGPT, xAPI) mit pädagogischer Relevanz."
+        ],
+        "cost_usd": 0.0557315
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Beitrag plädiert für eine ‚technologiebewusste Medienpädagogik‘, die digitale Technologien nicht als neutrale Werkzeuge, sondern als eigenlogische, widerständige und kulturhistorisch kontingente Akteure begreift. Die Autor*innen entwickeln eine technikgenetische Perspektive, die die Materialität und Operationsweise digitaler Technologien (z. B. ChatGPT und Experience API) von ihrer sozialen Funktion und Bedeutung unterscheidet. Digitale Technologien werden als Rückgriff auf ‚Archive der Technizität‘ verstanden, in denen sich algorithmische Techniken und repräsentationale Formen akkumulieren. Ziel ist es, medienpädagogische Ansätze zu stärken, die die spezifischen Strukturen und Operationsweisen von Technologien analytisch erfassen und für Bildungsprozesse fruchtbar machen.",
+        "verdict_begruendung": "Der Beitrag ist für Benjamin Jörissens Arbeit **lesenswert**, da er eine technikgenetische Perspektive auf digitale Technologien entwickelt, die direkt an seine Publikationen zu Medienbildung (U6RW4WMN) und Critical Software Studies (2N55E6VC) anschliesst. Die Betonung der Materialität und Eigenlogik digitaler Technologien bietet Anregungspotenzial für die Projekte **ai4artsed** (z. B. kritische Auseinandersetzung mit KI-Trainingsdaten und Bias) und **diaes_kubi** (z. B. digitale-aesthetische Souveränität als relationale Praxis).",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Beitrag adressiert eine zentrale Leerstelle in der medienpädagogischen Diskussion: die Eigenlogik und Widerständigkeit digitaler Technologien, die oft hinter Diskursen über Digitalisierung oder Post-Digitalität unsichtbar bleibt.",
+          "Die technikgenetische Perspektive bietet einen produktiven Gegenentwurf zu instrumentalistischen oder kulturdeterministischen Ansätzen in der Medienpädagogik.",
+          "Die Analyse der Experience API (xAPI) als technisches Objekt ist ein ungewöhnlicher Fokus, der die Bedeutung von Dateninfrastrukturen für Bildungsprozesse sichtbar macht.",
+          "Der Beitrag knüpft an Critical Software Studies an und erweitert diese um eine pädagogische Dimension, die Technologie als konstitutiven Bestandteil von Bildungsprozessen begreift."
+        ],
+        "cost_usd": 0.017,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 31422,
+        "tokens_out": 862,
+        "latency_s": 24.09,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": true
+    },
+    {
+      "i": 48,
+      "article_id": "338efe035846be4b48363278b62d3bdc",
+      "journal": "ZfPaed",
+      "title": "Wolkige Verheißungen",
+      "opus": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel kritisiert am Beispiel der digitalen Schul-Cloud die Verschmelzung von Lernen und Konsumieren in cloudgesteuerten Lernpraktiken sowie die fortschreitende Kontrolle von Lernprozessen durch Learning Analytics und Datafizierung, die mit der Produktion umfassender Daten und dem Versprechen von Vorhersagbarkeit von Schüler*innenleistungen einhergeht.",
+        "verdict_begruendung": "Der Artikel adressiert mit der digitalen Schul-Cloud ein konkretes Beispiel für Datafizierung und algorithmische Steuerung in der Bildung, was direkt mit Jörissens Arbeiten zu Digitalität in der Schulkultur, educational governance und der Kritik an solutionistischen Ansätzen korrespondiert. (Verifikation ohne Ergebnis abgebrochen, Assessment-Verdict übernommen)",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Fokussierung auf das konkrete Beispiel der digitalen Schul-Cloud als Fallstudie für breitere Digitalisierungsphänomene in der Bildung",
+          "Explizite Kritik an der Verschmelzung von Lernen und Konsumieren in digitalen Lernpraktiken",
+          "Analyse von Datafizierungseffekten und Vorhersagbarkeitsversprechen durch Learning Analytics"
+        ],
+        "cost_usd": 0.089552782
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Beitrag untersucht am Beispiel der digitalen Schul-Cloud, wie digitale Bildungsmedien und bildungspolitische Steuerungsmechanismen Vermittlungswissen transformieren. Zentral werden zwei Thesen entwickelt: Erstens die Verschmelzung von Lernen und Konsumieren in cloudgesteuerten Lernpraktiken, und zweitens die zunehmende Kontrolle von Lernprozessen durch Learning Analytics, die mit einer umfassenden Datengenerierung einhergeht und die Vorhersagbarkeit von Schüler*innenleistungen verspricht.",
+        "verdict_begruendung": "Der Beitrag bietet produktive Anregungspotenziale für die aktiven Forschungsprojekte [metakubi] und [diaes_kubi], insbesondere durch die kritische Analyse der infrastrukturellen und steuerungstechnischen Dimensionen von Digitalität in schulischen Kontexten. Die Thesen zur Verschmelzung von Lernen und Konsumieren sowie zur datenbasierten Kontrolle knüpfen an zentrale Diskussionslinien in Jörissens Arbeiten zu Digitalität, Schulkultur und digitaler Souveränität an.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die Analyse der digitalen Schul-Cloud als paradigmatisches Beispiel für die Verschränkung von Bildungsmedien, Konsumlogiken und datenbasierter Steuerung ist ein prägnanter Fall für die Diskussion über Digitalität in schulischen Kontexten.",
+          "Die These der „wolkigen Verheißungen“ verweist auf die Ambivalenz zwischen emanzipatorischen Versprechen digitaler Bildung und deren Einbindung in ökonomische und kontrolltechnologische Logiken, was für die Debatte um digitale Souveränität und Kultivierung relevant ist."
+        ],
+        "cost_usd": 0.01538,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 28699,
+        "tokens_out": 685,
+        "latency_s": 19.58,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": true
+    },
+    {
+      "i": 49,
+      "article_id": "97892a7d2926c8f739d343198f2fdcc5",
+      "journal": "MedienPaed",
+      "title": "Medienbildung und Schulkultur. Implikationen der Verbindung von Medienbildung und Schulkultur für die Medienpädagogik",
+      "opus": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Beitrag diskutiert die Disziplinierung der Medienpädagogik am Beispiel Schule und verbindet eine poststrukturalistisch gedachte Medienbildung (Entdichotomisierung von Subjekt und Medien) mit dem Konzept der Schulkultur. Dadurch wird eine neue, kritische Perspektive eröffnet, die bisherige medienpädagogische Theoreme, insbesondere das Medienkompetenzkonzept, in Frage stellt.",
+        "verdict_begruendung": "Der Artikel zitiert explizit eine gemeinsame Publikation von Jörissen (Fromme & Jörissen 2010) und setzt sich damit auseinander; dies erfordert eine inhaltliche Prüfung der Aufnahme. (Verifikation ohne Ergebnis abgebrochen, Assessment-Verdict übernommen)",
+        "bezuege": [],
+        "bemerkenswert": [],
+        "cost_usd": 0.044451500000000005
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Beitrag diskutiert die disziplinäre Verortung der Medienpädagogik und Medienbildung am Beispiel der Schule als pädagogischem Ort. Zentral wird dabei die Verbindung einer poststrukturalistisch gedachten Medienbildung – die eine Entdichotomisierung von Subjekt und Medien sowie eine Abkehr von essentialistischen Subjektvorstellungen vornimmt – mit dem Konzept der Schulkultur nach Werner Helsper vorgeschlagen. Diese Verbindung soll eine holistische, kritische Perspektive auf Medienbildung eröffnen, die über vereinfachte Gesellschaftskritik und traditionelle Medienkompetenzkonzepte hinausgeht. Der Text plädiert für eine offene, nicht vorschnell in Abgrenzungsmechanismen verfallende Medienpädagogik, die die Komplexität von Schulkultur und Medialisierungsprozessen ernst nimmt.",
+        "verdict_begruendung": "Der Beitrag bietet Anregungspotenzial für das Projekt **metakubi**, insbesondere für die systematische Erfassung und Analyse von Diskursen zur Digitalität in der kulturellen Bildung und Schulkultur. Die poststrukturalistische Perspektive auf Medienbildung und die Verbindung mit Schulkulturforschung erweitern die Debatte um institutionelle und relationale Aspekte von Medienbildung.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Beitrag zitiert explizit die Publikation von Fromme und Jörissen (2010) zu Medienbildung und Medienkompetenz, was auf eine direkte Auseinandersetzung mit der relationalen Medienbildungstheorie hindeutet.",
+          "Die Verbindung von Schulkulturforschung und Medienbildung ist ein ungewöhnlicher, aber produktiver Ansatz, der die institutionelle Einbettung von Medienbildung in den Blick nimmt – ein Aspekt, der in der Medienpädagogik oft vernachlässigt wird.",
+          "Der Text problematisiert die disziplinäre Verortung der Medienpädagogik und plädiert für eine offene, nicht in Abgrenzungsmechanismen verfallende Perspektive, was für die aktuelle Debatte um die Zukunft der Medienpädagogik relevant ist."
+        ],
+        "cost_usd": 0.01611,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 30192,
+        "tokens_out": 676,
+        "latency_s": 20.06,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": true
+    },
+    {
+      "i": 50,
+      "article_id": "4e2d0cd620236203bfab2da8c4bda4b3",
+      "journal": "EERJ",
+      "title": "De-individualising the ‘NEET problem’: An ecological systems analysis",
+      "opus": {
+        "verdict": "ignorieren",
+        "kernthese": "(Screening: ignorieren)",
+        "verdict_begruendung": "Screening: NEET problem, ecological systems, no theoretical overlap",
+        "bezuege": [],
+        "bemerkenswert": [],
+        "cost_usd": 0.0
+      },
+      "mistral": {
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel adressiert das Phänomen NEET (Young People Not in Education, Employment or Training) und dekonstruiert dessen Individualisierung in politischen und pädagogischen Diskursen. Anhand einer qualitativen Längsschnittstudie mit 53 jungen Menschen in London wird gezeigt, wie strukturelle Bedingungen wie Kürzungen im Bildungs- und Unterstützungssystem, sozioökonomische Benachteiligung und transformationsbedingte Veränderungen des Arbeitsmarkts zu schulischer Entfremdung und letztlich zum NEET-Status führen. Die Autor*innen argumentieren, dass das ‚NEET-Problem‘ nicht als individuelles Versagen, sondern als Ergebnis ökologischer Systemzusammenhänge (im Sinne Bronfenbrenners) verstanden werden muss.",
+        "verdict_begruendung": "Der Artikel bietet produktive Anregungspotenziale für das Projekt **Cultural Resilience**, insbesondere durch seine strukturelle Perspektive auf Benachteiligung und Marginalisierung. Die ökologische Systemanalyse korrespondiert mit den relationalen und post-anthropozentrischen Ansätzen des Projekts, indem sie individuelle Bildungsverläufe in größere sozio-materielle und institutionelle Kontexte einbettet. Zudem thematisiert der Artikel die Rolle von Unterstützungssystemen (z. B. Career Advice) als kritische Infrastruktur für kulturelle Resilienz, was für die Dimensionen **Rootedness** und **Resourcefulness** anschlussfähig ist.",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Die Studie leistet eine explizite Abkehr von der Individualisierung sozialer Probleme, die in bildungs- und sozialpolitischen Diskursen oft vorherrscht, und verweist auf strukturelle Bedingungen als zentrale Faktoren für Bildungsbenachteiligung.",
+          "Die Verwendung von Bronfenbrenners ökologischer Systemtheorie zur Analyse von Bildungsungleichheit ist ein ungewöhnlicher, aber produktiver theoretischer Import in die erziehungswissenschaftliche Debatte.",
+          "Die Studie zeigt, wie Kürzungen im Bildungs- und Unterstützungssystem (z. B. Career Advice) direkt mit dem Anstieg von NEET-Zahlen korrelieren – ein Befund, der für die Diskussion über Bildungsgerechtigkeit und Resilienz in europäischen Kontexten relevant ist."
+        ],
+        "cost_usd": 0.01561,
+        "cost_is_estimate": true,
+        "cache_pct": 0.0,
+        "tokens_in": 29346,
+        "tokens_out": 624,
+        "latency_s": 16.39,
+        "finish": "tool_calls",
+        "error": null,
+        "_retry": false
+      },
+      "verdict_match": false
+    }
+  ],
+  "ts": "2026-05-23T14:36:19.084329"
+}

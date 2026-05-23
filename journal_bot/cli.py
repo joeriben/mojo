@@ -450,8 +450,12 @@ def cmd_journal_topics(args: argparse.Namespace) -> int:
 
 def cmd_web(args: argparse.Namespace) -> int:
     from journal_bot.web.app import app
-    print(f"[web] MOJO UI auf http://localhost:{args.port}")
-    app.run(debug=True, port=args.port)
+    print(f"[web] MOJO UI auf http://mojo.localhost:{args.port}")
+    # debug=True würde Werkzeugs StatReloader anschalten, der jede Sekunde
+    # den gesamten Projekt-Tree per os.walk durchläuft → 100 % CPU im
+    # launchd-Dauerlauf. Nur explizit per --debug einschalten (manueller
+    # Dev-Start), nicht in der KeepAlive-Service-Konfiguration.
+    app.run(debug=args.debug, host="127.0.0.1", port=args.port)
     return 0
 
 
@@ -801,6 +805,11 @@ def main(argv: list[str] | None = None) -> int:
 
     p_web = sub.add_parser("web", help="Web-UI starten (localhost:5000)")
     p_web.add_argument("--port", type=int, default=5555)
+    p_web.add_argument(
+        "--debug",
+        action="store_true",
+        help="Flask-Debug-Mode mit Reloader (Dev-only, brennt CPU im KeepAlive-Service).",
+    )
     p_web.set_defaults(func=cmd_web)
 
     args = parser.parse_args(argv)

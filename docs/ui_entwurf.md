@@ -1,7 +1,7 @@
 # MOJO Interface — Entwurf (2026-04-12)
 
 ## Stack
-Flask + Jinja2 + HTMX. Kein JS-Framework, kein Build-Step. SQLite direkt. Lokal auf `localhost:5000`.
+Flask + Jinja2 + HTMX. Kein JS-Framework, kein Build-Step. SQLite direkt. Lokal auf `mojo.localhost:5555` (eigener Hostname trennt Cookies & Passwort-Manager von anderen `localhost:*`-Apps).
 
 ## Drei Ansichten
 

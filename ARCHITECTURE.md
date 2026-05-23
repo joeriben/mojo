@@ -237,7 +237,7 @@ System-Prompt wird via OpenRouter `cache_control: ephemeral` gecacht (5-Min-TTL)
 ## Phase 3: Review (Web-UI)
 
 ### Stack
-Flask + Jinja2 + HTMX. Kein JS-Framework, kein Build-Step. SQLite direkt. `localhost:5555`.
+Flask + Jinja2 + HTMX. Kein JS-Framework, kein Build-Step. SQLite direkt. `mojo.localhost:5555` (eigener Hostname trennt Cookies & Passwort-Manager von anderen `localhost:*`-Apps; `*.localhost` löst per RFC 6761 ohne `/etc/hosts` auf 127.0.0.1 auf).
 
 ### Ansichten
 

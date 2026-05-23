@@ -616,6 +616,35 @@ Vor der Änderung zeigte `mojo cache-report --days 7` für batch_screen ein fals
 - Der `verify`-Pfad ist unit-getestet aber wartet auf einen `lesenswert`-Verdict in der Praxis. Die Symmetrie zu `assess` ist im Code identisch.
 - Web-UI-Rendering ist via `test_request_context()` smoke-getestet, aber ein realer Browser-Render beim nächsten Setup > Scan-Run wäre die finale Bestätigung.
 
+### Folgesitzung 2026-05-23 — Hänge-Trends-Vorfall + Hard-Timeout
+
+#### Symptom
+Benjamin meldete einen `python3.10` mit konstant 100 % CPU im Aktivitätsmonitor. Diagnose: PID 72795 (Web-Server-Worker, gestartet via `mojo web --port 5555`) lief seit 33+ min mit STAT=R und ~23 min reiner CPU-Zeit. Browser-Tab hing weiterhin in ESTABLISHED, der Trends-Run "Analyse läuft (LLM-Call)…" wartete auf eine Antwort, die nie kam.
+
+#### Root Cause
+- `lsof` zeigte: ein einzelner offener Socket zu `104.18.2.115:443` (Cloudflare → OpenRouter) in `CLOSE_WAIT` — der Server hatte die Verbindung bereits beendet (FIN gesendet), unsere Seite hatte den Close-Handshake nicht abgeschlossen.
+- `sample 72795` zeigte den Worker-Thread zu ~95 % in `select_poll_poll`, der Main-Thread in `time_sleep` (524 Samples) — typisches Muster für einen Stream-Parse-/Retry-Loop, der auf ein abgebrochenes SSE-Stream weiter pollt.
+- `journal_bot/llm_client.build_client()` setzte **kein** `timeout` und **kein** `max_retries`. Smoke-Test bestätigte: die OpenAI-SDK-Default-Werte sind `timeout=NOT_GIVEN` (= effektiv kein Hard-Timeout für lange Streams) und `max_retries=2`. Bei einem hängenden Trends-Call ohne Timeout retried die SDK transparent ohne dass `trends.py` davon erfährt.
+
+#### Fix
+1. **`journal_bot/llm_client.py`**: explizite Hard-Limits in `build_client()`:
+   - `timeout=600.0` — 10 min Cap. Trends-Calls liegen normal bei 60–180 s; assess/verify/screen/summarize deutlich darunter. 30-min-Hänger werden hart abgebrochen.
+   - `max_retries=1` — ein einziger Retry bei transientem Netzwerkfehler, kein stilles Mehrfach-Wiederholen langlaufender Calls.
+   - Kommentar im Code verweist auf diesen Vorfall.
+2. **Recovery**: PID 72795 sauber via SIGINT beendet (kein SIGKILL nötig — `KeyboardInterrupt` propagierte durch die SDK-Schichten, Worker terminierte clean innerhalb von 3 s).
+
+#### Validierung
+- `inspect.signature(OpenAI.__init__)` bestätigt: `timeout` und `max_retries` sind valide Kwargs.
+- Smoke-Test: `build_client().timeout = 600.0`, `build_client().max_retries = 1` ✓
+- Test-Suite: 29 grün (keine Regression durch den Client-Patch).
+
+#### Geänderte Dateien
+- `journal_bot/llm_client.py` — Hard-Timeout + max_retries-Override in `build_client()`
+
+#### Offen / Folgepunkte
+- Endpoint-spezifische Timeouts (z.B. trends 900 s wegen großer Cluster-Kontexte) sind nicht zwingend — der Global-Default deckt den realistischen Hang-Fall ab. Bei wiederholten Timeout-Abbrüchen für Trends könnte ein Per-Call-Override sinnvoll werden, ist aktuell aber YAGNI.
+- Web-UI hat keine sichtbare "Call läuft länger als X min"-Warnung. Heuristik wäre ein Heartbeat im SSE-Fortschrittsstream — separates UX-Thema, nicht im Critical Path.
+
 ---
 
 ## Session 2026-04-12b — Web-UI + Runs 2024/2026
