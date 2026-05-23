@@ -56,8 +56,10 @@
       {{ title_link(a) }}
     </h3>
     {% if a.agent_entry %}
-    <p style="font-size:.9rem; margin-bottom:.3rem;">{{ a.agent_entry.kernthese[:250] }}{% if a.agent_entry.kernthese|length > 250 %}…{% endif %}</p>
-    <p style="font-size:.8rem; color:var(--muted);">{{ a.agent_entry.verdict_begruendung[:200] }}</p>
+    {% set _kern = a.agent_entry.get('kernthese') or a.agent_entry.get('theoretisch_methodisch') or '' %}
+    {% set _begr = a.agent_entry.get('verdict_begruendung') or '' %}
+    {% if _kern %}<p style="font-size:.9rem; margin-bottom:.3rem;">{{ _kern[:250] }}{% if _kern|length > 250 %}…{% endif %}</p>{% endif %}
+    {% if _begr %}<p style="font-size:.8rem; color:var(--muted);">{{ _begr[:200] }}</p>{% endif %}
     {% if a.agent_entry.bezuege %}
     <div style="font-size:.85rem; margin-top:.3rem;">
       {% for b in a.agent_entry.bezuege %}
@@ -102,8 +104,10 @@
     {{ title_link(a) }}
   </h3>
   {% if a.agent_entry %}
-  <p style="font-size:.9rem; margin-bottom:.3rem;">{{ a.agent_entry.kernthese[:250] }}{% if a.agent_entry.kernthese|length > 250 %}…{% endif %}</p>
-  <p style="font-size:.8rem; color:var(--muted);">{{ a.agent_entry.verdict_begruendung[:200] }}</p>
+  {% set _kern = a.agent_entry.get('kernthese') or a.agent_entry.get('theoretisch_methodisch') or '' %}
+  {% set _begr = a.agent_entry.get('verdict_begruendung') or '' %}
+  {% if _kern %}<p style="font-size:.9rem; margin-bottom:.3rem;">{{ _kern[:250] }}{% if _kern|length > 250 %}…{% endif %}</p>{% endif %}
+  {% if _begr %}<p style="font-size:.8rem; color:var(--muted);">{{ _begr[:200] }}</p>{% endif %}
   {% if a.agent_entry.bezuege %}
   <div style="font-size:.85rem; margin-top:.3rem;">
     {% for b in a.agent_entry.bezuege %}

@@ -8,6 +8,7 @@ import html as html_mod
 import io
 import json
 import os
+import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -621,30 +622,39 @@ def search():
 
 @app.route("/api/tooltip/<article_id>")
 def api_tooltip(article_id: str):
-    """HTMX endpoint: lazy-load tooltip content on hover."""
+    """HTMX endpoint: lazy-load tooltip content on hover.
+
+    Strategy: show agent's verdict reasoning + kernthese if present, always
+    append the original abstract as a fallback/context — so unprocessed
+    articles (no agent_entry) and Gemini-triaged ones (no kernthese field)
+    still surface a useful preview.
+    """
     store = _store()
     a = store.get(article_id)
     if not a:
         return ""
+    esc = html_mod.escape
+    parts: list[str] = []
 
-    # Agent entry available → show verdict + kernthese
+    # Agent entry available → show verdict + kernthese (defensive: support
+    # Gemini-style schemas that use theoretisch_methodisch instead of kernthese)
     if a.agent_entry:
         if isinstance(a.agent_entry, str):
             a.agent_entry = json.loads(a.agent_entry)
         e = a.agent_entry
-        parts = []
-        if e.get("verdict_begruendung"):
-            parts.append(f'<div class="tooltip-verdict">{e["verdict_begruendung"][:300]}</div>')
-        if e.get("kernthese"):
-            parts.append(f'<div class="tooltip-kernthese">{e["kernthese"][:400]}</div>')
-        return "".join(parts)
+        begr = e.get("verdict_begruendung") or ""
+        kern = e.get("kernthese") or e.get("theoretisch_methodisch") or ""
+        if begr:
+            parts.append(f'<div class="tooltip-verdict">{esc(begr[:300])}</div>')
+        if kern:
+            parts.append(f'<div class="tooltip-kernthese">{esc(kern[:400])}</div>')
 
-    # No agent entry (Tier C) → fall back to original abstract
-    esc = html_mod.escape
+    # Always append abstract for context (especially helpful for unprocessed
+    # entries in the review queue where the agent didn't produce a deepening)
     abstract = a.openalex_abstract or a.abstract
     if abstract:
-        return f'<div class="tooltip-abstract">{esc(abstract[:500])}</div>'
-    return ""
+        parts.append(f'<div class="tooltip-abstract">{esc(abstract[:500])}</div>')
+    return "".join(parts)
 
 
 @app.route("/api/verdict", methods=["POST"])
@@ -672,9 +682,17 @@ def api_set_verdict():
 
     store.set_user_verdict(article_id, verdict=verdict, memo=memo)
 
-    # Auto-deepen on upgrade to lesenswert
+    # Auto-deepen on upgrade to lesenswert — im Hintergrund, sonst blockiert
+    # der LLM-Call (10-30 s) die HTMX-Response und die User-Wahrnehmung ist
+    # "Lesenswert wurde gar nicht registriert" (während Ignorieren sofort
+    # antwortet, weil dort kein Deepen läuft). Eigene Store-Instanz pro Thread,
+    # da sqlite3-Connections nicht zwischen Threads geteilt werden dürfen.
     if is_upgrade_to_lesenswert:
-        _run_deepen(article_id, store)
+        threading.Thread(
+            target=_run_deepen,
+            args=(article_id, _store()),
+            daemon=True,
+        ).start()
 
     # Re-fetch to get updated state
     a = store.get(article_id)

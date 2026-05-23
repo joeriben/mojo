@@ -17,6 +17,7 @@ desktop client via Zotero Sync (usually within seconds). Requires:
 
 from __future__ import annotations
 
+import html
 import json
 
 from pyzotero import zotero
@@ -26,6 +27,11 @@ from journal_bot.store import Store, StoredArticle
 
 
 COLLECTION_NAME = "mojo"
+
+
+def _esc(s: object) -> str:
+    """Escape arbitrary value for safe embedding in HTML notes."""
+    return html.escape(str(s)) if s is not None else ""
 
 
 class ZoteroConfigMissing(Exception):
@@ -68,38 +74,93 @@ def _build_note_html(a: StoredArticle) -> str:
     if isinstance(e, str):
         e = json.loads(e)
     if not e:
-        return "<p>(Keine Agent-Analyse vorhanden.)</p>"
+        e = {}
 
-    parts = ["<h2>MOJO-Analyse</h2>"]
-    parts.append(f"<p><strong>Verdict:</strong> {(a.user_verdict or a.agent_verdict).upper()}</p>")
+    parts: list[str] = ["<h2>MOJO-Analyse</h2>"]
+    parts.append(
+        f"<p><strong>Verdict:</strong> "
+        f"{_esc((a.user_verdict or a.agent_verdict or '').upper())}</p>"
+    )
     if e.get("verdict_begruendung"):
-        parts.append(f"<p>{e['verdict_begruendung']}</p>")
+        parts.append(f"<p>{_esc(e['verdict_begruendung'])}</p>")
+
+    # Citation hits — wichtiger Befund, war bisher nur im Obsidian-Export
+    citation_hits = a.citation_hits or []
+    if citation_hits:
+        parts.append("<h3>Zitiert Dich</h3><ul>")
+        for h in citation_hits:
+            if not isinstance(h, dict):
+                continue
+            authors = ", ".join(h.get("pub_authors", [])[:2]) or "?"
+            conf = h.get("confidence", "")
+            prefix = "<em>(wahrscheinlich)</em> " if conf == "medium" else ""
+            parts.append(
+                f"<li>{prefix}<strong>{_esc(authors)}</strong> "
+                f"({_esc(h.get('pub_year', ''))}): "
+                f"{_esc((h.get('pub_title', '') or '')[:100])} "
+                f"· <code>{_esc(h.get('pub_id', ''))}</code></li>"
+            )
+        parts.append("</ul>")
 
     if e.get("kernthese"):
-        parts.append(f"<h3>Kernthese</h3><p>{e['kernthese']}</p>")
+        parts.append(f"<h3>Kernthese</h3><p>{_esc(e['kernthese'])}</p>")
 
     bezuege = e.get("bezuege") or []
     if bezuege:
-        parts.append("<h3>Bezüge</h3>")
+        parts.append("<h3>Bezüge zu Deinem Werk</h3>")
         for b in bezuege:
             parts.append(
-                f"<p><strong>{b.get('pub_kurz', '?')}</strong> "
-                f"(<code>{b.get('pub_id', '?')}</code>, {b.get('relation', '?')}): "
-                f"{b.get('bezug', '')}</p>"
+                f"<p><strong>{_esc(b.get('pub_kurz', '?'))}</strong> "
+                f"(<code>{_esc(b.get('pub_id', '?'))}</code>, "
+                f"{_esc(b.get('relation', '?'))}): "
+                f"{_esc(b.get('bezug', ''))}</p>"
             )
 
     bemerkenswert = e.get("bemerkenswert") or []
     if bemerkenswert:
         parts.append("<h3>Bemerkenswert</h3><ul>")
         for note in bemerkenswert:
-            parts.append(f"<li>{note}</li>")
+            parts.append(f"<li>{_esc(note)}</li>")
         parts.append("</ul>")
 
     if e.get("theoretisch_methodisch"):
-        parts.append(f"<h3>Methodisch/Theoretisch</h3><p>{e['theoretisch_methodisch']}</p>")
+        parts.append(
+            f"<h3>Methodisch / Theoretisch</h3>"
+            f"<p>{_esc(e['theoretisch_methodisch'])}</p>"
+        )
 
     if a.user_memo:
-        parts.append(f"<h3>User-Memo</h3><p><em>{a.user_memo}</em></p>")
+        parts.append(f"<h3>User-Memo</h3><p><em>{_esc(a.user_memo)}</em></p>")
+
+    # Triage-Verortung — Metadata, wie der Verdict zustandekam. Hilfreich beim
+    # späteren Wiederauffinden in Zotero (z.B. nach Diskursraum filtern).
+    verortung_items: list[str] = []
+    if a.selection_mode:
+        verortung_items.append(f"<li>Triage-Modus: {_esc(a.selection_mode)}</li>")
+    if a.discourse_indicator:
+        verortung_items.append(f"<li>Diskursraum: {_esc(a.discourse_indicator)}</li>")
+    if a.signal_group:
+        verortung_items.append(f"<li>Signal-Gruppe: {_esc(a.signal_group)}</li>")
+    if a.suggested_subgroup:
+        sg_line = f"<li>Subgruppen-Vorschlag: {_esc(a.suggested_subgroup)}"
+        if a.suggested_subgroup_confidence:
+            sg_line += f" (conf {a.suggested_subgroup_confidence:.2f})"
+        if a.suggested_subgroup_reason:
+            sg_line += f" — {_esc(a.suggested_subgroup_reason)}"
+        sg_line += "</li>"
+        verortung_items.append(sg_line)
+    if verortung_items:
+        parts.append("<h3>Verortung</h3><ul>")
+        parts.extend(verortung_items)
+        parts.append("</ul>")
+
+    # Footer — analog Obsidian-Export
+    parts.append("<hr>")
+    parts.append(
+        f"<p><em>{a.iterations} Iterationen · "
+        f"{a.tokens_in:,} in / {a.tokens_out:,} out · "
+        f"${a.cost_usd:.3f}</em></p>"
+    )
 
     return "\n".join(parts)
 
