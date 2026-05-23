@@ -8,6 +8,7 @@ corpus.json
 summaries.json
 articles.db
 seen.db
+llm_log.db
 profile.json
 profile.md
 *.key
@@ -18,6 +19,10 @@ profile.md
 journal_profiles.json
 .agent_context.json
 .agent_context.txt
+
+# Digest-Run-Logs (lokales Lauf-Tracking, kein Repo-Inhalt)
+output/digest_*.log
+output/web_*.log
 
 # OS
 .DS_Store
