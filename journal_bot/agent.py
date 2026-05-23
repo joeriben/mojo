@@ -97,6 +97,21 @@ def _should_use_explicit_cache_control(model: str) -> bool:
     return _anthropic_cache_min_tokens(model) is not None
 
 
+def _extra_body_for_model(model: str) -> dict[str, Any]:
+    """Per-model OpenRouter extras (reasoning effort, usage flags).
+
+    Gemini 3.5 Flash is a reasoning model; without an explicit effort it
+    defaults to a higher level which (per qcheck N=50, 2026-05-23) produces
+    less informative verdict_begruendung than low-effort. See memory
+    `feedback-reasoning-low-vs-high`.
+    """
+    m = model.lower()
+    extras: dict[str, Any] = {"usage": {"include": True}}
+    if "gemini" in m and "flash" in m:
+        extras["reasoning"] = {"effort": "low"}
+    return extras
+
+
 def _estimate_uncached_batch_cost(
     *,
     model: str,
@@ -934,6 +949,22 @@ You have NO access to full texts. You work only with the publication index above
 - Write NO bezuege. The field stays empty. Bezuege require full-text reading.
 - bemerkenswert may and should be filled when applicable.
 
+=== VERDICT-BEGRÜNDUNG CONSISTENCY RULE ===
+Before finalizing the verdict, re-read your own verdict_begruendung. If it
+contains any of the following phrasings (or semantically equivalent ones, in
+German or English):
+  - "keine Anknüpfungspunkte" / "no points of connection"
+  - "kein spezifischer Anschluss" / "no specific connection"
+  - "kein konkreter Bezug" / "no concrete relation"
+  - "außerhalb [...] Forschungsfeld[es]" / "outside [...] field of research"
+  - "nur tangential" / "only tangential"
+  - "berührt nicht" / "does not touch"
+  - "keine substanzielle Verbindung" / "no substantive connection"
+... then verdict MUST be "ignorieren". The verdicts "scannen" and "lesenswert"
+require a positively named, concrete connection. A justification must not read
+both ways — either there is a connection (then name it), or there is none (then
+ignorieren).
+
 === PUBLICATION RECORD ({SINCE_YEAR}+) ==="""
 
 
@@ -1000,20 +1031,23 @@ def run_agent(
     client = build_client()
 
     # System-Prompt als cache-fähigen Content-Block über OpenRouter.
-    # Die kurze TTL reicht für Multi-Iter-Läufe und Batches.
+    # cache_control nur für Anthropic-Modelle setzen — andere Provider
+    # (Gemini, DeepSeek, etc.) verwenden implicit caching und tolerieren
+    # zusätzliche Felder nicht durchgängig.
+    system_text_block: dict[str, Any] = {
+        "type": "text",
+        "text": system_prompt,
+    }
+    if _should_use_explicit_cache_control(model):
+        system_text_block["cache_control"] = {"type": "ephemeral"}
     messages: list[dict[str, Any]] = [
         {
             "role": "system",
-            "content": [
-                {
-                    "type": "text",
-                    "text": system_prompt,
-                    "cache_control": {"type": "ephemeral"},
-                }
-            ],
+            "content": [system_text_block],
         },
         {"role": "user", "content": user_content},
     ]
+    extra_body = _extra_body_for_model(model)
 
     final_entry: dict | None = None
     tool_call_log: list[dict] = []
@@ -1033,6 +1067,7 @@ def run_agent(
             max_tokens=4000,
             messages=messages,
             tools=TOOLS if allow_read else TOOLS_SUBMIT_ONLY,
+            extra_body=extra_body,
         )
         usage = getattr(resp, "usage", None)
         iter_cost = 0.0

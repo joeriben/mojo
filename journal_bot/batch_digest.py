@@ -7,7 +7,7 @@ from typing import Callable
 
 from journal_bot import agent as agent_mod
 from journal_bot import digest
-from journal_bot.citation_tracker import find_citations, load_authored_all
+from journal_bot.citation_tracker import find_citations, load_authored_all, match_own_publication
 from journal_bot.llm_log import cache_hit_stats, format_cache_report, wave_marker
 from journal_bot.settings import JOURNALS, MODEL_AGENT
 from journal_bot.store import Store, StoredArticle
@@ -130,6 +130,43 @@ def run_batch_digest(
             )
         pending = [sa for sa in pending if not _is_junk_title(sa.title)]
 
+    authored_all = load_authored_all()
+    own_pubs: list[tuple[StoredArticle, dict]] = []
+    surviving: list[StoredArticle] = []
+    for sa in pending:
+        article = {"title": sa.title, "doi": sa.doi, "authors": sa.authors}
+        match = match_own_publication(article, authored_all)
+        if match:
+            own_pubs.append((sa, match))
+        else:
+            surviving.append(sa)
+    if own_pubs:
+        _log(logger, verbose, f"\n[digest] Eigene Publikationen rausgefiltert: {len(own_pubs)}")
+        for sa, m in own_pubs:
+            _log(logger, verbose, f"  ⊘ {sa.journal_full or sa.journal_short}: {sa.title[:70]}")
+            store.update_agent_result(
+                sa.id,
+                verdict="ignorieren",
+                entry={
+                    "kernthese": "(Eigene Publikation)",
+                    "bezuege": [],
+                    "bemerkenswert": [],
+                    "theoretisch_methodisch": "",
+                    "verdict": "ignorieren",
+                    "verdict_begruendung": f"Eigene Publikation (corpus pub_id={m.get('pub_id', '?')}).",
+                },
+                citation_hits=[],
+                tokens_in=0,
+                tokens_out=0,
+                tokens_cached_read=0,
+                tokens_cache_write=0,
+                cost_usd=0.0,
+                iterations=0,
+                selection_mode="screening",
+                discourse_indicator="kein_indikator",
+            )
+    pending = surviving
+
     def _has_abstract(sa: StoredArticle) -> bool:
         return bool((sa.abstract or "").strip() or (sa.openalex_abstract or "").strip())
 
@@ -238,7 +275,6 @@ def run_batch_digest(
         pending = with_data
 
     trigger_authors = ["macgilchrist", "jarke", "wendy chun", "wendy hui kyong"]
-    authored_all = load_authored_all()
     auto_pass: list[tuple[StoredArticle, str]] = []
     screen_candidates: list[StoredArticle] = []
 

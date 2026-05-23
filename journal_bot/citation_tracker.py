@@ -279,6 +279,54 @@ def load_authored_all(corpus_path: Path = CORPUS_JSON) -> list[dict]:
     return data.get("authored_all", [])
 
 
+def _normalize_title(s: str) -> str:
+    if not s:
+        return ""
+    s = re.sub(r"<[^>]+>", "", s)
+    s = re.sub(r"[^\w\s]", " ", s, flags=re.UNICODE)
+    s = re.sub(r"\s+", " ", s).strip().lower()
+    return s
+
+
+def match_own_publication(
+    article: dict,
+    authored_all: list[dict],
+) -> dict | None:
+    """Returns the authored_all entry if `article` IS the researcher's own
+    publication (not just cites it). None otherwise.
+
+    Match strategies:
+    1. DOI exact (normalized) — highest confidence
+    2. Researcher last name in article.authors AND title prefix overlap (≥60 chars)
+       — fallback for the 136 authored_all entries without DOI
+
+    `article` must have keys: title, doi, authors (list of name strings).
+    """
+    art_doi = _normalize_doi(article.get("doi", ""))
+    if art_doi:
+        for p in authored_all:
+            if _normalize_doi(p.get("doi", "")) == art_doi:
+                return p
+
+    art_authors = article.get("authors") or []
+    _, last_name, _ = _parse_researcher_name(RESEARCHER_NAME)
+    last_lower = last_name.lower()
+    if not any(last_lower in (a or "").lower() for a in art_authors):
+        return None
+
+    art_title = _normalize_title(article.get("title", ""))
+    if len(art_title) < 20:
+        return None
+    art_prefix = art_title[:60]
+    for p in authored_all:
+        p_title = _normalize_title(p.get("title", ""))
+        if not p_title:
+            continue
+        if art_prefix in p_title or p_title[:60] in art_title:
+            return p
+    return None
+
+
 def format_for_agent(hits: list[CitationHit]) -> str:
     """Formatiert Treffer für den Agent-User-Prompt. Leerstring, wenn keine Treffer."""
     if not hits:
