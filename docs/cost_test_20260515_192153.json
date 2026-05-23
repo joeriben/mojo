@@ -1,0 +1,415 @@
+{
+  "started_at": "2026-05-15T19:21:53.711703",
+  "n_per_verdict": 1,
+  "routes_per_op": {
+    "assessment": [
+      "opus",
+      "sonnet",
+      "haiku",
+      "mistral",
+      "mimo"
+    ],
+    "summarize": [
+      "opus",
+      "haiku",
+      "mistral",
+      "mimo"
+    ],
+    "trends": [
+      "opus",
+      "sonnet",
+      "mistral",
+      "mimo"
+    ]
+  },
+  "operations": {
+    "assessment": [
+      {
+        "article_id": "97892a7d2926c8f739d343198f2fdcc5",
+        "journal": "MedienPaed",
+        "title": "Medienbildung und Schulkultur. Implikationen der Verbindung von Medienbildung und Schulkultur für die Medienpädagogik",
+        "original_verdict": "lesenswert",
+        "original_cost_usd": 0.044451500000000005,
+        "original_tokens_in": 163113,
+        "original_tokens_out": 1002,
+        "original_iterations": 5,
+        "original_entry": {
+          "kernthese": "Der Beitrag diskutiert die Disziplinierung der Medienpädagogik am Beispiel Schule und verbindet eine poststrukturalistisch gedachte Medienbildung (Entdichotomisierung von Subjekt und Medien) mit dem Konzept der Schulkultur. Dadurch wird eine neue, kritische Perspektive eröffnet, die bisherige medienpädagogische Theoreme, insbesondere das Medienkompetenzkonzept, in Frage stellt.",
+          "bezuege_count": 0,
+          "bemerkenswert_count": 0
+        },
+        "by_route": [
+          {
+            "route": "Claude Opus 4.6 (OpenRouter)",
+            "model": "anthropic/claude-opus-4.6",
+            "provider": "openrouter",
+            "finish_reason": "tool_calls",
+            "tokens_in": 40167,
+            "tokens_out": 763,
+            "cached_read": 0,
+            "cost_usd": 0.26681,
+            "cost_fallback_estimated": false,
+            "latency_s": 17.23,
+            "text": "",
+            "tool_calls": [
+              {
+                "name": "submit_digest_entry",
+                "arguments": {
+                  "kernthese": "Der Beitrag diskutiert die Verbindung von poststrukturalistisch gedachter Medienbildung mit dem Schulkultur-Konzept (Helsper) als produktive Perspektive für die Medienpädagogik. Die Zusammenführung zielt auf eine Entdichotomisierung von Subjekt und Medien und einen holistischen Blick auf Schule als medialisiertes Gefüge, wobei das Medienkompetenzkonzept (Baacke) kritisch hinterfragt wird. Der Beitrag versteht sich als Versuch, die Disziplinierung der Medienpädagogik neu zu denken, ohne in vereinfachte Gesellschaftskritik oder Abgrenzungsmechanismen zu verfallen.",
+                  "bezuege": [],
+                  "theoretisch_methodisch": "Theoretische Arbeit, die poststrukturalistische Medienbildungstheorie (Jörissen/Fromme, Meder) mit Werner Helspers kulturtheoretischem Schulkulturansatz verbindet. Bezieht sich auf Foucault, Butler (Subjektivierung), Reckwitz (hybrides Subjekt) und Lyotard. Kein empirisches Material; rein konzeptionell-argumentativer Beitrag.",
+                  "bemerkenswert": [
+                    "Der Beitrag stammt aus 2017 (trotz aktuellem Feed-Eintrag) und repräsentiert einen früheren Stand der Debatte um Medienbildung vs. Medienkompetenz, noch vor der Post-Digitalitäts-Wende.",
+                    "Die Verknüpfung von Medienbildung und Schulkultur (Helsper) berührt Jörissens spätere Arbeiten zu Digitalität in der Schulkultur (BXCLZ5M7, 2023), allerdings auf einem theoretisch weniger elaborierten Stand."
+                  ],
+                  "verdict": "scannen",
+                  "verdict_begruendung": "Der Beitrag zitiert Jörissens frühere Arbeit zur Medienbildung (Fromme/Jörissen 2010) und berührt mit der Verbindung von Medienbildung und Schulkultur ein Thema, das Jörissen selbst weiterentwickelt hat (Digitalität in der Schulkultur, 2023). Allerdings ist der Beitrag von 2017, arbeitet mit einem prä-postdigitalen Vokabular und bietet gegenüber Jörissens eigenen, weiter entwickelten Positionen kaum Anregungspotenzial.",
+                  "candidate_reads": []
+                }
+              }
+            ],
+            "verdict": "scannen",
+            "kernthese": "Der Beitrag diskutiert die Verbindung von poststrukturalistisch gedachter Medienbildung mit dem Schulkultur-Konzept (Helsper) als produktive Perspektive für die Medienpädagogik. Die Zusammenführung zielt auf eine Entdichotomisierung von Subjekt und Medien und einen holistischen Blick auf Schule als medialisiertes Gefüge, wobei das Medienkompetenzkonzept (Baacke) kritisch hinterfragt wird. Der Beitrag versteht sich als Versuch, die Disziplinierung der Medienpädagogik neu zu denken, ohne in vereinfachte Gesellschaftskritik oder Abgrenzungsmechanismen zu verfallen.",
+            "bezuege_count": 0,
+            "bemerkenswert_count": 2,
+            "bemerkenswert_sample": [
+              "Der Beitrag stammt aus 2017 (trotz aktuellem Feed-Eintrag) und repräsentiert einen früheren Stand der Debatte um Medienbildung vs. Medienkompetenz, noch vor der Post-Digitalitäts-Wende.",
+              "Die Verknüpfung von Medienbildung und Schulkultur (Helsper) berührt Jörissens spätere Arbeiten zu Digitalität in der Schulkultur (BXCLZ5M7, 2023), allerdings auf einem theoretisch weniger elaborierten Stand."
+            ],
+            "verdict_begruendung": "Der Beitrag zitiert Jörissens frühere Arbeit zur Medienbildung (Fromme/Jörissen 2010) und berührt mit der Verbindung von Medienbildung und Schulkultur ein Thema, das Jörissen selbst weiterentwickelt hat (Digitalität in der Schulkultur, 2023). Allerdings ist der Beitrag von 2017, arbeitet mit einem p"
+          },
+          {
+            "route": "Mistral Large (nativ EU)",
+            "model": "mistral-large-latest",
+            "provider": "mistral",
+            "finish_reason": "tool_calls",
+            "tokens_in": 30198,
+            "tokens_out": 711,
+            "cached_read": 0,
+            "cost_usd": 0.01617,
+            "cost_fallback_estimated": true,
+            "latency_s": 17.46,
+            "text": "",
+            "tool_calls": [
+              {
+                "name": "submit_digest_entry",
+                "arguments": {
+                  "kernthese": "Der Beitrag diskutiert die disziplinäre Verortung der Medienpädagogik und Medienbildung, indem er eine poststrukturalistische Perspektive auf Medienbildung mit dem Konzept der Schulkultur verbindet. Zentral wird dabei die Entdichotomisierung von Subjekt und Medien bzw. Subjekt und Welt herausgestellt, um traditionelle medienpädagogische Theoreme – insbesondere das Medienkompetenzkonzept – kritisch zu hinterfragen. Schule wird als holistischer Kulturort verstanden, in dem Medialisierungsprozesse nicht isoliert, sondern als Teil einer umfassenden schulkulturellen Praxis betrachtet werden. Ziel ist es, eine „offene“ medienpädagogische Perspektive zu entwickeln, die sich von vereinfachten Gesellschaftskritiken und Abgrenzungsmechanismen löst.",
+                  "bezuege": [],
+                  "theoretisch_methodisch": "Der Beitrag verbindet poststrukturalistische Theorieansätze (u. a. Judith Butler, Michel Foucault, Andreas Reckwitz) mit schulkulturtheoretischen Konzepten (Werner Helsper) und medienpädagogischen Diskursen. Methodisch erfolgt eine theoretische Reflexion, die auf die Dekonstruktion binärer Oppositionen (Subjekt/Medien, Kompetenz/Bildung) abzielt und eine relationale, kulturtheoretisch fundierte Neuperspektivierung von Medienbildung in schulischen Kontexten vorschlägt.",
+                  "bemerkenswert": [
+                    "Der Beitrag zitiert explizit die Publikation von Fromme und Jörissen (2010) zur Differenzierung von Medienbildung und Medienkompetenz und setzt sich kritisch mit deren Rezeption auseinander, ohne jedoch eine substanzielle Weiterführung oder Vertiefung des dort entwickelten relationalen Medienbildungsbegriffs zu leisten.",
+                    "Die Verbindung von Schulkultur und Medienbildung wird als holistischer Ansatz präsentiert, der jedoch stark auf theoretische Reflexion beschränkt bleibt und keine empirischen oder praxisbezogenen Konkretisierungen bietet.",
+                    "Die Kritik am Medienkompetenzkonzept wird aus einer poststrukturalistischen Perspektive formuliert, die jedoch kaum Anschlussmöglichkeiten für bildungstheoretische oder praxeologische Debatten in der Medienpädagogik eröffnet."
+                  ],
+                  "verdict": "scannen",
+                  "verdict_begruendung": "Der Beitrag bewegt sich im Diskursfeld der Medienpädagogik und berührt zentrale Themen wie Schulkultur und Medienbildung, die für die Beobachtung des Forschungsfelds relevant sind. Allerdings bietet er keine substanzielle Erweiterung oder produktive Reibung zu den veröffentlichten Argumenten von Benjamin Jörissen, insbesondere da er die relationale Medienbildungstheorie nicht aufgreift oder weiterdenkt. Die Auseinandersetzung mit der zitierten Publikation bleibt oberflächlich.",
+                  "candidate_reads": [
+                    {
+                      "pub_id": "F4UAM8BK",
+                      "search_term": "Medienbildung und Medienkompetenz",
+                      "hypothesis": "Der Beitrag nimmt Bezug auf die Differenzierung von Medienbildung und Medienkompetenz, könnte jedoch die relationale Dimension von Medienbildung, wie sie Jörissen und Fromme (2010) entfalten, verkürzt oder missverstanden darstellen."
+                    }
+                  ]
+                }
+              }
+            ],
+            "verdict": "scannen",
+            "kernthese": "Der Beitrag diskutiert die disziplinäre Verortung der Medienpädagogik und Medienbildung, indem er eine poststrukturalistische Perspektive auf Medienbildung mit dem Konzept der Schulkultur verbindet. Zentral wird dabei die Entdichotomisierung von Subjekt und Medien bzw. Subjekt und Welt herausgestellt, um traditionelle medienpädagogische Theoreme – insbesondere das Medienkompetenzkonzept – kritisch zu hinterfragen. Schule wird als holistischer Kulturort verstanden, in dem Medialisierungsprozesse nicht isoliert, sondern als Teil einer umfassenden schulkulturellen Praxis betrachtet werden. Ziel i",
+            "bezuege_count": 0,
+            "bemerkenswert_count": 3,
+            "bemerkenswert_sample": [
+              "Der Beitrag zitiert explizit die Publikation von Fromme und Jörissen (2010) zur Differenzierung von Medienbildung und Medienkompetenz und setzt sich kritisch mit deren Rezeption auseinander, ohne jedoch eine substanzielle Weiterführung oder Vertiefung des dort entwickelten relationalen Medienbildungsbegriffs zu leisten.",
+              "Die Verbindung von Schulkultur und Medienbildung wird als holistischer Ansatz präsentiert, der jedoch stark auf theoretische Reflexion beschränkt bleibt und keine empirischen oder praxisbezogenen Konkretisierungen bietet."
+            ],
+            "verdict_begruendung": "Der Beitrag bewegt sich im Diskursfeld der Medienpädagogik und berührt zentrale Themen wie Schulkultur und Medienbildung, die für die Beobachtung des Forschungsfelds relevant sind. Allerdings bietet er keine substanzielle Erweiterung oder produktive Reibung zu den veröffentlichten Argumenten von Ben"
+          },
+          {
+            "route": "MiMo 2.5 Pro (OpenRouter, Xiaomi)",
+            "model": "xiaomi/mimo-v2.5-pro",
+            "provider": "openrouter",
+            "error": "RateLimitError: Error code: 429 - {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'xiaomi/mimo-v2.5-pro is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations', 'provider_name': 'DeepInfra', 'is_byok': False}}, 'user_id': 'user_2uz6oeHN49klIVzLcO4JLkFtEkH'}",
+            "latency_s": 4.91,
+            "verdict": null
+          }
+        ]
+      },
+      {
+        "article_id": "0428026860e5c2cebee897719f8af156",
+        "journal": "LMT",
+        "title": "The EU policy discourse on EdTech and constructing the image of an excellent teacher",
+        "original_verdict": "scannen",
+        "original_cost_usd": 0.0,
+        "original_tokens_in": 0,
+        "original_tokens_out": 0,
+        "original_iterations": 0,
+        "original_entry": {
+          "kernthese": "(C-Tier: nur Screening, kein Agent)",
+          "bezuege_count": 0,
+          "bemerkenswert_count": 0
+        },
+        "by_route": [
+          {
+            "route": "Claude Opus 4.6 (OpenRouter)",
+            "model": "anthropic/claude-opus-4.6",
+            "provider": "openrouter",
+            "finish_reason": "tool_calls",
+            "tokens_in": 39005,
+            "tokens_out": 806,
+            "cached_read": 37520,
+            "cost_usd": 0.04634,
+            "cost_fallback_estimated": false,
+            "latency_s": 18.76,
+            "text": "",
+            "tool_calls": [
+              {
+                "name": "submit_digest_entry",
+                "arguments": {
+                  "kernthese": "Der Artikel analysiert mittels korpusgestützter kritischer Diskursanalyse EU-Politikdokumente zur Bildungstechnologie (EdTech) im Zeitraum 2015–2022. Zentrale These ist, dass der EU-Diskurs EdTech eindimensional als transformative Lösung rahmt und dabei ein normatives Bild einer „exzellenten\" Lehrkraft konstruiert, das untrennbar an digitale Kompetenzen geknüpft ist. Der Diskurs untergräbt implizit die Autonomie von Lehrkräften in Bezug auf Technologieadoption und reproduziert institutionelle Machtdynamiken.",
+                  "bezuege": [],
+                  "theoretisch_methodisch": "Kombination aus korpusgestützter Analyse (LancsBox) und kritischer Diskursanalyse mit linguistischer Pragmatik. Der Ansatz ist primär sprachanalytisch-ideologiekritisch und bezieht sich auf EU-Politikdokumente als Korpus. Theoretisch verortet im Feld der Critical Policy Studies mit Bezügen zu Biesta und kritischer Pädagogik (Apple, Giroux).",
+                  "bemerkenswert": [
+                    "Die Studie dokumentiert empirisch, wie EU-EdTech-Policy Lehrkräften implizit die Autonomie bei der Technologieadoption abspricht — ein Befund, der für Diskussionen um digitale Souveränität von Lehrkräften (im Gegensatz zu bloßer digitaler Kompetenz) relevant sein könnte.",
+                    "Der solutionistische Grundton der EU-Dokumente ('EdTech as transformative solution') bestätigt Befunde, die in der deutschsprachigen Medienbildungsdiskussion unter dem Stichwort 'Solutionismus' (Morozov) seit längerem diskutiert werden, hier aber auf einer breiten empirischen Basis von Policy-Dokumenten nachgewiesen werden."
+                  ],
+                  "candidate_reads": [],
+                  "verdict": "scannen",
+                  "verdict_begruendung": "Der Artikel operiert im Beobachtungsfeld (Digitalisierung, Lehrkräfterolle, Solutionismus-Kritik) und liefert empirische Belege für Policy-Diskurse, die in Jörissens Arbeiten theoretisch kritisiert werden (Solutionismus, instrumentalistisches Digitalisierungsverständnis, fehlende digitale Souveränität). Allerdings bleibt der Beitrag auf linguistische Policy-Analyse beschränkt, ohne die bildungstheoretische, ästhetische oder relationale Dimension zu berühren, die für die laufenden Projekte (DiäS-KuBi, ComeArts) spezifisches Anregungspotenzial böte."
+                }
+              }
+            ],
+            "verdict": "scannen",
+            "kernthese": "Der Artikel analysiert mittels korpusgestützter kritischer Diskursanalyse EU-Politikdokumente zur Bildungstechnologie (EdTech) im Zeitraum 2015–2022. Zentrale These ist, dass der EU-Diskurs EdTech eindimensional als transformative Lösung rahmt und dabei ein normatives Bild einer „exzellenten\" Lehrkraft konstruiert, das untrennbar an digitale Kompetenzen geknüpft ist. Der Diskurs untergräbt implizit die Autonomie von Lehrkräften in Bezug auf Technologieadoption und reproduziert institutionelle Machtdynamiken.",
+            "bezuege_count": 0,
+            "bemerkenswert_count": 2,
+            "bemerkenswert_sample": [
+              "Die Studie dokumentiert empirisch, wie EU-EdTech-Policy Lehrkräften implizit die Autonomie bei der Technologieadoption abspricht — ein Befund, der für Diskussionen um digitale Souveränität von Lehrkräften (im Gegensatz zu bloßer digitaler Kompetenz) relevant sein könnte.",
+              "Der solutionistische Grundton der EU-Dokumente ('EdTech as transformative solution') bestätigt Befunde, die in der deutschsprachigen Medienbildungsdiskussion unter dem Stichwort 'Solutionismus' (Morozov) seit längerem diskutiert werden, hier aber auf einer breiten empirischen Basis von Policy-Dokumenten nachgewiesen werden."
+            ],
+            "verdict_begruendung": "Der Artikel operiert im Beobachtungsfeld (Digitalisierung, Lehrkräfterolle, Solutionismus-Kritik) und liefert empirische Belege für Policy-Diskurse, die in Jörissens Arbeiten theoretisch kritisiert werden (Solutionismus, instrumentalistisches Digitalisierungsverständnis, fehlende digitale Souveränit"
+          },
+          {
+            "route": "Mistral Large (nativ EU)",
+            "model": "mistral-large-latest",
+            "provider": "mistral",
+            "finish_reason": "tool_calls",
+            "tokens_in": 29469,
+            "tokens_out": 579,
+            "cached_read": 0,
+            "cost_usd": 0.0156,
+            "cost_fallback_estimated": true,
+            "latency_s": 19.93,
+            "text": "",
+            "tool_calls": [
+              {
+                "name": "submit_digest_entry",
+                "arguments": {
+                  "kernthese": "Der Artikel analysiert EU-Politikdokumente zum Einsatz digitaler Technologien in der Bildung (EdTech) zwischen 2015 und 2022 mittels korpusgestützter Diskursanalyse und linguistischer Pragmatik. Die zentrale These lautet, dass der EU-Politikdiskurs ein normatives Bild einer 'exzellenten Lehrkraft' konstruiert, das untrennbar mit digitalen Kompetenzen verknüpft ist. Dabei wird die Autonomie von Lehrkräften in der Technologieaneignung implizit negiert und institutionelle Machtverhältnisse gestärkt. Der Beitrag kritisiert die eindimensionale Rahmung von EdTech als transformative Lösung und beleuchtet die ideologischen Unterströmungen dieses Diskurses.",
+                  "bezuege": [],
+                  "theoretisch_methodisch": "Die Studie kombiniert korpusgestützte Analysemethoden (z. B. #LancsBox) mit kritischer Diskursanalyse und linguistischer Pragmatik, um sprachliche Muster und Machtverhältnisse in EU-Politikdokumenten zu identifizieren. Theoretisch stützt sie sich auf kritische Pädagogik (z. B. Biesta, Giroux) und soziolinguistische Ansätze (z. B. Baker, Rühlemann).",
+                  "bemerkenswert": [
+                    "Die Studie adressiert explizit die Konstruktion eines normativen Lehrer*innenbildes im Kontext von EdTech und zeigt auf, wie politische Diskurse Autonomie und kritische Reflexion von Lehrkräften untergraben.",
+                    "Die Analyse bezieht sich auf zentrale EU-Politikdokumente wie den European Framework for the Digital Competence of Educators (DigCompEdu) und die UNESCO-Guidance zu generativer KI in Bildung und Forschung (2023).",
+                    "Der Beitrag verbindet kritische Pädagogik mit diskursanalytischen Methoden und bietet damit eine seltene Perspektive auf die ideologischen Implikationen von EdTech-Politik."
+                  ],
+                  "verdict": "lesenswert",
+                  "verdict_begruendung": "Der Artikel ist für Benjamin Jörissens aktuelle Projekte **MetaKuBi** und **Diaes_KuBi** relevant, da er diskursive Konstruktionen von Digitalität und Lehrer*innenprofessionalität im Kontext kultureller Bildung und digitaler Souveränität untersucht. Die kritische Perspektive auf institutionelle Machtverhältnisse und die Konstruktion normativer Lehrer*innenbilder bietet Anregungspotenzial für die Auseinandersetzung mit digitalitätsbezogener Professionalität und relationaler Lehrer*innenbildung.",
+                  "candidate_reads": []
+                }
+              }
+            ],
+            "verdict": "lesenswert",
+            "kernthese": "Der Artikel analysiert EU-Politikdokumente zum Einsatz digitaler Technologien in der Bildung (EdTech) zwischen 2015 und 2022 mittels korpusgestützter Diskursanalyse und linguistischer Pragmatik. Die zentrale These lautet, dass der EU-Politikdiskurs ein normatives Bild einer 'exzellenten Lehrkraft' konstruiert, das untrennbar mit digitalen Kompetenzen verknüpft ist. Dabei wird die Autonomie von Lehrkräften in der Technologieaneignung implizit negiert und institutionelle Machtverhältnisse gestärkt. Der Beitrag kritisiert die eindimensionale Rahmung von EdTech als transformative Lösung und beleuc",
+            "bezuege_count": 0,
+            "bemerkenswert_count": 3,
+            "bemerkenswert_sample": [
+              "Die Studie adressiert explizit die Konstruktion eines normativen Lehrer*innenbildes im Kontext von EdTech und zeigt auf, wie politische Diskurse Autonomie und kritische Reflexion von Lehrkräften untergraben.",
+              "Die Analyse bezieht sich auf zentrale EU-Politikdokumente wie den European Framework for the Digital Competence of Educators (DigCompEdu) und die UNESCO-Guidance zu generativer KI in Bildung und Forschung (2023)."
+            ],
+            "verdict_begruendung": "Der Artikel ist für Benjamin Jörissens aktuelle Projekte **MetaKuBi** und **Diaes_KuBi** relevant, da er diskursive Konstruktionen von Digitalität und Lehrer*innenprofessionalität im Kontext kultureller Bildung und digitaler Souveränität untersucht. Die kritische Perspektive auf institutionelle Mach"
+          },
+          {
+            "route": "MiMo 2.5 Pro (OpenRouter, Xiaomi)",
+            "model": "xiaomi/mimo-v2.5-pro",
+            "provider": "openrouter",
+            "finish_reason": "tool_calls",
+            "tokens_in": 33232,
+            "tokens_out": 548,
+            "cached_read": 0,
+            "cost_usd": 0.03488,
+            "cost_fallback_estimated": false,
+            "latency_s": 16.03,
+            "text": "",
+            "tool_calls": [
+              {
+                "name": "submit_digest_entry",
+                "arguments": {
+                  "kernthese": "Der Artikel analysiert den EU-Politikdiskurs zu EdTech (2015–2022) mittels korpusgestützter Diskursanalyse und zeigt, wie normative Bilder einer 'excellenten' Lehrperson konstruiert werden, die untrennbar an digitale Kompetenzen gebunden sind. Die Autoren argumentieren, dass dieser Diskurs die Autonomie von Lehrkräften in der Technologieaneignung implizit untergräbt und institutionelle Machtasymmetrien verstärkt.",
+                  "bezuege": [],
+                  "theoretisch_methodisch": "Der Artikel kombiniert korpusgestützte Analyse (LancsBox) mit Kritischer Diskursanalyse und linguistischer Pragmatik anhand von EU-Policy-Dokumenten. Theoretisch wird auf Biesta (Beautiful Risk of Education), Apple (Critical Pedagogy) und Giroux rekurriert, um die normativ-ideologische Dimension des EdTech-Diskurses zu rahmen. Die Methode ist etabliert und das Material (EU-Policy-Dokumente 2015–2022) zeitlich aktuell.",
+                  "bemerkenswert": [
+                    "Die korpusgestützte Analyse von Policy-Dokumenten als Methode für kritische Bildungsdiskursforschung ist ein bemerkenswertes methodisches Verfahren, das für das Metavorhaben (metakubi) zur systematischen Erfassung von Diskursen über Kulturelle Bildung methodisch anregend sein könnte.",
+                    "Der Befund, dass der EU-EdTech-Diskurs die Autonomie von Lehrkräften in der Technologieaneignung untergräbt, berührt das Konzept der digital-ästhetischen Souveränität (DiäS-Projekt), allerdings aus einer policy-analytischen statt bildungstheoretischen Perspektive."
+                  ],
+                  "verdict": "scannen",
+                  "verdict_begruendung": "Der Artikel berührt die Forschungsfelder Digitalisierung und Professionalität pädagogischer Fachkräfte, ist aber diskursanalytisch und policy-fokussiert angesiedelt, ohne konkrete Anschlüsse an Jörissens bildungstheoretische oder kulturpädagogische Argumentationen. Die Verbindung zu aktiven Projekten (metakubi, DiäS) bleibt oberflächlich-methodisch und reicht nicht für 'lesenswert'."
+                }
+              }
+            ],
+            "verdict": "scannen",
+            "kernthese": "Der Artikel analysiert den EU-Politikdiskurs zu EdTech (2015–2022) mittels korpusgestützter Diskursanalyse und zeigt, wie normative Bilder einer 'excellenten' Lehrperson konstruiert werden, die untrennbar an digitale Kompetenzen gebunden sind. Die Autoren argumentieren, dass dieser Diskurs die Autonomie von Lehrkräften in der Technologieaneignung implizit untergräbt und institutionelle Machtasymmetrien verstärkt.",
+            "bezuege_count": 0,
+            "bemerkenswert_count": 2,
+            "bemerkenswert_sample": [
+              "Die korpusgestützte Analyse von Policy-Dokumenten als Methode für kritische Bildungsdiskursforschung ist ein bemerkenswertes methodisches Verfahren, das für das Metavorhaben (metakubi) zur systematischen Erfassung von Diskursen über Kulturelle Bildung methodisch anregend sein könnte.",
+              "Der Befund, dass der EU-EdTech-Diskurs die Autonomie von Lehrkräften in der Technologieaneignung untergräbt, berührt das Konzept der digital-ästhetischen Souveränität (DiäS-Projekt), allerdings aus einer policy-analytischen statt bildungstheoretischen Perspektive."
+            ],
+            "verdict_begruendung": "Der Artikel berührt die Forschungsfelder Digitalisierung und Professionalität pädagogischer Fachkräfte, ist aber diskursanalytisch und policy-fokussiert angesiedelt, ohne konkrete Anschlüsse an Jörissens bildungstheoretische oder kulturpädagogische Argumentationen. Die Verbindung zu aktiven Projekte"
+          }
+        ]
+      },
+      {
+        "article_id": "dc73d92549b0d22dc7ebdef1afbf2ac4",
+        "journal": "EERJ",
+        "title": "Reflective practice and student satisfaction: never the twain shall meet?",
+        "original_verdict": "ignorieren",
+        "original_cost_usd": 0.0,
+        "original_tokens_in": 0,
+        "original_tokens_out": 0,
+        "original_iterations": 0,
+        "original_entry": {
+          "kernthese": "(Screening: ignorieren)",
+          "bezuege_count": 0,
+          "bemerkenswert_count": 0
+        },
+        "by_route": [
+          {
+            "route": "Claude Opus 4.6 (OpenRouter)",
+            "model": "anthropic/claude-opus-4.6",
+            "provider": "openrouter",
+            "finish_reason": "tool_calls",
+            "tokens_in": 38808,
+            "tokens_out": 538,
+            "cached_read": 37520,
+            "cost_usd": 0.03865,
+            "cost_fallback_estimated": false,
+            "latency_s": 11.6,
+            "text": "",
+            "tool_calls": [
+              {
+                "name": "submit_digest_entry",
+                "arguments": {
+                  "kernthese": "Der Artikel untersucht das Verhältnis zwischen den Konzepten \"reflective practice\" und \"student satisfaction\" im Kontext der Ökonomisierung der Hochschulbildung in Europa. Unter Rückgriff auf Masschelein, Ingold und Sharon Todd kritisieren die Autoren zeitgenössische Versuche, reflective practice wiederzubeleben, und argumentieren, dass diesen ein implizites Transmissionsmodell von Bildung zugrunde liege statt einer Erziehung des Blicks. Sie plädieren für eine Verschiebung von epistemologischen/methodologischen hin zu existenziellen Fragen.",
+                  "bezuege": [],
+                  "theoretisch_methodisch": "Theoretische Argumentation auf Basis von Masschelein, Ingold und Todd, ergänzt durch bildungspolitische Kontextualisierung (Lissabon-Strategie). Keine empirische Erhebung; philosophisch-essayistischer Zugang mit Fokus auf Hochschulpolitik und Reflexionspraxis.",
+                  "bemerkenswert": [],
+                  "candidate_reads": [],
+                  "verdict": "ignorieren",
+                  "verdict_begruendung": "Der Artikel bewegt sich im Bereich Hochschuldidaktik/Hochschulpolitik und reflective practice — Themenfelder, die außerhalb von Jörissens Forschungsfokus liegen. Trotz geteilter Referenzen (Rancière via Bingham, Dewey, Bourdieu) fehlt ein substantieller Bezug zu Jörissens Arbeitsfeldern (Medienbildung, Ästhetische Bildung, Posthumanismus, Kulturelle Bildung, Digitalität)."
+                }
+              }
+            ],
+            "verdict": "ignorieren",
+            "kernthese": "Der Artikel untersucht das Verhältnis zwischen den Konzepten \"reflective practice\" und \"student satisfaction\" im Kontext der Ökonomisierung der Hochschulbildung in Europa. Unter Rückgriff auf Masschelein, Ingold und Sharon Todd kritisieren die Autoren zeitgenössische Versuche, reflective practice wiederzubeleben, und argumentieren, dass diesen ein implizites Transmissionsmodell von Bildung zugrunde liege statt einer Erziehung des Blicks. Sie plädieren für eine Verschiebung von epistemologischen/methodologischen hin zu existenziellen Fragen.",
+            "bezuege_count": 0,
+            "bemerkenswert_count": 0,
+            "bemerkenswert_sample": [
+              null
+            ],
+            "verdict_begruendung": "Der Artikel bewegt sich im Bereich Hochschuldidaktik/Hochschulpolitik und reflective practice — Themenfelder, die außerhalb von Jörissens Forschungsfokus liegen. Trotz geteilter Referenzen (Rancière via Bingham, Dewey, Bourdieu) fehlt ein substantieller Bezug zu Jörissens Arbeitsfeldern (Medienbildu"
+          },
+          {
+            "route": "Mistral Large (nativ EU)",
+            "model": "mistral-large-latest",
+            "provider": "mistral",
+            "finish_reason": "tool_calls",
+            "tokens_in": 29289,
+            "tokens_out": 772,
+            "cached_read": 0,
+            "cost_usd": 0.0158,
+            "cost_fallback_estimated": true,
+            "latency_s": 24.03,
+            "text": "",
+            "tool_calls": [
+              {
+                "name": "submit_digest_entry",
+                "arguments": {
+                  "kernthese": "Der Artikel untersucht das Spannungsverhältnis zwischen den Konzepten der ‚reflective practice‘ und ‚student satisfaction‘ im Kontext der Marktorientierung und Wettbewerbslogik europäischer Hochschulen. Die Autor*innen kritisieren, dass aktuelle Ansätze zur Reanimation der ‚reflective practice‘ implizit einem transmissiven Bildungsverständnis folgen, das Bildung als Prozess der Wissensvermittlung statt als Transformation des Blicks (im Sinne einer ästhetisch-reflexiven Praxis) begreift. Sie plädieren für eine Neuausrichtung, die existenzielle und bildungstheoretische Dimensionen stärker berücksichtigt und die Marktlogik hinter ‚student satisfaction‘ hinterfragt.",
+                  "bezuege": [],
+                  "theoretisch_methodisch": "Der Artikel verbindet bildungsphilosophische und kritisch-theoretische Perspektiven (u.a. Arendt, Rancière, Ingold, Todd) mit einer Analyse aktueller hochschulpolitischer Entwicklungen (z.B. Lissabon-Strategie, Marktorientierung). Methodisch erfolgt eine diskursanalytische und ideengeschichtliche Rekonstruktion der Begriffe ‚reflective practice‘ und ‚student satisfaction‘, wobei deren theoretische Grundlagen und praktische Implikationen in Beziehung gesetzt werden.",
+                  "bemerkenswert": [
+                    "Die Autor*innen beziehen sich auf **Tim Ingold** und **Jan Masschelein**, deren Arbeiten in Jörissens Projektkontexten (z.B. *Cultural Resilience*, *MetaKuBi*) als Referenzen für relationale und post-anthropozentrische Bildungstheorien relevant sind.",
+                    "Die Kritik an der Marktlogik hinter ‚student satisfaction‘ berührt die Frage nach **Resistance** als Strukturmoment kultureller Resilienz (vgl. *ZSSJ4BPL*, *3W9X5QLZ*), insbesondere die Destabilisierung hegemonialer normativer Ordnungen.",
+                    "Der Artikel problematisiert die **Epistemologisierung von Bildung** als Reduktion auf Wissensvermittlung – ein Thema, das in Jörissens Arbeiten zur ästhetischen Bildung und Subjektivation (*M8RZJRHN*, *XTJR5DRD*) als Gegenentwurf zu transmissiven Modellen diskutiert wird."
+                  ],
+                  "verdict": "lesenswert",
+                  "verdict_begruendung": "Der Artikel bietet produktive Anknüpfungspunkte für Jörissens aktive Projekte, insbesondere *Cultural Resilience* (Kritik an neoliberalen Bildungskonzepten, Resistance als kollektive Praxis) und *MetaKuBi* (Transformationen von Bildungspraxis und -theorie). Die Bezugnahme auf Ingold und Rancière schafft theoretische Brücken zu relationalen und ästhetisch-politischen Bildungskonzepten.",
+                  "candidate_reads": [
+                    {
+                      "pub_id": "3W9X5QLZ",
+                      "search_term": "Resistance als Strukturmoment kultureller Resilienz",
+                      "hypothesis": "Der Artikel könnte die Kritik an neoliberalen Bildungskonzepten als Beispiel für *Resistance* im Sinne kultureller Resilienz ergänzen."
+                    },
+                    {
+                      "pub_id": "M8RZJRHN",
+                      "search_term": "ästhetische Bildung im digitalen Kontext",
+                      "hypothesis": "Die Diskussion um ‚reflective practice‘ als epistemologische Reduktion könnte mit Jörissens Konzept der ästhetischen Bildung als dissensuelle Praxis kontrastiert werden."
+                    }
+                  ]
+                }
+              }
+            ],
+            "verdict": "lesenswert",
+            "kernthese": "Der Artikel untersucht das Spannungsverhältnis zwischen den Konzepten der ‚reflective practice‘ und ‚student satisfaction‘ im Kontext der Marktorientierung und Wettbewerbslogik europäischer Hochschulen. Die Autor*innen kritisieren, dass aktuelle Ansätze zur Reanimation der ‚reflective practice‘ implizit einem transmissiven Bildungsverständnis folgen, das Bildung als Prozess der Wissensvermittlung statt als Transformation des Blicks (im Sinne einer ästhetisch-reflexiven Praxis) begreift. Sie plädieren für eine Neuausrichtung, die existenzielle und bildungstheoretische Dimensionen stärker berück",
+            "bezuege_count": 0,
+            "bemerkenswert_count": 3,
+            "bemerkenswert_sample": [
+              "Die Autor*innen beziehen sich auf **Tim Ingold** und **Jan Masschelein**, deren Arbeiten in Jörissens Projektkontexten (z.B. *Cultural Resilience*, *MetaKuBi*) als Referenzen für relationale und post-anthropozentrische Bildungstheorien relevant sind.",
+              "Die Kritik an der Marktlogik hinter ‚student satisfaction‘ berührt die Frage nach **Resistance** als Strukturmoment kultureller Resilienz (vgl. *ZSSJ4BPL*, *3W9X5QLZ*), insbesondere die Destabilisierung hegemonialer normativer Ordnungen."
+            ],
+            "verdict_begruendung": "Der Artikel bietet produktive Anknüpfungspunkte für Jörissens aktive Projekte, insbesondere *Cultural Resilience* (Kritik an neoliberalen Bildungskonzepten, Resistance als kollektive Praxis) und *MetaKuBi* (Transformationen von Bildungspraxis und -theorie). Die Bezugnahme auf Ingold und Rancière sch"
+          },
+          {
+            "route": "MiMo 2.5 Pro (OpenRouter, Xiaomi)",
+            "model": "xiaomi/mimo-v2.5-pro",
+            "provider": "openrouter",
+            "finish_reason": "tool_calls",
+            "tokens_in": 33054,
+            "tokens_out": 458,
+            "cached_read": 0,
+            "cost_usd": 0.03443,
+            "cost_fallback_estimated": false,
+            "latency_s": 18.99,
+            "text": "",
+            "tool_calls": [
+              {
+                "name": "submit_digest_entry",
+                "arguments": {
+                  "kernthese": "This article critically examines the tension between 'reflective practice' and 'student satisfaction' in the context of European higher education marketization, drawing on Masschelein, Ingold, and Sharon Todd. The authors argue that contemporary approaches to reflective practice implicitly reduce education to transmission rather than educating the gaze, tracing this to post-Lisbon Strategy education policy. They conclude that a nuanced reflective practice requires a shift from epistemological/methodological concerns toward existential ones, and a reconsideration of student satisfaction within that frame.",
+                  "bezuege": [],
+                  "theoretisch_methodisch": "The article draws on continental philosophy of education (Masschelein, Todd, Arendt) and anthropology (Ingold) to critique neoliberal audit culture in higher education. The method is philosophical-theoretical, combining policy analysis of European HE frameworks with conceptual critique of reflective practice discourse. It uses Rancière (via Bingham) and Freire as reference points for emancipatory education against transmission models.",
+                  "bemerkenswert": [
+                    "The article's use of Tim Ingold's anthropology ('Anthropology and/as Education') to reframe education as 'educating the gaze' rather than knowledge transmission represents an unusual cross-disciplinary import that could be interesting for thinking about aesthetic education and perception-based Bildung.",
+                    "The critique of the Lisbon Strategy's effects on higher education as a driver of transmission-oriented, market-logic education provides a policy-level analysis of how macro-economic frameworks shape pedagogical concepts — a structural argument relevant to any research on institutional transformation in education."
+                  ],
+                  "verdict": "scannen",
+                  "verdict_begruendung": "The article addresses higher education policy, reflective practice, and student satisfaction — topics outside the researcher's core discourse spaces of aesthetic/cultural education, media education, postdigital culture, and cultural resilience. While it draws on some shared theoretical references (Rancière, Arendt, Freire, Bourdieu), it does not engage with the specific conceptual constellations (postdigital aesthetics, cultural resilience, digital-aesthetic sovereignty) or research contexts (arts education, youth culture, AI) that define the researcher's active projects. The Ingold connection is noteworthy but insufficient to warrant reading."
+                }
+              }
+            ],
+            "verdict": "scannen",
+            "kernthese": "This article critically examines the tension between 'reflective practice' and 'student satisfaction' in the context of European higher education marketization, drawing on Masschelein, Ingold, and Sharon Todd. The authors argue that contemporary approaches to reflective practice implicitly reduce education to transmission rather than educating the gaze, tracing this to post-Lisbon Strategy education policy. They conclude that a nuanced reflective practice requires a shift from epistemological/methodological concerns toward existential ones, and a reconsideration of student satisfaction within ",
+            "bezuege_count": 0,
+            "bemerkenswert_count": 2,
+            "bemerkenswert_sample": [
+              "The article's use of Tim Ingold's anthropology ('Anthropology and/as Education') to reframe education as 'educating the gaze' rather than knowledge transmission represents an unusual cross-disciplinary import that could be interesting for thinking about aesthetic education and perception-based Bildung.",
+              "The critique of the Lisbon Strategy's effects on higher education as a driver of transmission-oriented, market-logic education provides a policy-level analysis of how macro-economic frameworks shape pedagogical concepts — a structural argument relevant to any research on institutional transformation in education."
+            ],
+            "verdict_begruendung": "The article addresses higher education policy, reflective practice, and student satisfaction — topics outside the researcher's core discourse spaces of aesthetic/cultural education, media education, postdigital culture, and cultural resilience. While it draws on some shared theoretical references (R"
+          }
+        ]
+      }
+    ]
+  },
+  "finished_at": "2026-05-15T19:24:22.985832"
+}

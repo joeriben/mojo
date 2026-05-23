@@ -1,0 +1,212 @@
+{
+  "assessment_article_ids": [
+    "084d020df1756e1b4da82226b77766ad",
+    "0bff8f3a262014c71cc8ce346f6a20ca",
+    "126ed69489dc33a0465fd80bceb44209",
+    "19df0fcd7d882d336505ff720613788a",
+    "1e9d80cf1ffe08ff1e628c04dcc82e47",
+    "1ff89357567aad3e039e6656e91c15ab",
+    "2559fb92116e641805878c2be9485fb4",
+    "0001d0c14a3a02e4dcf0c2b78e9e9c01",
+    "00123393f74b2a76c50a3411d885668f",
+    "00171e6c15bd46f26bb48910476d758c",
+    "002992ae3f26c6803dc57890c5bb99aa",
+    "0030021636deb5d200db40699f4096ee",
+    "005083512b3c073af2cb46cdfc35aa3a",
+    "00662959fbc1bd6c9d6dc193937c4734",
+    "0010984a5ed75aa41477c413ac9bb782",
+    "001556c787eea6cc895022f787814809",
+    "001712d61f5033f9d6407c08a745f7fc",
+    "001a4255f0b4f0c644abcd2a382b5c4e",
+    "001b299c42bcd36dd7dd1ec9c203d562",
+    "001df7a269e66dfce3d1c317869cb33a"
+  ],
+  "summarize_pub_ids": [
+    "36GD27IM",
+    "3HFYBN2Y",
+    "3W9X5QLZ",
+    "4H53KA6N",
+    "62A5VC7E"
+  ],
+  "trends_clusters": [
+    "digitale_kultur",
+    "medienpaed",
+    "erziehungswiss"
+  ],
+  "_meta": {
+    "assessment_articles_preview": [
+      {
+        "id": "084d020df1756e1b4da82226b77766ad",
+        "verdict": "lesenswert",
+        "journal": "BDS",
+        "title": "Beyond high-tech versus low-tech: A tentative framework for sustainable urban data governance",
+        "orig_cost": 0.04324086
+      },
+      {
+        "id": "0bff8f3a262014c71cc8ce346f6a20ca",
+        "verdict": "lesenswert",
+        "journal": "MedienPaed",
+        "title": "Eine strukturale Analyse von Comics",
+        "orig_cost": 0.058412
+      },
+      {
+        "id": "126ed69489dc33a0465fd80bceb44209",
+        "verdict": "lesenswert",
+        "journal": "MedienPaed",
+        "title": "Eine kritische Bildungstheorie post-digitaler Subjektivität",
+        "orig_cost": 0.0482895
+      },
+      {
+        "id": "19df0fcd7d882d336505ff720613788a",
+        "verdict": "lesenswert",
+        "journal": "RAeE",
+        "title": "Ecologies of Death, Ecologies of Mourning: A Biophilosophy of Non/Living Arts",
+        "orig_cost": 0.23328100000000002
+      },
+      {
+        "id": "1e9d80cf1ffe08ff1e628c04dcc82e47",
+        "verdict": "lesenswert",
+        "journal": "BDS",
+        "title": "Data infrastructure studies on an unequal planet",
+        "orig_cost": 0.047059039999999996
+      },
+      {
+        "id": "1ff89357567aad3e039e6656e91c15ab",
+        "verdict": "lesenswert",
+        "journal": "MedienPaed",
+        "title": "Für eine ‹technologiebewusste Medienpädagogik› jenseits der Digitalisierung",
+        "orig_cost": 0.0557315
+      },
+      {
+        "id": "2559fb92116e641805878c2be9485fb4",
+        "verdict": "lesenswert",
+        "journal": "MedienPaed",
+        "title": "Dream Machine",
+        "orig_cost": 0.038382
+      },
+      {
+        "id": "0001d0c14a3a02e4dcf0c2b78e9e9c01",
+        "verdict": "scannen",
+        "journal": "BJET",
+        "title": "Inclusion or infringement? A systematic research review of students' perspectives on student privacy",
+        "orig_cost": 0.008481006
+      },
+      {
+        "id": "00123393f74b2a76c50a3411d885668f",
+        "verdict": "scannen",
+        "journal": "BDS",
+        "title": "The Thick Machine: Anthropological AI between explanation and explication",
+        "orig_cost": 0.0171595
+      },
+      {
+        "id": "00171e6c15bd46f26bb48910476d758c",
+        "verdict": "scannen",
+        "journal": "JRTE",
+        "title": "Preservice Teachers' Beliefs About Using Maker Activities in Formal K-12 Educational Settings: A Mul",
+        "orig_cost": 0.0
+      },
+      {
+        "id": "002992ae3f26c6803dc57890c5bb99aa",
+        "verdict": "scannen",
+        "journal": "JAC",
+        "title": "Generative AI, agency and aesthetic disruption in photographic art",
+        "orig_cost": 0.036541500000000005
+      },
+      {
+        "id": "0030021636deb5d200db40699f4096ee",
+        "verdict": "scannen",
+        "journal": "PCS",
+        "title": "Storying with plastic excess: relations with plastic in early childhood education",
+        "orig_cost": 0.0
+      },
+      {
+        "id": "005083512b3c073af2cb46cdfc35aa3a",
+        "verdict": "scannen",
+        "journal": "JRTE",
+        "title": "Teachers’ perceptions of exploiting immersive virtual field trips for learning in primary education",
+        "orig_cost": 0.0
+      },
+      {
+        "id": "00662959fbc1bd6c9d6dc193937c4734",
+        "verdict": "scannen",
+        "journal": "Resilience",
+        "title": "The Reluctant Environmentalist: Finding Evidence of Injustice in James Wright's Ambivalent Writing o",
+        "orig_cost": 0.009534
+      },
+      {
+        "id": "0010984a5ed75aa41477c413ac9bb782",
+        "verdict": "ignorieren",
+        "journal": "JEE",
+        "title": "Development and implementation of evaluation resources for a green outdoor educational program",
+        "orig_cost": 0.0
+      },
+      {
+        "id": "001556c787eea6cc895022f787814809",
+        "verdict": "ignorieren",
+        "journal": "BJET",
+        "title": "Leveraging <scp>LLM</scp> respondents for item evaluation: A psychometric analysis",
+        "orig_cost": 0.0
+      },
+      {
+        "id": "001712d61f5033f9d6407c08a745f7fc",
+        "verdict": "ignorieren",
+        "journal": "BJET",
+        "title": "Students' insights on the use of video lectures in online classes",
+        "orig_cost": 0.0
+      },
+      {
+        "id": "001a4255f0b4f0c644abcd2a382b5c4e",
+        "verdict": "ignorieren",
+        "journal": "STHV",
+        "title": "Socializing Scientists into Interdisciplinarity by Placemaking in a Multi-sited Research Center",
+        "orig_cost": 0.0
+      },
+      {
+        "id": "001b299c42bcd36dd7dd1ec9c203d562",
+        "verdict": "ignorieren",
+        "journal": "AIandSoc",
+        "title": "Social robots as partners?",
+        "orig_cost": 0.0
+      },
+      {
+        "id": "001df7a269e66dfce3d1c317869cb33a",
+        "verdict": "ignorieren",
+        "journal": "merz",
+        "title": "JIM-Studie 2021",
+        "orig_cost": 0.0089885
+      }
+    ],
+    "summarize_pubs_preview": [
+      {
+        "pub_id": "36GD27IM",
+        "year": 2018,
+        "title": "Digital Cultural Education. The Capabilities of Cultural Education Facing Digita",
+        "fulltext_chars": 17188
+      },
+      {
+        "pub_id": "3HFYBN2Y",
+        "year": 2023,
+        "title": "Haltungen - Perspektiven der qualitativen Bildungs- und Biographieforschung",
+        "fulltext_chars": 31091
+      },
+      {
+        "pub_id": "3W9X5QLZ",
+        "year": 2025,
+        "title": "„Cultural Resilience“ and the Cultivation of a Postdigital Planetary Dissensus",
+        "fulltext_chars": 55601
+      },
+      {
+        "pub_id": "4H53KA6N",
+        "year": 2021,
+        "title": "Medienbildung (Springer Online First)",
+        "fulltext_chars": 41722
+      },
+      {
+        "pub_id": "62A5VC7E",
+        "year": 2025,
+        "title": "Digitalität im erziehungstheoretischen Blick: Strukturelle und epistemische Pers",
+        "fulltext_chars": 51232
+      }
+    ]
+  }
+}

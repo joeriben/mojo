@@ -1,0 +1,128 @@
+{
+  "results": [
+    {
+      "i": 10,
+      "article_id": "6a8feec999224400b1ef801b200ad3ac",
+      "label": "merz / Friedrich-Rezension (Opus=lesenswert)",
+      "opus_verdict": "lesenswert",
+      "mimo_v1_verdict": "scannen",
+      "mistral_verdict": "scannen",
+      "mistral_kernthese": "Chaymaa Zimames Rezension von Jörg Phil Friedrichs *Degenerierte Vernunft* (2023) diskutiert die Abgrenzung zwischen Künstlicher Intelligenz (KI) und menschlicher Vernunft. Friedrich argumentiert, dass KI-Systeme – trotz ihrer Fähigkeit, komplexe Aufgaben wie Bild-, Text- oder Musikgenerierung zu bewältigen – weder Bewusstsein, Intuition noch moralische oder ästhetische Fähigkeiten besitzen. Stattdessen operieren sie auf Basis von Algorithmen und formalen Datenverarbeitungsmethoden. Der Autor betont die Unvergleichbarkeit von KI und menschlicher Vernunft, die durch Prozesse wie Besinnung, Reflexion und Sinnsuche geprägt ist. Die Rezension thematisiert zudem gesellschaftliche Ängste vor einer Entwertung menschlicher Leistungen durch KI und fragt nach den Ursachen für die oftmals höhere Bewertung von KI-Produkten im Vergleich zu menschlichen Schöpfungen.",
+      "mistral_begruendung": "Der Beitrag bietet keine substantiellen Anknüpfungspunkte an Jörissens theoretische oder empirische Arbeiten, da er sich auf eine populärwissenschaftliche Abgrenzung von KI und menschlicher Vernunft beschränkt. Allerdings könnte die thematisierte *Überbewertung von KI-Produkten* für die Projekte [ai4artsed] und [metakubi] als Indikator für gesellschaftliche Wahrnehmungsmuster relevant sein, falls empirische Studien zu diesem Phänomen vorliegen oder geplant sind.",
+      "mistral_bemerkenswert": [
+        "Die Rezension thematisiert eine gesellschaftlich weit verbreitete, aber selten explizit reflektierte *Überbewertung von KI-Produkten* – ein Phänomen, das in der Medienpädagogik und ästhetischen Bildung bisher kaum systematisch untersucht wurde.",
+        "Friedrichs essentialistische Gegenüberstellung von menschlicher Vernunft und KI könnte als *provokative Folie* für eine kritische Diskussion in der Medienbildung dienen, insbesondere im Kontext von Jörissens Arbeiten zu *post-digitalen Subjektivierungsprozessen* (vgl. z. B. IGPFC4IP, XTJR5DRD)."
+      ],
+      "cost_usd": 0.04867,
+      "cache_pct": 0.0,
+      "tokens_in": 29115,
+      "tokens_out": 666,
+      "latency_s": 19.38,
+      "finish_reason": "tool_calls",
+      "mark": "✗ diverged",
+      "citation_hits_high": 0,
+      "citation_hits_med": 0
+    },
+    {
+      "i": 22,
+      "article_id": "332c5b6047a06ea69481233edf6b3e84",
+      "label": "BJET / Bearman+Ajjawi black-box (Opus=lesenswert, User: hochrelevant)",
+      "opus_verdict": "lesenswert",
+      "mimo_v1_verdict": "scannen",
+      "mistral_verdict": "lesenswert",
+      "mistral_kernthese": "Der Artikel argumentiert, dass Künstliche Intelligenz (KI) in einer relationalen Epistemologie als ‚Black Box‘ verstanden werden muss, deren Entscheidungen nicht nachvollziehbar sind. Statt zu versuchen, diese Black Box zu ‚öffnen‘, schlagen die Autor*innen eine Pädagogik vor, die darauf abzielt, mit Unbestimmtheit, Partialität und Ambivalenz umzugehen. Diese Pädagogik soll Lernende befähigen, KI als sozial eingebettetes Phänomen zu begreifen, indem sie (a) Qualitätsstandards und implizite/explizite Regeln von KI-Systemen thematisiert und (b) direkte Interaktionen mit KI fördert, um evaluative Urteilsfähigkeit zu entwickeln.",
+      "mistral_begruendung": "Der Artikel bietet produktive Anknüpfungspunkte für das Projekt [ai4artsed], insbesondere durch die relational-epistemologische Definition von KI als Black Box und die pädagogische Fokussierung auf soziale Einbettung und evaluative Urteilsfähigkeit. Dies korrespondiert mit den Zielen des Projekts, kritisch-kreative Praktiken (Prompt Interception) und nicht-extraktivistische Ansätze in der KI-Bildung zu entwickeln.",
+      "mistral_bemerkenswert": [
+        "Die Autor*innen definieren KI explizit als relationales Phänomen, das nur im Kontext spezifischer Interaktionen als ‚Black Box‘ fungiert – eine Perspektive, die sich von technischen oder kompetenzorientierten Definitionen abhebt.",
+        "Der Fokus auf das *Arbeiten mit* (statt *Erklären von*) KI-Systemen als pädagogisches Ziel markiert einen Shift von Transparenz- zu Handlungsfähigkeitsorientierung in der KI-Bildung.",
+        "Die Betonung von Qualitätsstandards als sozialer Regulierung von KI (statt technischer Standards) verbindet techniksoziologische mit bildungstheoretischen Fragen."
+      ],
+      "cost_usd": 0.0485,
+      "cache_pct": 0.0,
+      "tokens_in": 29474,
+      "tokens_out": 572,
+      "latency_s": 17.03,
+      "finish_reason": "tool_calls",
+      "mark": "✓ matches opus",
+      "citation_hits_high": 0,
+      "citation_hits_med": 0
+    },
+    {
+      "i": 25,
+      "article_id": "7bf4e3fc9b71aebf70a34428c0c94806",
+      "label": "EERJ / Zembylas anti-complicity (Opus=ignorieren, User: ignorieren)",
+      "opus_verdict": "ignorieren",
+      "mimo_v1_verdict": "lesenswert",
+      "mistral_verdict": "lesenswert",
+      "mistral_kernthese": "Der Artikel untersucht die pädagogische Herausforderung, Schüler*innen für eine Haltung der ‚Anti-Complicity‘ (Nicht-Mittäterschaft) zu sensibilisieren, wenn sie selbst in Institutionen, Normen und Praktiken eingebettet sind, die politische und strukturelle Gewalt reproduzieren. Michalinos Zembylas argumentiert, dass eine binäre Trennung von Täter*innen und Opfer nicht ausreicht, um die Komplexität geteilter Verstrickungen (shared complicities) zu erfassen. Stattdessen plädiert er für eine affektive Pädagogik, die Ambivalenzen, Widersprüche und emotionale Dimensionen von Mittäterschaft und Widerstand thematisiert, um kritische Reflexion und Handlungsfähigkeit in Bezug auf strukturelle Gewalt zu fördern.",
+      "mistral_begruendung": "Der Artikel bietet Anregungspotenzial für die Cultural Resilience-Forschung, insbesondere zur normativen Dimension von ‚Resistance‘ als kollektiver Praxis. Die Affekt- und Complicity-Perspektive könnte die Debatte um relationale Freiheit und Verantwortung in planetarischen Krisenkontexten bereichern, auch wenn der Text selbst nicht direkt auf Bildungstheorie oder Cultural Resilience Bezug nimmt.",
+      "mistral_bemerkenswert": [
+        "Der Begriff der ‚shared complicities‘ (geteilten Verstrickungen) bietet eine produktive Ergänzung zu Debatten um kollektive Verantwortung in postkolonialen und ökologischen Kontexten, die auch in der Cultural Resilience-Diskussion relevant sind.",
+        "Die Kritik an binären Täter-Opfer-Narrativen resoniert mit posthumanistischen Ansätzen (Barad, Haraway), die Agency als verteilt und relational begreifen – ein zentrales Moment in Jörissens Arbeiten zu kultureller Resilienz.",
+        "Die Betonung affektiver Praktiken als Teil politischer Bildung könnte Anknüpfungspunkte für die Dimension der ‚Rootedness‘ (sinnlich-leibliche Verwurzelung) in der Cultural Resilience-Theorie bieten."
+      ],
+      "cost_usd": 0.04869,
+      "cache_pct": 0.0,
+      "tokens_in": 29419,
+      "tokens_out": 608,
+      "latency_s": 16.74,
+      "finish_reason": "tool_calls",
+      "mark": "✗ diverged",
+      "citation_hits_high": 0,
+      "citation_hits_med": 0
+    },
+    {
+      "i": 44,
+      "article_id": "75641a28b53daef73187d6754027e3ac",
+      "label": "MedienPaed / de Witt+Leineweber (Opus=lesenswert, Zitation-Hit, User: must-read)",
+      "opus_verdict": "lesenswert",
+      "mimo_v1_verdict": "scannen",
+      "mistral_verdict": "scannen",
+      "mistral_kernthese": "Der Beitrag von Claudia de Witt und Christian Leineweber untersucht die Bedeutung des Nichtwissens als zentrales Unterscheidungsmerkmal zwischen Mensch und Maschine im Kontext der disruptiven Technologie Künstlicher Intelligenz (KI). Die Autor*innen argumentieren, dass Nichtwissen den Menschen in unsicheren Situationen zu Problemlösungen und Urteilen antreibt und damit eine zentrale Bildungsaufgabe darstellt. Medienpädagogik wird dabei eine Aufklärungs- und Gestaltungsfunktion zugeschrieben, die die Verbindung zwischen individuell bzw. sozial Kontingentem und den materiellen, technischen Umwelten herstellt. Der Beitrag stützt sich auf interdisziplinäre Theorieansätze, um diese Überlegungen zu begründen.",
+      "mistral_begruendung": "Der Beitrag berührt zwar zentrale Themen wie KI, Bildung und Medienpädagogik, die auch in den Projekten von Benjamin Jörissen relevant sind, bietet jedoch keine direkten Anknüpfungspunkte zu den aktuellen Forschungsschwerpunkten wie kulturelle Resilienz, posthumanistische Bildungstheorie oder ästhetische Bildung. Die theoretische Auseinandersetzung mit Nichtwissen könnte zwar interessant sein, ist aber nicht spezifisch genug, um als lesenswert eingestuft zu werden.",
+      "mistral_bemerkenswert": [
+        "Der Beitrag thematisiert explizit die Rolle des Nichtwissens als produktive Kraft in Bildungsprozessen, was eine ungewöhnliche Perspektive in der Debatte um KI und Bildung darstellt.",
+        "Die Autor*innen beziehen sich auf die Medienbildungseinführung von Jörissen und Marotzki (2009), was auf eine direkte Auseinandersetzung mit den Grundlagen der Medienbildungstheorie hinweist."
+      ],
+      "cost_usd": 0.05011,
+      "cache_pct": 0.0,
+      "tokens_in": 30402,
+      "tokens_out": 601,
+      "latency_s": 19.42,
+      "finish_reason": "tool_calls",
+      "mark": "✗ diverged",
+      "citation_hits_high": 1,
+      "citation_hits_med": 0
+    },
+    {
+      "i": 48,
+      "article_id": "338efe035846be4b48363278b62d3bdc",
+      "label": "ZfPaed / Höhne+Karcher+Voss Wolkige Verheißungen (Opus=lesenswert)",
+      "opus_verdict": "lesenswert",
+      "mimo_v1_verdict": "scannen",
+      "mistral_verdict": "lesenswert",
+      "mistral_kernthese": "Der Beitrag analysiert die digitale Schul-Cloud als Beispiel für die Transformation von Vermittlungswissen in Bildungsmedien und bildungspolitischer Steuerung. Es werden zwei zentrale Thesen entwickelt: Erstens die Verschmelzung von Lernen und Konsumieren in cloudgesteuerten Lernpraktiken und zweitens die zunehmende Kontrolle von Lernprozessen durch Learning Analytics, die eine Vorhersagbarkeit von Schüler*innenleistungen suggerieren. Dabei wird kritisch hinterfragt, wie diese Entwicklungen schulisches Lernen verändern und welche bildungspolitischen Implikationen sich daraus ergeben.",
+      "mistral_begruendung": "Der Beitrag ist lesenswert, da er zentrale Themen der aktiven Forschungsprojekte [metakubi] und [diaes_kubi] aufgreift, insbesondere die kritische Reflexion digitaler Infrastrukturen in schulischen Kontexten und die damit verbundenen Macht- und Steuerungsfragen. Die Thesen zur Verschmelzung von Lernen und Konsumieren sowie zur Kontrolle durch Learning Analytics bieten Anknüpfungspunkte für die Diskussion um digitale Souveränität und ästhetische Bildung.",
+      "mistral_bemerkenswert": [
+        "Die Autoren thematisieren die **Verschmelzung von Lernen und Konsumieren** in digitalen Lernumgebungen, was eine produktive Irritation für die Diskussion um digitale Souveränität und ästhetische Bildung in post-digitalen Kontexten darstellen könnte.",
+        "Der Beitrag problematisiert die **Vorhersagbarkeit von Schüler*innenleistungen** durch Learning Analytics und stellt damit eine Verbindung zu den in Jörissens Arbeiten diskutierten **data-driven educational decision-making**-Prozessen her, insbesondere in Bezug auf die Invisibilisierung von Verdatungsprozessen."
+      ],
+      "cost_usd": 0.04687,
+      "cache_pct": 0.0,
+      "tokens_in": 28699,
+      "tokens_out": 510,
+      "latency_s": 14.2,
+      "finish_reason": "tool_calls",
+      "mark": "✓ matches opus",
+      "citation_hits_high": 0,
+      "citation_hits_med": 0
+    }
+  ],
+  "ts": "2026-05-16T12:37:33.966432",
+  "model": "mistral-medium-latest",
+  "summary": {
+    "matched": 2,
+    "n": 5,
+    "cost_total": 0.2428
+  }
+}
