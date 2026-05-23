@@ -1,23 +1,34 @@
-"""Export articles to Zotero via local Connector API.
+"""Export articles to Zotero via the cloud Web API (api.zotero.org).
 
-Uses the /connector/saveItems endpoint (port 23119) which supports
-item creation with embedded child notes. Requires Zotero to be running.
+We don't use the local connector endpoints (port 23119) because:
+  - /connector/saveItems ignores the `collections` field and dumps items
+    into whatever collection happens to be selected in the Zotero UI.
+  - /api/users/0/... on the local server is read-only.
+  - /connector/updateSession behaves erratically when driven without the
+    browser-popup flow.
+
+The cloud Web API supports `collections` properly. Items sync back to the
+desktop client via Zotero Sync (usually within seconds). Requires:
+  - ~/.config/mojo/zotero_user_id   (numeric user ID from
+                                     https://www.zotero.org/settings/keys)
+  - ~/.config/mojo/zotero_api_key   (private key with write permission
+                                     on the personal library)
 """
 
 from __future__ import annotations
 
 import json
-import httpx
+
 from pyzotero import zotero
 
+from journal_bot.settings import ZOTERO_API_KEY_FILE, ZOTERO_USER_ID_FILE
 from journal_bot.store import Store, StoredArticle
 
 
 COLLECTION_NAME = "mojo"
-ZOTERO_LOCAL = "http://localhost:23119"
 
 
-class ZoteroNotRunning(Exception):
+class ZoteroConfigMissing(Exception):
     pass
 
 
@@ -25,13 +36,20 @@ class ZoteroCollectionMissing(Exception):
     pass
 
 
-def _check_zotero_running() -> None:
-    try:
-        httpx.get(f"{ZOTERO_LOCAL}/api/users/0/collections", timeout=3).raise_for_status()
-    except (httpx.ConnectError, httpx.TimeoutException):
-        raise ZoteroNotRunning(
-            "Zotero läuft nicht. Bitte Zotero starten und nochmal versuchen."
+def _load_credentials() -> tuple[str, str]:
+    if not ZOTERO_USER_ID_FILE.exists() or not ZOTERO_API_KEY_FILE.exists():
+        raise ZoteroConfigMissing(
+            "Zotero Web-API nicht konfiguriert. Bitte im Setup → System-Tab "
+            "die Zotero User-ID und den API-Key eintragen "
+            "(zu finden auf https://www.zotero.org/settings/keys)."
         )
+    user_id = ZOTERO_USER_ID_FILE.read_text().strip()
+    api_key = ZOTERO_API_KEY_FILE.read_text().strip()
+    if not user_id:
+        raise ZoteroConfigMissing("Zotero User-ID ist leer.")
+    if not api_key:
+        raise ZoteroConfigMissing("Zotero API-Key ist leer.")
+    return user_id, api_key
 
 
 def _find_collection_key(zot: zotero.Zotero, name: str) -> str:
@@ -39,7 +57,9 @@ def _find_collection_key(zot: zotero.Zotero, name: str) -> str:
         if c["data"]["name"] == name:
             return c["key"]
     raise ZoteroCollectionMissing(
-        f"Collection '{name}' existiert nicht in Zotero — bitte manuell anlegen."
+        f"Collection '{name}' existiert nicht in deiner Zotero-Library — "
+        "bitte einmalig in Zotero anlegen (top-level, in der persönlichen "
+        "Library)."
     )
 
 
@@ -85,7 +105,7 @@ def _build_note_html(a: StoredArticle) -> str:
 
 
 def export_to_zotero(article_id: str, store: Store) -> str:
-    """Export article to local Zotero. Returns the Zotero item key."""
+    """Export article to Zotero via Web API. Returns the Zotero item key."""
     a = store.get(article_id)
     if not a:
         raise ValueError(f"Article {article_id} not found")
@@ -93,12 +113,10 @@ def export_to_zotero(article_id: str, store: Store) -> str:
     if a.zotero_key:
         return a.zotero_key
 
-    _check_zotero_running()
-
-    zot = zotero.Zotero(library_id="0", library_type="user", local=True)
+    user_id, api_key = _load_credentials()
+    zot = zotero.Zotero(library_id=user_id, library_type="user", api_key=api_key)
     coll_key = _find_collection_key(zot, COLLECTION_NAME)
 
-    # Build creators
     creators = []
     for name in (a.authors or []):
         parts = name.rsplit(" ", 1)
@@ -107,39 +125,42 @@ def export_to_zotero(article_id: str, store: Store) -> str:
         else:
             creators.append({"creatorType": "author", "lastName": name})
 
-    # Single request: item + embedded note
-    payload = {
-        "items": [{
-            "itemType": "journalArticle",
-            "title": a.title,
-            "creators": creators,
-            "abstractNote": a.abstract or a.openalex_abstract or "",
-            "publicationTitle": a.journal_full or a.journal_short,
-            "DOI": a.doi or "",
-            "url": a.url or "",
-            "date": str(a.year or ""),
-            "collections": [coll_key],
-            "notes": [{
-                "note": _build_note_html(a),
-                "tags": [{"tag": "mojo-analysis"}],
-            }],
-        }],
-        "uri": a.url or f"https://doi.org/{a.doi}" if a.doi else "https://mojo.local",
-    }
+    item = zot.item_template("journalArticle")
+    item["title"] = a.title
+    item["creators"] = creators
+    item["abstractNote"] = a.abstract or a.openalex_abstract or ""
+    item["publicationTitle"] = a.journal_full or a.journal_short or ""
+    item["DOI"] = a.doi or ""
+    item["url"] = a.url or ""
+    item["date"] = str(a.year or "")
+    item["collections"] = [coll_key]
 
-    r = httpx.post(f"{ZOTERO_LOCAL}/connector/saveItems", json=payload, timeout=15)
-    if r.status_code != 201:
-        raise RuntimeError(f"Zotero saveItems fehlgeschlagen: {r.status_code} {r.text[:200]}")
+    resp = zot.create_items([item])
+    item_key = _extract_created_key(resp)
+    if not item_key:
+        raise RuntimeError(f"Zotero create_items lieferte keinen Key: {resp}")
 
-    # Find the created item key
-    items = zot.items(q=a.title[:60], limit=5)
-    item_key = ""
-    for it in items:
-        if it["data"].get("DOI") == a.doi or it["data"]["title"] == a.title:
-            item_key = it["key"]
-            break
+    note = zot.item_template("note")
+    note["note"] = _build_note_html(a)
+    note["parentItem"] = item_key
+    note["tags"] = [{"tag": "mojo-analysis"}]
+    note_resp = zot.create_items([note])
+    if not _extract_created_key(note_resp):
+        # Item created, note failed — don't fail the whole export.
+        # User still has the article in the right collection.
+        pass
 
-    if item_key:
-        store.set_zotero_key(article_id, item_key)
+    store.set_zotero_key(article_id, item_key)
+    return item_key
 
-    return item_key or "(erstellt)"
+
+def _extract_created_key(resp: dict) -> str:
+    if not isinstance(resp, dict):
+        return ""
+    successes = resp.get("successful") or resp.get("success") or {}
+    if not successes:
+        return ""
+    first = next(iter(successes.values()))
+    if isinstance(first, dict):
+        return first.get("key") or first.get("data", {}).get("key", "")
+    return str(first) if first else ""

@@ -79,8 +79,12 @@ MODEL_TRENDS = _profile.get("model_trends", "xiaomi/mimo-v2.5-pro")
 MAX_TOKENS_TRENDS = int(_profile.get("max_tokens_trends", 32000))
 
 # --- API-Key-Ablage ---
-KEY_FILE = Path.home() / ".config" / "mojo" / "openrouter_key"
-S2_KEY_FILE = Path.home() / ".config" / "mojo" / "s2_api_key"
+_KEY_DIR = Path.home() / ".config" / "mojo"
+KEY_FILE = _KEY_DIR / "openrouter_key"
+S2_KEY_FILE = _KEY_DIR / "s2_api_key"
+ZOTERO_USER_ID_FILE = _KEY_DIR / "zotero_user_id"
+ZOTERO_API_KEY_FILE = _KEY_DIR / "zotero_api_key"
+MISTRAL_KEY_FILE = _KEY_DIR / "mistral_key"
 
 
 def save_profile(data: dict) -> None:

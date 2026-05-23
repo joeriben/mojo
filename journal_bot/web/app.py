@@ -27,6 +27,7 @@ from journal_bot.settings import (
     JOURNALS,
     JOURNALS_JSON,
     KEY_FILE,
+    MISTRAL_KEY_FILE,
     S2_KEY_FILE,
     MODEL_AGENT,
     MODEL_SUMMARIZE,
@@ -36,8 +37,10 @@ from journal_bot.settings import (
     RESEARCHER_TRIAGE_TOPICS,
     SINCE_YEAR,
     SUMMARIES_JSON,
+    ZOTERO_API_KEY_FILE,
     ZOTERO_COLLECTION,
     ZOTERO_STORAGE,
+    ZOTERO_USER_ID_FILE,
     journals_in_cluster,
     save_profile,
 )
@@ -48,6 +51,10 @@ app = Flask(
     static_folder="static",
 )
 app.secret_key = os.urandom(24)  # For session (lightweight state only)
+# Hostname-scoped cookie name to avoid collisions with other localhost apps
+# (browsers scope cookies & password managers by hostname, not port).
+# Pair with `mojo.localhost:5555` access (see cmd_web in cli.py).
+app.config["SESSION_COOKIE_NAME"] = "mojo_session"
 
 # Server-side agent state (single-user tool, no cookie size limits)
 # Context is persisted to disk so it survives server restarts.
@@ -1272,6 +1279,9 @@ def setup():
 
     api_key_status = _key_status(KEY_FILE)
     s2_key_status = _key_status(S2_KEY_FILE)
+    zotero_user_id_status = _key_status(ZOTERO_USER_ID_FILE)
+    zotero_api_key_status = _key_status(ZOTERO_API_KEY_FILE)
+    mistral_key_status = _key_status(MISTRAL_KEY_FILE)
 
     # Discourse spaces as ordered list of (key, meta) tuples
     spaces = list(DISCOURSE_SPACES.items())
@@ -1298,6 +1308,9 @@ def setup():
         current_year=datetime.now().year,
         api_key_status=api_key_status,
         s2_key_status=s2_key_status,
+        zotero_user_id_status=zotero_user_id_status,
+        zotero_api_key_status=zotero_api_key_status,
+        mistral_key_status=mistral_key_status,
         verdict_label=VERDICT_LABEL,
         journal_profiles=journal_profile_status(),
     )
@@ -1336,21 +1349,45 @@ def api_setup_profile():
     except Exception as e:
         return f'<span style="color:var(--pflichtlektuere);">Fehler: {esc(str(e))}</span>'
 
-    # Handle API keys separately (written to key files, not profile.json)
-    key_msgs = []
-    for form_field, key_file, label in [
-        ("api_key", KEY_FILE, "OpenRouter"),
-        ("s2_api_key", S2_KEY_FILE, "Semantic Scholar"),
-    ]:
+    return '<span style="color:var(--lesenswert);">✓ Profil gespeichert</span>'
+
+
+API_KEY_FIELDS = [
+    ("api_key", KEY_FILE, "OpenRouter"),
+    ("s2_api_key", S2_KEY_FILE, "Semantic Scholar"),
+    ("zotero_user_id", ZOTERO_USER_ID_FILE, "Zotero User-ID"),
+    ("zotero_api_key", ZOTERO_API_KEY_FILE, "Zotero API-Key"),
+    ("mistral_api_key", MISTRAL_KEY_FILE, "Mistral"),
+]
+
+
+@app.route("/api/setup/api-keys", methods=["POST"])
+def api_setup_api_keys():
+    """HTMX: Write any non-empty API key fields to ~/.config/mojo/."""
+    esc = html_mod.escape
+    updated = []
+    errors = []
+
+    for form_field, key_file, label in API_KEY_FIELDS:
         val = request.form.get(form_field, "").strip()
-        if val:
+        if not val:
+            continue
+        try:
             key_file.parent.mkdir(parents=True, exist_ok=True)
             key_file.write_text(val + "\n")
             key_file.chmod(0o600)
-            key_msgs.append(label)
+            updated.append(label)
+        except OSError as e:
+            errors.append(f"{label}: {e}")
 
-    extra = f" · Keys aktualisiert: {', '.join(key_msgs)}" if key_msgs else ""
-    return f'<span style="color:var(--lesenswert);">✓ Profil gespeichert{extra}</span>'
+    if errors and not updated:
+        return f'<span style="color:var(--pflichtlektuere);">Fehler: {esc("; ".join(errors))}</span>'
+
+    msg = "Keine Änderungen." if not updated else f"✓ Aktualisiert: {', '.join(updated)}"
+    if errors:
+        msg += f" · Fehler: {esc('; '.join(errors))}"
+    color = "lesenswert" if updated and not errors else "scannen" if updated else "muted"
+    return f'<span style="color:var(--{color});">{msg}</span>'
 
 
 @app.route("/api/setup/ingest", methods=["POST"])
@@ -2388,7 +2425,8 @@ def api_costs_fragment():
 
 
 def main():
-    app.run(debug=True, port=5555)
+    print("[web] MOJO UI auf http://mojo.localhost:5555")
+    app.run(debug=True, host="127.0.0.1", port=5555)
 
 
 if __name__ == "__main__":

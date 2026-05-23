@@ -71,7 +71,10 @@
     </div>
 
     <div class="card">
-      <h2 style="margin-top:0;">LLM & API</h2>
+      <h2 style="margin-top:0;">LLM-Modelle</h2>
+      <p style="font-size:.8rem; color:var(--muted); margin-bottom:.75rem;">
+        API-Keys werden im System-Tab verwaltet.
+      </p>
       <div class="form-row">
         <div class="form-group" style="flex:1;">
           <label>Agent-Modell <span style="color:var(--muted); font-size:.8rem;">(Hauptanalyse)</span></label>
@@ -84,31 +87,6 @@
                  class="form-input" placeholder="z.B. anthropic/claude-opus-4.6">
         </div>
       </div>
-      <div class="form-group">
-        <label>OpenRouter API-Key <span style="color:var(--muted); font-size:.8rem;">(LLM-Analyse)</span></label>
-        <div style="display:flex; gap:.5rem; align-items:center;">
-          <input type="password" name="api_key" value="" class="form-input"
-                 style="max-width:400px;"
-                 placeholder="{% if api_key_status.exists %}{{ api_key_status.masked }} (unverändert lassen = beibehalten){% else %}sk-or-...{% endif %}">
-          {% if api_key_status.exists %}
-          <span style="color:var(--lesenswert); font-size:.85rem;">aktiv</span>
-          {% endif %}
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Semantic Scholar API-Key <span style="color:var(--muted); font-size:.8rem;">(Abstract-Backfill, optional)</span></label>
-        <div style="display:flex; gap:.5rem; align-items:center;">
-          <input type="password" name="s2_api_key" value="" class="form-input"
-                 style="max-width:400px;"
-                 placeholder="{% if s2_key_status.exists %}{{ s2_key_status.masked }} (unverändert lassen = beibehalten){% else %}Kostenlos unter semanticscholar.org/product/api{% endif %}">
-          {% if s2_key_status.exists %}
-          <span style="color:var(--lesenswert); font-size:.85rem;">aktiv</span>
-          {% endif %}
-        </div>
-      </div>
-      <p style="font-size:.8rem; color:var(--muted); margin-top:.25rem;">
-        Leer lassen = bestehender Key bleibt. Neuen Key eintragen = überschreibt.
-      </p>
     </div>
 
     <div style="display:flex; gap:.75rem; align-items:center; margin-bottom:1.5rem;">
@@ -656,17 +634,58 @@
 <!-- ═══════════════════════ TAB: System ═══════════════════════ -->
 <div id="tab-system" class="tab-content">
   <div class="card">
-    <h2 style="margin-top:0;">API-Key</h2>
-    <table class="stats-table">
-      <tr><td>OpenRouter-Key</td>
-          <td>{% if api_key_status.exists %}
-                <code>{{ api_key_status.masked }}</code>
-                · <span style="color:var(--lesenswert);">aktiv</span>
+    <h2 style="margin-top:0;">API-Keys</h2>
+    <p style="font-size:.85rem; color:var(--muted); margin-bottom:.75rem;">
+      Keys werden unter <code>~/.config/mojo/</code> mit <code>chmod 600</code> abgelegt.
+      Leer lassen = bestehender Wert bleibt. Neuen Wert eintragen = überschreibt.
+    </p>
+    <form hx-post="/api/setup/api-keys" hx-target="#api-keys-status" hx-swap="innerHTML">
+      <table class="api-keys-table">
+        <thead>
+          <tr>
+            <th>Dienst</th>
+            <th>Status</th>
+            <th>Neuer Key</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set rows = [
+            ('api_key',         api_key_status,         'OpenRouter',      'sk-or-...',                              'LLM-Analyse via OpenRouter'),
+            ('s2_api_key',      s2_key_status,          'Semantic Scholar','semanticscholar.org/product/api',        'Abstract-Backfill (optional)'),
+            ('zotero_user_id',  zotero_user_id_status,  'Zotero User-ID',  'Wert aus zotero.org/settings/keys',      'Steht auf zotero.org/settings/keys'),
+            ('zotero_api_key',  zotero_api_key_status,  'Zotero API-Key',  'Private Key mit Write-Permission',       'Für «In Zotero»-Button — siehe zotero.org/settings/keys'),
+            ('mistral_api_key', mistral_key_status,     'Mistral',         'Aus console.mistral.ai/api-keys',        'Direkter Mistral-Zugang (optional)')
+          ] %}
+          {% for field_name, status, label, placeholder, hint in rows %}
+          <tr>
+            <td>
+              <strong>{{ label }}</strong>
+              <div style="font-size:.75rem; color:var(--muted);">{{ hint }}</div>
+            </td>
+            <td style="white-space:nowrap;">
+              {% if status.exists %}
+                <span style="color:var(--lesenswert);">aktiv</span>
+                <code style="font-size:.75rem; display:block; color:var(--muted);">{{ status.masked }}</code>
               {% else %}
-                <span style="color:var(--pflichtlektuere);">Nicht konfiguriert</span>
-                · <code>~/.config/mojo/openrouter_key</code>
-              {% endif %}</td></tr>
-    </table>
+                <span style="color:var(--muted);">nicht gesetzt</span>
+              {% endif %}
+            </td>
+            <td>
+              <input type="{% if field_name == 'zotero_user_id' %}text{% else %}password{% endif %}"
+                     name="{{ field_name }}" value="" class="form-input"
+                     style="max-width:380px;"
+                     placeholder="{{ placeholder }}"
+                     autocomplete="off">
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div style="display:flex; gap:.75rem; align-items:center; margin-top:1rem;">
+        <button type="submit" class="btn btn-primary">Keys speichern</button>
+        <span id="api-keys-status" style="font-size:.85rem;"></span>
+      </div>
+    </form>
   </div>
 
   <div class="card">
@@ -750,6 +769,14 @@
   .stats-table thead th { font-size: .75rem; text-transform: uppercase; letter-spacing: .03em;
                            color: var(--muted); border-bottom: 1px solid var(--border);
                            padding-bottom: 6px; }
+
+  .api-keys-table { border-collapse: collapse; font-size: .9rem; width: 100%; }
+  .api-keys-table thead th { font-size: .72rem; text-transform: uppercase; letter-spacing: .03em;
+                              color: var(--muted); border-bottom: 1px solid var(--border);
+                              text-align: left; padding: 6px 12px 6px 0; }
+  .api-keys-table tbody td { padding: 10px 12px 10px 0; vertical-align: top;
+                              border-bottom: 1px solid var(--border); }
+  .api-keys-table tbody tr:last-child td { border-bottom: none; }
 
   .badge-tier-a { background: var(--pflichtlektuere); color: #fff; }
   .badge-tier-b { background: var(--scannen); color: #fff; }
