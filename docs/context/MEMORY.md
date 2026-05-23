@@ -1,6 +1,6 @@
 # Memory Index
 
-- [user_beheimatungen.md](user_beheimatungen.md) — Benjamins 5 disziplinäre Beheimatungen (Allg. Päd., Posthumanismus/STS, Medienbildung, Medienwiss., Kulturwiss./Ästhetik)
+- [user_verortungen.md](user_verortungen.md) — Benjamins 5 disziplinäre Verortungen (Begriff von Benjamin am 2026-05-23 gewählt; ersetzt das frühere agent-gewählte "Beheimatungen")
 - [feedback_scout_relevance.md](feedback_scout_relevance.md) — Scout muss disziplinäre Zugehörigkeit von thematischer Überlappung unterscheiden
 - [project_positionalitaets_report.md](project_positionalitaets_report.md) — Multi-Linsen-Scout als Positionalitäts-Report (Spannungen = Forschungsinstrument)
 - [project_opensource_agent_workflows.md](project_opensource_agent_workflows.md) — MOJO wird Open Source; Agent-Workflows müssen als Scripts dokumentiert werden
