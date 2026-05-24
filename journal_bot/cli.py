@@ -37,6 +37,9 @@ from journal_bot.settings import (
     SINCE_YEAR,
     SUMMARIES_JSON,
     ZOTERO_COLLECTION,
+    ZOTERO_STORAGE,
+    _load_profile,
+    save_profile,
 )
 from journal_bot.store import Store
 
@@ -490,6 +493,248 @@ def cmd_stats(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_refs(args: argparse.Namespace) -> int:
+    """`mojo refs ...` — Multi-Source-Refs-Pipeline (MOJO 2.0 §3.1)."""
+    import json as _json
+    from journal_bot.own_refs.build import (
+        DEFAULT_DB_PATH, build, build_report, load_sources_from_profile,
+        validate_pdf,
+    )
+    from journal_bot.own_refs.sources import FolderSource, ZoteroSource
+    from journal_bot.own_refs.store import status_report
+
+    action = getattr(args, "action", None)
+
+    # ---- sources subcommands -------------------------------------------------
+    if action == "sources":
+        sub_action = getattr(args, "sub_action", None)
+        profile = _load_profile()
+        sources = list(profile.get("refs_sources") or [])
+        if sub_action == "list":
+            if not sources:
+                print("(keine Refs-Quellen konfiguriert)")
+                print("Hinzufügen: mojo refs sources add zotero <KEY>")
+                print("            mojo refs sources add folder /pfad")
+                return 0
+            for s in sources:
+                label = s.get("label") or ""
+                if s.get("type") == "zotero":
+                    print(f"  zotero:{s['key']:<12}  {label}")
+                elif s.get("type") == "folder":
+                    print(f"  folder:{s['path']}")
+                else:
+                    print(f"  ?:{s}")
+            return 0
+        if sub_action == "add":
+            stype = args.source_type
+            if stype == "zotero":
+                entry = {"type": "zotero", "key": args.value}
+                if args.label:
+                    entry["label"] = args.label
+            elif stype == "folder":
+                p = Path(args.value).expanduser().resolve()
+                if not p.exists() or not p.is_dir():
+                    print(f"FEHLER: Folder existiert nicht oder ist kein Verzeichnis: {p}")
+                    return 2
+                entry = {"type": "folder", "path": str(p)}
+            else:
+                print(f"FEHLER: unbekannter source-type {stype!r}")
+                return 2
+            # idempotent: skip wenn schon drin
+            for existing in sources:
+                if existing.get("type") == entry["type"] and (
+                    existing.get("key") == entry.get("key")
+                    or existing.get("path") == entry.get("path")
+                ):
+                    print(f"(bereits konfiguriert: {entry})")
+                    return 0
+            sources.append(entry)
+            profile["refs_sources"] = sources
+            save_profile(profile)
+            print(f"Quelle hinzugefügt: {entry}")
+            return 0
+        if sub_action == "remove":
+            spec = args.spec
+            # erlaubt: "zotero:KEY" oder "folder:/pfad"
+            if ":" not in spec:
+                print(f"FEHLER: Spec muss <type>:<key> sein, war: {spec!r}")
+                return 2
+            stype, val = spec.split(":", 1)
+            before = len(sources)
+            sources = [
+                s for s in sources
+                if not (
+                    s.get("type") == stype
+                    and (s.get("key") == val or s.get("path") == val)
+                )
+            ]
+            if len(sources) == before:
+                print(f"(keine passende Quelle gefunden für {spec!r})")
+                return 1
+            profile["refs_sources"] = sources
+            save_profile(profile)
+            print(f"Quelle entfernt: {spec}")
+            return 0
+        print("FEHLER: action 'sources' braucht subaction {list,add,remove}")
+        return 2
+
+    # ---- build ---------------------------------------------------------------
+    if action == "build":
+        profile = _load_profile()
+        # CLI-übergebene --source-Flags haben Vorrang über profile.json
+        explicit: list = []
+        for spec in (args.source or []):
+            if ":" not in spec:
+                print(f"FEHLER: --source erwartet <type>:<value>, war: {spec!r}")
+                return 2
+            stype, val = spec.split(":", 1)
+            if stype == "zotero":
+                explicit.append(ZoteroSource(
+                    collection_key=val, zotero_storage=ZOTERO_STORAGE,
+                ))
+            elif stype == "folder":
+                explicit.append(FolderSource(folder_path=Path(val).expanduser().resolve()))
+            else:
+                print(f"FEHLER: unbekannter source-type {stype!r}")
+                return 2
+        if explicit:
+            sources = explicit
+        else:
+            sources = load_sources_from_profile(profile, ZOTERO_STORAGE)
+        if not sources:
+            print(
+                "FEHLER: Keine Quellen konfiguriert.\n"
+                "  mojo refs sources add zotero <COLLECTION_KEY>   "
+                "(z.B. QM7TZT44 für 'Benjamin's publications')\n"
+                "  mojo refs sources add folder /pfad/zu/pdfs"
+            )
+            return 2
+        stats = build(
+            sources=sources,
+            db_path=Path(args.db) if args.db else DEFAULT_DB_PATH,
+            force_refresh=args.force_refresh,
+            resolve_openalex=not args.no_resolve,
+            verbose=not args.quiet,
+        )
+        print()
+        print("=== Build-Stats ===")
+        print(f"  sources processed:  {stats.sources_processed}")
+        print(f"  items discovered:   {stats.items_discovered}")
+        print(f"    new:              {stats.items_new}")
+        print(f"    updated:          {stats.items_updated}")
+        print(f"    unchanged:        {stats.items_skipped_unchanged}")
+        print(f"  PDFs extracted:     {stats.pdfs_extracted}")
+        print(f"  PDFs failed:        {stats.pdfs_failed}")
+        print(f"  items without PDF:  {stats.items_without_pdf}")
+        print(f"  refs persisted:     {stats.refs_total}")
+        print(f"  unique DOIs:        {stats.dois_total}")
+        print(f"  DOIs resolved (OA): {stats.dois_resolved}")
+        print(f"  dupes merged:       {stats.dupes_merged}")
+        if stats.sources_with_errors:
+            print("  sources with errors:")
+            for e in stats.sources_with_errors:
+                print(f"    - {e}")
+        return 0
+
+    # ---- status --------------------------------------------------------------
+    if action == "status":
+        rep = status_report(Path(args.db) if args.db else DEFAULT_DB_PATH)
+        print(f"DB: {rep['db_path']}")
+        if not rep["exists"]:
+            print("  (noch nicht angelegt — Lauf 'mojo refs build')")
+            return 0
+        print(f"  publications:        {rep['n_publications']}")
+        print(f"  mit Volltext:        {rep['n_with_fulltext']}")
+        print(f"  mit Refs:            {rep['n_with_refs']}")
+        print(f"  Refs total:          {rep['n_refs_total']}")
+        print(f"  Refs in OpenAlex:    {rep['n_refs_resolved_oa']}")
+        print(f"  unique OA-Werke:     {rep['n_unique_oa_ids']}")
+        print(f"  Quellen:")
+        for s in rep["sources"]:
+            print(
+                f"    {s['source_type']}:{s['source_key'][:50]:<50}  "
+                f"{s['n_items']:>4} items   last: {s['last_ingest']}"
+            )
+        return 0
+
+    # ---- report --------------------------------------------------------------
+    if action == "report":
+        rep = build_report(Path(args.db) if args.db else DEFAULT_DB_PATH)
+        if not rep["buckets"]:
+            print("(keine Daten — Lauf 'mojo refs build')")
+            return 0
+        print(f"{'Source':<60} {'Bucket':<10} {'Items':>6} {'Volltext':>9} {'DOI':>5}")
+        print("-" * 95)
+        for b in rep["buckets"]:
+            label = f"{b['source_type']}:{Path(b['source_key']).name[:50]}"
+            print(
+                f"{label:<60} {b['year_bucket']:<10} {b['n_items']:>6} "
+                f"{b['n_with_fulltext']:>9} {b['n_with_doi']:>5}"
+            )
+        return 0
+
+    # ---- export json ---------------------------------------------------------
+    if action == "export":
+        from journal_bot.own_refs.store import OwnRefsStore
+        if args.format != "json":
+            print(f"FEHLER: unsupported export-Format {args.format!r}")
+            return 2
+        out_path = Path(args.out).expanduser().resolve()
+        with OwnRefsStore(Path(args.db) if args.db else DEFAULT_DB_PATH) as store:
+            payload = {
+                "publications": [
+                    {
+                        "canonical_id": p.canonical_id,
+                        "doi": p.doi, "title": p.title, "year": p.year,
+                        "venue": p.venue, "discourse": p.discourse,
+                        "refs": [
+                            {
+                                "ref_doi": r.ref_doi, "ref_oa_id": r.ref_oa_id,
+                                "ref_year": r.ref_year,
+                                "resolution_state": r.resolution_state,
+                            }
+                            for r in store.get_pub_refs(p.canonical_id)
+                        ],
+                    }
+                    for p in store.iter_publications()
+                ],
+                "all_cited_oa_ids": sorted(store.all_cited_oa_ids()),
+            }
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(
+            _json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        print(f"Geschrieben: {out_path}  "
+              f"({len(payload['publications'])} pubs, "
+              f"{len(payload['all_cited_oa_ids'])} unique OA-IDs)")
+        return 0
+
+    # ---- validate <pdf> ------------------------------------------------------
+    if action == "validate":
+        pdf = Path(args.pdf).expanduser().resolve()
+        if not pdf.exists():
+            print(f"FEHLER: PDF nicht gefunden: {pdf}")
+            return 2
+        r = validate_pdf(pdf)
+        print(f"PDF: {pdf}")
+        print(f"  Status:           {r['status']}")
+        print(f"  Volltext-Zeichen: {r['fulltext_chars']:,}")
+        print(f"  Header:           {r['refs_header_label']!r}  (line {r['refs_header_line']})")
+        print(f"  Used fallback:    {r['used_fallback_section']}")
+        print(f"  DOIs:             {r['n_dois']}")
+        for d in r["first_dois"]:
+            print(f"    - {d}")
+        print(f"  Raw citations:    {r['n_raw_citations']}")
+        for c in r["first_citations"]:
+            print(f"    - {c}")
+        if r["notes"]:
+            print(f"  Notes: {r['notes']}")
+        return 0
+
+    print("FEHLER: kein action angegeben für 'refs'")
+    return 2
+
+
 def cmd_cache_report(args: argparse.Namespace) -> int:
     """Historische Cache-Hit-Rate aus llm_calls.
 
@@ -708,6 +953,55 @@ def main(argv: list[str] | None = None) -> int:
     p_jtk.add_argument("query", help="Suchfrage, Abstract oder kurzer Textauszug")
     p_jtk.add_argument("--limit", type=int, default=12,
                        help="Max. Journals im Ranking (Default 12)")
+
+    # --- mojo refs (MOJO 2.0 §3.1 — Multi-Source Refs-Pipeline) ----------
+    p_refs = sub.add_parser(
+        "refs",
+        help="Multi-Source Refs-Pipeline (eigene Pubs → Volltext → Refs → OpenAlex)",
+    )
+    p_refs.set_defaults(func=cmd_refs)
+    refs_sub = p_refs.add_subparsers(dest="action", required=True)
+
+    p_rb = refs_sub.add_parser("build", help="Quellen einlesen, Refs extrahieren, DOIs auflösen")
+    p_rb.add_argument(
+        "--source", action="append", default=[],
+        help="Ad-hoc-Quelle: 'zotero:KEY' oder 'folder:/pfad' (mehrfach erlaubt). "
+             "Hat Vorrang vor 'refs_sources' aus profile.json.",
+    )
+    p_rb.add_argument("--force-refresh", action="store_true",
+                      help="Alle PDFs neu extrahieren, auch wenn pdf_mtime unverändert")
+    p_rb.add_argument("--no-resolve", action="store_true",
+                      help="DOIs nicht gegen OpenAlex auflösen (offline-Modus)")
+    p_rb.add_argument("--db", default="",
+                      help="Alternativer DB-Pfad (default: own_refs.db im Projekt)")
+    p_rb.add_argument("--quiet", action="store_true")
+
+    refs_sub.add_parser("status", help="Counts und Coverage anzeigen") \
+        .add_argument("--db", default="", help="Alternativer DB-Pfad")
+
+    refs_sub.add_parser("report", help="Coverage pro Source × Jahr-Bucket") \
+        .add_argument("--db", default="", help="Alternativer DB-Pfad")
+
+    p_rs = refs_sub.add_parser("sources", help="Quellen verwalten (add/list/remove)")
+    rs_sub = p_rs.add_subparsers(dest="sub_action", required=True)
+    rs_sub.add_parser("list", help="Konfigurierte Quellen anzeigen")
+    p_rsa = rs_sub.add_parser("add", help="Quelle zur profile.json hinzufügen")
+    p_rsa.add_argument("source_type", choices=["zotero", "folder"])
+    p_rsa.add_argument("value", help="Zotero-Collection-Key oder absoluter Folder-Pfad")
+    p_rsa.add_argument("--label", default="", help="Klartext-Label (nur für zotero)")
+    p_rsr = rs_sub.add_parser("remove", help="Quelle aus profile.json entfernen")
+    p_rsr.add_argument("spec", help="z.B. 'zotero:QM7TZT44' oder 'folder:/pfad'")
+
+    p_re = refs_sub.add_parser("export", help="Refs-Index als JSON exportieren")
+    p_re.add_argument("format", choices=["json"])
+    p_re.add_argument("--out", required=True, help="Zieldatei")
+    p_re.add_argument("--db", default="")
+
+    p_rv = refs_sub.add_parser(
+        "validate",
+        help="Refs-Extraktion gegen ein konkretes PDF zeigen (manueller Smoke-Test)",
+    )
+    p_rv.add_argument("pdf", help="Pfad zu einer PDF-Datei")
 
     p_backfill = sub.add_parser("backfill",
                                 help="Fehlende Abstracts nachziehen (Crossref/Playwright/Zotero)")
