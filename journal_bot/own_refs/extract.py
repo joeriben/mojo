@@ -51,6 +51,43 @@ HEADER_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Erweiterte Header-Erkennung (§2.3). Akzeptiert:
+#  - Section-Prefix: "4." / "VIII." / "II."  vor Header
+#  - Header-Suffix:  "Literaturverzeichnis I.1; I.4; I.5"   (Sammelband)
+#  - Sammelband-Sub-Headers: "Primärliteratur", "Sekundärliteratur"
+#  - OCR-Artefakt: "rEFErENcEs", "Bibliogr aphy" (Spacing-Glitch)
+# WICHTIG: in find_references_block werden Inhalts-Verzeichnis-Einträge
+# (Header + Seitenzahl am Ende) explizit ausgefiltert.
+HEADER_RE_EXTENDED = re.compile(
+    r"^[ \t]*"
+    r"(?:(?:\d+|[IVXivx]+)\.[ \t]+)?"          # optionaler Section-Prefix
+    r"("
+    r"references"
+    r"|literatur(?:verzeichnis)?"
+    r"|bibliograph(?:y|ie)"
+    r"|bibliografie"
+    r"|works[ \t]+cited"
+    r"|quellen(?:verzeichnis)?"
+    r"|cited[ \t]+works"
+    r"|literatur[ \t]+und[ \t]+quellen"
+    r"|prim(?:ä|ae)rliteratur"                  # Sammelband
+    r"|sekund(?:ä|ae)rliteratur"                # Sammelband
+    r"|verwendete[ \t]+literatur"
+    r"|zitierte[ \t]+literatur"
+    r"|sources(?:[ \t]+cited)?"
+    r")"
+    r"(?:[ \t]+[IVXivx0-9.;,\- ]+)?"            # optionaler Header-Suffix
+    r"[ \t:.]*$",
+    re.IGNORECASE,
+)
+
+# Inhaltsverzeichnis-Erkennung: Header durch ≥3 Spaces oder Punkt-Linie
+# getrennt von einer Seitenzahl am Ende. Heuristik bewusst eng — Sammelband-
+# Section-References wie "Literaturverzeichnis I.1; I.4; I.5" sind KEIN TOC.
+TOC_ENTRY_RE = re.compile(
+    r"(?:\s{3,}|\.{3,}\s*|…\s*)\d{1,4}\s*$"
+)
+
 DOI_RE = re.compile(r"\b10\.\d{4,9}/[A-Za-z0-9._;()/:\-]+", re.IGNORECASE)
 
 CITATION_START_RE = re.compile(
@@ -151,30 +188,73 @@ def ensure_fulltext(
 # -- Refs-Section + Heuristiken ----------------------------------------------
 
 
-def find_references_block(text: str) -> tuple[str, int | None, str | None]:
+def _is_toc_entry(line: str) -> bool:
+    """Heuristik: Header + Seitenzahl am Ende = TOC-Eintrag, kein Refs-Header.
+    'VIII. Literaturverzeichnis  249' → True.
+    """
+    return bool(TOC_ENTRY_RE.search(line))
+
+
+def find_references_block(
+    text: str,
+    *,
+    use_fallback: bool = True,
+) -> tuple[str, int | None, str | None]:
     """Liefert (refs_text, header_line_no, header_label).
 
-    Strategie: nimm das LETZTE Header-Vorkommen ab 40 % Dokumentenlänge.
-    Body-Erwähnungen ('die Literatur zu X ist breit ...') sollen so vermieden
-    werden.
+    Strategie (§2.3):
+    1. Suche das LETZTE Header-Vorkommen ab 30 % Dokumentenlänge mit der
+       erweiterten Regex (HEADER_RE_EXTENDED). Filtert TOC-Einträge raus.
+    2. Bei Sammelbänden mit "Primärliteratur" + "Sekundärliteratur":
+       nimm den ERSTEN Sub-Header ab 30 %, damit beide Sektionen
+       eingeschlossen sind.
+    3. Wenn `use_fallback=True` und kein Header gefunden wurde: nutze die
+       letzten 25 % als Pseudo-Refs (markiert mit header_label="(fallback)").
+       Das fängt Spalten-Layouts und Editorial-Notizen ab.
     """
     lines = text.splitlines()
     n = len(lines)
     if n == 0:
         return "", None, None
-    min_line = int(n * 0.40)
+    min_line = int(n * 0.30)
     header_line = None
     header_label = None
+    first_sammelband_line = None
+    first_sammelband_label = None
+
     for i, line in enumerate(lines):
         if i < min_line:
             continue
-        m = HEADER_RE.match(line.strip())
-        if m:
-            header_line = i
-            header_label = m.group(1)
-    if header_line is None:
-        return "", None, None
-    return "\n".join(lines[header_line + 1:]), header_line, header_label
+        stripped = line.strip()
+        m = HEADER_RE_EXTENDED.match(stripped)
+        if not m:
+            continue
+        if _is_toc_entry(stripped):
+            continue
+        label = m.group(1).lower()
+        # Sammelband-Sub-Header: ersten Treffer merken (umfasst beide Sektionen)
+        if label.startswith(("prim", "sekund")) and first_sammelband_line is None:
+            first_sammelband_line = i
+            first_sammelband_label = m.group(1)
+        # Normaler Header: nimm den letzten
+        header_line = i
+        header_label = m.group(1)
+
+    # Wenn Sammelband-Header gefunden, prefer den ersten Sub-Header
+    if first_sammelband_line is not None:
+        header_line = first_sammelband_line
+        header_label = first_sammelband_label
+
+    if header_line is not None:
+        return "\n".join(lines[header_line + 1:]), header_line, header_label
+
+    # Fallback: letzte 25 % als Pseudo-Refs-Sektion, markiert.
+    # Greift bei Sammelbänden ohne klare Header, Editorials, Spalten-Layouts.
+    if use_fallback and n >= 40:
+        fallback_start = int(n * 0.75)
+        return "\n".join(lines[fallback_start:]), fallback_start, "(fallback)"
+
+    return "", None, None
 
 
 def cut_post_refs_garbage(refs_text: str) -> str:
@@ -259,10 +339,17 @@ def extract_refs(
         )
 
     refs_text, header_line, header_label = find_references_block(text)
-    used_fallback = False
-    if not refs_text:
+    # find_references_block kann drei Zustände liefern:
+    #   - Header gefunden:           label = "Literatur"/"References"/etc.
+    #   - Letzte-25%-Fallback:       label = "(fallback)"  (§2.3)
+    #   - Gar nichts (kurzes Doc):   label = None, refs_text = ""
+    # In den letzten zwei Fällen ist Citation-Splitting sinnlos, weil
+    # die "Sektion" Fließtext sein kann.
+    used_fallback = header_label in (None, "(fallback)")
+    if header_label is None and not refs_text:
+        # Notfall-Fallback: ganzer Volltext (alter Pre-§2.3-Pfad, fängt
+        # sehr kurze Dokumente ohne Header-Match ab).
         refs_text = text
-        used_fallback = True
 
     refs_text = cut_post_refs_garbage(refs_text)
     dois = extract_dois(refs_text)

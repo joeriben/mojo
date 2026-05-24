@@ -291,6 +291,82 @@ class TestDiscourse:
         assert len(d) == 7
 
 
+# ----- Header-Erkennung (§2.3) ----------------------------------------------
+
+
+class TestRefsHeaderDetection:
+    """Header-Erkennung in find_references_block (§2.3-Erweiterung)."""
+
+    def _build_text(self, body_lines, header_line, ref_lines):
+        """Bauen einen Volltext mit 50% Body + Header + Refs am Ende."""
+        # Body muss >40% des Dokuments sein, damit Header über 30%-Schwelle liegt
+        return "\n".join(body_lines + [header_line] + ref_lines)
+
+    def test_classic_header_literatur(self):
+        from journal_bot.own_refs.extract import find_references_block
+        text = self._build_text(
+            ["body line"] * 50, "Literatur", ["Müller, K. (2020): ..."],
+        )
+        _, line, label = find_references_block(text)
+        assert label == "Literatur"
+        assert line == 50
+
+    def test_sammelband_primaerliteratur(self):
+        """Primärliteratur als Sammelband-Header (§2.3)."""
+        from journal_bot.own_refs.extract import find_references_block
+        text = self._build_text(
+            ["body"] * 50, "Primärliteratur", ["Mead, G. H. (1934): Mind, Self ..."],
+        )
+        _, _, label = find_references_block(text)
+        assert label == "Primärliteratur"
+
+    def test_section_prefix(self):
+        """VIII. Literaturverzeichnis ist Header (kein TOC)."""
+        from journal_bot.own_refs.extract import find_references_block
+        text = self._build_text(
+            ["body"] * 50, "VIII. Literaturverzeichnis", ["Adorno, T. (1966): ..."],
+        )
+        _, _, label = find_references_block(text)
+        assert label == "Literaturverzeichnis"
+
+    def test_header_with_section_refs(self):
+        """'Literaturverzeichnis I.1; I.4; I.5' ist Sammelband-Header,
+        kein TOC-Eintrag (kein Spacing/Punkt-Linie zur Section-Reference)."""
+        from journal_bot.own_refs.extract import find_references_block
+        text = self._build_text(
+            ["body"] * 50, "Literaturverzeichnis I.1; I.4; I.5", ["Adorno ..."],
+        )
+        _, _, label = find_references_block(text)
+        assert label == "Literaturverzeichnis"
+
+    def test_toc_entry_excluded(self):
+        """'Literaturverzeichnis ...... 245' = TOC-Eintrag, KEIN Header."""
+        from journal_bot.own_refs.extract import find_references_block
+        text = self._build_text(
+            ["body"] * 50,
+            "VIII. Literaturverzeichnis                                                 249",
+            ["Adorno ..."],
+        )
+        _, _, label = find_references_block(text)
+        # Fallback greift, weil kein echter Header gefunden
+        assert label == "(fallback)"
+
+    def test_no_header_uses_fallback(self):
+        """Bei kein Header: letzte 25% als (fallback)."""
+        from journal_bot.own_refs.extract import find_references_block
+        text = "\n".join(["irgendein body text"] * 200)
+        _, _, label = find_references_block(text)
+        assert label == "(fallback)"
+
+    def test_no_header_short_doc_no_fallback(self):
+        """Sehr kurze Docs (< 40 Lines): kein Fallback, leerer return."""
+        from journal_bot.own_refs.extract import find_references_block
+        text = "\n".join(["body"] * 10)
+        refs, line, label = find_references_block(text)
+        assert refs == ""
+        assert label is None
+
+
 # ----- Regression: dedup im store -------------------------------------------
 
 
