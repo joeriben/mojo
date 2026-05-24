@@ -41,6 +41,7 @@ from journal_bot.own_refs.identity import (
     first_author_lastname,
 )
 from journal_bot.own_refs.resolve import resolve_dois
+from journal_bot.own_refs.text_resolve import resolve_text_refs
 from journal_bot.own_refs.sources.base import DiscoveredItem, Source
 from journal_bot.own_refs.store import (
     OwnRefsStore,
@@ -70,6 +71,8 @@ class BuildStats:
     refs_total: int = 0
     dois_total: int = 0
     dois_resolved: int = 0
+    text_refs_total: int = 0
+    text_refs_resolved: int = 0
     dupes_merged: int = 0
     sources_with_errors: list[str] = field(default_factory=list)
 
@@ -108,13 +111,20 @@ def build(
     db_path: Path = DEFAULT_DB_PATH,
     force_refresh: bool = False,
     resolve_openalex: bool = True,
+    resolve_text: bool = True,
+    text_resolve_max_calls: int | None = None,
     verbose: bool = True,
 ) -> BuildStats:
     """Hauptbau: alle Sources durchlaufen, additiv in `own_refs.db` schreiben.
 
     `force_refresh=True` ignoriert pdf_mtime-Caches und re-extrahiert alles.
-    `resolve_openalex=False` überspringt den OpenAlex-Resolver-Schritt (z. B.
-    wenn man offline ist; DOIs landen dann als `doi_unresolved` im Store).
+    `resolve_openalex=False` überspringt den OpenAlex-DOI-Resolver-Schritt
+    (z. B. offline; DOIs landen dann als `doi_unresolved` im Store).
+    `resolve_text=False` überspringt zusätzlich den Free-Text-Resolver
+    (§2.4 — Author+Year+Title-Match gegen OpenAlex-Search). Cache ist
+    persistent (`.own_refs_cache/text_oa/`), zweiter Lauf ist ein Cache-Walk.
+    `text_resolve_max_calls=N` cappt die Anzahl der LIVE-Calls (Cache-Hits
+    zählen nicht). Sinnvoll für Smoke-Tests.
     """
     if not sources:
         raise ValueError(
@@ -151,7 +161,7 @@ def build(
         merged = _merge_duplicates(store, verbose=verbose)
         stats.dupes_merged = merged
 
-        # Resolve alle gesammelten DOIs in einem Rutsch.
+        # Phase 1: DOI-basiertes Resolve.
         if resolve_openalex and pending_dois:
             all_dois = sorted({d for ds in pending_dois.values() for d in ds})
             stats.dois_total = len(all_dois)
@@ -159,13 +169,130 @@ def build(
                 print(f"[build] Resolve {len(all_dois)} unique DOIs against OpenAlex …")
             resolved = resolve_dois(all_dois, verbose=verbose)
             stats.dois_resolved = sum(1 for r in resolved.values() if r.oa_id)
-            _persist_refs(store, pending_dois, pending_text_refs, resolved, stats)
-        elif pending_dois:
-            stats.dois_total = sum(len(ds) for ds in pending_dois.values())
-            _persist_refs(store, pending_dois, pending_text_refs,
-                          resolved={}, stats=stats)
+        else:
+            resolved = {}
+            if pending_dois:
+                stats.dois_total = sum(len(ds) for ds in pending_dois.values())
+
+        # Phase 2a: Free-Text-Resolve für FRISCH extrahierte Refs (aus
+        # diesem Lauf). Wird in _persist_refs verwendet, damit text_resolved-
+        # State direkt korrekt gesetzt wird statt erst text_unresolved → später.
+        text_resolved: dict[str, object] = {}
+        if resolve_text and pending_text_refs:
+            import hashlib as _h
+            text_pairs: list[tuple[str, str]] = []
+            for canonical_id, cites in pending_text_refs.items():
+                for cite in cites:
+                    short_hash = _h.sha1(cite.encode("utf-8")).hexdigest()[:12]
+                    ref_id = f"txt:{short_hash}"
+                    text_pairs.append((ref_id, cite))
+            if verbose:
+                print(
+                    f"[build] Text-Resolve {len(text_pairs)} freie Refs aus "
+                    f"diesem Lauf gegen OpenAlex-Search …"
+                )
+            text_resolved = resolve_text_refs(
+                text_pairs, verbose=verbose,
+                max_calls=text_resolve_max_calls,
+            )
+
+        # Persistierung: in einem Rutsch DOI- und Text-Resolution einlesen.
+        _persist_refs(
+            store, pending_dois, pending_text_refs,
+            resolved=resolved, text_resolved=text_resolved, stats=stats,
+        )
+
+        # Phase 2b: Catch-up — alle text_unresolved Refs, die nicht aus
+        # diesem Lauf stammen (also Legacy aus früheren Builds), nachträglich
+        # gegen die Search-API auflösen. Inkrementell: bei einem zweiten Lauf
+        # ohne fresh PDFs würde Phase 2a leer bleiben, aber 2b zieht alte
+        # Lücken hoch. Cache macht Re-Runs kostenfrei.
+        if resolve_text:
+            n_total, n_resolved = _catch_up_text_unresolved(
+                store, max_calls=text_resolve_max_calls,
+                already_processed_ref_ids=set(text_resolved.keys()),
+                verbose=verbose,
+            )
+            stats.text_refs_total += n_total
+            stats.text_refs_resolved += n_resolved
+
+        # Phase 2a-Statistik in stats schreiben (für direkt aufgelöste Refs)
+        stats.text_refs_total += len(text_resolved)
+        stats.text_refs_resolved += sum(
+            1 for r in text_resolved.values() if getattr(r, "oa_id", None)
+        )
 
     return stats
+
+
+def _catch_up_text_unresolved(
+    store: OwnRefsStore,
+    max_calls: int | None,
+    already_processed_ref_ids: set[str],
+    verbose: bool,
+) -> tuple[int, int]:
+    """Resolve existierende text_unresolved-Refs in der DB.
+
+    Notwendig, weil `build()` nur frische Extraktionen ins `pending_text_refs`
+    aufnimmt. Legacy-Refs aus früheren Läufen müssen separat angefasst werden,
+    sonst bleiben sie ewig text_unresolved.
+
+    Direkter UPDATE in pub_refs (statt replace_pub_refs), weil wir hier nur
+    den Resolution-State einer einzelnen Reihe ändern — keinen Refresh der
+    ganzen Pub.
+    """
+    con = store.con
+    rows = con.execute(
+        """
+        SELECT canonical_id, ref_id, ref_text
+          FROM pub_refs
+         WHERE resolution_state = 'text_unresolved'
+           AND ref_text IS NOT NULL
+        """
+    ).fetchall()
+    if not rows:
+        return (0, 0)
+
+    pairs: list[tuple[str, str]] = []
+    for r in rows:
+        if r["ref_id"] in already_processed_ref_ids:
+            continue
+        pairs.append((r["ref_id"], r["ref_text"]))
+
+    if verbose:
+        print(
+            f"[build] Catch-up: {len(pairs)} Legacy-text_unresolved-Refs "
+            f"gegen OpenAlex-Search …"
+        )
+    if not pairs:
+        return (0, 0)
+
+    text_resolved = resolve_text_refs(
+        pairs, verbose=verbose, max_calls=max_calls,
+    )
+
+    # UPDATE-Pass: nur die positiv aufgelösten Refs werden umgeschrieben.
+    n_updated = 0
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    for ref_id, res in text_resolved.items():
+        if not getattr(res, "oa_id", None):
+            continue
+        con.execute(
+            """
+            UPDATE pub_refs
+               SET ref_oa_id = ?,
+                   ref_doi   = COALESCE(?, ref_doi),
+                   ref_year  = COALESCE(?, ref_year),
+                   resolution_state = 'text_resolved',
+                   resolved_at = ?
+             WHERE ref_id = ?
+            """,
+            (res.oa_id, getattr(res, "matched_doi", None),
+             getattr(res, "matched_year", None), now, ref_id),
+        )
+        n_updated += 1
+    con.commit()
+    return (len(pairs), n_updated)
 
 
 def _ingest_item(
@@ -262,10 +389,16 @@ def _persist_refs(
     pending_dois: dict[str, set[str]],
     pending_text_refs: dict[str, list[str]],
     resolved,
+    text_resolved,
     stats: BuildStats,
 ) -> None:
-    """Schreibt pub_refs für jede Pub: erst aufgelöste DOIs, dann unaufgelöste
-    Free-Text-Refs.
+    """Schreibt pub_refs für jede Pub: aufgelöste DOIs → free-text refs.
+
+    Vier mögliche Resolution-States pro Ref:
+      - `doi_resolved`   — DOI vorhanden + OA-Treffer
+      - `doi_unresolved` — DOI vorhanden, OA-Search ohne Treffer
+      - `text_resolved`  — kein DOI, aber Author+Year+Title gegen OA gematcht
+      - `text_unresolved` — kein DOI, Search erfolglos / Ref unparseable
 
     Robust gegen vereinzelte schlecht-strukturierte Pubs: schlägt
     `replace_pub_refs` für eine canonical_id fehl (z. B. weil die Pub durch
@@ -294,12 +427,25 @@ def _persist_refs(
                 ))
         for cite in pending_text_refs.get(canonical_id, []):
             short_hash = hashlib.sha1(cite.encode("utf-8")).hexdigest()[:12]
-            refs.append(PubRef(
-                canonical_id=canonical_id,
-                ref_id=f"txt:{short_hash}",
-                ref_text=cite,
-                resolution_state="text_unresolved",
-            ))
+            ref_id = f"txt:{short_hash}"
+            tres = text_resolved.get(ref_id) if text_resolved else None
+            if tres is not None and getattr(tres, "oa_id", None):
+                refs.append(PubRef(
+                    canonical_id=canonical_id,
+                    ref_id=ref_id,
+                    ref_text=cite,
+                    ref_doi=getattr(tres, "matched_doi", None),
+                    ref_oa_id=tres.oa_id,
+                    ref_year=getattr(tres, "matched_year", None),
+                    resolution_state="text_resolved",
+                ))
+            else:
+                refs.append(PubRef(
+                    canonical_id=canonical_id,
+                    ref_id=ref_id,
+                    ref_text=cite,
+                    resolution_state="text_unresolved",
+                ))
         try:
             store.replace_pub_refs(canonical_id, refs)
             stats.refs_total += len(refs)

@@ -614,6 +614,8 @@ def cmd_refs(args: argparse.Namespace) -> int:
             db_path=Path(args.db) if args.db else DEFAULT_DB_PATH,
             force_refresh=args.force_refresh,
             resolve_openalex=not args.no_resolve,
+            resolve_text=not args.no_text_resolve,
+            text_resolve_max_calls=args.text_resolve_max_calls,
             verbose=not args.quiet,
         )
         print()
@@ -629,6 +631,8 @@ def cmd_refs(args: argparse.Namespace) -> int:
         print(f"  refs persisted:     {stats.refs_total}")
         print(f"  unique DOIs:        {stats.dois_total}")
         print(f"  DOIs resolved (OA): {stats.dois_resolved}")
+        print(f"  text-refs total:    {stats.text_refs_total}")
+        print(f"  text-refs resolved: {stats.text_refs_resolved}")
         print(f"  dupes merged:       {stats.dupes_merged}")
         if stats.sources_with_errors:
             print("  sources with errors:")
@@ -972,6 +976,13 @@ def main(argv: list[str] | None = None) -> int:
                       help="Alle PDFs neu extrahieren, auch wenn pdf_mtime unverändert")
     p_rb.add_argument("--no-resolve", action="store_true",
                       help="DOIs nicht gegen OpenAlex auflösen (offline-Modus)")
+    p_rb.add_argument("--no-text-resolve", action="store_true",
+                      help="Freie Refs nicht gegen OpenAlex-Search auflösen "
+                           "(§2.4 — Cache ist persistent, zweiter Lauf ohne "
+                           "Flag ist trotzdem schnell).")
+    p_rb.add_argument("--text-resolve-max-calls", type=int, default=None,
+                      help="Maximalanzahl LIVE-Calls für Free-Text-Resolve. "
+                           "Cache-Hits zählen nicht. Sinnvoll für Smoke-Tests.")
     p_rb.add_argument("--db", default="",
                       help="Alternativer DB-Pfad (default: own_refs.db im Projekt)")
     p_rb.add_argument("--quiet", action="store_true")

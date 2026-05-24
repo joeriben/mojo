@@ -401,3 +401,261 @@ def test_replace_pub_refs_dedupes_on_ref_id(tmp_path):
         # bevorzugte Variante = resolved
         assert result[0].resolution_state == "text_resolved"
         assert result[0].ref_oa_id == "https://openalex.org/W1"
+
+
+# ----- §2.4 text_resolve: Parser-Tests --------------------------------------
+
+
+class TestParseRefText:
+    """Unit-Tests für `parse_ref_text` — heuristisches Author+Year+Title-Parsing.
+
+    Deckt die wichtigsten in der Bibliothek beobachteten Citation-Stile ab:
+    APA mit (YYYY)., APA mit (YYYY, Month Day)., Chicago mit Jahresende,
+    Sammelband-Stil mit "In:", Monographien mit Einwort-Titeln.
+    """
+
+    def test_apa_simple_article(self):
+        from journal_bot.own_refs.text_resolve import parse_ref_text
+        p = parse_ref_text(
+            "Barad, K. (2007). Meeting the universe halfway. Duke University Press."
+        )
+        assert p is not None
+        assert p.first_author_lastname == "Barad"
+        assert p.year == 2007
+        assert "Meeting the universe halfway" in p.title
+
+    def test_year_with_extra_in_parens(self):
+        """'(2017, November 15)' — Online-Posts und Blog-Refs."""
+        from journal_bot.own_refs.text_resolve import parse_ref_text
+        p = parse_ref_text(
+            "Alspach, B. (2017, November 15). The story behind how an Alaska Native "
+            "story led to a video game."
+        )
+        assert p is not None
+        assert p.first_author_lastname == "Alspach"
+        assert p.year == 2017
+        assert p.title.lower().startswith("the story behind")
+
+    def test_einwort_titel_monographie(self):
+        """Monographien-Titel können einwortig sein und brauchen author+year."""
+        from journal_bot.own_refs.text_resolve import parse_ref_text
+        p = parse_ref_text("Holzer, Boris (2006). Netzwerke. Bielefeld: transcript Verlag.")
+        assert p is not None
+        assert p.first_author_lastname == "Holzer"
+        assert p.year == 2006
+        assert "Netzwerke" in p.title
+
+    def test_multi_sentence_title_preserved(self):
+        """'Title. Subtitle. Venue' — Titel inkl. Subtitle, Venue rausschneiden."""
+        from journal_bot.own_refs.text_resolve import parse_ref_text
+        p = parse_ref_text(
+            "Alkemeyer, T., Buschmann, N. (2021). Kosmologie des Toilettengangs. "
+            "Zum Imaginären einer nachhaltigen Lebensform. Soziologie und "
+            "Nachhaltigkeit, 7(02), 72–89."
+        )
+        assert p is not None
+        assert p.first_author_lastname == "Alkemeyer"
+        assert p.year == 2021
+        assert "Kosmologie" in p.title
+        # Vol-Pattern ", 7(02)" sollte abschneiden
+        assert "7(02)" not in p.title
+
+    def test_returns_none_for_no_year(self):
+        from journal_bot.own_refs.text_resolve import parse_ref_text
+        assert parse_ref_text("Some random text without year metadata.") is None
+
+    def test_returns_none_for_too_short(self):
+        from journal_bot.own_refs.text_resolve import parse_ref_text
+        assert parse_ref_text("Short.") is None
+
+    def test_year_suffix_letter_stripped(self):
+        """'(2020a)' — APA Disambiguierungs-Letter darf das Jahr nicht stören."""
+        from journal_bot.own_refs.text_resolve import parse_ref_text
+        p = parse_ref_text("Author, A. (2020a). Some title here for testing.")
+        assert p is not None
+        assert p.year == 2020
+
+
+# ----- §2.4 text_resolve: Matching-Tests ------------------------------------
+
+
+class TestTextResolveMatcher:
+    """Tests für `_best_match` und Such-Query-Konstruktion.
+
+    Nutzt synthetische OpenAlex-Search-Responses (dicts wie aus der API),
+    KEINE Netzwerk-Calls.
+    """
+
+    def test_best_match_token_containment(self):
+        """Lange noisy parsed_title + kurzer cand_title → containment-ratio."""
+        from journal_bot.own_refs.text_resolve import _best_match, ParsedRef
+        parsed = ParsedRef(
+            first_author_lastname="Arnaud", year=2023,
+            title=("Promoting cultural rights for inhabitants of segregated "
+                   "neighbourhoods in Cape Town. From cultural insurrection "
+                   "to Epistemic Action."),
+            raw="…",
+        )
+        cands = [{
+            "id": "https://openalex.org/W123",
+            "doi": "https://doi.org/10.x/y",
+            "title": "Promoting Cultural Rights for Inhabitants of Segregated Neighbourhoods",
+            "publication_year": 2023,
+            "authorships": [{"author": {"display_name": "Lionel Arnaud"}}],
+        }]
+        result = _best_match(parsed, cands)
+        assert result.oa_id == "https://openalex.org/W123"
+        assert result.matched_doi == "10.x/y"
+
+    def test_best_match_rejects_year_mismatch(self):
+        from journal_bot.own_refs.text_resolve import _best_match, ParsedRef
+        parsed = ParsedRef(
+            first_author_lastname="Barad", year=2007,
+            title="Meeting the universe halfway", raw="…",
+        )
+        cands = [{
+            "id": "https://openalex.org/W1",
+            "title": "Meeting the universe halfway",
+            "publication_year": 2015,  # zu weit weg
+            "authorships": [{"author": {"display_name": "Karen Barad"}}],
+        }]
+        assert _best_match(parsed, cands).oa_id is None
+
+    def test_best_match_rejects_author_mismatch(self):
+        from journal_bot.own_refs.text_resolve import _best_match, ParsedRef
+        parsed = ParsedRef(
+            first_author_lastname="Barad", year=2007,
+            title="Meeting the universe halfway", raw="…",
+        )
+        cands = [{
+            "id": "https://openalex.org/W1",
+            "title": "Meeting the universe halfway",
+            "publication_year": 2007,
+            "authorships": [{"author": {"display_name": "Someone Else"}}],
+        }]
+        assert _best_match(parsed, cands).oa_id is None
+
+    def test_best_match_rejects_low_ratio(self):
+        from journal_bot.own_refs.text_resolve import _best_match, ParsedRef
+        parsed = ParsedRef(
+            first_author_lastname="Barad", year=2007,
+            title="Meeting the universe halfway", raw="…",
+        )
+        cands = [{
+            "id": "https://openalex.org/W1",
+            "title": "Quantum physics and unrelated topics for testing",
+            "publication_year": 2007,
+            "authorships": [{"author": {"display_name": "Karen Barad"}}],
+        }]
+        # Token-Overlap zwischen Titel und unrelated topics ist niedrig
+        assert _best_match(parsed, cands).oa_id is None
+
+    def test_search_query_preserves_diacritics(self):
+        """OpenAlex' BM25 ist umlaut-sensitiv — Diakritika dürfen NICHT
+        weg-normalisiert werden, sonst missen wir deutsche Refs."""
+        from journal_bot.own_refs.text_resolve import _build_search_query
+        q = _build_search_query("Kosmologie des Toilettengangs")
+        assert "Kosmologie" in q
+
+    def test_search_query_drops_stopwords(self):
+        from journal_bot.own_refs.text_resolve import _build_search_query
+        q = _build_search_query("Der und die das von für mit Title")
+        # "Title" sollte als einziges Nicht-Stopwort übrig sein
+        assert q.lower().strip() == "title"
+
+    def test_search_query_caps_at_max_words(self):
+        """5-Wort-Cap: zu lange Queries drücken OAs Recall."""
+        from journal_bot.own_refs.text_resolve import _build_search_query, MAX_QUERY_WORDS
+        long_title = "Eins zwei drei vier fünf sechs sieben acht neun zehn elf"
+        q = _build_search_query(long_title)
+        # Nach Stopwort-Filter + Cap maximal MAX_QUERY_WORDS Tokens
+        assert len(q.split()) <= MAX_QUERY_WORDS
+
+    def test_search_query_strips_smart_quotes_and_ligatures(self):
+        """PDF-Ligaturen 'ﬁ', Smart-Quotes '“”' verfälschen OA-Suche."""
+        from journal_bot.own_refs.text_resolve import _build_search_query
+        q = _build_search_query("‘Artiﬁcial’ Intelligence “Position” Paper")
+        assert "ﬁ" not in q
+        assert "“" not in q
+        assert "‘" not in q
+
+
+# ----- §2.4 text_resolve: Cache-Tests ---------------------------------------
+
+
+class TestTextResolveCache:
+    """File-Cache speichert positive UND negative Ergebnisse."""
+
+    def test_cache_roundtrip_resolved(self, tmp_path):
+        from journal_bot.own_refs.text_resolve import (
+            _save_cache, _load_cached, _parsed_signature, ParsedRef,
+        )
+        parsed = ParsedRef("Barad", 2007, "Meeting the universe halfway", "…")
+        sig = _parsed_signature(parsed)
+        _save_cache(sig, {
+            "oa_id": "https://openalex.org/W1",
+            "title": "Meeting the universe halfway",
+            "year": 2007,
+            "doi": "10.x/y",
+            "score": 0.95,
+        }, tmp_path)
+        loaded = _load_cached(sig, tmp_path)
+        assert loaded is not None
+        assert loaded.oa_id == "https://openalex.org/W1"
+        assert loaded.matched_year == 2007
+        assert loaded.cache_hit is True
+
+    def test_cache_roundtrip_unresolved(self, tmp_path):
+        """Empty-dict-Cache verhindert Re-Query."""
+        from journal_bot.own_refs.text_resolve import (
+            _save_cache, _load_cached, _parsed_signature, ParsedRef,
+        )
+        parsed = ParsedRef("Nobody", 1999, "Unknown work", "…")
+        sig = _parsed_signature(parsed)
+        _save_cache(sig, {}, tmp_path)
+        loaded = _load_cached(sig, tmp_path)
+        assert loaded is not None
+        assert loaded.oa_id is None
+        assert loaded.cache_hit is True
+
+    def test_resolve_text_refs_uses_cache_no_network(self, tmp_path, monkeypatch):
+        """Mit voll gefülltem Cache wird KEIN httpx.Client erstellt."""
+        from journal_bot.own_refs import text_resolve as tr
+
+        # Lege Cache-Einträge für die beiden Test-Refs ab
+        parsed_test_refs = [
+            ("txt:abc", "Barad, K. (2007). Meeting the universe halfway. Duke UP."),
+            ("txt:def", "Holzer, B. (2006). Netzwerke. transcript Verlag."),
+        ]
+        for ref_id, raw in parsed_test_refs:
+            p = tr.parse_ref_text(raw)
+            assert p is not None
+            sig = tr._parsed_signature(p)
+            tr._save_cache(sig, {
+                "oa_id": f"https://openalex.org/W{ref_id[-3:]}",
+                "title": "x", "year": p.year, "doi": None, "score": 1.0,
+            }, tmp_path)
+
+        # Wenn httpx.Client jetzt aufgerufen würde, schlägt es fehl
+        def fail(*a, **kw):
+            raise AssertionError("Cache-Hit sollte keinen Network-Call brauchen")
+        monkeypatch.setattr(tr.httpx, "Client", fail)
+
+        out = tr.resolve_text_refs(parsed_test_refs, cache_dir=tmp_path, verbose=False)
+        assert len(out) == 2
+        assert all(r.cache_hit for r in out.values())
+        assert all(r.oa_id for r in out.values())
+
+    def test_resolve_text_refs_max_calls_zero_is_cache_only(self, tmp_path, monkeypatch):
+        """max_calls=0 → keine Live-Calls, nur Cache-Hits."""
+        from journal_bot.own_refs import text_resolve as tr
+
+        def fail(*a, **kw):
+            raise AssertionError("max_calls=0 darf nicht ins Netz")
+        monkeypatch.setattr(tr.httpx, "Client", fail)
+
+        # leeres Cache-Dir, kein Match möglich
+        pairs = [("txt:xyz", "Author, A. (2020). Some Work. Some Venue.")]
+        out = tr.resolve_text_refs(pairs, cache_dir=tmp_path, max_calls=0)
+        # Refs ohne Cache-Hit und ohne Call landen NICHT im Output
+        assert "txt:xyz" not in out
