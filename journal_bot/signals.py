@@ -18,6 +18,12 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Any
 
+from journal_bot.adversarial.corpus_freq import (
+    AdversarialCorpusFreq, load_or_compute_adversarial_corpus_freq,
+)
+from journal_bot.adversarial.trigger_refs import (
+    AdversarialIndex, load_or_compute_adversarial_index,
+)
 from journal_bot.citation_tracker import find_citations, CitationHit, load_authored_all
 from journal_bot.own_refs.corpus_freq import CorpusFreq, load_or_compute_corpus_freq
 from journal_bot.own_refs.index import OwnRefsIndex, load_own_refs_index
@@ -28,6 +34,7 @@ ZOTERO_LIBRARY_JSON = PROJECT_ROOT / "zotero_library.json"
 PROJECTS_JSON = PROJECT_ROOT / "projects.json"
 OWN_REFS_DB = PROJECT_ROOT / "own_refs.db"
 ARTICLES_DB = PROJECT_ROOT / "articles.db"
+TRIGGER_BIBLIOGRAPHIES_DIR = PROJECT_ROOT / "backtest_data" / "trigger_bibliographies"
 
 # IDF-Score-Schwellen für die Bibliographic-Coupling-Veto-Regel (§2.1b).
 # Kalibriert gegen Live-Verteilung in articles.db (18 212 Artikel, Stand
@@ -39,10 +46,22 @@ ARTICLES_DB = PROJECT_ROOT / "articles.db"
 # weak-Schwelle, exakt was Benjamin als Anforderung gestellt hatte.
 OWN_COUPLING_WEAK_SCORE = 0.60
 OWN_COUPLING_STRONG_SCORE = 1.50
+
+# Adversariale Set-Differenz-Schwellen (§2.2). Kalibriert gegen Live-Verteilung
+# in articles.db (18 212 Artikel, Stand 2026-05-24):
+#   - Score ≥ 3.0  → LES/IGN-Trefferquote  6.5x (schwacher Indikator, ~700 Lifts)
+#   - Score ≥ 8.0  → LES/IGN-Trefferquote 16x   (starker Indikator,  ~50 Lifts)
+# Adversarial ist NICHT so trennscharf wie own_coupling (das bei 1.5 schon 38x
+# schafft). Das spiegelt den methodischen Unterschied: Trigger-Anschluss heißt
+# "diskursiv relevant", nicht zwangsläufig "muss lesen". Schwellen entsprechend
+# konservativer gesetzt — adversarial signalisiert Blind-Spot-Anschluss, nicht
+# Pflichtlektüre.
+ADVERSARIAL_WEAK_SCORE = 3.00
+ADVERSARIAL_STRONG_SCORE = 8.00
 TRIGGER_AUTHORS = ("macgilchrist", "jarke", "wendy chun", "wendy hui kyong")
 SELECTION_MODES = {
     "none", "screening", "similarity", "complementarity",
-    "citation", "own_coupling", "trigger", "mixed",
+    "citation", "own_coupling", "adversarial", "trigger", "mixed",
 }
 DISCOURSE_INDICATORS = {
     "kein_indikator", "schwacher_indikator", "starker_indikator",
@@ -424,6 +443,12 @@ class SignalProfile:
     # own_coupling-Schema (siehe signal_own_coupling):
     #   {"oa_hits": list[str], "doi_hits": list[str], "n_union": int}
     # Leer wenn own_refs.db fehlt, der Article keine Refs hat, oder kein Treffer.
+    adversarial: dict[str, Any] = field(default_factory=dict)
+    # adversarial-Schema (siehe signal_adversarial_blindspot, §2.2):
+    #   {"oa_hits": list[str], "n_hits": int, "score": float}
+    # Schnittpunkte zwischen Article-Refs und (trigger_refs \ benjamin_refs).
+    # Bedeutung: "was zitieren die Trigger-Autoren (Macgilchrist/Jarke/Chun),
+    # was Benjamin noch nicht zitiert" — Blind-Spot-Detektor.
 
     @property
     def has_any_signal(self) -> bool:
@@ -483,6 +508,16 @@ class SignalProfile:
         return float(self.own_coupling.get("score", 0.0) or 0.0)
 
     @property
+    def f_adversarial_score(self) -> float:
+        """IDF-gewichteter Score auf der Set-Differenz `trigger_refs \\ benjamin_refs`.
+
+        Misst die Anschlussfähigkeit zu Diskursen, die Benjamin (noch) nicht
+        aufgegriffen hat. Treibt einen eigenen Indikator-Pfad (§2.2.c) —
+        Veto-Up- vs. Veto-Down-Charakter wird datenbasiert entschieden.
+        """
+        return float(self.adversarial.get("score", 0.0) or 0.0)
+
+    @property
     def summary(self) -> str:
         parts = []
         if self.cites_researcher:
@@ -499,6 +534,12 @@ class SignalProfile:
             parts.append(
                 f"own_coupling(union={self.f_own_coupling_union}, "
                 f"oa={len(oa_hits)}, doi={len(doi_hits)})"
+            )
+        if self.adversarial:
+            adv_hits = self.adversarial.get("oa_hits") or []
+            parts.append(
+                f"adversarial(n={len(adv_hits)}, "
+                f"score={self.f_adversarial_score:.2f})"
             )
         return " | ".join(parts) if parts else "(no signals)"
 
@@ -713,6 +754,50 @@ def signal_own_coupling(
     }
 
 
+def signal_adversarial_blindspot(
+    openalex_refs: list[str] | None,
+    adversarial_index: AdversarialIndex | None,
+    adversarial_corpus_freq: AdversarialCorpusFreq | None = None,
+) -> dict[str, Any]:
+    """Signal e: Adversarial-Set-Differenz `trigger_refs \\ benjamin_refs` (§2.2).
+
+    Misst, wieviele Refs der Artikel mit den Trigger-Autoren teilt, die NICHT
+    in Benjamins eigener Refs-Wolke vorkommen. Bedeutung: Anschluss an
+    benachbarte Diskurse (Macgilchrist/Jarke/Chun), die Benjamin aktuell
+    nicht selbst zitiert — Blind-Spot-Indikator.
+
+    Nur OA-IDs werden ausgewertet, weil die Trigger-Daten aus dem
+    Iter-10-Snapshot keine sauberen DOI-Sets liefern. Wenn das später ergänzt
+    wird, kann die Funktion analog zu `signal_own_coupling` erweitert werden.
+
+    Returns:
+        Dict mit `oa_hits` (sorted list), `n_hits`, `score` (IDF-gewichtet).
+        Leer wenn Index leer oder keine Refs.
+    """
+    if adversarial_index is None or adversarial_index.is_empty:
+        return {}
+    if not openalex_refs:
+        return {}
+
+    normalized = {_normalize_oa_id(x) for x in openalex_refs if x}
+    normalized.discard("")
+    oa_hits = sorted(normalized & adversarial_index.oa_ids)
+    if not oa_hits:
+        return {}
+
+    if adversarial_corpus_freq is not None and not adversarial_corpus_freq.is_empty:
+        score = sum(adversarial_corpus_freq.idf_weight_oa(h) for h in oa_hits)
+    else:
+        default_w = 1.0 / __import__("math").log(2.0)
+        score = default_w * len(oa_hits)
+
+    return {
+        "oa_hits": oa_hits,
+        "n_hits": len(oa_hits),
+        "score": round(score, 4),
+    }
+
+
 # --------------------------------------------------------- Composite Score --
 
 
@@ -741,12 +826,15 @@ def compute_signals(
     zotero_word_index: dict[str, list[ZoteroItem]] | None = None,
     own_refs_index: OwnRefsIndex | None = None,
     corpus_freq: CorpusFreq | None = None,
+    adversarial_index: AdversarialIndex | None = None,
+    adversarial_corpus_freq: AdversarialCorpusFreq | None = None,
 ) -> SignalProfile:
     """Compute all deterministic signals for one article.
 
-    `openalex_refs_json`, `own_refs_index` und `corpus_freq` sind optional —
-    fehlt eines davon, bleibt `own_coupling` leer oder ungewichtet. Das hält
-    ältere Aufrufer (Smoke-Tests, Backtest-Replay) kompatibel.
+    `openalex_refs_json`, `own_refs_index`, `corpus_freq`, `adversarial_index`
+    und `adversarial_corpus_freq` sind alle optional — fehlt eines davon,
+    bleiben die jeweiligen Signale leer. Das hält ältere Aufrufer
+    (Smoke-Tests, Backtest-Replay) kompatibel.
     """
     refs = _coerce_refs_list(crossref_refs_json)
     oa_refs = _coerce_refs_list(openalex_refs_json)
@@ -762,6 +850,9 @@ def compute_signals(
         keyword_hits=signal_keyword_hits(title, key_terms),
         own_coupling=signal_own_coupling(
             refs, oa_ref_strings, own_refs_index, corpus_freq,
+        ),
+        adversarial=signal_adversarial_blindspot(
+            oa_ref_strings, adversarial_index, adversarial_corpus_freq,
         ),
     )
 
@@ -860,6 +951,13 @@ def _infer_selection_mode(
     # Pre-§2.1b-Stand). Schwächer als citation/trigger, stärker als project.
     if signal_profile.f_own_coupling_score >= OWN_COUPLING_WEAK_SCORE:
         return "own_coupling"
+    # Adversariales Set-Coupling (§2.2): Anschluss an Trigger-Diskurse, die
+    # Benjamin noch nicht aufgegriffen hat. NUR bei sehr hohem Score
+    # (STRONG-Schwelle), weil das Signal deutlich weniger trennscharf ist
+    # als own_coupling (16x LES/IGN vs 38x). Schwacher adversarial-Score
+    # wird im discourse_indicator berücksichtigt, ändert aber den Mode nicht.
+    if signal_profile.f_adversarial_score >= ADVERSARIAL_STRONG_SCORE:
+        return "adversarial"
     if project_hits and bezuege and discourse_indicator != "kein_indikator":
         return "mixed"
     if project_hits and discourse_indicator != "kein_indikator":
@@ -893,11 +991,22 @@ def _infer_discourse_indicator(
     # Schwellen — genau das Verhalten, das Benjamin als primitive Suchfunktion
     # rausoperiert haben wollte.
     score = signal_profile.f_own_coupling_score
+    adv_score = signal_profile.f_adversarial_score
     if score >= OWN_COUPLING_STRONG_SCORE:
+        return "starker_indikator"
+    # Adversarial-STRONG (§2.2): selektiver Blind-Spot-Hebel, schwächer als
+    # own_coupling-STRONG (16x vs 38x LES/IGN). Reicht trotzdem für
+    # starker_indikator, weil bei Score ≥ 8 nur ~50 Items insgesamt betroffen
+    # sind — kleines aber hochwertiges Aufmerksamkeits-Signal.
+    if adv_score >= ADVERSARIAL_STRONG_SCORE:
         return "starker_indikator"
     if verdict == "scannen" and project_hits and (bemerkenswert or signal_profile.signal_count > 0):
         return "starker_indikator"
     if score >= OWN_COUPLING_WEAK_SCORE:
+        return "schwacher_indikator"
+    # Adversarial-WEAK (§2.2): mittlerer Diskurs-Anschluss → schwacher_indikator.
+    # Wirkt nur, wenn nichts Stärkeres feuert.
+    if adv_score >= ADVERSARIAL_WEAK_SCORE:
         return "schwacher_indikator"
     if verdict == "scannen" and project_hits:
         return "schwacher_indikator"
@@ -1231,17 +1340,25 @@ def load_signal_resources(
     zotero_path: Path = ZOTERO_LIBRARY_JSON,
     own_refs_db: Path = OWN_REFS_DB,
     articles_db: Path = ARTICLES_DB,
+    trigger_bibliographies_dir: Path = TRIGGER_BIBLIOGRAPHIES_DIR,
 ) -> dict[str, Any]:
     """Pre-load all resources needed for batch signal computation.
 
     `own_refs_index` ist die Refs-Wolke aus `own_refs.db` (Iter-11-Coupling).
     `corpus_freq` ist die globale Häufigkeit der Refs in `articles.db`
-    (IDF-Gewichtung gegen Bestseller-Rauschen, §2.1b). Beide werden lazy
-    geladen; fehlen sie, läuft die Pipeline graceful weiter.
+    (IDF-Gewichtung gegen Bestseller-Rauschen, §2.1b). `adversarial_index`
+    ist die Set-Differenz `trigger_refs \\ benjamin_refs` (§2.2). Alle
+    werden lazy geladen; fehlen sie, läuft die Pipeline graceful weiter.
     """
     zotero_lib = load_zotero_library(zotero_path)
     own_refs_index = load_own_refs_index(own_refs_db)
     corpus_freq = load_or_compute_corpus_freq(articles_db, own_refs_index)
+    adversarial_index = load_or_compute_adversarial_index(
+        trigger_bibliographies_dir, own_refs_index, own_refs_db=own_refs_db,
+    )
+    adversarial_corpus_freq = load_or_compute_adversarial_corpus_freq(
+        articles_db, adversarial_index, own_refs_db=own_refs_db,
+    )
     return {
         "authored_all": load_authored_all(corpus_path),
         "key_terms": load_key_terms(summaries_path),
@@ -1249,4 +1366,6 @@ def load_signal_resources(
         "zotero_word_index": _build_zotero_word_index(zotero_lib),
         "own_refs_index": own_refs_index,
         "corpus_freq": corpus_freq,
+        "adversarial_index": adversarial_index,
+        "adversarial_corpus_freq": adversarial_corpus_freq,
     }

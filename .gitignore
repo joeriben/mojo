@@ -24,6 +24,8 @@ journal_profiles.json
 # MOJO 2.0 Refs-Pipeline (lokale DB + Cache + Snapshot-Daten)
 own_refs.db
 own_refs_corpus_freq.json
+trigger_refs_index.json
+adversarial_corpus_freq.json
 backtest_data/
 output/own_refs_index.json
 output/*.md
