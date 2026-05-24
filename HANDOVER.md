@@ -1,290 +1,359 @@
-# MOJO — Übergabe-Dokumentation
-
-Dieses Dokument fasst den Projektzustand und die relevanten Arbeitskontexte zusammen, damit die Arbeit an MOJO mit einem anderen Coding-Assistenten (GPT Codex o.ä.) fortgesetzt werden kann.
-
-Stand: 2026-04-15
-
-**Aktueller Nachtrag (2026-04-28):** Der neue Strang "OpenAlex Journal Topic Router" ist in `docs/context/project_journal_topic_router.md` dokumentiert. Er beschreibt, wie OpenAlex-Top-Topics zu journalbezogenen Profilen, einem nahezu kostenfreien Retrieval-Routing und einer datenbasierten A/B/C-Intuition ausgebaut werden koennen. UI/API-Bausteine existieren in `journal_bot/journal_topics.py`, `/api/openalex/lookup`, `/api/openalex/journal-candidates`, `/api/openalex/journal-profiles` und Setup > "Themenbasierte Journal-Kandidaten" / "Journal-Profile-Router". `journal_profiles.json` ist lokale, generierte Persistenz und wird im Backup mitgesichert.
-
-**Aktueller Nachtrag (2026-04-29):** MOJO ist vorerst als funktional ausentwickelt zu behandeln. Der produktive Scan bleibt beim wiederhergestellten, validierten Stand: `mojo digest` nutzt fuer Batch-Screening und Agent-Analyse (`assess_then_verify`) `deepseek/deepseek-v3.2`; die Tool-Architektur (`submit_digest_entry`, `read_publication`) bleibt bestehen. DeepSeek V4 Flash/Pro wurden nicht als Default uebernommen: Flash zeigte im Tool-Pfad Qualitaets-/Loop-Probleme, Pro war durch Provider-/Tool-Routing nicht belastbar. Details und spaetere A/B-Testanforderungen stehen in `docs/context/decision_llm_scan_tool_architecture.md`.
-
-**Aktueller Nachtrag (2026-05-16):** Q-Check-Phase abgeschlossen — Volltext-Befund in `docs/qcheck_summary.md`, Detail-Eintrag im DEVLOG. Drei Operationen einzeln geprüft (Assessment n=50, Summarize n=5, Trends n=3):
-- **Assessment bleibt Opus** (30 % Drift bei MiMo, kein netto-Vorteil bei Mistral 3.5 nativ).
-- **Summarize bleibt Opus** (methods-Jaccard 0.17 ist zu niedrig — MiMo verfehlt methodische Anschlüsse).
-- **Trends Default jetzt MiMo** (`xiaomi/mimo-v2.5-pro`, via `MODEL_TRENDS` + `MAX_TOKENS_TRENDS=32000` in `settings.py`, override per `profile.json`). Empty-Response-Failsafe in `trends.py`. Reales Spar-Verhältnis MiMo/Opus bei Trends ist **~1/3, nicht 1/9** — die Q-Check-Stichprobe hatte unwillkürlich Cache-Effekte vortäuschen lassen, die im Produktionsvolumen (746 Artikel/Cluster) nicht greifen (System-Prompt unter Anthropic-Cache-Mindestschwelle).
-
-**Folgearbeit Cache-Hygiene-Instrumentierung (Task #9, ebenfalls 2026-05-16):** Die Q-Check-Erkenntnis war, dass der eigentliche Kostenhebel nicht der Modellwechsel ist, sondern die Cache-Disziplin auf dem bestehenden Opus-Assessment (Opus mit 91 % Cache-Hit kostet $0.028/Call, ohne Cache $0.10 — Faktor 3–4 ohne Quality-Verlust). Dieser Hebel war bisher unsichtbar. Neu:
-- `journal_bot/llm_log.py` enthält `cache_hit_stats()`, `format_cache_report()`, `wave_marker()`. Token-gewichtete Aggregation pro (Endpoint, Modell), ⚠-Flag bei <80 % Hit-Rate auf cache-kritischen Endpoints (`batch_screen`, `run_agent`, `assess`, `verify`).
-- `journal_bot/batch_digest.py::_finalize_with_cache_report` druckt am **Ende jeder Welle** (auch bei Abbruch) eine Tabelle mit Hit-Rate pro Endpoint. Damit ist beim nächsten Digest-Lauf sofort sichtbar, ob die Hit-Rate gefallen ist.
-- CLI: `mojo cache-report [--days N] [--endpoint …] [--model …]` zeigt historischen Trend.
-- Tests: `tests/test_llm_log.py::CacheHitStatsTests` (8 neue, alle grün).
-- **Live-validiert (2026-05-16, `mojo digest --next 10`):** Opus 4.6 assess erreicht 98 % token-gewichtete Hit-Rate über 10 Calls; Wave-Footer rendert die Tabelle exakt wie geplant; Kostenstruktur $0.049/Artikel mit aktivem Cache bestätigt (Hochrechnung ~$3/Woche statt $6–10 ohne Cache).
-
-**Folge-Nachtrag 2026-05-16b — drei offene Punkte geschlossen:**
-- **verify-Pfad** unit-getestet (synthetische Test-Welle assess+verify → beide gerendert, Flag korrekt platziert). Live-Bestätigung folgt automatisch beim nächsten `lesenswert`-Verdict.
-- **Web-UI-Render** in `_scan_run_result.html` als HTML-Tabelle. Zentrale `is_cache_warning()` in `llm_log.py` + Jinja-Filter `cache_warning` in `app.py` als single source of truth zwischen Terminal- und Web-Output. Smoke-Test via `app.test_request_context()` grün.
-- **Weekly-Cross-Wave-Readout** in `cmd_digest` (7-Tage-Aggregat am Lauf-Ende, Aus per `--no-weekly-summary`). Multi-Wave-Aggregat nutzt strengere `min_calls_for_flag=5` gegen Cold-Start-False-Positives — zwei Wellen mit je 1× Cold-Start ergeben token-gewichtet ~50 %, ist aber normal. Echte Cache-Brüche (≥5 Calls dauerhaft <80 %) bleiben geflaggt. 29 Tests grün.
+# MOJO — Handover (2026-05-24)
 
 ---
 
-## 1. Projekt in Kürze
+## §0 Pflicht-Vorlektüre
 
-**Zweck:** Persönlicher Forschungsassistent für Benjamin Jörissen (FAU Erlangen-Nürnberg, Allgemeine Pädagogik / ästhetische & kulturelle Bildung). Wöchentliche Sichtung von ~20 Journals, Bewertung jedes Beitrags gegen Benjamins publiziertes Werk (160 Publikationen), strukturierte Digest-Einträge + Trend-Analysen.
-
-**Aktueller Stand:**
-- 17.601 Artikel in DB, 15.929 davon Agent-verarbeitet
-- 53 Opus-Summaries von Benjamins Publikationen als Suchindex
-- 5 aktive Forschungsprojekte in `projects.json`
-- Gesamtkosten DB: $47.04
-
-**Technik-Stack:**
-- Python 3.10
-- OpenRouter-API (Claude Opus 4.6 für Agent, DeepSeek v3.2 für Screening, Haiku für Triage-on-no-abstract)
-- SQLite (articles.db)
-- Flask + HTMX (Web-UI, Port 5555)
-- OpenAlex + Crossref (Enrichment)
+Lies **vor** diesem Handover das dauerhafte Orientierungsdokument:
+**[`docs/mojo_2_grundorientierung.md`](docs/mojo_2_grundorientierung.md)**.
+Es beschreibt was MOJO 1.x ist (Plattform), wo der algorithmische Backtest
+steht (Plateau bei 0.60 F1), was MOJO 2.0 ist und nicht ist (drei
+Verschärfungen) und — zentral — dass **MOJO 1.x code-seitig erhalten und
+API-kompatibel bleibt**, auch wenn Funktionen schlafen
+([Festlegung 2026-05-24, §4](docs/mojo_2_grundorientierung.md)). Dieser Handover
+beschreibt den nächsten konkreten Schritt, das Dokument den Rahmen.
 
 ---
 
-## 2. Architektur-Überblick
+## Worum es wirklich geht (lies das zuerst, sonst läufst du in die falsche Richtung)
 
-### Retrieval-Pipeline (`journal_bot/fetch.py`)
+MOJO 2.0 ist **keine Volltext-LLM-Architektur**. Es ist die Weiterentwicklung
+der bestehenden algorithmischen Cascade-Triage durch eine **produktive,
+wachsende Refs-Pipeline**. LLM-Volltext-Calls bleiben die teure Ausnahme an
+einzelnen, vorab durch Algorithmus selektierten Items — nicht der Default.
 
-1. **Fetcher** je nach Journal-Typ: RSS / OJS / HTML / OpenAlex / DCE / Custom
-2. **Enrichment** pro DOI: OpenAlex (Abstract, Concepts, Topics, Refs) + Crossref (vollständige Referenzliste)
-3. **Persistierung** in `articles.db`
+**Drei Korrekturen gegenüber älteren Sketches** (waren falsch fokussiert):
 
-### Triage-Pipeline (mehrstufig, kostenoptimiert)
+1. „Adversariale Heuristiken" = **algorithmische Set-Operationen** über
+   Refs-/Autor-/Topic-Mengen, die als Veto-Up/Veto-Down direkt in die Cascade
+   einfließen. NICHT: LLM-Prompts mit „adversarialem Anker".
+2. Refs-Extraktion aus PDFs ist **algorithmisch** (Header-Erkennung,
+   Citation-Splitting, DOI-/Autor-/Jahr-Parsing, Disambiguation). NICHT: LLM
+   liest den Volltext.
+3. Ground-Truth ist **multi-source und wachsend** (Zotero-Collection plus
+   beliebige User-Ordner, additiv-idempotent re-importierbar). NICHT: ein
+   einmaliger 109-PDF-Snapshot wie in den Iter-11-Backtest-Scripts.
+
+Der Hebel für bessere Triage liegt in: mehr/besseren eigenen Refs-Daten →
+schärfere Set-Operationen → mehr Veto-Up/Veto-Down-Regeln auf die Cascade.
+LLM-Volltext nur dort, wo die Cascade nach allen Regeln noch unklar ist.
+
+---
+
+## §1 START HIER — eine Aufgabe
+
+**Hebe die Refs-Pipeline aus dem Backtest-Track in `journal_bot/` als
+produktives, multi-source, additiv-inkrementelles Modul** —
+`journal_bot/own_refs.py`.
+
+### Worum es geht (zwei Sätze)
+
+MOJO triagiert wöchentlich ~300 Artikel gegen Benjamins publiziertes Werk.
+Bisher kennt der Produktiv-Code dieses Werk nur als Volltext-Index (`corpus.json`
+aus Zotero); die Refs/Literaturverzeichnisse darin sind unausgewertet, obwohl
+Backtest gezeigt hat: Refs-Overlap zwischen Kandidat und Benjamins
+Cited-Sources-Wolke ist das stärkste verbleibende algorithmische Signal
+(12× LES/IGN-Ratio, +5.2 pp LES-Recall als Veto-Up-Regel). Dieses Signal muss
+raus aus dem Backtest-Track und in den Produktiv-Code, als wachsende Datenbasis.
+
+### Ist-Zustand
+
+| Ort | Was es leistet | Limitierung |
+|---|---|---|
+| `journal_bot/corpus.py` | Zotero-Collection → PDF-Volltext → `corpus.json` (pyzotero local API, `zot.children()` → PDF-Resolver, pypdf-Extraktion, `authored_all`-Schema) | Single-Source (nur eine Zotero-Collection), **überschreibt** `corpus.json` bei jedem Lauf, **keine** Refs-Extraktion |
+| `scripts/iter11_extract_own_refs.py` | PDF → Refs-Sektion → DOIs/Free-Text-Cites (pdftotext -layout, Header-Regex, Citation-Splitting, `cut_post_refs_garbage`) | Wegwerf-Snapshot auf 109 PDFs, nicht produktiv eingebunden — **Logik portierbar** |
+| `scripts/iter11_resolve_refs_to_openalex.py` | DOI → OpenAlex-Work-ID + `publication_year` (Batch-25, Polite-Pool, File-Cache `.enrichment_cache/iter11_oa_doi/<sha1>.json`) | Wegwerf-Snapshot — **Cache (318 Files) wiederverwendbar**, Logik portierbar |
+| `scripts/iter11_inventory_own_bibliography.py` | Zotero-Items via SQLite-Snapshot + Fallback-PDF-Suche in FAUbox (Title-Token-Match-Score) | Wegwerf-Snapshot, parallel zu `corpus.py` — **Fallback-Score-Pattern für Folder-Source nutzbar** |
+| `journal_bot/settings.py` | `ZOTERO_COLLECTION`, `ZOTERO_STORAGE`, `SINCE_YEAR` | Erweitern um Folder-Sources (Konfig in `profile.json`) |
+
+### Soll-Zustand: Multi-Source-Modell
+
+Quellen sind gleichberechtigt und ergänzen sich:
 
 ```
-Artikel aus articles.db (unverarbeitet)
-  │
-  ├── Phase 0: Vorfilter (kein LLM)
-  │   - Junk-Filter (Editorials, Corrections)
-  │   - Kein-Abstract-Filter + Catchword-Match
-  │   - Citation Auto-Pass (zitiert Benjamin)
-  │   - Trigger-Autoren (MacGilchrist, Jarke, Chun)
-  │
-  ├── Phase 1: Batch-Screening (DeepSeek v3.2, 25er-Batches)
-  │   - System-Prompt: alle 53 Summaries + triage_topics (cached)
-  │   - Verdict: weitergeben | ignorieren
-  │
-  ├── Tier-Split
-  │   - C-Tier → verdict="scannen", Ende
-  │   - A/B-Tier → Phase 3
-  │
-  └── Phase 3: Assess-then-Verify (Opus 4.6)
-      - Assessment (kein Volltext): Verdict + optionale candidate_reads
-      - Verification (nur bei candidate_reads): read_publication() auf
-        Benjamins Volltexten, finale bezuege
+sources (in profile.json konfigurierbar, beliebig viele):
+  - zotero:<collection_key>            # heute: QM7TZT44 ("Benjamin's publications")
+  - folder:<absolute_path>             # z.B. /Users/joerissen/FAUbox/01_Projekte
+
+for source in sources:
+    for item in source.discover():           # Metadaten + PDF-Pfad
+        canonical_id = resolve_identity(item)  # DOI primary, fallback Hash
+        upsert(store, canonical_id, item)    # additiv, idempotent
 ```
 
-### Zentrale Dateien
+**Identitäts-Auflösung** (Dedup über Quellen):
+- Primary: normalisierter DOI
+- Fallback: Hash aus `normalize(title) + year + normalize(first_author_lastname)`
+- Bei Konflikt: erste vollständige Quelle gewinnt, weitere als `source_refs[]`
+  angefügt
 
-| Datei | Zweck |
-|-------|-------|
-| `journal_bot/settings.py` | Konstanten, Profilladen, Diskursraum-Registry |
-| `journal_bot/fetch.py` | Retrieval-Runner |
-| `journal_bot/fetchers/` | Fetcher-Implementierungen |
-| `journal_bot/enrichment.py` | OpenAlex + Crossref API-Wrapper |
-| `journal_bot/agent.py` | Opus-Agent (run_agent, batch_screen, assess_then_verify) |
-| `journal_bot/citation_tracker.py` | Citation-Matching mit Vornamen-Disambiguation |
-| `journal_bot/summarize.py` | Opus-Summaries aus Zotero-Korpus |
-| `journal_bot/store.py` | SQLite-Wrapper |
-| `journal_bot/digest.py` | process_article, render_markdown |
-| `journal_bot/scout.py` | Multi-Linsen Journal-Evaluation |
-| `journal_bot/trends.py` | Diskursraum-basierte Trend-Analyse |
-| `journal_bot/cli.py` | Haupt-Entry (digest, fetch, summarize, etc.) |
-| `journal_bot/web/app.py` | Flask-App |
-| `journal_bot/web/templates/` | Jinja-Templates |
+**Additiv-inkrementell heißt**: jeder Re-Run einer Quelle ist no-op für bereits
+eingelesene Items; nur neue oder geänderte Items werden verarbeitet. Quellen
+können in beliebiger Reihenfolge laufen und beliebig oft.
 
-### Konfigurationsdateien (Projekt-Root)
+### Pipeline-Stufen pro Publikation
 
-| Datei | Zweck |
-|-------|-------|
-| `profile.json` | Forscher-Profil (Name, Institution, Areas, Triage-Topics, Modelle) |
-| `projects.json` | **NEU** — Aktive Forschungsprojekte mit relevance_shifts |
-| `journals.json` | Journal-Watchlist (Name, ISSN, Typ, Tier, Diskursräume) |
-| `diskursraeume.json` | Diskursraum-Definitionen |
-| `corpus.json` | Zotero-Import (Benjamins Publikationen + Volltexte) |
-| `summaries.json` | Opus-Summaries der Publikationen |
-| `articles.db` | SQLite-DB aller gefetchten Artikel + Verdicts |
+```
+Item discovered (Zotero-API ODER Filesystem-Heuristik)
+  → canonical_id resolved
+  → PDF-Pfad resolved (Zotero-Storage ODER absoluter Pfad ODER None)
+  → pdftotext -layout, Cache in <data>/text/<canonical_id>.txt
+  → Refs-Sektion extrahiert (Header-Regex aus iter11_extract_own_refs)
+  → DOIs + Free-Text-Citations extrahiert
+  → DOIs → OpenAlex aufgelöst (bestehenden iter11-Cache wiederverwenden)
+  → Optional Phase 2: Non-DOI-Citations → OpenAlex-search (Autor+Jahr+Titel)
+  → Persistiert in Store
+```
 
-API-Keys liegen in `~/.config/mojo/openrouter_key` und `~/.config/mojo/s2_api_key` (chmod 600).
+Jede Stufe ist idempotent. Failures pro Stufe werden im Item vermerkt
+(`extraction_notes`), nicht propagiert.
 
----
+### Persistenz-Entscheidung
 
-## 3. Heutige Arbeit (2026-04-15)
+**Empfehlung: SQLite** in `own_refs.db` neben `articles.db`. Begründung:
+- Additiv-inkrementell ist mit SQL trivial (UPSERT), mit JSON-Datei umständlich
+- Inverser Refs-Index (welche eigenen Pubs zitieren Ref X?) ist Query, nicht
+  Rebuild
+- Skaliert wenn die Quellen wachsen (heute 161 Items, kann 500+ werden)
+- Cache-Lookups auf DOI-Auflösung bleiben File-basiert (bestehende Konvention)
 
-### Validierte & committete Änderungen
+Schema-Vorschlag (indikativ, nicht final):
 
-1. **Opus-Summaries** (Commit `76afb4c`): Haiku-Summaries durch Opus ersetzt. Qualität signifikant besser (vollständigere key_terms, named_thinkers, cases_examples). Kosten einmalig ~$18. Backup der Haiku-Summaries in `summaries_haiku_backup.json`.
+```sql
+CREATE TABLE publications (
+  canonical_id TEXT PRIMARY KEY,
+  doi TEXT, title TEXT, year INTEGER, item_type TEXT, venue TEXT,
+  authors_json TEXT,                -- list as JSON
+  discourse_json TEXT,              -- multi-label list as JSON (aus discourse_classification.json)
+  fulltext_path TEXT, fulltext_chars INTEGER, fulltext_extracted_at TEXT,
+  refs_extracted_at TEXT, refs_header_label TEXT,
+  notes_json TEXT                   -- extraction_notes
+);
+CREATE TABLE source_refs (          -- many-to-one, Source-Provenienz
+  canonical_id TEXT, source_type TEXT, source_key TEXT, imported_at TEXT,
+  PRIMARY KEY (canonical_id, source_type, source_key)
+);
+CREATE TABLE pub_refs (             -- refs OUT of a publication
+  canonical_id TEXT, ref_doi TEXT, ref_oa_id TEXT, ref_year INTEGER,
+  PRIMARY KEY (canonical_id, ref_doi)
+);
+CREATE INDEX idx_pub_refs_oa ON pub_refs(ref_oa_id);   -- inverse queries
+```
 
-2. **Dark Mode Toggle** (im Commit `76afb4c`): Tag/Nacht-Umschalter in der Nav, CSS-Variablen für alle Themes, localStorage-Persistenz, System-Preference-Fallback.
+JSON-Export (`own_refs_index.json` analog zur HANDOVER-v1-Skizze) als
+optionales `--export`-Flag, falls Backtest- oder UI-Konsumenten das brauchen —
+nicht primärer Output.
 
-3. **Profile wiederhergestellt**: `profile.json` enthielt Testdaten (`"areas": "test"`), wurde mit echten Beheimatungen und englischen Triage-Topics neu gefüllt. (User hat das manuell noch verfeinert.)
+### CLI-Oberfläche
 
-4. **Projekte-Tab in Setup-UI** (Commit `68dff1a`): Neue Datenebene `projects.json` mit 5 aktiven Projekten (Cultural Resilience, MetaKuBi, AI4ArtsEd, ComeArts, DiäS-KuBi). UI mit CRUD-Operationen. Felder: key, name, status, funder, period, description, relevance_shifts, connected_publications.
+```
+mojo refs build [--source zotero:KEY] [--source folder:PATH] [--force-refresh]
+mojo refs status                              # counts, coverage, last ingest per source
+mojo refs sources add zotero KEY              # Persistente Quellen-Liste
+mojo refs sources add folder /pfad
+mojo refs sources list
+mojo refs export json --out /pfad/own_refs_index.json
+mojo refs report                              # Coverage pro Source × Jahr-Bucket
+```
 
-5. **Cache-Safety-Checks** (Commit `42900e8`): `agent.py` prüft Cache-Hit-Rate ab dem 2. Batch in `batch_screen()` (`CacheNotHitError` bei <50%). `cli.py cmd_digest()` prüft Kosten pro Artikel nach den ersten 3 Artikeln und bricht bei >$0.15/Artikel ab.
+Eingliederung in `journal_bot/cli.py` analog zu `mojo digest`, `mojo fetch`,
+`mojo scout`.
 
-### Rückgängig gemacht (Commit `37081ca` revert von `b7fc098`)
+### Akzeptanzkriterien
 
-**Prompt-Redesign mit Projekten**: Ein Versuch, `projects.json` als Block `ACTIVE RESEARCH PROJECTS` in den System-Prompt einzuspeisen und die Verdict-Kalibrierung umzuschreiben (von "concrete resource transfer" zu "Anregungspotenzial"). Im gezielten Einzeltest validiert (Ethics&Education → lesenswert mit candidate_reads), **aber vor Batch-Test revertiert** wegen Kosten-Vorfall.
+1. **Multi-Source**: nimmt Zotero-Collections UND PDF-Ordner aus
+   `profile.json`-Config oder via `--source`-Flag.
+2. **Idempotent**: zweiter Lauf ohne neue Quellen → **0 OpenAlex-Calls**
+   (alles aus Cache + persistiertem Index), 0 PDF-Re-Extraktionen.
+3. **Inkrementell**: dritter Lauf mit *einem* neuen PDF im Ordner → genau die
+   Refs dieses einen PDFs werden verarbeitet, der Rest aus Cache.
+4. **Robuste Refs-Extraktion**: PDFs ohne DOI in Refs (pre-2010er) müssen
+   *mindestens* erkannt und markiert werden; Phase-2-Auflösung über
+   Autor+Jahr+Titel-Match gegen OpenAlex ist optional, aber dann ohne Trade-off
+   bei späterem Re-Run.
+5. **Robuste Identitäts-Auflösung**: dasselbe Item aus Zotero (via DOI) und
+   aus einem User-Ordner (via Title-Hash) wird zu einer `canonical_id` mit
+   zwei `source_refs`-Einträgen, NICHT zu zwei Items.
+6. **`mojo refs report`**: zeigt Coverage-Bilanz pro Source × Jahr-Bucket
+   (analog zu `feedback_korpus_aufarbeitung.md`-Tabellen).
+7. **Tests in `tests/test_own_refs.py`** mindestens für:
+   - Folder-Ingest-Idempotenz
+   - Dedup über DOI bei Zotero+Folder mit demselben Item
+   - Re-Ingest nach Hinzufügen eines neuen PDFs in einen bekannten Folder
+   - Refs-Extraction-Round-Trip (kleines Test-PDF)
+8. **Open Source**: keine Heredoc-Analyse während des Baus. Alle Logik im
+   Modul.
+9. **Keine LLM-Calls in der gesamten Pipeline.** Wenn doch geplant — STOP,
+   falsches Modul.
 
-### Der $43-Vorfall
+### Smoke-Test
 
-Ich habe ein Test-Script (`test_new_prompt.py`, inzwischen gelöscht) geschrieben, das 100 Artikel durch den neuen Prompt laufen lassen sollte. Geplante Kosten: ~$1. Tatsächliche Kosten: $43, weil der Prompt-Cache nicht gegriffen hat. Jeder der 100 Calls hat die vollen ~28k System-Prompt-Tokens bezahlt.
+```bash
+mojo refs build --source zotero:QM7TZT44                          # erster Lauf
+mojo refs build --source zotero:QM7TZT44                          # 0 API-Calls
+mojo refs build --source zotero:QM7TZT44 --source folder:/tmp/new # +N PDFs
+mojo refs report
+```
 
-Mögliche Ursachen (nicht abschließend geklärt):
-- Cache-Key-Invalidierung durch parallele Calls zu schnell hintereinander
-- OpenRouter-seitiges Cache-Verhalten anders als erwartet
-- Prompt-Änderung gegenüber vorher gecachten Varianten
-
-Als Reaktion:
-- Prompt-Redesign revertiert
-- Safety-Checks eingebaut (siehe oben)
-- Mit 5-Artikel-Test über `cli.py digest` verifiziert dass die Produktions-Pipeline korrekt funktioniert ($0.018/Artikel, Cache-Hit sichtbar)
-
----
-
-## 4. Wo wir vor dem Vorfall standen: Projekt-Integration in die Suche
-
-Der eigentliche inhaltliche Strang, der unterbrochen wurde:
-
-### Problemanalyse aus 127 User-Overrides
-
-- **28 Upgrades** (Agent zu konservativ), v.a. in drei Clustern:
-  - Kulturelle Resilienz / Planetary (6): Artikel über ecological grief, Anthropozän, Futurability — Agent verpasst die strukturelle Verbindung weil "Resilienz" nicht im Text steht
-  - AI4ArtsEd / Generative AI (8): AI-Artikel mit Bezug zu Subjektivation/Macht/Kultur — Agent erkennt Projektbezug nicht
-  - Relationale Bildungstheorie (3): Posthumanismus, ensemble cognition — bildungstheoretische Brücke fehlt
-- **45 Downgrades** (Agent zu permissiv), v.a. bei AI & Society: "healthcare", "quantitativ", "Interview mit Praxisvertreter", "konfus", "Berufsbildung"
-
-### Erkannter Kern
-
-Der Agent kennt Benjamins **Publikationen** (über summaries.json), aber nicht:
-- Aktive Projekte (AI4ArtsEd, KuBiMeta, De-Stock DFG-Antrag)
-- Laufende theoretische Suchinteressen (Futurability, Affect, Rancière)
-- Journal-spezifische Relevanz-Logiken
-
-Benjamins Kernaussage: **Relevanz = Anregungspotenzial für Denken + Projekte**, NICHT "concrete resource transfer". Ein Artikel aus anderer Theorietradition zum selben Problemfeld ist POSITIV (produktive Reibung), nicht NEGATIV.
-
-### Bereits erledigt
-
-- `projects.json` als Datenstruktur mit 5 aktiven Projekten
-- Projekte-Tab in Setup-UI für CRUD
-- User hat die Inhalte verfeinert
-
-### Noch offen (vor dem $43-Crash als nächster Schritt geplant)
-
-1. **`projects.json` in den System-Prompt integrieren** (war in Commit `b7fc098`, revertiert):
-   - Funktion `_build_projects_block()` die `ACTIVE RESEARCH PROJECTS`-Sektion formatiert
-   - Einspeisung via `build_system_prompt()` in Screening UND Assessment
-   - Verdict-Kalibrierung umschreiben: "Anregungspotenzial" statt "concrete resource transfer"
-   - PROCEDURE um dritten Check erweitern: (a) Published work, (b) Active projects, (c) Discourse awareness
-   - **Diff liegt in Git-History**: `git show b7fc098`
-
-2. **Validierungs-Methodik**:
-   - Vor einem Batch-Run immer 2-3 Einzelcalls testen und Kosten verifizieren
-   - Gegen vorhandene Overrides validieren (würde der neue Prompt die 28 Upgrades korrekt hochstufen ohne die 45 Downgrades falsch zu labeln?)
-
-3. **Tier-Optimierung** (siehe Memory `feedback_kosten_differenzierung.md`):
-   - Aktuell 4.828 Artikel in Opus-Agent für $47
-   - Journals mit 0 lesenswert-Treffern auf 400+ Artikel könnten nach C-Tier — aber User hat berechtigt eingewandt, dass das Modelling-Problem journal-spezifisch ist, nicht ein Journal-Qualitätsproblem
-
-4. **Ongoing-Learning-Agent** (User-Anforderung): Ein separater Agent, der regelmäßig die User-Overrides analysiert, daraus Prompt-Meta-Regeln ableitet und die `relevance_shifts` der Projekte anpasst. "Wir brauchen gute Meta-Regeln für diesen Agent."
-
----
-
-## 5. Kritische Feedback-Regeln (aus Memory)
-
-Diese Regeln wurden im Laufe der Arbeit etabliert. Ein anderer Assistent sollte sie kennen:
-
-### Kommunikation & Arbeitsweise
-- **Keine Rückfragen wenn der nächste Schritt offensichtlich ist** — einfach machen
-- **Keine optimistischen Projektionen auf Basis von Einzeltests** — vor Batch-Runs ≥20 Testartikel
-- **Volle Journal-Namen im User-Output**, nicht die Shortcodes (ZfPaed → "Zeitschrift für Pädagogik")
-- **Deutsch im User-Output, Englisch im Code** (Variablen, Docstrings)
-
-### Kosten-Kontrolle
-- **NIEMALS Batch-API-Tests blind starten** — erst 2-3 Einzelcalls mit Kostenverifikation, dann erst Batch mit User-Bestätigung
-- **A/B/C-Tier-Strategie für Journals** — Opus ist zu teuer für alle
-
-### Fachliche Regeln
-- **Citation-Tracker: Vornamen-Initial prüfen** (nicht nur Nachnamen) — sonst False Positives bei Namesakes
-- **Scout: disziplinäre ≠ thematische Relevanz** — ZfPäd kann disziplinär zentral sein bei wenig thematischer Überlappung
-- **Trigger-Autoren** (Liste in `cli.py`): MacGilchrist, Jarke, Chun — Escalation unabhängig vom Tier. **NICHT**: Petar Jandrić (zu viel Output, zu wenig Trennschärfe)
-- **Obsidian-Output ist UX-Problem** — Output-Format perspektivisch neu denken
+Erwartete Coverage nach Lauf 1 (basierend auf Iter-11-Snapshot):
+161 Publikationen, 109 mit PDF, ≥275 unique OA-Refs (idealerweise mehr durch
+spätere Non-DOI-Resolution).
 
 ---
 
-## 6. Benjamins 5 disziplinäre Beheimatungen
+## §2 Was DANACH kommt (in dieser Reihenfolge — NICHT vor §1)
 
-Zentral für Scout-Evaluation und Prompt-Design:
-
-1. **Allgemeine Pädagogik / Bildungstheorie** — institutionelle Heimat (Lehrstuhl FAU)
-2. **Posthumanismus / STS / Resilienz** — Paradigmenwechsel zu relationaler Bildungstheorie
-3. **Medienbildung / Medienpädagogik** — Kernfeld
-4. **Pädagogische Medienforschung / Medienwissenschaft** — medienwissenschaftlich orientiert
-5. **Kulturwissenschaft / Ästhetik** — kulturelle und ästhetische Bildung
-
-Diese sind NICHT identisch mit den Diskursräumen in `settings.py`. Diskursräume sind journal-orientierte Cluster; Beheimatungen sind intellektuelle Positionierungen.
-
-Die Spannung zwischen thematischer Passung und disziplinärer Beheimatung ist SELBST informativ ("Positionalitäts-Report").
-
----
-
-## 7. Strategische Projektperspektiven
-
-### MOJO wird Open Source
-Workflows müssen als Scripts/Runbooks dokumentiert sein (nicht nur DEVLOG-Prosa), damit ein Agent *innerhalb* der Plattform die Tools autonom steuern kann.
-
-### UI-Anforderungen (3 Kernfunktionen)
-1. **Strukturierte Ablage** — Titel nach Diskursraum organisiert, nicht Markdown-Halde
-2. **1-Click-Zotero-Aufnahme** pro Titel (pyzotero, bereits im Projekt)
-3. **Dialogischer Research-Agent** — Rohtext/Stub → Retrieval aus dem Store. `transact-qda` als Referenzimplementierung
-
-### Missed-References-Detektor
-Die DB (17k Artikel + 160 Publikationen mit Bezügen) kann erkennen, wenn Benjamin in eigenen Textentwürfen einen relevanten Bezug übersieht.
+1. **Cascade-Andockung der bestehenden Veto-Up-Regel**: die Iter-11-Erkenntnis
+   (`f_own_coupling_union ≥ 1` → LES, +5.2 pp Recall) auf den **produktiven**
+   Refs-Index umstellen statt auf den Snapshot. Implementierung in
+   `journal_bot/signals.py` analog zur bestehenden Cascade-Logik.
+2. **Adversariale Set-Features in der Cascade** (siehe `mojo_2_volltext_sketch.md`
+   §2.3, korrigiert 2026-05-24):
+   - `scripts/build_adversarial_sets.py` — vorberechnete Set-Differenzen
+     (`cited_by_trigger \ cited_by_benjamin_per_year` etc.), wöchentlicher Cache
+   - `f_adv_*` Features in `signals.py`
+   - Validierung: treffen `f_adv_*` ≥ Schwelle die 35 wrong-LES überproportional?
+   - Wenn ja: Veto-Up/Veto-Down-Regeln in der Cascade
+3. **Bessere Refs-Extraktion bei schwierigen Layouts**: pdfplumber-Fallbacks,
+   OCR für gescannte Texte, bessere Header-Erkennung. Nicht spekulativ —
+   gezielt für die ~20 Publikationen, die heute „leer" rauskommen.
+4. **Non-DOI-Resolution gegen OpenAlex** (für die ~70 % der pre-2010er Refs
+   ohne DOI): Autor+Jahr+Titel-Levenshtein-Match gegen
+   `https://api.openalex.org/works?search=...`. Hat das Potenzial, die
+   `ref_frequency`-Wolke deutlich zu vergrößern.
+5. **Volltext-LLM als Eskalations-Slot** (NICHT Default!): für Articles, die
+   nach allen Cascade-Regeln (Vorfilter + own_coupling + adversarial veto) noch
+   in der Unklar-Zone sind. Höchstens ~5–10 % der Items, manuell oder
+   Wochen-Batch.
 
 ---
 
-## 8. Laufender Prozess-Status
+## §3 Was bereits existiert (Kontext — nicht erneut anfassen)
 
-- **Web-Server läuft** auf Port 5555 (PID 83806)
-- **Keine Triage-Prozesse** aktiv
-- **1.672 Artikel offen** (unverarbeitet in articles.db)
-- **Uncommittete Änderungen**:
-  - `profile.json` (User hat Triage-Topics verfeinert)
-  - `projects.json` (User hat Descriptions und relevance_shifts verfeinert)
-  - `journal_bot/web/templates/setup.html`, `base.html`, `summarize.py` (evtl. minor linter-changes)
-  - Untracked: `baseline_558_german_prompts.json`, `baseline_99_old_pipeline.json`, `output/`
+**Produktion (MOJO 1.x, stabil):**
+- `mojo digest`, `mojo fetch`, `mojo scout`, `mojo trends`, `mojo cache-report`
+- Opus 4.6 Assessment mit ~98 % Cache-Hit, $0.049/Artikel
+- 17.601 Artikel in `articles.db`, 15.929 Agent-verarbeitet
+
+**Backtest-Pipeline (vollständige Scripts in `scripts/`):**
+- Feature-Extraktion + Runner: `backtest_extract_features.py`, `backtest_run.py`,
+  `backtest_methods.py`
+- Iter 10 Trigger-Coupling: `iter10_pull_trigger_bibliographies.py`,
+  `iter10_build_trigger_network.py`, `iter10_add_trigger_features.py`
+- Iter 11 Own-Coupling (Snapshot, **nicht produktiv**):
+  `iter11_inventory_own_bibliography.py`, `iter11_extract_own_refs.py`,
+  `iter11_resolve_refs_to_openalex.py`, `iter11_add_own_coupling_features.py`
+
+**Backtest-Befund (Stand, nicht Endpunkt):**
+- M9_Cascade_TunedBase = 0.600 F1, plateauft seit Iter 7 auf reinen Metadaten
+- Hebel für die nächste Stufe = **bessere/wachsende Refs-Daten** und daraus
+  abgeleitete algorithmische Filter, nicht mehr LogReg-Features
+
+**Datenartefakte:**
+- `corpus.json` (4 MB, 74 Pubs ab 2018 mit Volltext, 160 `authored_all`)
+- `summaries.json` (53 Opus-Summaries als ~28k-Token-Suchindex)
+- `backtest_data/own_bibliography/inventory.json` (161 Items)
+- `backtest_data/own_bibliography/refs/*.json` (109 Refs-Extraktionen)
+- `backtest_data/own_bibliography/refs_resolved.json` (275 OA-IDs, **flach**)
+- `backtest_data/own_bibliography/discourse_classification.json` (V3-Patterns
+  + Multi-Label-Output für alle 161 Items — **patterns_per_discourse-Key
+  enthält die Regex-Patterns**, einlesbar ohne Re-Klassifikation)
+- `.enrichment_cache/iter11_oa_doi/` (318 gecachte DOI→OA-Resolutions,
+  wiederverwendbar)
+
+**Architektur-Plan:** `docs/mojo_2_volltext_sketch.md` (am 2026-05-24
+durchgängig korrigiert: §2.3 = adversariale Heuristiken als algorithmische
+Set-Operationen für Cascade; §4 = Volltext-LLM nur als Eskalation für
+≤10 % Restmenge; §5 = Coding-LLM nur als optionales Developer-Tool, nicht
+Auto-Deployment; §6 = Migrations-Pfad algorithmisch-zuerst; §7 + TL;DR
+entsprechend).
 
 ---
 
-## 9. Empfohlener nächster Schritt (wenn Arbeit fortgesetzt wird)
+## §4 Open-Source-Schulden (parallel oder später, NICHT vor §1)
 
-1. **Git-Diff des revertierten Commits prüfen**: `git show b7fc098`
-2. **Prompt-Änderungen selektiv wieder einführen**: `_build_projects_block()` und geänderte `ASSESSMENT_OUTRO` aus dem Diff übernehmen
-3. **Offline zuerst**: `python3 scripts/analyze_overrides.py` laufen lassen, um die 28 Upgrades / 45 Downgrades reproduzierbar zu sehen
-4. **Vor Batch-Lauf**: 2-3 Einzelartikel testen, Kosten verifizieren (Safety-Check im Code hilft jetzt)
-5. **Validierung gegen die 28 Upgrades**: hätte der neue Prompt sie alle als lesenswert erkannt? Wie viele False Positives auf den 45 Downgrades?
-5. **Erst bei Gelingen Batch-Lauf auf den 1.672 offenen Artikeln**
+Vier Analyseschritte aus der 2026-05-24-Session sind nur als Heredoc-Pipes
+gelaufen. Die Outputs liegen aber im Repo, die Daten sind voll reproduzierbar:
+
+| Output existiert | Script fehlt | Aufwand |
+|---|---|---|
+| `discourse_classification.json` mit Patterns | `scripts/iter11e_classify_discourses.py` | 5 Min (Patterns sind im JSON) |
+| `feedback_korpus_aufarbeitung.md` Tabellen | `scripts/iter11f_corpus_aufarbeitung_report.py` | trivial aus `inventory.json` + `refs/*.json` |
+| `feedback_ground_truth_qualitaet.md` Tabellen | `scripts/iter11g_ground_truth_diagnosis.py` | trivial aus `articles.db` + `features_gold.parquet` + `predictions_iter11_full.parquet` |
+| Veto-Up-Validierung im Sketch §2.1 | `scripts/iter11h_validate_veto_up.py` | trivial aus `features_gold.parquet` + `predictions_iter11_full.parquet` |
+
+Diese Schulden blockieren §1 NICHT. Sie sollten aber vor MOJO-2.0-Launch
+extrahiert werden, weil sonst die Validierungs-Pipeline nicht reproduzierbar
+ist.
 
 ---
 
-## 10. Bekannte Probleme / Offene Tickets
+## §5 Anti-Drift-Regeln (vor dem Start lesen)
 
-- **GitHub Issue #1**: Journal-Editor in Setup-UI (inzwischen teilweise gelöst — siehe Matrix-Tab mit "Journal hinzufügen")
-- **Output-Format** (Obsidian): muss neu gedacht werden
-- **Dialogischer Research-Agent**: noch nicht implementiert
+Diese Regeln existieren, weil frühere Sessions wiederholt vom algorithmischen
+Pfad in LLM-Visionen abgedriftet sind. Wenn eine dieser Bedingungen eintritt:
+**STOP**, lies §1 nochmal, korrigier den Kurs.
+
+1. **Volltext-LLM ist Eskalation, nicht Default.** Wer mehr als 10 % der Items
+   in einen LLM-Volltext-Call routet, hat die Architektur missverstanden.
+2. **„Adversariale Heuristiken" sind algorithmische Set-Operationen**
+   (z. B. `cand.refs ∩ (trigger_refs \ benjamin_refs)`), die als
+   Veto-Up/Veto-Down-Regeln in die Cascade gehen. Keine LLM-Prompts.
+3. **OpenAlex-Schema-Recherche ist nicht §1.** Die Resolution-Logik steht in
+   `scripts/iter11_resolve_refs_to_openalex.py` fertig. Porten, nicht neu
+   denken.
+4. **Backtest-Artefakte sind nicht §1.** Code gehört nach `journal_bot/`, nicht
+   `scripts/`. `benjamin_corpus.json` ist allenfalls `--export`-Nebenprodukt.
+5. **Single-Source ist halb fertig.** Multi-source (Zotero + N Folders) ist
+   konstitutiv für den Auftrag, nicht optional.
+6. **Kosten-Disziplin**: pdftotext = gratis, OpenAlex Polite-Pool = gratis.
+   Wenn $-Zeichen auftauchen, falscher Pfad.
 
 ---
 
-## 11. Nicht vergessen
+## §6 Konventionen (Verletzung = Rollback)
 
-- **API-Key liegt in `~/.config/mojo/openrouter_key`** (chmod 600). Der Key sollte beim Wechsel der Dev-Umgebung NICHT in Git landen.
-- **Zotero-Pfad**: `/Users/joerissen/FAUbox/Zotero` (nicht `~/Zotero`)
-- **Zotero-Collection**: "Benjamin's publications" (key QM7TZT44)
-- **Obsidian-Vault**: `/Users/joerissen/Documents/Obsidian Vault/research/mojo/` (falls Output-Format dort bleibt)
-- **`AGENTS.md` ist jetzt der kanonische Assistenten-Kontext** im Projekt-Root. `CLAUDE.md` bleibt als Kompatibilitäts-Spiegel erhalten.
+- **Alle Analytics = Scripts in `scripts/` oder Module in `journal_bot/`.**
+  Keine Heredoc-Pipes. Keine Einmal-Runs. MOJO ist Open Source.
+- **Kostenkontrolle**: NIEMALS Batch-API-Tests ohne vorherige Einzelkosten-
+  Verifikation. Erst 2–3 Calls → Kosten zeigen → Bestätigung → Batch.
+- **Sprachregeln**: Deutsch im User-Output, Englisch im Code.
+- **Volle Journal-Namen** im User-Output, nicht Shortcodes.
+- **Pfade**: Zotero unter `/Users/joerissen/FAUbox/Zotero`, Collection
+  „Benjamin's publications" (key `QM7TZT44`).
+- **Trigger-Autoren**: MacGilchrist, Jarke, Chun (Wendy Hui Kyong Chun).
+  Petar Jandrić explizit NICHT.
+- **Keine Rückfragen** wenn der nächste Schritt offensichtlich ist. §1 ist
+  offensichtlich.
+
+---
+
+## §7 Empfohlene erste Aktion in der neuen Session
+
+1. Parallel lesen:
+   - `journal_bot/corpus.py` (heutige Zotero-Anbindung)
+   - `scripts/iter11_extract_own_refs.py` (Refs-Extraktions-Logik)
+   - `scripts/iter11_resolve_refs_to_openalex.py` (DOI→OA-Cache-Pattern)
+2. Skizze des Schemas (SQLite-Tabellen) + CLI-Interface vorlegen
+3. **Erst nach Bestätigung Code schreiben**
+
+Wenn du anfängst, mehr als 3 Memory-Files zu lesen, driftest du wahrscheinlich.
+Die drei für §1 relevanten:
+- `docs/context/feedback_mojo2_reframe_algorithmic.md`
+- `docs/context/feedback_volltext_pflicht.md`
+- `docs/context/feedback_keine_rueckfragen.md`
+
+---
+
+## §8 Querverweise
+
+- `docs/mojo_2_volltext_sketch.md` — MOJO-2.0-Architektur, §2.3 korrigiert
+- `docs/backtest_iteration_log.md` — Iter 1–11 Chronik (Stand, nicht Endpunkt)
+- `docs/context/MEMORY.md` — Index aller Memory-Files
+- `docs/context/feedback_ground_truth_qualitaet.md` — 35 wrong-LES, Hard-Cases
+- `docs/context/feedback_korpus_aufarbeitung.md` — Korpus-Bilanz (161 Items)
+- `docs/context/project_adversarial_blindspot_heuristics.md` — Adversariale
+  Set-Features als Cascade-Erweiterung
+- `journal_bot/corpus.py` — heutige Single-Source-Pipeline (Ausgangsbasis §1)
+- `ARCHITECTURE.md` — Systemarchitektur MOJO 1.x
+- `CLAUDE.md` / `AGENTS.md` — Coding-Assistent-Briefing

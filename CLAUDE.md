@@ -2,7 +2,7 @@
 
 Dieses Dokument gilt für jeden Coding-Assistenten, der an MOJO arbeitet (Claude Code, GPT Codex, Cursor, Continue, etc.). `CLAUDE.md` enthält identischen Inhalt und bleibt für Kompatibilität erhalten.
 
-**Neue Assistenten sollten zuerst `HANDOVER.md` lesen** — darin steht der aktuelle Arbeitsstand und die letzten Entscheidungen.
+**Neue Assistenten sollten zuerst `docs/mojo_2_grundorientierung.md` lesen** — das dauerhafte Orientierungsdokument für MOJO 2.0 (Plattform, Backtest-Stand, 2.0-Konturen, 1.x-Erhalt). Danach `HANDOVER.md` für den aktuellen Schritt.
 
 **Arbeitskontext / Memory:** `docs/context/MEMORY.md` ist der Index über die aufgebauten Memory-Files (User-Profil, Feedback, Projekt-Entscheidungen). Bei Session-Start als Index lesen, relevante Files bei Bedarf nachladen.
 
@@ -82,6 +82,7 @@ MacGilchrist, Jarke, Chun (Wendy Hui Kyong Chun)
 - Vollständige Journal-Watchlist: `docs/journal_watchlist_full.md`
 
 ## Weiterführende Dokumentation
+- `docs/mojo_2_grundorientierung.md` — **Pflicht-Vorlektüre** für MOJO 2.0: Plattform-Beschreibung, Backtest-Stand, 2.0-Konturen, 1.x-Erhalt-Festlegung, Anti-Drift
 - `HANDOVER.md` — Aktueller Arbeitsstand, offene Themen, $43-Vorfall-Kontext
 - `README.md` — Installations- und Nutzungsanleitung
 - `ARCHITECTURE.md` — Detaillierte Architektur

@@ -16,9 +16,17 @@ profile.md
 .enrichment_cache/
 .backfill_cache/
 .openalex_cache/
+.own_refs_cache/
 journal_profiles.json
 .agent_context.json
 .agent_context.txt
+
+# MOJO 2.0 Refs-Pipeline (lokale DB + Cache + Snapshot-Daten)
+own_refs.db
+own_refs_corpus_freq.json
+backtest_data/
+output/own_refs_index.json
+output/*.md
 
 # Digest-Run-Logs (lokales Lauf-Tracking, kein Repo-Inhalt)
 output/digest_*.log
