@@ -65,6 +65,7 @@ def main() -> int:
             abstract=article.abstract,
             openalex_abstract=article.openalex_abstract,
             crossref_refs=article.crossref_refs,
+            openalex_refs=article.openalex_refs,
             entry=source_entry,
             signal_resources=signal_resources,
         )

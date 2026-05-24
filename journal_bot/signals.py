@@ -19,14 +19,30 @@ from pathlib import Path
 from typing import Any
 
 from journal_bot.citation_tracker import find_citations, CitationHit, load_authored_all
+from journal_bot.own_refs.corpus_freq import CorpusFreq, load_or_compute_corpus_freq
+from journal_bot.own_refs.index import OwnRefsIndex, load_own_refs_index
 from journal_bot.settings import CORPUS_JSON, SUMMARIES_JSON, PROJECT_ROOT
 
 
 ZOTERO_LIBRARY_JSON = PROJECT_ROOT / "zotero_library.json"
 PROJECTS_JSON = PROJECT_ROOT / "projects.json"
+OWN_REFS_DB = PROJECT_ROOT / "own_refs.db"
+ARTICLES_DB = PROJECT_ROOT / "articles.db"
+
+# IDF-Score-Schwellen für die Bibliographic-Coupling-Veto-Regel (§2.1b).
+# Kalibriert gegen Live-Verteilung in articles.db (18 212 Artikel, Stand
+# 2026-05-24):
+#   - Score ≥ 0.6 → LES/IGN-Trefferquote 10× (schwacher Indikator)
+#   - Score ≥ 1.5 → LES/IGN-Trefferquote 38× (starker Indikator)
+# Bestseller-Refs (z. B. 10.1080/00131857.2018.1454000, 249× im Korpus)
+# haben IDF ≈ 0.18; ein einzelner solcher Treffer reicht NICHT für die
+# weak-Schwelle, exakt was Benjamin als Anforderung gestellt hatte.
+OWN_COUPLING_WEAK_SCORE = 0.60
+OWN_COUPLING_STRONG_SCORE = 1.50
 TRIGGER_AUTHORS = ("macgilchrist", "jarke", "wendy chun", "wendy hui kyong")
 SELECTION_MODES = {
-    "none", "screening", "similarity", "complementarity", "citation", "trigger", "mixed",
+    "none", "screening", "similarity", "complementarity",
+    "citation", "own_coupling", "trigger", "mixed",
 }
 DISCOURSE_INDICATORS = {
     "kein_indikator", "schwacher_indikator", "starker_indikator",
@@ -404,10 +420,24 @@ class SignalProfile:
     cites_researcher: list[dict] = field(default_factory=list)
     zotero_overlap: list[str] = field(default_factory=list)  # matched Zotero titles
     keyword_hits: list[str] = field(default_factory=list)
+    own_coupling: dict[str, Any] = field(default_factory=dict)
+    # own_coupling-Schema (siehe signal_own_coupling):
+    #   {"oa_hits": list[str], "doi_hits": list[str], "n_union": int}
+    # Leer wenn own_refs.db fehlt, der Article keine Refs hat, oder kein Treffer.
 
     @property
     def has_any_signal(self) -> bool:
-        return bool(self.cites_researcher or self.zotero_overlap or self.keyword_hits)
+        # Coupling-Signal nur dann zählen, wenn der IDF-Score über der WEAK-
+        # Schwelle liegt — Bestseller-Einzelhits sind kein Signal (§2.1b).
+        # Schwellen-Konstante ist hier per Default eingebaut, um zirkuläre
+        # Imports zu vermeiden; Aufrufer können _has_coupling_signal() explizit
+        # mit anderer Schwelle aufrufen.
+        return bool(
+            self.cites_researcher
+            or self.zotero_overlap
+            or self.keyword_hits
+            or self._has_coupling_signal()
+        )
 
     @property
     def signal_count(self) -> int:
@@ -415,7 +445,42 @@ class SignalProfile:
             bool(self.cites_researcher),
             bool(self.zotero_overlap),
             bool(self.keyword_hits),
+            bool(self._has_coupling_signal()),
         ])
+
+    def _has_coupling_signal(self, weak_threshold: float = 0.60) -> bool:
+        """True wenn der IDF-Coupling-Score die WEAK-Schwelle überschreitet.
+
+        Die Konstante 0.60 spiegelt OWN_COUPLING_WEAK_SCORE (Modul-Level);
+        sie ist hier hart kodiert, um Import-Zyklen mit Modul-Konstanten zu
+        vermeiden. Wenn die Modul-Schwelle sich ändert, sollte sie hier
+        nachgezogen werden — Tests in test_signals_own_coupling decken den
+        Drift ab.
+        """
+        return self.f_own_coupling_score >= weak_threshold
+
+    @property
+    def f_own_coupling_union(self) -> int:
+        """Roher Treffer-Count, primär für Diagnostik.
+
+        Iter-11-Feature: max(|article_oa ∩ benjamin_oa|, |article_doi ∩ benjamin_doi|).
+        Wird NICHT mehr direkt für die Cascade-Veto-Regel benutzt — der
+        IDF-gewichtete Score (`f_own_coupling_score`) entscheidet, weil ein
+        einzelner Treffer auf ein Standardwerk kein Signal ist.
+        """
+        return int(self.own_coupling.get("n_union", 0) or 0)
+
+    @property
+    def f_own_coupling_score(self) -> float:
+        """IDF-gewichteter Coupling-Score (§2.1b).
+
+        Score = max(sum_oa(idf(hit)), sum_doi(idf(hit))). Spezifische
+        Refs zählen schwer (idf ~1.4), Bestseller leicht (idf ~0.2). Treibt
+        die Drei-Stufen-Veto-Regel:
+            score ≥ OWN_COUPLING_STRONG_SCORE → starker_indikator
+            score ≥ OWN_COUPLING_WEAK_SCORE   → schwacher_indikator
+        """
+        return float(self.own_coupling.get("score", 0.0) or 0.0)
 
     @property
     def summary(self) -> str:
@@ -428,6 +493,13 @@ class SignalProfile:
             parts.append(f"zotero({n}: {sample})")
         if self.keyword_hits:
             parts.append(f"keywords({','.join(self.keyword_hits[:5])})")
+        if self.f_own_coupling_union:
+            oa_hits = self.own_coupling.get("oa_hits") or []
+            doi_hits = self.own_coupling.get("doi_hits") or []
+            parts.append(
+                f"own_coupling(union={self.f_own_coupling_union}, "
+                f"oa={len(oa_hits)}, doi={len(doi_hits)})"
+            )
         return " | ".join(parts) if parts else "(no signals)"
 
     def to_dict(self) -> dict:
@@ -546,7 +618,115 @@ def signal_keyword_hits(
     return [t for t in sorted(key_terms) if t in title_lower]
 
 
+def _normalize_oa_id(s: str | None) -> str:
+    """https://openalex.org/Wxxxx → Wxxxx (Iter-11-Konvention)."""
+    if not s:
+        return ""
+    return str(s).rsplit("/", 1)[-1].strip()
+
+
+def _normalize_doi_local(s: str | None) -> str:
+    """Lowercase, Präfixe entfernt — synchron zu own_refs/index._normalize_doi."""
+    if not s:
+        return ""
+    raw = str(s).strip().lower()
+    for prefix in ("https://doi.org/", "http://doi.org/", "doi:"):
+        if raw.startswith(prefix):
+            raw = raw[len(prefix):]
+            break
+    return raw.rstrip(".")
+
+
+def signal_own_coupling(
+    crossref_refs: list[dict] | None,
+    openalex_refs: list[str] | None,
+    own_refs_index: OwnRefsIndex | None,
+    corpus_freq: CorpusFreq | None = None,
+) -> dict[str, Any]:
+    """Signal d: Bibliographic Coupling gegen Benjamins Refs-Wolke (IDF-gewichtet).
+
+    Hintergrund (Benjamin 2026-05-24): ein ungewichteter Binär-Treffer ist
+    keine Intelligenz, sondern eine primitive Suchfunktion. Standardwerke
+    wie `10.1080/00131857.2018.1454000` (249× im Korpus) erzeugen sonst Rauschen.
+    Lösung: IDF-Gewichtung — spezifische Treffer wiegen schwer, generische leicht.
+
+    Berechnung:
+      oa_hits  = article.openalex_refs ∩ own_refs_index.oa_ids
+      doi_hits = article.crossref_refs[].doi ∩ own_refs_index.dois
+      oa_score  = sum(1/log(1+global_count(h))) over oa_hits
+      doi_score = sum(1/log(1+global_count(h))) over doi_hits
+      score     = max(oa_score, doi_score)    # konservativ wie n_union
+
+    Wenn `corpus_freq=None`, wird jeder Treffer mit dem Default-Gewicht 1/log(2)
+    ≈ 1.44 gezählt (Iter-11-Verhalten, primitiv). Für die Cascade-Veto-Regel
+    sollte immer `corpus_freq` mitgegeben werden — `load_signal_resources()`
+    lädt es automatisch.
+
+    Returns:
+        Dict mit `oa_hits`, `doi_hits` (sorted lists), `n_union` (int, alt),
+        `score` (float, IDF-gewichtet). Bei leerem Index oder Null-Schnitt:
+        leeres Dict.
+    """
+    if own_refs_index is None or own_refs_index.is_empty:
+        return {}
+
+    # Article-OA-Refs intersecten
+    oa_hits: list[str] = []
+    if openalex_refs:
+        normalized = {_normalize_oa_id(x) for x in openalex_refs if x}
+        normalized.discard("")
+        oa_hits = sorted(normalized & own_refs_index.oa_ids)
+
+    # Article-DOI-Refs aus crossref_refs intersecten
+    doi_hits: list[str] = []
+    if crossref_refs:
+        article_dois: set[str] = set()
+        for ref in crossref_refs:
+            if not isinstance(ref, dict):
+                continue
+            d = _normalize_doi_local(ref.get("doi"))
+            if d.startswith("10."):
+                article_dois.add(d)
+        doi_hits = sorted(article_dois & own_refs_index.dois)
+
+    if not oa_hits and not doi_hits:
+        return {}
+
+    n_union = max(len(oa_hits), len(doi_hits))
+
+    # IDF-gewichteter Score
+    if corpus_freq is not None and not corpus_freq.is_empty:
+        oa_score = sum(corpus_freq.idf_weight_oa(h) for h in oa_hits)
+        doi_score = sum(corpus_freq.idf_weight_doi(h) for h in doi_hits)
+    else:
+        # Fallback: jedes Hit mit dem Default-Gewicht (für Tests ohne Freq-Index)
+        default_w = 1.0 / __import__("math").log(2.0)
+        oa_score = default_w * len(oa_hits)
+        doi_score = default_w * len(doi_hits)
+
+    score = max(oa_score, doi_score)
+    return {
+        "oa_hits": oa_hits,
+        "doi_hits": doi_hits,
+        "n_union": n_union,
+        "score": round(score, 4),
+    }
+
+
 # --------------------------------------------------------- Composite Score --
+
+
+def _coerce_refs_list(value: str | list | None) -> list:
+    """JSON-String oder Liste → Liste, sonst []."""
+    if isinstance(value, str) and value:
+        try:
+            parsed = json.loads(value)
+            return parsed if isinstance(parsed, list) else []
+        except json.JSONDecodeError:
+            return []
+    if isinstance(value, list):
+        return value
+    return []
 
 
 def compute_signals(
@@ -554,20 +734,24 @@ def compute_signals(
     title: str,
     crossref_refs_json: str | list | None,
     *,
+    openalex_refs_json: str | list | None = None,
     authored_all: list[dict] | None = None,
     key_terms: set[str] | None = None,
     zotero_doi_index: dict[str, ZoteroItem] | None = None,
     zotero_word_index: dict[str, list[ZoteroItem]] | None = None,
+    own_refs_index: OwnRefsIndex | None = None,
+    corpus_freq: CorpusFreq | None = None,
 ) -> SignalProfile:
-    """Compute all deterministic signals for one article."""
-    refs: list[dict] = []
-    if isinstance(crossref_refs_json, str) and crossref_refs_json:
-        try:
-            refs = json.loads(crossref_refs_json)
-        except json.JSONDecodeError:
-            pass
-    elif isinstance(crossref_refs_json, list):
-        refs = crossref_refs_json
+    """Compute all deterministic signals for one article.
+
+    `openalex_refs_json`, `own_refs_index` und `corpus_freq` sind optional —
+    fehlt eines davon, bleibt `own_coupling` leer oder ungewichtet. Das hält
+    ältere Aufrufer (Smoke-Tests, Backtest-Replay) kompatibel.
+    """
+    refs = _coerce_refs_list(crossref_refs_json)
+    oa_refs = _coerce_refs_list(openalex_refs_json)
+    # `openalex_refs` ist eine flache Liste von Work-IDs (Strings).
+    oa_ref_strings = [x for x in oa_refs if isinstance(x, str)]
 
     return SignalProfile(
         article_id=article_id,
@@ -576,6 +760,9 @@ def compute_signals(
             refs, zotero_doi_index, zotero_word_index,
         ),
         keyword_hits=signal_keyword_hits(title, key_terms),
+        own_coupling=signal_own_coupling(
+            refs, oa_ref_strings, own_refs_index, corpus_freq,
+        ),
     )
 
 
@@ -667,6 +854,12 @@ def _infer_selection_mode(
         return "citation"
     if trigger_author_hit:
         return "trigger"
+    # Iter-11-Veto-Up, IDF-gewichtet (§2.1b): Bibliographic Coupling gegen
+    # Benjamins Refs-Wolke. Nur wenn der Score über der WEAK-Schwelle liegt
+    # — ein einzelner Bestseller-Treffer reicht NICHT (das war der primitive
+    # Pre-§2.1b-Stand). Schwächer als citation/trigger, stärker als project.
+    if signal_profile.f_own_coupling_score >= OWN_COUPLING_WEAK_SCORE:
+        return "own_coupling"
     if project_hits and bezuege and discourse_indicator != "kein_indikator":
         return "mixed"
     if project_hits and discourse_indicator != "kein_indikator":
@@ -690,8 +883,22 @@ def _infer_discourse_indicator(
         return explicit
     if verdict in {"pflichtlektuere", "lesenswert"}:
         return "starker_indikator"
+    # Iter-11-Veto-Up, IDF-gewichtete Drei-Stufen-Regel (§2.1b):
+    #   score ≥ OWN_COUPLING_STRONG_SCORE (1.50) → starker_indikator
+    #       (LES/IGN-Trefferquote 38× — sehr verlässlich; Bestseller-Hits
+    #        addieren sich kaum auf diese Höhe)
+    #   score ≥ OWN_COUPLING_WEAK_SCORE   (0.60) → schwacher_indikator
+    #       (LES/IGN-Trefferquote 10×)
+    # Ein einzelner Bestseller-Treffer (Score ~0.18-0.30) bleibt unter beiden
+    # Schwellen — genau das Verhalten, das Benjamin als primitive Suchfunktion
+    # rausoperiert haben wollte.
+    score = signal_profile.f_own_coupling_score
+    if score >= OWN_COUPLING_STRONG_SCORE:
+        return "starker_indikator"
     if verdict == "scannen" and project_hits and (bemerkenswert or signal_profile.signal_count > 0):
         return "starker_indikator"
+    if score >= OWN_COUPLING_WEAK_SCORE:
+        return "schwacher_indikator"
     if verdict == "scannen" and project_hits:
         return "schwacher_indikator"
     if verdict == "ignorieren" and project_hits and (bemerkenswert or signal_profile.signal_count > 1):
@@ -930,16 +1137,24 @@ def derive_attention_profile(
     abstract: str = "",
     openalex_abstract: str = "",
     crossref_refs: list[dict] | None = None,
+    openalex_refs: list[str] | None = None,
     entry: dict[str, Any] | None = None,
     signal_resources: dict[str, Any] | None = None,
 ) -> AttentionProfile:
-    """Derive attention metadata from existing article + agent data."""
+    """Derive attention metadata from existing article + agent data.
+
+    `openalex_refs` (flache Liste von Work-ID-Strings aus
+    `articles.openalex_refs`) wird für die Iter-11-Bibliographic-Coupling-
+    Veto-Up-Regel benötigt. Aufrufer ohne diesen Wert (z. B. ältere Pfade
+    oder Tests) lassen ihn weg — `own_coupling` bleibt dann leer.
+    """
     entry = entry or {}
     signal_resources = signal_resources or load_signal_resources()
     signal_profile = compute_signals(
         article_id,
         title,
         crossref_refs or [],
+        openalex_refs_json=openalex_refs or [],
         **signal_resources,
     )
 
@@ -1014,12 +1229,24 @@ def load_signal_resources(
     summaries_path: Path = SUMMARIES_JSON,
     corpus_path: Path = CORPUS_JSON,
     zotero_path: Path = ZOTERO_LIBRARY_JSON,
+    own_refs_db: Path = OWN_REFS_DB,
+    articles_db: Path = ARTICLES_DB,
 ) -> dict[str, Any]:
-    """Pre-load all resources needed for batch signal computation."""
+    """Pre-load all resources needed for batch signal computation.
+
+    `own_refs_index` ist die Refs-Wolke aus `own_refs.db` (Iter-11-Coupling).
+    `corpus_freq` ist die globale Häufigkeit der Refs in `articles.db`
+    (IDF-Gewichtung gegen Bestseller-Rauschen, §2.1b). Beide werden lazy
+    geladen; fehlen sie, läuft die Pipeline graceful weiter.
+    """
     zotero_lib = load_zotero_library(zotero_path)
+    own_refs_index = load_own_refs_index(own_refs_db)
+    corpus_freq = load_or_compute_corpus_freq(articles_db, own_refs_index)
     return {
         "authored_all": load_authored_all(corpus_path),
         "key_terms": load_key_terms(summaries_path),
         "zotero_doi_index": _build_zotero_doi_index(zotero_lib),
         "zotero_word_index": _build_zotero_word_index(zotero_lib),
+        "own_refs_index": own_refs_index,
+        "corpus_freq": corpus_freq,
     }

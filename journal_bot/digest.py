@@ -105,6 +105,7 @@ def process_article(
             abstract=sa.abstract,
             openalex_abstract=sa.openalex_abstract,
             crossref_refs=sa.crossref_refs,
+            openalex_refs=sa.openalex_refs,
             entry=entry,
             signal_resources=signal_resources,
         )
