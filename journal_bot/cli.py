@@ -739,6 +739,134 @@ def cmd_refs(args: argparse.Namespace) -> int:
     return 2
 
 
+def cmd_escalate(args: argparse.Namespace) -> int:
+    """`mojo escalate ...` — Volltext-LLM-Eskalations-Slot (§2.5).
+
+    NICHT Default. Für Items, die nach allen Cascade-Regeln (Vorfilter +
+    own_coupling + adversarial veto) noch unklar sind und für die ein
+    Volltext-Check sinnvoll wäre. Höchstens ~5–10 % der Items.
+
+    Sub-Actions:
+      - select: Liste Kandidaten aus articles.db (sortiert nach PrioScore)
+      - fetch:  Volltext für einen Artikel beschaffen (OA → Unpaywall → Crossref)
+    """
+    import json as _json
+    from journal_bot.escalation import (
+        fetch_fulltext_for_article, select_candidates,
+    )
+    from journal_bot.escalation.select import summarize_pool
+
+    action = getattr(args, "action", None)
+    articles_db_path = (
+        Path(args.articles_db) if getattr(args, "articles_db", "") else
+        Path(__file__).resolve().parent.parent / "articles.db"
+    )
+
+    if action == "select":
+        if not articles_db_path.exists():
+            print(f"FEHLER: articles.db fehlt: {articles_db_path}")
+            return 2
+        journals = (
+            [j.strip() for j in args.journal.split(",") if j.strip()]
+            if args.journal else None
+        )
+        cands = select_candidates(
+            articles_db=articles_db_path,
+            limit=args.limit if args.limit > 0 else None,
+            min_prio_score=args.min_prio,
+            journals=journals,
+            only_wrong_les=args.only_wrong_les,
+        )
+        if args.json:
+            payload = [
+                {
+                    "article_id": c.article_id,
+                    "journal_short": c.journal_short,
+                    "title": c.title,
+                    "year": c.year,
+                    "doi": c.doi,
+                    "openalex_id": c.openalex_id,
+                    "agent_verdict": c.agent_verdict,
+                    "user_verdict": c.user_verdict,
+                    "selection_mode": c.selection_mode,
+                    "discourse_indicator": c.discourse_indicator,
+                    "own_coupling_score": c.own_coupling_score,
+                    "adversarial_score": c.adversarial_score,
+                    "prio_score": c.prio_score,
+                    "reason": c.reason,
+                }
+                for c in cands
+            ]
+            print(_json.dumps(payload, ensure_ascii=False, indent=2))
+            return 0
+
+        summary = summarize_pool(cands)
+        print("=== Eskalations-Kandidaten (Unklar-Zone) ===")
+        print(f"  Gesamt:               {summary['n_total']}")
+        print(f"  mit own_coupling:     {summary['n_with_own_coupling']}")
+        print(f"  mit adversarial:      {summary['n_with_adversarial']}")
+        print(f"  wrong-LES:            {summary['n_wrong_les']}")
+        print(f"  PrioScore p50/max:    {summary['prio_score_p50']:.2f} / {summary['prio_score_max']:.2f}")
+        print()
+        print(f"  Pro Modus:     {summary['by_mode']}")
+        print(f"  Pro Verdict:   {summary['by_verdict']}")
+        print(f"  Pro Indikator: {summary['by_indicator']}")
+        print(f"  Top-Journals:  {summary['by_journal_top10']}")
+        print()
+        if cands:
+            print("=== Top-Kandidaten ===")
+            for c in cands[:20]:
+                print(
+                    f"  [prio={c.prio_score:>5.2f}]  {c.article_id[:24]}  "
+                    f"{c.journal_short:<10}  {(c.title or '')[:60]!r}"
+                )
+                print(f"    {c.reason}")
+        return 0
+
+    if action == "fetch":
+        if not articles_db_path.exists():
+            print(f"FEHLER: articles.db fehlt: {articles_db_path}")
+            return 2
+        # Article-Metadaten ziehen
+        import sqlite3
+        con = sqlite3.connect(f"file:{articles_db_path}?mode=ro", uri=True)
+        con.row_factory = sqlite3.Row
+        try:
+            row = con.execute(
+                "SELECT id, title, doi, openalex_id FROM articles WHERE id = ?",
+                (args.article_id,),
+            ).fetchone()
+        finally:
+            con.close()
+        if row is None:
+            print(f"FEHLER: Artikel nicht in articles.db: {args.article_id}")
+            return 2
+        print(f"Artikel: {row['title'][:80]!r}")
+        print(f"  DOI: {row['doi']}")
+        print(f"  OA-ID: {row['openalex_id']}")
+        result = fetch_fulltext_for_article(
+            article_id=row["id"],
+            openalex_id=row["openalex_id"],
+            doi=row["doi"],
+            verbose=True,
+        )
+        print()
+        print("=== Fetch-Ergebnis ===")
+        print(f"  Status:       {result.status}")
+        print(f"  Quelle:       {result.source}")
+        print(f"  PDF-URL:      {result.pdf_url}")
+        print(f"  PDF-Pfad:     {result.pdf_path}")
+        print(f"  Text-Pfad:    {result.txt_path}")
+        print(f"  Text-Zeichen: {result.fulltext_chars:,}")
+        print(f"  Cache-Hit:    {result.cache_hit}")
+        if result.notes:
+            print(f"  Notes:        {result.notes}")
+        return 0 if result.status in ("ok", "cache_hit") else 1
+
+    print("FEHLER: kein action angegeben für 'escalate'")
+    return 2
+
+
 def cmd_cache_report(args: argparse.Namespace) -> int:
     """Historische Cache-Hit-Rate aus llm_calls.
 
@@ -1013,6 +1141,38 @@ def main(argv: list[str] | None = None) -> int:
         help="Refs-Extraktion gegen ein konkretes PDF zeigen (manueller Smoke-Test)",
     )
     p_rv.add_argument("pdf", help="Pfad zu einer PDF-Datei")
+
+    # --- mojo escalate (MOJO 2.0 §2.5 — Volltext-LLM-Eskalations-Slot) ---
+    p_esc = sub.add_parser(
+        "escalate",
+        help="Unklar-Zone-Kandidaten auswählen und Volltext beschaffen "
+             "(NICHT Default — Eskalation für ≤10 % der Items)",
+    )
+    p_esc.set_defaults(func=cmd_escalate)
+    esc_sub = p_esc.add_subparsers(dest="action", required=True)
+
+    p_esc_sel = esc_sub.add_parser(
+        "select", help="Kandidaten aus articles.db listen, nach PrioScore sortiert",
+    )
+    p_esc_sel.add_argument("--limit", type=int, default=50,
+                           help="Max. Anzahl Kandidaten (Default 50, None = alle)")
+    p_esc_sel.add_argument("--min-prio", type=float, default=0.0,
+                           help="Untergrenze PrioScore (Default 0.0)")
+    p_esc_sel.add_argument("--journal", default="",
+                           help="Nur dieses Journal (Kürzel, mehrere komma-separiert)")
+    p_esc_sel.add_argument("--only-wrong-les", action="store_true",
+                           help="Nur user_verdict='lesenswert' ∧ agent_verdict!='lesenswert'")
+    p_esc_sel.add_argument("--articles-db", default="",
+                           help="Alternativer articles.db-Pfad")
+    p_esc_sel.add_argument("--json", action="store_true",
+                           help="JSON-Output statt Tabelle (für Skripte)")
+
+    p_esc_fetch = esc_sub.add_parser(
+        "fetch", help="Volltext für einen Artikel beschaffen (OA → Unpaywall → Crossref)",
+    )
+    p_esc_fetch.add_argument("article_id", help="Artikel-ID aus articles.db")
+    p_esc_fetch.add_argument("--articles-db", default="",
+                             help="Alternativer articles.db-Pfad")
 
     p_backfill = sub.add_parser("backfill",
                                 help="Fehlende Abstracts nachziehen (Crossref/Playwright/Zotero)")
