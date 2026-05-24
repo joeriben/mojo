@@ -1,3 +1,35 @@
+# MOJO — Handover (2026-05-25)
+
+## §2 erledigt — Stand 2026-05-25
+
+Die §2-Reihenfolge (1–5) ist abgearbeitet:
+
+| § | Aufgabe | Commit | Wirkung |
+|---|---------|--------|---------|
+| 2.1 | Cascade-Andockung Veto-Up (own_coupling) | `437d584` | Veto-Up auf produktivem Index statt Snapshot |
+| 2.1b | IDF-gewichtete 3-Stufen-Schwellen | (in 2.1) | Bestseller-Rauschen weg, LES/IGN-Ratio 13.7× WEAK / 63× STRONG |
+| 2.2 | Adversarial-Blind-Spot-Signal | `adf7600` | `trigger_refs \ benjamin_refs`, IDF-Score, 53 STRONG-Lifts |
+| 2.3 | Refs-Extraktion (Sammelband + TOC-Filter) | `50e7032` | refs 4061 → 6244 (+54%); +4 pubs_with_refs |
+| 2.4 | Non-DOI-Resolution gegen OpenAlex | `277d4bd` | unique OA-IDs 269 → 537 (fast 2×); 484 text-refs aufgelöst |
+| 2.5 | Volltext-LLM-Eskalations-Slot | `f117caa` | `mojo escalate select/fetch` Infrastruktur fertig; LLM-Wrapper bleibt Stub (Cost-Control) |
+
+Zustand `own_refs.db`:
+- 161 publications, 78 mit refs
+- 6244 pub_refs total, 286 doi_resolved + 484 text_resolved
+- 537 unique OA-IDs in der Refs-Wolke, 480 unique DOIs
+
+§2.5-Status: Selection-Logik (live-berechneter PrioScore aus own_coupling
++ adversarial) und Volltext-Fetch (OpenAlex → Unpaywall → Crossref →
+pdftotext) laufen. Der eigentliche LLM-Call auf den Volltext ist NICHT
+gebaut — er kostet geschätzt ~$0.70/Call (Opus 4.6 auf ~25k Zeichen
+Volltext), ein Vollbatch der ~440 Cascade-Lift-Kandidaten wären ~$300
+und braucht eine separate Kostenverifikations-Session.
+
+Tests: 137 grün (22 own_refs, 14 adversarial, 29 own_coupling, 24
+escalation, 10 research_agent, 8 sonst, plus die §2.4-Parser-Suite).
+
+---
+
 # MOJO — Handover (2026-05-24)
 
 ---
