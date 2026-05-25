@@ -46,6 +46,34 @@ RESEARCHER_TRIAGE_TOPICS = _profile.get("triage_topics", [
     "Topic 2",
 ])
 
+# --- Trigger-Autoren (MOJO 2.0 §2.2 + Cascade-Veto-Up) ---
+# User-spezifische Wahl: Autor*innen, deren neue Arbeiten unabhängig vom
+# Journal-Tier eskaliert werden sollen, und deren Bibliographien als
+# adversariale Blind-Spot-Quelle benutzt werden.
+#
+# Defaults sind leer — ohne Konfiguration deaktiviert sich der Pfad sauber
+# (`trigger_author_hit` immer False, AdversarialIndex leer, Cascade fließt
+# unverändert durch). Pflege via `profile.json`:
+#   "trigger_author_patterns": ["macgilchrist", "jarke", "wendy chun", ...]
+#   "trigger_author_slugs":    ["macgilchrist", "jarke", "wendy_chun"]
+#
+# `*_patterns`: Lowercase-Substrings für Autor-String-Matching (signals.py).
+# `*_slugs`:    File-Stems für `backtest_data/trigger_bibliographies/<slug>.json`
+#               (adversarial/trigger_refs.py).
+# Die beiden sind getrennt, weil patterns ggf. mehrere Varianten pro Person
+# enthalten ("wendy chun" + "wendy hui kyong"), slugs aber 1:1 zu einem
+# Bibliographie-File gehören.
+#
+# Verfahren zur Auswahl: vorerst kein Algorithmus, Auswahl liegt beim User.
+# Methodische Hinweise + geplante Vorschlags-Komponente:
+# docs/mojo_profile_modelling_sketch.md (§X-Vorhaben).
+TRIGGER_AUTHOR_PATTERNS: tuple[str, ...] = tuple(
+    _profile.get("trigger_author_patterns") or ()
+)
+TRIGGER_AUTHOR_SLUGS: tuple[str, ...] = tuple(
+    _profile.get("trigger_author_slugs") or ()
+)
+
 # --- Zotero ---
 # Override via profile.json or environment: MOJO_ZOTERO_STORAGE, MOJO_ZOTERO_COLLECTION
 ZOTERO_STORAGE = Path(
@@ -106,6 +134,8 @@ def save_profile(data: dict) -> None:
     _self.MODEL_AGENT = data.get("model_agent", _self.MODEL_AGENT)
     _self.MODEL_TRENDS = data.get("model_trends", _self.MODEL_TRENDS)
     _self.MAX_TOKENS_TRENDS = int(data.get("max_tokens_trends", _self.MAX_TOKENS_TRENDS))
+    _self.TRIGGER_AUTHOR_PATTERNS = tuple(data.get("trigger_author_patterns") or ())
+    _self.TRIGGER_AUTHOR_SLUGS = tuple(data.get("trigger_author_slugs") or ())
 
 
 # --- Diskursräume ---

@@ -26,7 +26,13 @@ from journal_bot.own_refs.index import OwnRefsIndex
 
 
 CACHE_FILENAME = "trigger_refs_index.json"
-DEFAULT_TRIGGER_AUTHORS = ("macgilchrist", "jarke", "wendy_chun")
+
+# Trigger-Autoren-Slugs: aus `settings.TRIGGER_AUTHOR_SLUGS` (profile.json,
+# `trigger_author_slugs`). Default leer → AdversarialIndex bleibt leer,
+# signal_adversarial_blindspot liefert leere Dicts, Cascade fließt durch.
+# User wählt die Liste explizit. Slugs müssen zu File-Stems unter
+# `backtest_data/trigger_bibliographies/<slug>.json` passen.
+from journal_bot.settings import TRIGGER_AUTHOR_SLUGS as DEFAULT_TRIGGER_AUTHORS
 
 
 @dataclass(frozen=True)

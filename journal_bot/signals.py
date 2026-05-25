@@ -58,7 +58,12 @@ OWN_COUPLING_STRONG_SCORE = 1.50
 # Pflichtlektüre.
 ADVERSARIAL_WEAK_SCORE = 3.00
 ADVERSARIAL_STRONG_SCORE = 8.00
-TRIGGER_AUTHORS = ("macgilchrist", "jarke", "wendy chun", "wendy hui kyong")
+# Trigger-Autoren: aus `settings.TRIGGER_AUTHOR_PATTERNS` (profile.json,
+# `trigger_author_patterns`). Default leer → `trigger_author_hit` immer False,
+# Cascade-Veto-Up via Trigger ist dann deaktiviert. User wählt die Liste
+# explizit; OS-Default schreibt keine Personen fest. Methodische Hinweise:
+# docs/mojo_profile_modelling_sketch.md.
+from journal_bot.settings import TRIGGER_AUTHOR_PATTERNS as TRIGGER_AUTHORS
 SELECTION_MODES = {
     "none", "screening", "similarity", "complementarity",
     "citation", "own_coupling", "adversarial", "trigger", "mixed",
