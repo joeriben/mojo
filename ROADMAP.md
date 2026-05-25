@@ -56,6 +56,39 @@
 - [ ] Delegation-first: Haiku als Vorsortierung, Opus nur für Kandidaten — relevant bei >50 Artikeln/Woche
 - [ ] Anthropic Batch API (50% Rabatt) für wöchentliche Batch-Digest-Läufe
 
+### §X — Profil-Modellierungs-Komponente (vorgemerkt)
+
+**Motivation** (Benjamin 2026-05-25, OS-Schulden-Diskussion): Die globale
+Aggregation über `summaries.json` / `own_refs.db` kollabiert die Topologie
+des Eigenwerks. Profile innerhalb derer geschrieben wird ändern sich über
+Jahre, und sind „keine Haufen sondern Abhängigkeitsnetze die Formen ergeben
+(an den Rändern unscharfe)". Empirischer Befund: globale `named_thinkers`-
+Häufigkeit reproduziert weder die Trigger-Liste (Macgilchrist/Jarke/Chun)
+noch das tatsächliche disziplinäre Bild — sie misst nur theoretische Quellen
+(Reckwitz/Latour/Barad ranken oben).
+
+**Skizze**: 3 Stages
+- Stage 0 — Embedding pro Eigenwerk (lokal oder API)
+- Stage 1 — Cluster-Diagnose (UMAP + HDBSCAN/kNN, Soft-Cluster mit unscharfen
+  Rändern)
+- Stage 2 — Topologie-basierte Vorschlags-Systeme (Trigger-Auswahl pro Region,
+  Cascade-Schwellen pro Cluster, Digest-Sortierung nach Region-Distanz)
+
+**Nicht-Ziele**: kein Ersatz von `summaries.json` / `diskursraeume.json`,
+kein automatisches Trigger-Set. Stage 2 produziert Kandidaten, finale
+Entscheidung bleibt User.
+
+**Anschluss-Komponenten** (alle profitieren): Trigger-Auswahl, Cascade-
+Vorfilter (§2.1/§2.2), Digest-Sortierung, Diskursraum-Trends, Eskalations-
+Selektion (§2.5), Wrong-LES-Diagnose-Prompt.
+
+**Reihenfolge**: Orthogonal zu §2.x — kann nach §2 angegangen werden, ohne
+§2 zu blockieren. OS-Schulden-#3+#4 (Trigger-Autoren konfigurierbar) werden
+pragmatisch über editierbare `profile.json`-Listen gelöst, BEVOR Stage 0
+gebaut wird.
+
+**Sketch-Dokument**: [`docs/mojo_profile_modelling_sketch.md`](docs/mojo_profile_modelling_sketch.md).
+
 ## Bugs / Risiken
 
 ### [HIGH] Anthropic-Cache-Mindestschwelle wird nicht überall geprüft
