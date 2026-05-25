@@ -347,21 +347,27 @@ entsprechend).
 
 ---
 
-## §4 Open-Source-Schulden (parallel oder später, NICHT vor §1)
+## §4 Open-Source-Schulden — erledigt (2026-05-25)
 
-Vier Analyseschritte aus der 2026-05-24-Session sind nur als Heredoc-Pipes
-gelaufen. Die Outputs liegen aber im Repo, die Daten sind voll reproduzierbar:
+Die vier Heredoc-OS-Schulden aus §4 sind extrahiert (Commit `8a94404`):
 
-| Output existiert | Script fehlt | Aufwand |
+| Output | Script | Status |
 |---|---|---|
-| `discourse_classification.json` mit Patterns | `scripts/iter11e_classify_discourses.py` | 5 Min (Patterns sind im JSON) |
-| `feedback_korpus_aufarbeitung.md` Tabellen | `scripts/iter11f_corpus_aufarbeitung_report.py` | trivial aus `inventory.json` + `refs/*.json` |
-| `feedback_ground_truth_qualitaet.md` Tabellen | `scripts/iter11g_ground_truth_diagnosis.py` | trivial aus `articles.db` + `features_gold.parquet` + `predictions_iter11_full.parquet` |
-| Veto-Up-Validierung im Sketch §2.1 | `scripts/iter11h_validate_veto_up.py` | trivial aus `features_gold.parquet` + `predictions_iter11_full.parquet` |
+| `discourse_classification.json` Patterns | `scripts/iter11e_classify_discourses.py` | ✓ reproduziert (mit DOI-Container-Fallback) |
+| `feedback_korpus_aufarbeitung.md` Tabellen | `scripts/iter11f_corpus_aufarbeitung_report.py` | ✓ Bilanz + Diskurs-Verteilung + Lückenliste |
+| `feedback_ground_truth_qualitaet.md` Tabellen | `scripts/iter11g_ground_truth_diagnosis.py` | ✓ liest articles.db wenn vorhanden, fällt sonst auf parquet-only zurück |
+| Veto-Up-Validierung Sketch §2.1 | `scripts/iter11h_validate_veto_up.py` | ✓ LES-Recall/Precision/F1 für TunedBase/PerJournal/PreCoupling |
 
-Diese Schulden blockieren §1 NICHT. Sie sollten aber vor MOJO-2.0-Launch
-extrahiert werden, weil sonst die Validierungs-Pipeline nicht reproduzierbar
-ist.
+Zusätzliche OS-Schulden in Produktiv-Code (Commits `40ae6bd`, `99e476b`, `79abb76`):
+- `escalation/fulltext.py`: `DEFAULT_ZOTERO_ROOT` aus `settings.ZOTERO_STORAGE.parent`
+- `escalation/assess.py`: Researcher-Name parametrisiert aus `settings.RESEARCHER_NAME`
+- `signals.py` + `adversarial/trigger_refs.py`: Trigger-Autoren via `profile.json`
+  (`TRIGGER_AUTHOR_PATTERNS` / `TRIGGER_AUTHOR_SLUGS`)
+- `multi_provider.py`: Provider-Key-Fallbacks auf `~/.config/mojo/`-Standardpfade
+  reduziert (Sarah-Legacy-Paths raus)
+- `own_refs/build.py`: Help-Text-Beispiel generalisiert
+
+Die Validierungs-Pipeline ist damit ohne Heredoc-Reproduktion lauffähig.
 
 ---
 
