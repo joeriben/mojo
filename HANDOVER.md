@@ -11,22 +11,67 @@ Die §2-Reihenfolge (1–5) ist abgearbeitet:
 | 2.2 | Adversarial-Blind-Spot-Signal | `adf7600` | `trigger_refs \ benjamin_refs`, IDF-Score, 53 STRONG-Lifts |
 | 2.3 | Refs-Extraktion (Sammelband + TOC-Filter) | `50e7032` | refs 4061 → 6244 (+54%); +4 pubs_with_refs |
 | 2.4 | Non-DOI-Resolution gegen OpenAlex | `277d4bd` | unique OA-IDs 269 → 537 (fast 2×); 484 text-refs aufgelöst |
-| 2.5 | Volltext-LLM-Eskalations-Slot | `f117caa` | `mojo escalate select/fetch` Infrastruktur fertig; LLM-Wrapper bleibt Stub (Cost-Control) |
+| 2.5 | Volltext-LLM-Eskalations-Slot | `f117caa` | `mojo escalate select/fetch` Infrastruktur fertig |
+| 2.5.e–h | Wrong-LES-Pilot + Zotero-PDF-Quelle | (offen, dieser Stand) | `pilot-wrong-les` läuft, Sonnet 4.6 ~$0.04–0.17/Call, Zotero als 1. Quelle vor OA/Unpaywall/Crossref |
+| 2.6 | Direktzitat-Heuristik (Citation-Mode + Double-Hit Veto-Up) | (offen, dieser Stand) | `selection_mode='citation'` UND `f_own_coupling_union >= 2` → `discourse_indicator='starker_indikator'`; Live-Backtest: 44 Lifts (1× Wrong-LES gerettet, 42× unmarked-SCN, 1× unmarked-IGN) |
 
 Zustand `own_refs.db`:
 - 161 publications, 78 mit refs
 - 6244 pub_refs total, 286 doi_resolved + 484 text_resolved
 - 537 unique OA-IDs in der Refs-Wolke, 480 unique DOIs
 
-§2.5-Status: Selection-Logik (live-berechneter PrioScore aus own_coupling
-+ adversarial) und Volltext-Fetch (OpenAlex → Unpaywall → Crossref →
-pdftotext) laufen. Der eigentliche LLM-Call auf den Volltext ist NICHT
-gebaut — er kostet geschätzt ~$0.70/Call (Opus 4.6 auf ~25k Zeichen
-Volltext), ein Vollbatch der ~440 Cascade-Lift-Kandidaten wären ~$300
-und braucht eine separate Kostenverifikations-Session.
+§2.5-Wrong-LES-Pilot (`mojo escalate pilot-wrong-les`, Sonnet 4.6):
+- 28 wrong-LES-Kandidaten (User=lesenswert, Agent≠lesenswert) ausgewählt.
+- 4/28 mit Volltext beschafft, in allen 4 Fällen LLM-Verdikt `lesenswert`
+  bestätigt (Confidence 0.72–0.88).
+  - 3× OpenAlex-Source (AIandSoc / EthicsEd)
+  - 1× **Zotero-Source** (MedienPaed/Klinge/Tost, citation-Mode);
+    Cascade-Miss: Direktzitat „Jörissen 2015, 220" nicht als Signal erkannt.
+- 24/28 strukturell unerreichbar (SAGE/Wiley/Routledge Paywall — OpenAlex
+  liefert `pdf_url=null`, Unpaywall leer, Crossref-`link[]` 403 / kein PDF).
+  Dieser Bottleneck ist **nicht algorithmisch lösbar**; mittelfristig nur
+  über User-eigene Zotero-Bibliothek schließbar.
+- Total-Kosten: $0.19 für 4 Calls (~$0.048/Call mit OpenRouter-Cache).
 
-Tests: 137 grün (22 own_refs, 14 adversarial, 29 own_coupling, 24
-escalation, 10 research_agent, 8 sonst, plus die §2.4-Parser-Suite).
+Architektur-Hinzufügungen:
+- `journal_bot/escalation/fulltext.py`: Vier-Quellen-Kaskade
+  **Zotero → OpenAlex → Unpaywall → Crossref**. Zotero-Lookup geht über
+  read-only SQLite-Snapshot in `/tmp` (kein API-Zugriff, kein Konflikt mit
+  laufendem Zotero-Client). PDF wird in `.escalation_cache/` kopiert →
+  Cache-Hit identisch zum Web-Pfad.
+- `select_candidates(only_wrong_les=True)`: lockert `selection_mode`-Filter
+  auf alle Modi (vorher nur complementarity/similarity/mixed/screening —
+  hätte citation-Mode-Misses wie Klinge/Tost verloren).
+
+Output: `output/escalation_pilot_wrong_les_v3_zotero.json`.
+
+Tests: 151 grün (22 own_refs, 14 adversarial, 33 own_coupling inkl. 4
+§2.6-Tests, 34 escalation inkl. 10 Zotero-Tests, 10 research_agent, 8 sonst,
+plus die §2.4-Parser-Suite).
+
+§2.6-Heuristik (Direktzitat / Citation+Double-Hit Veto-Up):
+- **Motivation:** Pilot-Befund am Klinge/Tost-Fall — Artikel hatte
+  `selection_mode='citation'` (Direktzitat „Jörissen 2015, 220" im
+  Volltext), `n_union=2` Eigenwerk-Hits in OpenAlex-Refs, aber
+  `own_coupling.score=0.82` knapp über WEAK (0.60). Cascade hatte
+  `discourse_indicator='schwacher_indikator'` + `agent_verdict='scannen'`.
+  Sonnet-4.6-Volltext-Verdikt: `lesenswert conf=0.82`.
+- **Regel** (`journal_bot/signals.py`, post-step in
+  `derive_attention_profile`):
+  ```
+  if selection_mode == "citation" and f_own_coupling_union >= 2
+     and discourse_indicator != "starker_indikator":
+      discourse_indicator = "starker_indikator"
+  ```
+- **Backtest gegen articles.db:**
+  - 17 TP citation-mode-LES: 9 (53%) hätten Lift bestätigt
+  - 1 Wrong-LES (Klinge/Tost): gelifted ✓
+  - 1 Downcall (n_union=1): bleibt scannen ✓
+  - 12 unmarked IGN: nur 1 (8%) erzeugt FP-Lift
+  - 125 unmarked SCN: 42 (34%) bekommen jetzt starker_indikator — Workload-
+    Hebel, aber legitim (Doppel-Hit ist substantielles Signal)
+- **Wirkt erst ab nächstem Digest-Lauf** (DB-Snapshot von discourse_indicator
+  in articles.db wird nicht re-computed).
 
 ---
 

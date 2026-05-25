@@ -362,6 +362,7 @@ class TestFulltextFetcher:
         result = ft.fetch_fulltext_for_article(
             article_id="test1", openalex_id="W123", doi="10.1/x",
             cache_dir=tmp_path,
+            zotero_root=tmp_path / "no_zotero",  # nicht existent → fall-through
         )
         assert result.status == "no_pdf_url"
         assert result.fulltext_chars == 0
@@ -386,8 +387,238 @@ class TestFulltextFetcher:
         result = ft.fetch_fulltext_for_article(
             article_id="test2", openalex_id="W123", doi="10.1/x",
             cache_dir=tmp_path,
+            zotero_root=tmp_path / "no_zotero",
         )
         assert result.status == "cache_hit"
         assert result.cache_hit is True
         assert result.fulltext_chars == 14
         assert result.source == "openalex"
+
+
+# ----- Zotero-Lookup --------------------------------------------------------
+
+
+def _make_zotero_db(tmp_path: Path, items: list[dict]) -> Path:
+    """Lege eine minimale Zotero-SQLite an mit fields, itemData,
+    itemDataValues, items, itemAttachments — gerade genug für
+    _zotero_pdf_path.
+
+    `items` ist Liste von dicts mit Keys:
+      - doi (str)
+      - attach_key (str)
+      - attach_path (str, mit 'storage:'-Präfix)
+      - link_mode (int, default 1)
+      - content_type (str, default 'application/pdf')
+    """
+    zotero_root = tmp_path / "Zotero"
+    storage = zotero_root / "storage"
+    storage.mkdir(parents=True)
+    db_path = zotero_root / "zotero.sqlite"
+    conn = sqlite3.connect(db_path)
+    conn.executescript(
+        """
+        CREATE TABLE fields (fieldID INTEGER PRIMARY KEY, fieldName TEXT);
+        CREATE TABLE items (itemID INTEGER PRIMARY KEY, key TEXT);
+        CREATE TABLE itemData (itemID INT, fieldID INT, valueID INT);
+        CREATE TABLE itemDataValues (valueID INTEGER PRIMARY KEY, value TEXT);
+        CREATE TABLE itemAttachments (
+            itemID INT, parentItemID INT, linkMode INT,
+            contentType TEXT, path TEXT
+        );
+        INSERT INTO fields (fieldID, fieldName) VALUES (1, 'DOI');
+        """
+    )
+    next_iid = 1
+    next_vid = 1
+    for spec in items:
+        parent_iid = next_iid
+        next_iid += 1
+        # Parent-Item
+        conn.execute(
+            "INSERT INTO items (itemID, key) VALUES (?, ?)",
+            (parent_iid, f"P{parent_iid:06d}"),
+        )
+        # DOI-Eintrag
+        conn.execute(
+            "INSERT INTO itemDataValues (valueID, value) VALUES (?, ?)",
+            (next_vid, spec["doi"]),
+        )
+        conn.execute(
+            "INSERT INTO itemData (itemID, fieldID, valueID) VALUES (?, 1, ?)",
+            (parent_iid, next_vid),
+        )
+        next_vid += 1
+        # Attachment-Item
+        attach_iid = next_iid
+        next_iid += 1
+        conn.execute(
+            "INSERT INTO items (itemID, key) VALUES (?, ?)",
+            (attach_iid, spec["attach_key"]),
+        )
+        conn.execute(
+            "INSERT INTO itemAttachments "
+            "(itemID, parentItemID, linkMode, contentType, path) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (
+                attach_iid, parent_iid,
+                spec.get("link_mode", 1),
+                spec.get("content_type", "application/pdf"),
+                spec["attach_path"],
+            ),
+        )
+        # Dummy-PDF-Datei anlegen, wenn path "storage:..." ist
+        if spec["attach_path"].startswith("storage:"):
+            filename = spec["attach_path"][len("storage:"):]
+            attach_dir = storage / spec["attach_key"]
+            attach_dir.mkdir(parents=True, exist_ok=True)
+            (attach_dir / filename).write_bytes(b"%PDF-1.4\n%dummy")
+    conn.commit()
+    conn.close()
+    return zotero_root
+
+
+class TestZoteroPDFLookup:
+    """Tests für `_zotero_pdf_path` — DOI → lokales PDF."""
+
+    def test_returns_none_for_empty_doi(self, tmp_path):
+        from journal_bot.escalation.fulltext import _zotero_pdf_path
+        z = _make_zotero_db(tmp_path, [])
+        assert _zotero_pdf_path("", zotero_root=z) is None
+        assert _zotero_pdf_path(None, zotero_root=z) is None
+
+    def test_returns_none_when_db_missing(self, tmp_path):
+        from journal_bot.escalation.fulltext import _zotero_pdf_path
+        result = _zotero_pdf_path("10.1/x", zotero_root=tmp_path / "nope")
+        assert result is None
+
+    def test_finds_pdf_by_exact_doi(self, tmp_path):
+        from journal_bot.escalation.fulltext import _zotero_pdf_path
+        z = _make_zotero_db(tmp_path, [{
+            "doi": "10.1234/foo",
+            "attach_key": "AAAABBBB",
+            "attach_path": "storage:Foo - 2024 - Title.pdf",
+        }])
+        result = _zotero_pdf_path("10.1234/foo", zotero_root=z)
+        assert result is not None
+        pdf_path, key = result
+        assert key == "AAAABBBB"
+        assert pdf_path.exists()
+        assert pdf_path.read_bytes().startswith(b"%PDF-")
+
+    def test_doi_lookup_case_insensitive(self, tmp_path):
+        from journal_bot.escalation.fulltext import _zotero_pdf_path
+        z = _make_zotero_db(tmp_path, [{
+            "doi": "10.1234/Foo",
+            "attach_key": "CCCCDDDD",
+            "attach_path": "storage:Foo.pdf",
+        }])
+        assert _zotero_pdf_path("10.1234/foo", zotero_root=z) is not None
+        assert _zotero_pdf_path("10.1234/FOO", zotero_root=z) is not None
+
+    def test_doi_url_form_stripped(self, tmp_path):
+        from journal_bot.escalation.fulltext import _zotero_pdf_path
+        z = _make_zotero_db(tmp_path, [{
+            "doi": "10.1234/bar",
+            "attach_key": "EEEEFFFF",
+            "attach_path": "storage:Bar.pdf",
+        }])
+        result = _zotero_pdf_path(
+            "https://doi.org/10.1234/bar", zotero_root=z,
+        )
+        assert result is not None
+
+    def test_skips_non_pdf_attachments(self, tmp_path):
+        from journal_bot.escalation.fulltext import _zotero_pdf_path
+        z = _make_zotero_db(tmp_path, [{
+            "doi": "10.1234/html",
+            "attach_key": "GGGGHHHH",
+            "attach_path": "storage:snapshot.html",
+            "content_type": "text/html",
+        }])
+        assert _zotero_pdf_path("10.1234/html", zotero_root=z) is None
+
+    def test_skips_linked_file_modes(self, tmp_path):
+        """linkMode 2/3 (linked file/URL) liegen außerhalb von storage/ —
+        wir nehmen nur imported (linkMode 0/1)."""
+        from journal_bot.escalation.fulltext import _zotero_pdf_path
+        z = _make_zotero_db(tmp_path, [{
+            "doi": "10.1234/linked",
+            "attach_key": "IIIIJJJJ",
+            "attach_path": "storage:Linked.pdf",
+            "link_mode": 2,
+        }])
+        assert _zotero_pdf_path("10.1234/linked", zotero_root=z) is None
+
+    def test_returns_none_when_file_missing(self, tmp_path):
+        """DB sagt Anhang existiert, aber Datei fehlt → None."""
+        from journal_bot.escalation.fulltext import _zotero_pdf_path
+        z = _make_zotero_db(tmp_path, [{
+            "doi": "10.1234/ghost",
+            "attach_key": "KKKKLLLL",
+            "attach_path": "storage:Ghost.pdf",
+        }])
+        # Datei wegmachen
+        (z / "storage" / "KKKKLLLL" / "Ghost.pdf").unlink()
+        assert _zotero_pdf_path("10.1234/ghost", zotero_root=z) is None
+
+
+class TestFulltextFetcherWithZotero:
+    """Integration: Zotero hat Vorrang vor OpenAlex/Unpaywall/Crossref."""
+
+    def test_zotero_source_wins_over_web(self, tmp_path, monkeypatch):
+        """Wenn Zotero PDF hat, kein httpx-Call."""
+        from journal_bot.escalation import fulltext as ft
+        z = _make_zotero_db(tmp_path, [{
+            "doi": "10.9/test",
+            "attach_key": "MOJO0001",
+            "attach_path": "storage:Mojo.pdf",
+        }])
+        # pdftotext mocken (kein Binary nötig)
+        monkeypatch.setattr(
+            ft, "extract_fulltext", lambda p: "Zotero-Volltext (dummy)",
+        )
+        # httpx darf NICHT aufgerufen werden
+        def fail(*a, **kw):
+            raise AssertionError("Zotero-Hit darf nicht netzen")
+        monkeypatch.setattr(ft.httpx, "Client", fail)
+
+        result = ft.fetch_fulltext_for_article(
+            article_id="art_z1", openalex_id="W999", doi="10.9/test",
+            cache_dir=tmp_path / "cache", zotero_root=z,
+        )
+        assert result.status == "ok"
+        assert result.source == "zotero"
+        assert result.pdf_url == "zotero://select/library/items/MOJO0001"
+        assert result.fulltext_chars == len("Zotero-Volltext (dummy)")
+        # Cache geschrieben
+        paths = ft.cache_paths("art_z1", tmp_path / "cache")
+        assert paths["txt"].exists()
+        assert paths["meta"].exists()
+        meta = json.loads(paths["meta"].read_text())
+        assert meta["source"] == "zotero"
+
+    def test_falls_through_to_web_when_zotero_misses(self, tmp_path, monkeypatch):
+        """Zotero hat das DOI nicht → httpx-Call wird gemacht."""
+        from journal_bot.escalation import fulltext as ft
+        z = _make_zotero_db(tmp_path, [])  # leere Zotero-DB
+
+        called = {"openalex": False}
+
+        def mock_oa(client, oid):
+            called["openalex"] = True
+            return None  # auch OA findet nix
+        monkeypatch.setattr(ft, "_openalex_pdf_url", mock_oa)
+        monkeypatch.setattr(ft, "_unpaywall_pdf_url", lambda c, d: None)
+        monkeypatch.setattr(ft, "_crossref_pdf_url", lambda c, d: None)
+
+        mock_client = MagicMock()
+        mock_client.__enter__ = lambda s: s
+        mock_client.__exit__ = lambda *a: None
+        monkeypatch.setattr(ft.httpx, "Client", lambda **kw: mock_client)
+
+        result = ft.fetch_fulltext_for_article(
+            article_id="art_z2", openalex_id="W123", doi="10.9/missing",
+            cache_dir=tmp_path / "cache", zotero_root=z,
+        )
+        assert called["openalex"] is True
+        assert result.status == "no_pdf_url"

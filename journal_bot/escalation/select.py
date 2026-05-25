@@ -177,25 +177,41 @@ def select_candidates(
     con = sqlite3.connect(f"file:{articles_db}?mode=ro", uri=True)
     con.row_factory = sqlite3.Row
     try:
-        sql = """
-            SELECT id, journal_short, title, year, doi, openalex_id,
-                   agent_verdict, user_verdict, selection_mode,
-                   discourse_indicator, openalex_refs
-              FROM articles
-             WHERE agent_processed_at IS NOT NULL
-               AND selection_mode IN ({modes})
-               AND agent_verdict IN ({verdicts})
-        """.format(
-            modes=",".join("?" * len(_ELIGIBLE_MODES)),
-            verdicts=",".join("?" * len(_ELIGIBLE_VERDICTS)),
-        )
-        params: list = list(_ELIGIBLE_MODES) + list(_ELIGIBLE_VERDICTS)
+        # only_wrong_les: User-Verdict='lesenswert' UND Agent ≠ 'lesenswert' ist
+        # die definitive Diagnose-Klasse. Hier wäre ein selection_mode-Filter
+        # falsch eng — auch `citation`-Mode kann ein Agent-Miss sein, wenn das
+        # System die Zitations-Brücke unterschätzt hat. Wir lockern in diesem
+        # Pilot-Modus auf ALLE Modi und filtern stattdessen via user_verdict.
+        if only_wrong_les:
+            sql = """
+                SELECT id, journal_short, title, year, doi, openalex_id,
+                       agent_verdict, user_verdict, selection_mode,
+                       discourse_indicator, openalex_refs
+                  FROM articles
+                 WHERE agent_processed_at IS NOT NULL
+                   AND user_verdict = 'lesenswert'
+                   AND agent_verdict IS NOT NULL
+                   AND agent_verdict != 'lesenswert'
+            """
+            params: list = []
+        else:
+            sql = """
+                SELECT id, journal_short, title, year, doi, openalex_id,
+                       agent_verdict, user_verdict, selection_mode,
+                       discourse_indicator, openalex_refs
+                  FROM articles
+                 WHERE agent_processed_at IS NOT NULL
+                   AND selection_mode IN ({modes})
+                   AND agent_verdict IN ({verdicts})
+            """.format(
+                modes=",".join("?" * len(_ELIGIBLE_MODES)),
+                verdicts=",".join("?" * len(_ELIGIBLE_VERDICTS)),
+            )
+            params = list(_ELIGIBLE_MODES) + list(_ELIGIBLE_VERDICTS)
         if journals:
             jl = list(journals)
             sql += " AND journal_short IN (" + ",".join("?" * len(jl)) + ")"
             params += jl
-        if only_wrong_les:
-            sql += " AND user_verdict = 'lesenswert' "
         rows = con.execute(sql, params).fetchall()
     finally:
         con.close()

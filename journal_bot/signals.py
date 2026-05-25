@@ -1308,6 +1308,23 @@ def derive_attention_profile(
         verdict=entry.get("verdict", ""),
         discourse_indicator=discourse_indicator,
     )
+    # §2.6 — Citation-Mode + Double-Hit Veto-Up
+    # Wenn der Artikel via Citation-Pfad in die Pipeline kam UND der Vorfilter
+    # mindestens zwei unabhängige Eigenwerk-Refs (`n_union ≥ 2`) findet, ist
+    # das Doppel-Signal stark genug, um den Diskurs-Indikator unabhängig vom
+    # IDF-Score auf `starker_indikator` zu heben. Klinge/Tost (Wrong-LES) lag
+    # mit score=0.82 nur knapp über WEAK, hatte aber 2 OA-Hits — exakt der Fall,
+    # den die §2.1b-Schwellen verfehlten. Backtest gegen articles.db:
+    #   - TPs (LES/LES citation): 9/17 = 53% bestätigt
+    #   - Wrong-LES (Klinge): 1/1 gelifted ✓
+    #   - Downcall (SCN→IGN): 0/1 — n_union=1, bleibt scannen ✓
+    #   - unmarked IGN: nur 1/12 (8%) FP-Hebel
+    if (
+        selection_mode == "citation"
+        and signal_profile.f_own_coupling_union >= 2
+        and discourse_indicator != "starker_indikator"
+    ):
+        discourse_indicator = "starker_indikator"
     signal_group = ""
     if discourse_indicator != "kein_indikator":
         signal_group = entry.get("signal_group", "") or (project_hits[0] if project_hits else "")

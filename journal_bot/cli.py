@@ -863,8 +863,202 @@ def cmd_escalate(args: argparse.Namespace) -> int:
             print(f"  Notes:        {result.notes}")
         return 0 if result.status in ("ok", "cache_hit") else 1
 
+    if action == "pilot-wrong-les":
+        return _run_pilot_wrong_les(args, articles_db_path)
+
     print("FEHLER: kein action angegeben für 'escalate'")
     return 2
+
+
+def _run_pilot_wrong_les(args, articles_db_path: Path) -> int:
+    """§2.5 Pilot: Volltext-LLM auf Wrong-LES-Items mit Hard-Cost-Cap.
+
+    Workflow pro Item:
+      1) Volltext fetchen (Cache-Hit ist Normalfall nach erstem Lauf)
+      2) Volltext-LLM-Assess (Sonnet 4.6 default, cost ~$0.04/Call)
+      3) Result in Aggregat + JSON-Output
+
+    Hard-Total-Cap stoppt vor Überschreitung.
+    """
+    import sqlite3
+    from journal_bot.escalation import (
+        assess_article_volltext,
+        fetch_fulltext_for_article,
+        select_candidates,
+    )
+
+    if not articles_db_path.exists():
+        print(f"FEHLER: articles.db fehlt: {articles_db_path}")
+        return 2
+
+    print("=== §2.5 Pilot: Wrong-LES-Diagnose ===")
+    print(f"  Modell:       {args.model}")
+    print(f"  Limit:        {args.limit}")
+    print(f"  Total-Cap:    ${args.max_total_usd:.2f}")
+    print()
+
+    # 1) Kandidaten auswählen (nur wrong-LES, niedrigster PrioScore zugelassen
+    #    damit auch knappe Cascade-Lücken durchkommen).
+    cands = select_candidates(
+        articles_db=articles_db_path,
+        limit=args.limit,
+        min_prio_score=-99,
+        only_wrong_les=True,
+    )
+    if not cands:
+        print("Keine wrong-LES-Kandidaten gefunden.")
+        return 0
+    print(f"  {len(cands)} Kandidaten ausgewählt:")
+    for c in cands:
+        print(f"    {c.article_id[:24]} [{c.journal_short:<10}] prio={c.prio_score:>5.2f}  {c.title[:70]!r}")
+    print()
+
+    # 2) Pro Item: Volltext + Assess
+    results: list[dict] = []
+    total_cost = 0.0
+    n_ok = n_no_fulltext = n_parse_failed = n_other = 0
+    n_volltext_corrects = 0   # wo LLM tatsächlich LES bestätigt
+
+    for i, c in enumerate(cands, 1):
+        print(f"--- [{i}/{len(cands)}] {c.article_id[:24]}  {c.title[:60]!r}")
+
+        # Article-Metadaten + Abstract aus DB ziehen (PrioScore-Felder reichen
+        # für die Auswahl, aber für den LLM brauchen wir Abstract).
+        con = sqlite3.connect(f"file:{articles_db_path}?mode=ro", uri=True)
+        con.row_factory = sqlite3.Row
+        try:
+            row = con.execute(
+                """SELECT id, title, abstract, doi, openalex_id, year,
+                          journal_short, agent_verdict, user_verdict,
+                          selection_mode, discourse_indicator
+                     FROM articles WHERE id = ?""",
+                (c.article_id,),
+            ).fetchone()
+        finally:
+            con.close()
+        if row is None:
+            print(f"    (artikel fehlt in DB, skipped)")
+            n_other += 1
+            continue
+        article = dict(row)
+        article["own_coupling_score"] = c.own_coupling_score
+        article["adversarial_score"] = c.adversarial_score
+
+        # 2a) Volltext beschaffen
+        fr = fetch_fulltext_for_article(
+            article_id=row["id"],
+            openalex_id=row["openalex_id"],
+            doi=row["doi"],
+            verbose=False,
+        )
+        if fr.status not in ("ok", "cache_hit") or not fr.txt_path:
+            print(f"    [no_fulltext] status={fr.status}, src={fr.source}")
+            n_no_fulltext += 1
+            results.append({
+                "article_id": c.article_id, "status": "no_fulltext",
+                "fetch_status": fr.status, "title": c.title,
+                "journal_short": c.journal_short,
+            })
+            continue
+        try:
+            volltext = fr.txt_path.read_text(encoding="utf-8")
+        except OSError as e:
+            print(f"    [no_fulltext] txt-read failed: {e}")
+            n_no_fulltext += 1
+            continue
+        print(f"    fulltext: {len(volltext):,} chars, source={fr.source}")
+
+        # 2b) Cost-Cap-Check vor jedem Call
+        if total_cost >= args.max_total_usd:
+            print(f"    ⚠ Total-Cap erreicht (${total_cost:.3f}), Abbruch.")
+            break
+
+        # 2c) Volltext-LLM-Assess
+        ar = assess_article_volltext(
+            article=article, volltext=volltext, model=args.model, verbose=False,
+        )
+        total_cost += ar.cost_usd
+        if ar.status == "ok":
+            n_ok += 1
+            if ar.would_be_verdict == "lesenswert":
+                n_volltext_corrects += 1
+        elif ar.status == "parse_failed":
+            n_parse_failed += 1
+        else:
+            n_other += 1
+
+        print(
+            f"    LLM: ${ar.cost_usd:.4f}  "
+            f"tokens={ar.tokens_in}/{ar.tokens_cached_read}cached/{ar.tokens_out}out  "
+            f"verdict={ar.would_be_verdict}  confidence={ar.confidence:.2f}"
+        )
+        if ar.miss_diagnosis:
+            print(f"    miss: {ar.miss_diagnosis[:200]}")
+        if ar.suggested_cascade_signal:
+            print(f"    signal: {ar.suggested_cascade_signal[:200]}")
+
+        results.append({
+            "article_id": c.article_id,
+            "title": c.title,
+            "journal_short": c.journal_short,
+            "year": article.get("year"),
+            "doi": article.get("doi"),
+            "agent_verdict": article.get("agent_verdict"),
+            "selection_mode": c.selection_mode,
+            "discourse_indicator": c.discourse_indicator,
+            "own_coupling_score": c.own_coupling_score,
+            "adversarial_score": c.adversarial_score,
+            "fulltext_source": fr.source,
+            "fulltext_chars": fr.fulltext_chars,
+            "assess_status": ar.status,
+            "would_be_verdict": ar.would_be_verdict,
+            "confidence": ar.confidence,
+            "miss_diagnosis": ar.miss_diagnosis,
+            "anchored_quotes": [
+                {"text": q.quote, "section": q.section, "relevance": q.relevance}
+                for q in ar.anchored_quotes
+            ],
+            "suggested_cascade_signal": ar.suggested_cascade_signal,
+            "tokens_in": ar.tokens_in,
+            "tokens_out": ar.tokens_out,
+            "tokens_cached_read": ar.tokens_cached_read,
+            "tokens_cache_write": ar.tokens_cache_write,
+            "cost_usd": ar.cost_usd,
+            "model": ar.model,
+        })
+
+    # 3) Zusammenfassung
+    print()
+    print("=== Pilot-Bilanz ===")
+    print(f"  bearbeitet:        {len(results)}")
+    print(f"  LLM ok:            {n_ok}")
+    print(f"  Volltext LES:      {n_volltext_corrects}  "
+          f"(= bestätigt User-Verdict gegen Cascade)")
+    print(f"  parse_failed:      {n_parse_failed}")
+    print(f"  no_fulltext:       {n_no_fulltext}")
+    print(f"  sonstige Fehler:   {n_other}")
+    print(f"  Total-Kosten:      ${total_cost:.4f}")
+    if n_ok:
+        print(f"  Avg per LLM-Call:  ${total_cost / max(1, n_ok):.4f}")
+
+    # 4) JSON-Output schreiben
+    if args.out:
+        import json as _json
+        out_path = Path(args.out).expanduser().resolve()
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(
+            _json.dumps({
+                "model": args.model,
+                "total_cost_usd": total_cost,
+                "n_results": len(results),
+                "n_ok": n_ok,
+                "n_volltext_corrects": n_volltext_corrects,
+                "results": results,
+            }, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        print(f"  JSON:              {out_path}")
+    return 0
 
 
 def cmd_cache_report(args: argparse.Namespace) -> int:
@@ -1172,6 +1366,23 @@ def main(argv: list[str] | None = None) -> int:
     )
     p_esc_fetch.add_argument("article_id", help="Artikel-ID aus articles.db")
     p_esc_fetch.add_argument("--articles-db", default="",
+                             help="Alternativer articles.db-Pfad")
+
+    p_esc_pilot = esc_sub.add_parser(
+        "pilot-wrong-les",
+        help="Volltext-LLM-Assessment für die wrong-LES-Items "
+             "(user=lesenswert, agent!=lesenswert). Hard cost-cap.",
+    )
+    p_esc_pilot.add_argument("--limit", type=int, default=3,
+                             help="Anzahl Items (Default 3 — Pre-Batch-Smoke-Test).")
+    p_esc_pilot.add_argument("--model", default="anthropic/claude-sonnet-4.6",
+                             help="OpenRouter-Modell-ID. Default Sonnet 4.6.")
+    p_esc_pilot.add_argument("--max-total-usd", type=float, default=2.0,
+                             help="Hard Total-Cap (Default $2). Bricht ab, "
+                                  "wenn kumuliert überschritten.")
+    p_esc_pilot.add_argument("--out", default="",
+                             help="JSON-Output-Pfad. Default: stdout-Tabelle.")
+    p_esc_pilot.add_argument("--articles-db", default="",
                              help="Alternativer articles.db-Pfad")
 
     p_backfill = sub.add_parser("backfill",

@@ -35,6 +35,10 @@ output/*.md
 output/digest_*.log
 output/web_*.log
 
+# §2.5-Eskalations-Pilot-Outputs (per-Run-Artefakte, kein Repo-Inhalt)
+output/escalation_pilot_*.json
+output/pilot_wrong_les_*.json
+
 # OS
 .DS_Store
 

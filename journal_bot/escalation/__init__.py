@@ -14,6 +14,11 @@ LLM-Aufruf bleibt separat — siehe HANDOVER §2.5: KEINE Batch-LLM-Calls ohne
 vorherige Einzelkosten-Verifikation.
 """
 
+from journal_bot.escalation.assess import (
+    AnchoredQuote,
+    AssessResult,
+    assess_article_volltext,
+)
 from journal_bot.escalation.fulltext import (
     FetchResult,
     cache_paths,
@@ -26,8 +31,11 @@ from journal_bot.escalation.select import (
 )
 
 __all__ = [
+    "AnchoredQuote",
+    "AssessResult",
     "EscalationCandidate",
     "FetchResult",
+    "assess_article_volltext",
     "cache_paths",
     "extract_fulltext",
     "fetch_fulltext_for_article",

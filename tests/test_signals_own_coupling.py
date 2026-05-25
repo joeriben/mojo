@@ -555,6 +555,164 @@ def test_attention_profile_end_to_end_bestseller_filtered(tmp_db: Path):
     assert profile.deterministic_signals["own_coupling"]["n_union"] == 1
 
 
+# ----- §2.6: Citation-Mode + Double-Hit Veto-Up -----------------------------
+
+
+def test_section_2_6_citation_mode_double_hit_lifts_to_strong(tmp_db: Path):
+    """§2.6 — Citation-Mode UND ≥2 own_coupling-Hits → starker_indikator.
+
+    Klinge/Tost-Fall: Artikel wurde via Citation-Pfad selektiert
+    (`entry["selection_mode"]="citation"` als explicit), und der OpenAlex-Refs-
+    Schnitt liefert 2 Eigenwerk-Hits, die unter der WEAK-Score-Schwelle (0.60)
+    bleiben würden (Bestseller-Refs). Ohne §2.6 wäre der discourse_indicator
+    'kein_indikator'/'schwacher_indikator' — mit §2.6 wird er auf
+    'starker_indikator' gehoben.
+    """
+    _seed_refs(tmp_db, [(None, "W_bestseller_1"), (None, "W_bestseller_2")])
+
+    resources = {
+        "authored_all": [],
+        "key_terms": set(),
+        "zotero_doi_index": {},
+        "zotero_word_index": {},
+        "own_refs_index": load_own_refs_index(tmp_db),
+        # Beide Refs sind Bestseller (~249× im Korpus) → Score < WEAK,
+        # aber n_union = 2.
+        "corpus_freq": CorpusFreq(
+            oa_counts={"W_bestseller_1": 249, "W_bestseller_2": 249},
+            n_articles_scanned=18000,
+        ),
+    }
+    profile = derive_attention_profile(
+        article_id="klinge-tost-like",
+        title="Design als Vergangenheit",
+        authors=["Klinge", "Tost"],
+        crossref_refs=[],
+        openalex_refs=["W_bestseller_1", "W_bestseller_2"],
+        # selection_mode='citation' explizit gesetzt (in der echten Pipeline
+        # kommt das aus cites_researcher via DOI-Match in crossref_refs)
+        entry={
+            "verdict": "scannen",
+            "selection_mode": "citation",
+        },
+        signal_resources=resources,
+    )
+    # n_union=2, beide Bestseller → score unter WEAK
+    sig = profile.deterministic_signals["own_coupling"]
+    assert sig["n_union"] == 2
+    assert sig["score"] < OWN_COUPLING_WEAK_SCORE
+    assert profile.selection_mode == "citation"
+    # §2.6 hebt discourse_indicator trotz Bestseller-Score auf starker_indikator
+    assert profile.discourse_indicator == "starker_indikator"
+
+
+def test_section_2_6_citation_mode_single_hit_no_lift(tmp_db: Path):
+    """§2.6 greift NICHT bei n_union=1 — Single-Hit ist nicht verlässlich genug."""
+    _seed_refs(tmp_db, [(None, "W_bestseller")])
+
+    resources = {
+        "authored_all": [],
+        "key_terms": set(),
+        "zotero_doi_index": {},
+        "zotero_word_index": {},
+        "own_refs_index": load_own_refs_index(tmp_db),
+        "corpus_freq": CorpusFreq(
+            oa_counts={"W_bestseller": 249},
+            n_articles_scanned=18000,
+        ),
+    }
+    profile = derive_attention_profile(
+        article_id="single-hit",
+        title="Random article",
+        authors=["X"],
+        crossref_refs=[],
+        openalex_refs=["W_bestseller"],
+        entry={
+            "verdict": "scannen",
+            "selection_mode": "citation",
+        },
+        signal_resources=resources,
+    )
+    sig = profile.deterministic_signals["own_coupling"]
+    assert sig["n_union"] == 1
+    assert profile.selection_mode == "citation"
+    # Kein Veto-Up bei n_union=1
+    assert profile.discourse_indicator != "starker_indikator"
+
+
+def test_section_2_6_no_citation_mode_no_lift(tmp_db: Path):
+    """§2.6 greift NICHT, wenn selection_mode != 'citation' — die Doppel-Hit-
+    Regel ist spezifisch für den Citation-Pfad."""
+    _seed_refs(tmp_db, [(None, "W_bestseller_1"), (None, "W_bestseller_2")])
+
+    resources = {
+        "authored_all": [],
+        "key_terms": set(),
+        "zotero_doi_index": {},
+        "zotero_word_index": {},
+        "own_refs_index": load_own_refs_index(tmp_db),
+        "corpus_freq": CorpusFreq(
+            oa_counts={"W_bestseller_1": 249, "W_bestseller_2": 249},
+            n_articles_scanned=18000,
+        ),
+    }
+    profile = derive_attention_profile(
+        article_id="non-citation",
+        title="A cited article",
+        authors=["Anon"],
+        crossref_refs=[],
+        openalex_refs=["W_bestseller_1", "W_bestseller_2"],
+        # selection_mode='similarity' explizit gesetzt — KEIN citation-Pfad
+        entry={
+            "verdict": "scannen",
+            "selection_mode": "similarity",
+        },
+        signal_resources=resources,
+    )
+    sig = profile.deterministic_signals["own_coupling"]
+    assert sig["n_union"] == 2
+    assert sig["score"] < OWN_COUPLING_WEAK_SCORE
+    assert profile.selection_mode != "citation"
+    # Ohne citation-Pfad bleibt es bei schwachem/keinem Indikator
+    assert profile.discourse_indicator != "starker_indikator"
+
+
+def test_section_2_6_preserves_existing_strong(tmp_db: Path):
+    """§2.6 überschreibt nichts — wenn discourse_indicator bereits starker_indikator
+    ist (z.B. via IDF-Score), bleibt es unverändert."""
+    _seed_refs(tmp_db, [(None, "W_specific_1"), (None, "W_specific_2")])
+
+    resources = {
+        "authored_all": [],
+        "key_terms": set(),
+        "zotero_doi_index": {},
+        "zotero_word_index": {},
+        "own_refs_index": load_own_refs_index(tmp_db),
+        # Spezifische Refs (1× im Korpus) → hoher IDF-Score
+        "corpus_freq": CorpusFreq(
+            oa_counts={"W_specific_1": 1, "W_specific_2": 1},
+            n_articles_scanned=18000,
+        ),
+    }
+    profile = derive_attention_profile(
+        article_id="strong-already",
+        title="A cited article",
+        authors=["Klinge"],
+        crossref_refs=[],
+        openalex_refs=["W_specific_1", "W_specific_2"],
+        entry={
+            "verdict": "scannen",
+            "selection_mode": "citation",
+        },
+        signal_resources=resources,
+    )
+    sig = profile.deterministic_signals["own_coupling"]
+    assert sig["n_union"] == 2
+    assert sig["score"] >= OWN_COUPLING_STRONG_SCORE
+    assert profile.selection_mode == "citation"
+    assert profile.discourse_indicator == "starker_indikator"
+
+
 def test_attention_profile_graceful_without_db(tmp_path: Path):
     """Fehlende own_refs.db → keine Exception, own_coupling bleibt leer."""
     resources = {
