@@ -2,7 +2,7 @@
 
 Use-Case: Items wo `user_verdict='lesenswert'` aber `agent_verdict != 'lesenswert'`
 sind die echten Cascade-Lücken. Diese Funktion schickt den Volltext zusammen mit
-Benjamins summaries.json (gecacht!) an Opus/Sonnet und fragt:
+`summaries.json` (Eigenwerk-Zusammenfassungen, gecacht!) an Opus/Sonnet und fragt:
 
   "Warum hätte das `lesenswert` sein müssen? Welcher konkrete Anschluss im
    Volltext (mit wörtlichem Anker-Zitat) fehlt in der Cascade-Bewertung?
@@ -44,7 +44,7 @@ from journal_bot.agent import (
 )
 from journal_bot.llm_client import build_client
 from journal_bot.llm_log import record_llm_call
-from journal_bot.settings import SUMMARIES_JSON
+from journal_bot.settings import RESEARCHER_NAME, SUMMARIES_JSON
 
 # Maximaler Volltext-Anteil pro Call. 25k Zeichen ≈ ~7k Tokens — bleibt
 # unter 10k user-Tokens für saubere Kostenbasis. Mittlerer Artikel hat
@@ -93,20 +93,28 @@ class AssessResult:
 # ----- Prompt-Building ------------------------------------------------------
 
 
-ESCALATION_OUTRO = """\
+def _build_escalation_outro(researcher_name: str) -> str:
+    """Eskalations-Prompt-Outro mit Researcher-Namen aus profile.json.
+
+    Parametrisiert, damit der Bot für andere User funktioniert. `researcher_name`
+    sollte der volle Name sein (z. B. "Benjamin Jörissen") — kommt aus
+    `journal_bot.settings.RESEARCHER_NAME`, das aus `profile.json` geladen wird.
+    """
+    short = researcher_name.split()[-1] if researcher_name else "der Forscher"
+    return f"""\
 ESKALATIONS-MODUS: WRONG-LES-DIAGNOSE.
 
 Du bekommst gleich einen Artikel-Volltext UND die bisherige algorithmische
 Cascade-Bewertung (Agent-Verdict, Selection-Mode, Indikator, IDF-Signale).
 
-KONTEXT: Benjamin Jörissen hat diesen Artikel persönlich als LESENSWERT
+KONTEXT: {researcher_name} hat diesen Artikel persönlich als LESENSWERT
 markiert. Die algorithmische Cascade hingegen hat ihn NICHT als lesenswert
 gehoben. Das ist eine systematische Cascade-Lücke.
 
 DEINE AUFGABE:
-1. Lies den Volltext im Lichte von Benjamins veröffentlichtem Werk (siehe
+1. Lies den Volltext im Lichte von {short}s veröffentlichtem Werk (siehe
    summaries oben).
-2. Identifiziere KONKRET, was im Volltext den Anschluss zu Benjamins Arbeit
+2. Identifiziere KONKRET, was im Volltext den Anschluss zu {short}s Arbeit
    herstellt — mit wörtlichen Anker-Zitaten und Stellenangabe.
 3. Diagnostiziere, welches algorithmische Signal die Cascade hätte sehen
    müssen (z. B. ein bestimmter Begriff, eine Theorie-Tradition, ein
@@ -123,7 +131,7 @@ ANTWORTE STRENG IN DIESEM XML-FORMAT (keine zusätzlichen Erläuterungen):
   <quote_1>
     <text>wörtliches Zitat (max. 2 Sätze)</text>
     <section>z. B. "S. 12" oder "Kap. 3.1" oder "Schluss"</section>
-    <relevance>warum ist dieses Zitat für Benjamins Werk relevant?</relevance>
+    <relevance>warum ist dieses Zitat für {short}s Werk relevant?</relevance>
   </quote_1>
   <quote_2>
     <text>optional zweites Zitat — nur wenn ein anderer Anschluss-Aspekt</text>
@@ -139,6 +147,12 @@ ANTWORTE STRENG IN DIESEM XML-FORMAT (keine zusätzlichen Erläuterungen):
   </suggested_cascade_signal>
 </analysis>
 """
+
+
+# Aktive Eskalations-Outro für den Default-Researcher aus settings. Tests und
+# Pilot-Runs benutzen diesen Wert; eine Per-Call-Überschreibung ist über das
+# `researcher_name`-Argument von `assess_article_volltext` möglich.
+ESCALATION_OUTRO = _build_escalation_outro(RESEARCHER_NAME)
 
 
 def _truncate_volltext(text: str) -> str:
@@ -183,9 +197,14 @@ def _format_cascade_state(article: dict) -> str:
     return "\n".join(rows)
 
 
-def _build_user_message(article: dict, volltext: str) -> str:
+def _build_user_message(
+    article: dict,
+    volltext: str,
+    researcher_name: str = RESEARCHER_NAME,
+) -> str:
     cascade_block = _format_cascade_state(article)
     volltext_truncated = _truncate_volltext(volltext)
+    short = researcher_name.split()[-1] if researcher_name else "Der Forscher"
     return (
         "## Cascade-Bewertung bisher\n\n"
         + cascade_block
@@ -194,7 +213,7 @@ def _build_user_message(article: dict, volltext: str) -> str:
         + volltext_truncated
         + "\n\n"
         + "## Frage\n\n"
-        + "Benjamin hat das LESENSWERT gemacht, die Cascade nicht. Warum?\n"
+        + f"{short} hat das LESENSWERT gemacht, die Cascade nicht. Warum?\n"
         + "Antworte exakt im vorgegebenen XML-Schema."
     )
 
@@ -266,6 +285,7 @@ def assess_article_volltext(
     model: str = DEFAULT_ESCALATION_MODEL,
     hard_per_call_cap_usd: float = HARD_PER_CALL_CAP_USD,
     verbose: bool = False,
+    researcher_name: str = RESEARCHER_NAME,
 ) -> AssessResult:
     """Einzelnes Volltext-LLM-Assessment für Wrong-LES-Diagnose.
 
@@ -280,6 +300,8 @@ def assess_article_volltext(
             der Aufruf VOR dem Senden abgebrochen, falls Token-Schätzung
             bereits zeigt, dass Kosten zu hoch werden würden.
         verbose: Print-Diagnose.
+        researcher_name: Voller Forscher-Name für den Eskalations-Prompt.
+            Default aus `settings.RESEARCHER_NAME` (aus profile.json).
 
     Returns:
         AssessResult mit status, parsed fields, token/cost metadata.
@@ -288,12 +310,14 @@ def assess_article_volltext(
     article_id = article.get("id") or article.get("article_id") or "?"
 
     # System-Prompt mit summaries.json (gecacht). build_system_prompt baut
-    # SYSTEM_INTRO + projects + outro + summaries.
+    # SYSTEM_INTRO + projects + outro + summaries. Outro wird per-Call aus
+    # researcher_name gebaut — Tests können damit andere Namen injizieren.
     summaries_data = json.loads(summaries_path.read_text(encoding="utf-8"))
     summaries = summaries_data["summaries"]
-    system_prompt = build_system_prompt(summaries, outro=ESCALATION_OUTRO)
+    outro = _build_escalation_outro(researcher_name)
+    system_prompt = build_system_prompt(summaries, outro=outro)
 
-    user_content = _build_user_message(article, volltext)
+    user_content = _build_user_message(article, volltext, researcher_name)
 
     if verbose:
         sys_tokens_est = len(system_prompt) // 4

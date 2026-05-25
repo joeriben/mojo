@@ -35,9 +35,11 @@ import httpx
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CACHE_DIR = PROJECT_ROOT / ".escalation_cache"
 
-# Zotero-Pfad (lokal, nicht über API). User-Konvention aus CLAUDE.md:
-# Zotero-Daten unter ~/FAUbox/Zotero, NICHT ~/Zotero.
-DEFAULT_ZOTERO_ROOT = Path.home() / "FAUbox" / "Zotero"
+# Zotero-Pfad: aus `settings.ZOTERO_STORAGE` ableiten (Default `~/Zotero/storage`,
+# override per `profile.json["zotero_storage"]` oder ENV `MOJO_ZOTERO_STORAGE`).
+# Der Root ist das Verzeichnis ÜBER `storage/` (enthält zotero.sqlite + storage/).
+from journal_bot.settings import ZOTERO_STORAGE as _SETTINGS_ZOTERO_STORAGE
+DEFAULT_ZOTERO_ROOT = _SETTINGS_ZOTERO_STORAGE.parent
 ZOTERO_DB_NAME = "zotero.sqlite"
 ZOTERO_STORAGE_NAME = "storage"
 
