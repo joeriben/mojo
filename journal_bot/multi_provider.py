@@ -14,10 +14,12 @@ Cache-Strategie pro Provider (Stand 2026-05):
     durchgereicht oder still ignoriert; kein Schaden.
 
 Keys (Reihenfolge der Suche):
-  - Mistral: ~/.config/mojo/mistral_key, sonst /Users/joerissen/ai/sarah/mistral.key
-  - OpenRouter: ~/.config/mojo/openrouter_key (Standard MOJO-Pfad)
-  - Mammouth (für Sonnet via Mammouth EU): ~/.config/mojo/mammouth_key,
-    sonst /Users/joerissen/ai/sarah/mammouth.key
+  1. Env-Variable `MOJO_{PROVIDER}_KEY` (z. B. `MOJO_OPENROUTER_KEY`)
+  2. Standard-Pfad `~/.config/mojo/{provider}_key`
+
+Provider ohne hinterlegten Key werfen `RuntimeError` mit dem erwarteten Pfad
+in der Message — relevant nur für Q-Check-Scripts, die das Modul direkt
+nutzen. Produktiv-Calls gehen über `journal_bot.llm_client`.
 """
 
 from __future__ import annotations
@@ -49,30 +51,21 @@ PROVIDERS: dict[str, ProviderDef] = {
     "openrouter": ProviderDef(
         label="OpenRouter",
         base_url="https://openrouter.ai/api/v1",
-        key_files=(
-            _HOME / ".config" / "mojo" / "openrouter_key",
-            Path("/Users/joerissen/ai/sarah/openrouter.key"),
-        ),
+        key_files=(_HOME / ".config" / "mojo" / "openrouter_key",),
         dsgvo=False,
         region="US",
     ),
     "mistral": ProviderDef(
         label="Mistral AI",
         base_url="https://api.mistral.ai/v1",
-        key_files=(
-            _HOME / ".config" / "mojo" / "mistral_key",
-            Path("/Users/joerissen/ai/sarah/mistral.key"),
-        ),
+        key_files=(_HOME / ".config" / "mojo" / "mistral_key",),
         dsgvo=True,
         region="EU",
     ),
     "mammouth": ProviderDef(
         label="Mammouth (EU-vermittelt)",
         base_url="https://api.mammouth.ai/v1",
-        key_files=(
-            _HOME / ".config" / "mojo" / "mammouth_key",
-            Path("/Users/joerissen/ai/sarah/mammouth.key"),
-        ),
+        key_files=(_HOME / ".config" / "mojo" / "mammouth_key",),
         dsgvo=True,
         region="EU",
     ),

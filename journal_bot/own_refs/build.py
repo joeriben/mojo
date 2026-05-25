@@ -129,8 +129,8 @@ def build(
     if not sources:
         raise ValueError(
             "Keine Quellen konfiguriert. Beispiel:\n"
-            "  mojo refs sources add zotero QM7TZT44\n"
-            "  mojo refs sources add folder /Users/joerissen/FAUbox/01_Projekte"
+            "  mojo refs sources add zotero <COLLECTION_KEY>\n"
+            "  mojo refs sources add folder /pfad/zu/PDFs"
         )
 
     stats = BuildStats()
