@@ -247,6 +247,26 @@ def _article_project_keys(article: Any, project_map: dict[str, dict[str, Any]]) 
     return keys
 
 
+def _normalize_agent_entry(entry: Any) -> dict[str, Any]:
+    """Ensure a parsed agent_entry has all display-critical keys.
+
+    The agent (esp. Gemini 3.5 Flash) sometimes omits fields like `kernthese`
+    in its `submit_digest_entry` call. Templates access these directly
+    (`a.agent_entry.kernthese[:300]`), so a missing key raised an
+    UndefinedError that 500'd the entire digest view. Filling safe defaults
+    here — the single chokepoint behind every parse site — keeps every
+    template robust without per-template guards. Idempotent.
+    """
+    if not isinstance(entry, dict):
+        entry = {}
+    entry.setdefault("kernthese", "")
+    entry.setdefault("verdict_begruendung", "")
+    entry.setdefault("theoretisch_methodisch", "")
+    entry.setdefault("bezuege", [])
+    entry.setdefault("bemerkenswert", [])
+    return entry
+
+
 def _prepare_articles_for_view(
     articles: list[Any],
     project_map: dict[str, dict[str, Any]] | None = None,
@@ -255,6 +275,11 @@ def _prepare_articles_for_view(
     for a in articles:
         if a.agent_entry and isinstance(a.agent_entry, str):
             a.agent_entry = json.loads(a.agent_entry)
+        # Store may already return agent_entry as a parsed dict, so normalize
+        # unconditionally — not only in the str-parse branch — otherwise dicts
+        # missing keys (e.g. Gemini omitting `kernthese`) reach the template raw.
+        if a.agent_entry:
+            a.agent_entry = _normalize_agent_entry(a.agent_entry)
         a.journal_full = a.journal_full or _journal_full_name(a.journal_short)
         a.project_keys = _article_project_keys(a, project_map)
         a.primary_project_key = a.project_keys[0] if a.project_keys else ""
@@ -423,7 +448,7 @@ def article_detail(article_id: str):
     if not a:
         abort(404)
     if a.agent_entry and isinstance(a.agent_entry, str):
-        a.agent_entry = json.loads(a.agent_entry)
+        a.agent_entry = _normalize_agent_entry(json.loads(a.agent_entry))
     a.journal_full = a.journal_full or _journal_full_name(a.journal_short)
 
     return render_template(
@@ -492,7 +517,7 @@ def diskursraum(cluster_key: str | None = None):
     articles = store.find_in_window(journals=shorts, only_processed=True)
     for a in articles:
         if a.agent_entry and isinstance(a.agent_entry, str):
-            a.agent_entry = json.loads(a.agent_entry)
+            a.agent_entry = _normalize_agent_entry(json.loads(a.agent_entry))
         a.journal_full = a.journal_full or _journal_full_name(a.journal_short)
 
     by_verdict = {}
@@ -607,7 +632,7 @@ def search():
         articles = [_row_to_article(r) for r in rows]
         for a in articles:
             if a.agent_entry and isinstance(a.agent_entry, str):
-                a.agent_entry = json.loads(a.agent_entry)
+                a.agent_entry = _normalize_agent_entry(json.loads(a.agent_entry))
             a.journal_full = a.journal_full or _journal_full_name(a.journal_short)
 
     return render_template(
@@ -640,7 +665,7 @@ def api_tooltip(article_id: str):
     # Gemini-style schemas that use theoretisch_methodisch instead of kernthese)
     if a.agent_entry:
         if isinstance(a.agent_entry, str):
-            a.agent_entry = json.loads(a.agent_entry)
+            a.agent_entry = _normalize_agent_entry(json.loads(a.agent_entry))
         e = a.agent_entry
         begr = e.get("verdict_begruendung") or ""
         kern = e.get("kernthese") or e.get("theoretisch_methodisch") or ""
@@ -697,7 +722,7 @@ def api_set_verdict():
     # Re-fetch to get updated state
     a = store.get(article_id)
     if a.agent_entry and isinstance(a.agent_entry, str):
-        a.agent_entry = json.loads(a.agent_entry)
+        a.agent_entry = _normalize_agent_entry(json.loads(a.agent_entry))
     a.journal_full = a.journal_full or _journal_full_name(a.journal_short)
 
     return render_template(
@@ -771,7 +796,7 @@ def api_deepen(article_id: str):
     # Re-fetch
     a = store.get(article_id)
     if a.agent_entry and isinstance(a.agent_entry, str):
-        a.agent_entry = json.loads(a.agent_entry)
+        a.agent_entry = _normalize_agent_entry(json.loads(a.agent_entry))
     a.journal_full = a.journal_full or _journal_full_name(a.journal_short)
 
     return render_template(
@@ -932,7 +957,7 @@ def overrides():
     articles = [_row_to_article(r) for r in rows]
     for a in articles:
         if a.agent_entry and isinstance(a.agent_entry, str):
-            a.agent_entry = json.loads(a.agent_entry)
+            a.agent_entry = _normalize_agent_entry(json.loads(a.agent_entry))
         a.journal_full = a.journal_full or _journal_full_name(a.journal_short)
 
     # Group by direction
