@@ -4,9 +4,9 @@
     {
       "name": "Zeitschrift für Erziehungswissenschaft",
       "short": "ZfE",
-      "type": "rss",
-      "url": "https://link.springer.com/search.rss?facet-journal-id=11618&facet-content-type=Article",
-      "issn": "1862-5215",
+      "type": "openalex",
+      "url": "issn:1434-663X",
+      "issn": "",
       "tier": "A",
       "enabled": true
     },
