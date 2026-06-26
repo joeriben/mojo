@@ -17,7 +17,7 @@ from flask import (
     abort, jsonify, send_file, session, Response,
 )
 
-from journal_bot.store import Store, ARTICLES_DB
+from journal_bot.store import Store, ARTICLES_DB, normalize_digest_entry
 from journal_bot.signals import suggest_emergent_motifs
 from journal_bot.settings import (
     PROJECT_ROOT,
@@ -166,6 +166,8 @@ def _save_agent_context(ctx: dict[str, Any]) -> None:
 _agent_state: dict = {
     "context": _load_agent_context(),
     "messages": [],
+    "use_local": None,  # None = follow settings.RESEARCH_USE_LOCAL; else session override
+    "local_model": None,  # None = settings.MODEL_AGENT_LOCAL; else session-selected Ollama model
 }
 
 
@@ -253,18 +255,12 @@ def _normalize_agent_entry(entry: Any) -> dict[str, Any]:
     The agent (esp. Gemini 3.5 Flash) sometimes omits fields like `kernthese`
     in its `submit_digest_entry` call. Templates access these directly
     (`a.agent_entry.kernthese[:300]`), so a missing key raised an
-    UndefinedError that 500'd the entire digest view. Filling safe defaults
-    here — the single chokepoint behind every parse site — keeps every
-    template robust without per-template guards. Idempotent.
+    UndefinedError that 500'd the entire digest view. This is the display-time
+    safety net for legacy rows; new writes are already normalized at the
+    persistence choke point (store.update_agent_result). Delegates to the
+    single source of truth in store so write- and read-side behave identically.
     """
-    if not isinstance(entry, dict):
-        entry = {}
-    entry.setdefault("kernthese", "")
-    entry.setdefault("verdict_begruendung", "")
-    entry.setdefault("theoretisch_methodisch", "")
-    entry.setdefault("bezuege", [])
-    entry.setdefault("bemerkenswert", [])
-    return entry
+    return normalize_digest_entry(entry)
 
 
 def _prepare_articles_for_view(
@@ -437,6 +433,39 @@ def digest():
             "sort": sort_mode,
         },
         total=len(ordered_articles),
+    )
+
+
+STATE_LABEL = {
+    "konsens_behalten": "Konsens behalten (1+1)",
+    "dissens": "Dissens — geflaggt",
+    "ein_signal": "nur eine Stimme",
+    "konsens_wegwerfen": "Konsens wegwerfen",
+}
+
+
+@app.route("/kombiniert")
+def kombiniert():
+    """Proof-Ansicht: Cascade- + LLM-Triage kombiniert, am Gold-Satz gegen
+    Benjamins echtes Urteil. Liest combine_gold.json (scripts/combine_gold_export.py).
+    Zeigt deine Entscheidung (1+1 = stärkstes Signal, Dissens = recall-schützend
+    behalten, Konsens-wegwerfen = einziger Wegwurf) an realen Artikeln."""
+    gold_file = PROJECT_ROOT / "combine_gold.json"
+    if not gold_file.exists():
+        return render_template_string(
+            "<p style='padding:2rem'>Noch keine Daten. Erst "
+            "<code>.venv/bin/python scripts/combine_gold_export.py</code> laufen lassen.</p>")
+    data = json.loads(gold_file.read_text(encoding="utf-8"))
+    state_filter = request.args.get("state") or ""
+    entries = data["entries"]
+    if state_filter:
+        entries = [e for e in entries if e["state"] == state_filter]
+    return render_template(
+        "kombiniert.html",
+        data=data,
+        entries=entries,
+        state_filter=state_filter,
+        state_label=STATE_LABEL,
     )
 
 
@@ -616,29 +645,38 @@ def diskursraum(cluster_key: str | None = None):
 
 @app.route("/search")
 def search():
-    """Title search across all articles."""
+    """Word-boundary / regex search over titles, abstracts and agent analysis.
+
+    Word mode (default) matches whole words, so "mental health" no longer
+    matches "environmental". With ?regex=1 the query is interpreted as a raw
+    regular expression.
+    """
+    from journal_bot.search_utils import SearchError, search_rows
+    from journal_bot.store import _row_to_article
+
     q = request.args.get("q", "").strip()
+    regex_mode = request.args.get("regex", "").strip().lower() in ("1", "true", "on", "yes")
     articles = []
+    error = None
     if q:
         store = _store()
-        pattern = f"%{q}%"
-        with store._conn() as c:
-            rows = c.execute(
-                "SELECT * FROM articles WHERE title LIKE ? "
-                "ORDER BY year DESC, fetched_at DESC LIMIT 100",
-                (pattern,),
-            ).fetchall()
-        from journal_bot.store import _row_to_article
-        articles = [_row_to_article(r) for r in rows]
-        for a in articles:
-            if a.agent_entry and isinstance(a.agent_entry, str):
-                a.agent_entry = _normalize_agent_entry(json.loads(a.agent_entry))
-            a.journal_full = a.journal_full or _journal_full_name(a.journal_short)
+        try:
+            with store._conn() as c:
+                rows = search_rows(c, q, select="*", regex_mode=regex_mode, limit=100)
+            articles = [_row_to_article(r) for r in rows]
+            for a in articles:
+                if a.agent_entry and isinstance(a.agent_entry, str):
+                    a.agent_entry = _normalize_agent_entry(json.loads(a.agent_entry))
+                a.journal_full = a.journal_full or _journal_full_name(a.journal_short)
+        except SearchError as exc:
+            error = str(exc)
 
     return render_template(
         "search.html",
         articles=articles,
         q=q,
+        regex_mode=regex_mode,
+        error=error,
         verdict_label=VERDICT_LABEL,
         relation_label=RELATION_LABEL,
         total=len(articles),
@@ -730,6 +768,41 @@ def api_set_verdict():
         a=a,
         verdict_label=VERDICT_LABEL,
     )
+
+
+@app.route("/api/label", methods=["POST"])
+def api_set_label():
+    """Wie /api/verdict, aber OHNE Auto-Deepen — für die blinde Bewertung.
+
+    Bewusst kein LLM-Deepen-Call: Beim Blind-Labeln werden viele Artikel auf
+    'lesenswert' gesetzt; jeder Deepen wäre ein teurer Opus-Call (Kostenkontrolle).
+    Schreibt nur user_verdict in die DB.
+    """
+    store = _store()
+    article_id = request.form.get("article_id", "")
+    verdict = request.form.get("verdict", "")
+    if not article_id:
+        abort(400)
+    a = store.get(article_id)
+    if not a:
+        abort(404)
+
+    # 'kenne ich / Pflicht' → Sidecar-Ausschluss (kein DB-Verdict, raus aus Wertung)
+    if verdict == "__exclude__":
+        ex = _load_label_exclusions()
+        ex[article_id] = {"at": datetime.now().isoformat(timespec="seconds")}
+        _save_label_exclusions(ex)
+        return render_template("_label_controls.html", a=a, excluded=True)
+    if verdict == "__unexclude__":
+        ex = _load_label_exclusions()
+        ex.pop(article_id, None)
+        _save_label_exclusions(ex)
+        a = store.get(article_id)
+        return render_template("_label_controls.html", a=a, excluded=False)
+
+    store.set_user_verdict(article_id, verdict=verdict)
+    a = store.get(article_id)
+    return render_template("_label_controls.html", a=a, excluded=False)
 
 
 def _needs_deepening(a) -> bool:
@@ -940,6 +1013,74 @@ def review():
             "sort": sort_mode,
         },
         total=len(ordered_articles),
+    )
+
+
+LABEL_EXCLUSIONS_FILE = PROJECT_ROOT / "label_exclusions.json"
+LABEL_MIN_YEAR = 2024  # Recency-Fenster fürs Interesse-Sample (nur Anzeige-Hinweis)
+
+
+def _load_label_exclusions() -> dict:
+    """Manuell als 'kenne ich / Pflicht' markierte Artikel (raus aus der Wertung)."""
+    if LABEL_EXCLUSIONS_FILE.exists():
+        try:
+            return json.loads(LABEL_EXCLUSIONS_FILE.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return {}
+    return {}
+
+
+def _save_label_exclusions(d: dict) -> None:
+    LABEL_EXCLUSIONS_FILE.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _pick_abstract(a) -> str:
+    """Reiner Abstract-Text; OpenAlex-Inverted-Index-JSON ('{...}') vermeiden."""
+    ab = (getattr(a, "abstract", "") or "").strip()
+    if ab and not ab.startswith("{"):
+        return ab
+    oa = (getattr(a, "openalex_abstract", "") or "").strip()
+    return oa if oa and not oa.startswith("{") else ab
+
+
+@app.route("/label")
+def label_queue():
+    """Blinde Relevanz-Bewertung: abstract-only, KEIN Agent-Verdict, KEINE LLM-Kosten.
+
+    Liest ein Label-Set (JSON-Liste von {n, id, …}; Bucket wird NICHT angezeigt) und
+    zeigt die Artikel zur L/S/I-Bewertung. Schreibt user_verdict direkt in articles.db
+    (Ground-Truth-Wachstum). 'kenne ich'-Ausschlüsse landen in label_exclusions.json.
+    """
+    store = _store()
+    set_name = request.args.get("set", "bezugsautoren_sample_key.json")
+    set_path = PROJECT_ROOT / set_name
+    if not set_path.exists():
+        abort(404)
+    try:
+        keyset = json.loads(set_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        abort(500)
+
+    exclusions = _load_label_exclusions()
+    items, done, excluded_n = [], 0, 0
+    for k in keyset:
+        a = store.get(k.get("id", ""))
+        if not a:
+            continue
+        a.journal_full = a.journal_full or _journal_full_name(a.journal_short)
+        authors = a.authors or []
+        authors_str = ", ".join(authors[:6]) + (f" u. a. ({len(authors)})" if len(authors) > 6 else "")
+        is_excl = a.id in exclusions
+        if is_excl:
+            excluded_n += 1
+        elif a.user_verdict:
+            done += 1
+        items.append({"n": k.get("n"), "a": a, "authors": authors_str or "—",
+                      "abstract": _pick_abstract(a), "excluded": is_excl})
+
+    return render_template(
+        "label.html", items=items, total=len(items), done=done, excluded_n=excluded_n,
+        min_year=LABEL_MIN_YEAR, set_name=set_name, verdict_label=VERDICT_LABEL,
     )
 
 
@@ -2223,11 +2364,26 @@ def agent_page():
         except Exception:
             pass
 
+    import journal_bot.settings as _settings
+    from journal_bot.llm_client import list_local_models
+    use_local = (
+        _settings.RESEARCH_USE_LOCAL
+        if _agent_state.get("use_local") is None
+        else bool(_agent_state["use_local"])
+    )
+    current_local_model = _agent_state.get("local_model") or _settings.MODEL_AGENT_LOCAL
+    installed = list_local_models()
+    # Keep the configured/selected model selectable even if the server is down.
+    if current_local_model not in installed:
+        installed = [current_local_model] + installed
     ctx = _normalize_agent_context(_agent_state["context"])
     return render_template(
         "agent.html",
         db_article_count=stats["total"],
         corpus_count=corpus_count,
+        use_local=use_local,
+        local_model=current_local_model,
+        local_models=installed,
         context_set=bool(ctx.get("prompt_context")),
         context_preview=(
             ctx["prompt_context"][:300] + "…"
@@ -2289,6 +2445,13 @@ def api_agent_chat():
     data = request.get_json(force=True)
     message = data.get("message", "").strip()
     history = data.get("history", [])
+    local = data.get("local")
+    if local is not None:
+        _agent_state["use_local"] = bool(local)  # persist toggle for the session
+    # Model only applies to the local path; never route a local model name to the cloud.
+    model = (data.get("model") or "").strip() or None if local else None
+    if model:
+        _agent_state["local_model"] = model
 
     if not message:
         return jsonify({"error": "Keine Nachricht."}), 400
@@ -2300,6 +2463,8 @@ def api_agent_chat():
             message=message,
             history=history,
             user_context=user_context,
+            model=model,
+            local=local,
         )
     except Exception as e:
         return jsonify({"error": str(e)}), 500

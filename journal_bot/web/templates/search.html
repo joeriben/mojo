@@ -6,12 +6,19 @@
 <h1 style="font-size:1.3rem; margin-bottom:.75rem;">
   Suche
   {% if q %}
-  <span class="section-count">— {{ total }} Ergebnis{{ "se" if total != 1 }} für „{{ q }}"</span>
+  <span class="section-count">— {{ total }} Ergebnis{{ "se" if total != 1 }} für „{{ q }}"{% if regex_mode %} (Regex){% endif %}</span>
   {% endif %}
 </h1>
 
-{% if not q %}
-<p style="color:var(--muted);">Suchbegriff eingeben, um Artikel nach Titel zu durchsuchen.</p>
+{% if error %}
+<p style="color:var(--danger, #c0392b);">⚠ {{ error }}</p>
+{% elif not q %}
+<p style="color:var(--muted);">
+  Suchbegriff eingeben — durchsucht Titel, Abstract und Agent-Analyse.
+  Mehrere Wörter werden als Ganzwörter UND-verknüpft („mental health" findet
+  nicht „environmental"); <code>"…"</code> sucht eine Phrase. Mit dem
+  <code>.*</code>-Häkchen wird der Begriff als regulärer Ausdruck interpretiert.
+</p>
 {% elif not articles %}
 <p style="color:var(--muted);">Keine Treffer für „{{ q }}".</p>
 {% else %}

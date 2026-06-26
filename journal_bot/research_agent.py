@@ -15,16 +15,20 @@ import re
 from pathlib import Path
 from typing import Any
 
-from journal_bot.llm_client import build_client
+from journal_bot.llm_client import (
+    build_client,
+    build_research_backend,
+    check_local_backend,
+)
 from journal_bot.llm_log import record_llm_call
 from journal_bot.settings import (
     CORPUS_JSON,
-    MODEL_AGENT,
     RESEARCHER_AREAS,
     RESEARCHER_INSTITUTION,
     RESEARCHER_NAME,
     SUMMARIES_JSON,
 )
+from journal_bot.search_utils import SearchError, search_rows
 from journal_bot.store import ARTICLES_DB, Store
 
 # Hard cost caps for the research agent — same philosophy as agent.batch_screen:
@@ -917,6 +921,32 @@ def _search_articles_by_text(
     return _search_articles_by_plan(plan, limit=limit)
 
 
+def _grep_articles(query: str, *, regex_mode: bool = False, limit: int = 12) -> list[dict]:
+    """Precise word-boundary / regex search over articles.db.
+
+    Unlike `_search_articles_by_text` (fuzzy term expansion + scoring), this is a
+    literal grep: a query is matched as whole words (or, with regex_mode, as a
+    raw regular expression) so "mental" never matches "environmental". Scans all
+    articles; analysed ones are surfaced first.
+    """
+    store = Store()
+    select = (
+        "id, journal_short, journal_full, title, authors_json, doi, year, "
+        "agent_verdict, agent_entry_json, openalex_topics, openalex_concepts, "
+        "signal_group, suggested_subgroup, discourse_indicator, citation_hits_json"
+    )
+    with store._conn() as c:
+        rows = search_rows(
+            c,
+            query,
+            select=select,
+            regex_mode=regex_mode,
+            order_by="(agent_verdict IS NOT NULL) DESC, year DESC",
+            limit=limit,
+        )
+    return [_row_to_search_result(r) for r in rows]
+
+
 def _search_articles_by_verdict(
     verdicts: list[str], limit: int = 50
 ) -> list[dict]:
@@ -955,6 +985,41 @@ TOOL_DEFINITIONS = [
                     "query": {
                         "type": "string",
                         "description": "Natural-language search request or compact keyword bundle.",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max results (default 20).",
+                    },
+                },
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "grep_articles",
+            "description": (
+                "Precise word-boundary search over the MOJO article database. Use this "
+                "instead of search_mojo_db when you need EXACT term matching — a specific "
+                "phrase, name, or coinage — and must avoid substring false positives (a "
+                "query for 'mental' must not return 'environmental'). Each whitespace-"
+                "separated word must occur as a whole word (AND); wrap a phrase in double "
+                "quotes to require contiguity. Set regex=true to pass a raw Python regular "
+                "expression instead (case-insensitive, '.' spans newlines)."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": (
+                            "Whole-word query, a quoted phrase, or a regex when regex=true."
+                        ),
+                    },
+                    "regex": {
+                        "type": "boolean",
+                        "description": "Interpret query as a raw regular expression. Default false.",
                     },
                     "limit": {
                         "type": "integer",
@@ -1025,6 +1090,43 @@ FOCUSED_DB_TOOL_DEFINITIONS = [
                             "Compact keyword or phrase bundle, e.g. "
                             "'Dewey Bentley transactionalism language ontology'."
                         ),
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max results for this query, usually 8-20.",
+                    },
+                },
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "grep_articles",
+            "description": (
+                "Precise word-boundary search over the MOJO article database. Use this "
+                "instead of search_articles when you need EXACT term matching — a "
+                "specific phrase, name, or coinage — and must avoid substring false "
+                "positives (a query for 'mental' must not return 'environmental'). "
+                "Each whitespace-separated word must occur as a whole word (AND); wrap a "
+                "phrase in double quotes to require contiguity. Set regex=true to pass a "
+                "raw Python regular expression instead (case-insensitive, '.' spans "
+                "newlines), e.g. 'bildung.*(KI|AI)' or r'\\bpost-?digital\\b'."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": (
+                            "Whole-word query (e.g. 'mental health'), a quoted phrase "
+                            "(e.g. '\"situated knowledge\"'), or a regex when regex=true."
+                        ),
+                    },
+                    "regex": {
+                        "type": "boolean",
+                        "description": "Interpret query as a raw regular expression. Default false.",
                     },
                     "limit": {
                         "type": "integer",
@@ -1113,6 +1215,22 @@ def _execute_tool(name: str, args: dict, user_context: str | None = None) -> str
         )
         if not results:
             return "Keine Treffer gefunden."
+        return f"{len(results)} Treffer:\n\n" + _format_search_results(
+            results,
+            include_reasons=True,
+        )
+
+    elif name == "grep_articles":
+        query = args.get("query", "")
+        regex_mode = bool(args.get("regex", False))
+        limit = max(1, min(int(args.get("limit", 20) or 20), 40))
+        try:
+            results = _grep_articles(query, regex_mode=regex_mode, limit=limit)
+        except SearchError as exc:
+            return f"Ungültige Regex-Query: {exc}"
+        if not results:
+            mode = "Regex" if regex_mode else "Ganzwort"
+            return f"Keine Treffer ({mode}) für Query: {query}"
         return f"{len(results)} Treffer:\n\n" + _format_search_results(
             results,
             include_reasons=True,
@@ -1208,6 +1326,23 @@ def _execute_focused_db_tool(name: str, args: dict) -> str:
             6500,
         )
 
+    if name == "grep_articles":
+        query = args.get("query", "")
+        regex_mode = bool(args.get("regex", False))
+        limit = max(1, min(int(args.get("limit", 10) or 10), 20))
+        try:
+            results = _grep_articles(query, regex_mode=regex_mode, limit=limit)
+        except SearchError as exc:
+            return f"Ungültige Regex-Query: {exc}"
+        if not results:
+            mode = "Regex" if regex_mode else "Ganzwort"
+            return f"Keine Treffer ({mode}) für Query: {query}"
+        return _trim_text(
+            f"{len(results)} Treffer für Query: {query}\n\n"
+            + _format_focused_search_results(results),
+            6500,
+        )
+
     if name == "read_article_detail":
         return _trim_text(_execute_tool(name, args, user_context=None), 3200)
 
@@ -1265,6 +1400,30 @@ def _usage_cost(usage: Any, model: str, prompt_tokens: int, completion_tokens: i
     if "claude-opus" in model:
         return (prompt_tokens * 15.0 + completion_tokens * 75.0) / 1_000_000
     return 0.0
+
+
+def _resolve_local(local: bool | None) -> bool:
+    """Per-call override wins; otherwise the RESEARCH_USE_LOCAL default (live)."""
+    import journal_bot.settings as _s
+
+    return _s.RESEARCH_USE_LOCAL if local is None else bool(local)
+
+
+def _system_message(system_prompt: str, backend) -> dict:
+    """System message shaped for the backend: cache_control block vs plain text.
+
+    The Anthropic-via-OpenRouter cache_control block keeps the system prompt
+    cached across tool rounds; Ollama rejects/ignores that structure, so the
+    local path sends a plain string.
+    """
+    if backend.sends_cache_control:
+        return {
+            "role": "system",
+            "content": [
+                {"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}
+            ],
+        }
+    return {"role": "system", "content": system_prompt}
 
 
 def prepare_context(
@@ -1543,6 +1702,9 @@ def build_focused_db_system_prompt(user_context: str | None = None) -> str:
         "- Formuliere zuerst Suchhypothesen aus dem Anliegen des Users.",
         "- Führe 3 bis maximal 5 search_articles-Aufrufe mit unterschiedlichen Vokabularen aus:",
         "  Namen, Schulen, Gegenbegriffe, englische/deutsche Varianten, Schreibvarianten.",
+        "- Für exakte Begriffe, Eigennamen oder Wortprägungen nutze grep_articles statt",
+        "  search_articles: es matcht Ganzwörter (kein Substring-Fehltreffer wie 'mental'",
+        "  in 'environmental'); mit regex=true ist ein roher regulärer Ausdruck möglich.",
         "- Bei Vergleichs- oder Kontrastfragen musst du beide Seiten separat suchen, nicht nur",
         "  die direkte Schnittmenge. Einseitige Treffer können wichtige Kontrastfolien sein.",
         "- Lies danach maximal 4 Details der plausibelsten Kandidaten mit read_article_detail.",
@@ -1611,10 +1773,18 @@ def focused_db_chat(
     history: list[dict[str, str]],
     user_context: str | None = None,
     model: str | None = None,
+    local: bool | None = None,
 ) -> dict[str, Any]:
     """Run a lean LLM tool loop that searches and evaluates articles.db."""
-    client = build_client()
-    model = model or MODEL_AGENT
+    use_local = _resolve_local(local)
+    backend = build_research_backend(local=use_local, model=model)
+    if use_local:
+        ok, msg = check_local_backend(backend.model)
+        if not ok:
+            return {"content": msg, "tokens_used": 0, "tokens_in": 0,
+                    "tokens_out": 0, "cost_usd": 0.0, "aborted": True,
+                    "abort_reason": "local_backend_unavailable"}
+    model = backend.model
     system_prompt = build_focused_db_system_prompt(user_context)
 
     messages = []
@@ -1641,27 +1811,18 @@ def focused_db_chat(
     max_tool_calls = 8
     tool_call_count = 0
 
-    # Cache-fähig: Anthropic-Cache greift nur wenn der System-Block stabil bleibt
-    # zwischen den Iterationen. focused_db_chat hatte das vorher nicht — jeder
-    # Tool-Round hat den 600+ token system_prompt neu bezahlt.
-    system_message = {
-        "role": "system",
-        "content": [
-            {
-                "type": "text",
-                "text": system_prompt,
-                "cache_control": {"type": "ephemeral"},
-            }
-        ],
-    }
+    # Cache-fähig (Cloud): Anthropic-Cache greift nur wenn der System-Block
+    # stabil bleibt zwischen den Iterationen. Lokal (Ollama) wird stattdessen
+    # ein Plain-String gesendet — _system_message regelt das pro Backend.
+    system_message = _system_message(system_prompt, backend)
     aborted_reason = ""
     for round_num in range(1, max_tool_rounds + 1):
-        response = client.chat.completions.create(
+        response = backend.client.chat.completions.create(
             model=model,
             messages=[system_message] + messages,
             tools=FOCUSED_DB_TOOL_DEFINITIONS,
             max_tokens=2200,
-            extra_body={"transforms": ["middle-out"]},
+            extra_body=backend.extra_body,
         )
 
         choice = response.choices[0]
@@ -1749,11 +1910,11 @@ def focused_db_chat(
                 "Relevanz und schwachen Treffern; benenne Lücken der MOJO-DB."
             ),
         })
-        response = client.chat.completions.create(
+        response = backend.client.chat.completions.create(
             model=model,
             messages=[system_message] + messages,
             max_tokens=3200,
-            extra_body={"transforms": ["middle-out"]},
+            extra_body=backend.extra_body,
         )
         usage = getattr(response, "usage", None)
         final_cost = 0.0
@@ -1803,6 +1964,7 @@ def chat(
     history: list[dict[str, str]],
     user_context: str | None = None,
     model: str | None = None,
+    local: bool | None = None,
 ) -> dict[str, Any]:
     """Run a single chat turn with tool use.
 
@@ -1819,16 +1981,25 @@ def chat(
                 "cost_usd": 0.0,
             }
 
+    use_local = _resolve_local(local)
+
     if _should_use_focused_db_agent(message, user_context):
         return focused_db_chat(
             message=message,
             history=history,
             user_context=user_context,
             model=model,
+            local=use_local,
         )
 
-    client = build_client()
-    model = model or MODEL_AGENT
+    backend = build_research_backend(local=use_local, model=model)
+    if use_local:
+        ok, msg = check_local_backend(backend.model)
+        if not ok:
+            return {"content": msg, "tokens_used": 0, "tokens_in": 0,
+                    "tokens_out": 0, "cost_usd": 0.0, "aborted": True,
+                    "abort_reason": "local_backend_unavailable"}
+    model = backend.model
     system_prompt = build_system_prompt(user_context)
 
     # Build messages
@@ -1848,24 +2019,15 @@ def chat(
     max_iterations = 5
     aborted_reason = ""
     content = ""
-    system_message = {
-        "role": "system",
-        "content": [
-            {
-                "type": "text",
-                "text": system_prompt,
-                "cache_control": {"type": "ephemeral"},
-            }
-        ],
-    }
+    system_message = _system_message(system_prompt, backend)
 
     for iter_num in range(1, max_iterations + 1):
-        response = client.chat.completions.create(
+        response = backend.client.chat.completions.create(
             model=model,
             messages=[system_message] + messages,
             tools=TOOL_DEFINITIONS,
             max_tokens=4096,
-            extra_body={"transforms": ["middle-out"]},
+            extra_body=backend.extra_body,
         )
 
         choice = response.choices[0]

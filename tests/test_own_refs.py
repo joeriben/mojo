@@ -225,6 +225,70 @@ def test_incremental_new_pdf(tmp_path, monkeypatch):
     )
 
 
+# ----- Test 4: leere Source-Stubs (titellos + ohne PDF) -----------------------
+
+
+def test_empty_stub_not_ingested(tmp_path, monkeypatch):
+    """Ein titelloser DOI-Eintrag ohne PDF (wie die 5 AI&Society-Stubs in
+    QM7TZT44) darf KEINEN Werk-Record erzeugen — er trägt null Erdungssignal
+    und verfälscht jede Coverage-Zahl. Ein echtes (betiteltes) Werk daneben
+    bleibt erhalten."""
+    empty = DiscoveredItem(
+        source_type="zotero", source_key="TESTCOLL", source_item_id="EMPTY1",
+        title="", authors=[], doi="10.1007/s00146-025-99999-9", year=None,
+        item_type="journalArticle", venue=None, pdf_path=None,
+    )
+    real = DiscoveredItem(
+        source_type="zotero", source_key="TESTCOLL", source_item_id="REAL1",
+        title="Digital-kulturelle Praktiken als immaterielles Erbe",
+        authors=["Klepacki, L.", "Jörissen, Benjamin", "Pino, M."],
+        doi="10.1515/para-2024-0043", year=2024,
+        item_type="journalArticle", venue="Paragrana", pdf_path=None,
+    )
+    monkeypatch.setattr(build_mod, "extract_refs", _mock_extract_factory({}))
+    monkeypatch.setattr(build_mod, "resolve_dois", _mock_resolve_factory({}))
+
+    db = tmp_path / "own_refs.db"
+    stats = build([_FakeZoteroSource([empty, real])], db_path=db, verbose=False)
+
+    assert stats.items_skipped_empty == 1
+    with OwnRefsStore(db) as store:
+        pubs = list(store.iter_publications())
+        assert len(pubs) == 1, f"empty stub leaked in: {[p.canonical_id for p in pubs]}"
+        assert pubs[0].canonical_id == "doi:10.1515/para-2024-0043"
+
+
+def test_empty_stub_self_heals_existing(tmp_path, monkeypatch):
+    """Ein bereits eingebauter Leer-Stub (additiver Alt-Lauf) wird beim
+    nächsten Build entfernt, sobald die Quelle ihn weiterhin titellos liefert
+    — die Reinigung hängt nicht an einem manuellen Purge."""
+    from journal_bot.own_refs.store import Publication
+
+    db = tmp_path / "own_refs.db"
+    # Alt-Zustand: Leer-Stub liegt schon in der DB.
+    with OwnRefsStore(db) as store:
+        store.upsert_publication(Publication(
+            canonical_id="doi:10.1007/s00146-025-99999-9",
+            title="", authors=[], doi="10.1007/s00146-025-99999-9",
+            year=None, item_type="journalArticle", venue=None,
+            discourse=None, notes=["no_pdf_attachment", "no_pdf"],
+        ))
+        assert store.count_publications() == 1
+
+    empty = DiscoveredItem(
+        source_type="zotero", source_key="TESTCOLL", source_item_id="EMPTY1",
+        title="", authors=[], doi="10.1007/s00146-025-99999-9", year=None,
+        item_type="journalArticle", venue=None, pdf_path=None,
+    )
+    monkeypatch.setattr(build_mod, "extract_refs", _mock_extract_factory({}))
+    monkeypatch.setattr(build_mod, "resolve_dois", _mock_resolve_factory({}))
+
+    stats = build([_FakeZoteroSource([empty])], db_path=db, verbose=False)
+    assert stats.items_skipped_empty == 1
+    with OwnRefsStore(db) as store:
+        assert store.count_publications() == 0, "stale empty stub was not purged"
+
+
 # ----- Unit-Tests: identity --------------------------------------------------
 
 

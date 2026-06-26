@@ -244,6 +244,46 @@ def cmd_trends(args: argparse.Namespace) -> int:
     return 0
 
 
+def _parse_year_window(spec: str) -> tuple[int, int]:
+    """'2016-2019' → (2016, 2019)."""
+    try:
+        a, b = spec.split("-", 1)
+        return int(a), int(b)
+    except (ValueError, AttributeError):
+        raise SystemExit(f"Ungültiges Jahr-Fenster '{spec}', erwartet JJJJ-JJJJ.")
+
+
+def cmd_explore(args: argparse.Namespace) -> int:
+    from journal_bot import corpus_explore
+
+    if args.action == "trends":
+        corpus_explore.run(
+            early=_parse_year_window(args.early),
+            late=_parse_year_window(args.late),
+            score_min=args.score_min,
+            min_journal=args.min_journal,
+            top_n=args.top_n,
+            out=Path(args.out) if args.out else None,
+            verbose=not args.quiet,
+        )
+        return 0
+    if args.action == "coupling":
+        corpus_explore.coupling.run(
+            start_year=args.start_year,
+            end_year=args.end_year,
+            max_df=args.max_df,
+            min_shared=args.min_shared,
+            resolution=args.resolution,
+            min_community=args.min_community,
+            resolve_titles=not args.no_titles,
+            out=Path(args.out) if args.out else None,
+            verbose=not args.quiet,
+        )
+        return 0
+    print(f"Unbekannte Aktion: {args.action}")
+    return 2
+
+
 def cmd_biblio(args: argparse.Namespace) -> int:
     from journal_bot import biblio
     biblio.run(
@@ -625,6 +665,7 @@ def cmd_refs(args: argparse.Namespace) -> int:
         print(f"    new:              {stats.items_new}")
         print(f"    updated:          {stats.items_updated}")
         print(f"    unchanged:        {stats.items_skipped_unchanged}")
+        print(f"    empty-stub skip:  {stats.items_skipped_empty}")
         print(f"  PDFs extracted:     {stats.pdfs_extracted}")
         print(f"  PDFs failed:        {stats.pdfs_failed}")
         print(f"  items without PDF:  {stats.items_without_pdf}")
@@ -1487,6 +1528,53 @@ def main(argv: list[str] | None = None) -> int:
         help="Flask-Debug-Mode mit Reloader (Dev-only, brennt CPU im KeepAlive-Service).",
     )
     p_web.set_defaults(func=cmd_web)
+
+    # --- mojo explore (algorithmische Korpus-Erschließung; Auftrag: ------
+    #     docs/mojo2_korpus_exploration_goal.md) ----------------------------
+    p_explore = sub.add_parser(
+        "explore",
+        help="Algorithmische Korpus-Erschließung (Struktur/Trends, kein LLM)",
+    )
+    p_explore.set_defaults(func=cmd_explore)
+    explore_sub = p_explore.add_subparsers(dest="action", required=True)
+
+    p_etr = explore_sub.add_parser(
+        "trends",
+        help="Themen-Trajektorien (within-journal-dekomponiert; Korpus-Anteil nur als Kontrast)",
+    )
+    p_etr.add_argument("--early", default="2016-2019", help="Frühes Fenster JJJJ-JJJJ")
+    p_etr.add_argument("--late", default="2022-2025", help="Spätes Fenster JJJJ-JJJJ")
+    p_etr.add_argument("--score-min", type=float, default=0.5, dest="score_min",
+                       help="Topic gilt ab diesem OpenAlex-score als präsent (Default 0.5)")
+    p_etr.add_argument("--min-journal", type=int, default=30, dest="min_journal",
+                       help="Mindest-Artikel je Journal UND Fenster fürs Panel (Default 30)")
+    p_etr.add_argument("--top-n", type=int, default=25, dest="top_n",
+                       help="Auf-/Absteiger je Tabelle (Default 25)")
+    p_etr.add_argument("--out", default="",
+                       help="Markdown-Report schreiben (leer = nur Konsolen-Summary)")
+    p_etr.add_argument("--quiet", action="store_true")
+
+    p_ecp = explore_sub.add_parser(
+        "coupling",
+        help="Bibliografische Kopplungs-Communities (geteilte Referenzbasis; gegen Diskursräume)",
+    )
+    p_ecp.add_argument("--start-year", type=int, default=None, dest="start_year",
+                       help="Frühestes Jahr (leer = alle)")
+    p_ecp.add_argument("--end-year", type=int, default=None, dest="end_year",
+                       help="Spätestes Jahr (leer = alle)")
+    p_ecp.add_argument("--max-df", type=int, default=50, dest="max_df",
+                       help="Referenzen über dieser Zitationshäufigkeit = Stoppwort, gekappt (Default 50)")
+    p_ecp.add_argument("--min-shared", type=int, default=2, dest="min_shared",
+                       help="Kante nur ab so vielen geteilten Referenzen (Default 2)")
+    p_ecp.add_argument("--resolution", type=float, default=1.0,
+                       help="Louvain-Auflösung; größer → mehr, kleinere Communities (Default 1.0)")
+    p_ecp.add_argument("--min-community", type=int, default=20, dest="min_community",
+                       help="Nur Communities ab dieser Größe melden (Default 20)")
+    p_ecp.add_argument("--no-titles", action="store_true", dest="no_titles",
+                       help="Geteilte Referenzen NICHT zu Titeln auflösen (offline, kein OpenAlex-Lookup)")
+    p_ecp.add_argument("--out", default="",
+                       help="Markdown-Report schreiben (leer = nur Konsolen-Summary)")
+    p_ecp.add_argument("--quiet", action="store_true")
 
     args = parser.parse_args(argv)
     return args.func(args)

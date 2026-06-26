@@ -26,6 +26,118 @@ from journal_bot.settings import PROJECT_ROOT
 ARTICLES_DB = PROJECT_ROOT / "articles.db"
 
 
+# --- Digest-Entry-Normalisierung -------------------------------------------
+#
+# Display-kritische Felder, die jede Render-Schicht (Web, Markdown, Obsidian,
+# Zotero) direkt vom agent_entry liest. Der Agent — besonders Gemini 3.5 Flash
+# — lässt `kernthese` im submit_digest_entry-Tool-Call gelegentlich weg, obwohl
+# das Tool-Schema es als `required` führt (siehe journal_bot/agent.py TOOLS).
+# Templates greifen ungeschützt zu (`a.agent_entry.kernthese[:300]`), ein
+# fehlender Key hat damit die ganze Digest-View mit einem 500 lahmgelegt.
+# Statt dem Modell zu vertrauen, garantieren wir die Felder am Schreib-Choke-
+# point (update_agent_result / set_attention_profile). Die Feldmenge spiegelt
+# die `required`-Liste von submit_digest_entry.
+_DIGEST_ENTRY_STR_FIELDS = ("kernthese", "verdict_begruendung", "theoretisch_methodisch")
+_DIGEST_ENTRY_LIST_FIELDS = ("bezuege", "bemerkenswert")
+# Listen-Felder, deren Items Strings sind (nicht Objekte). Bei diesen darf ein
+# unparsbarer String verlustfrei als EINZELNE Notiz erhalten bleiben; bei
+# Objekt-Listen (bezuege) ginge das nicht — die Templates rufen b.get(...).
+_DIGEST_ENTRY_STRING_LIST_FIELDS = ("bemerkenswert",)
+
+
+def _unwrap_single_note(s: str) -> str:
+    """Schäle einen kaputten ['…']-Array-Wrapper zu einer lesbaren Notiz ab.
+
+    Greift nur, wenn json.loads den String NICHT parsen konnte (z.B. weil das
+    Modell ein inneres `"` nicht escaped hat). Entfernt eine äußere []-Klammer
+    und äußere Anführungszeichen, damit die Notiz ohne JSON-Müll angezeigt wird.
+    """
+    s = s.strip()
+    if len(s) >= 2 and s[0] == "[" and s[-1] == "]":
+        s = s[1:-1].strip()
+    if len(s) >= 2 and s[0] in "\"'" and s[-1] in "\"'":
+        s = s[1:-1].strip()
+    return s
+
+
+def _coerce_to_list(v: Any, *, wrap_scalar: bool = False) -> list:
+    """Bringe ein Listen-Feld auf eine echte Liste — verlustarm.
+
+    Gemini serialisiert Listen-Felder gelegentlich als JSON-String
+    ('["a", "b"]') statt als echtes Array. Wir parsen das zurück, damit der
+    Inhalt überlebt — die Templates iterieren über diese Felder, ein roher
+    String würde über die EINZELZEICHEN iterieren (latenter Display-Bug).
+
+    `wrap_scalar=True` (nur für String-Item-Listen wie bemerkenswert): ein
+    nicht-leerer, aber unparsbarer String (kaputtes/un-escaptes JSON) wird als
+    EINZELNE Notiz erhalten statt verworfen. Bei Objekt-Listen (bezuege) bleibt
+    es bei [] — ein String-Item würde die Templates (b.get(...)) sprengen.
+    """
+    if isinstance(v, list):
+        return v
+    if isinstance(v, str) and v.strip():
+        try:
+            parsed = json.loads(v)
+            if isinstance(parsed, list):
+                return parsed
+        except (json.JSONDecodeError, ValueError):
+            pass
+        if wrap_scalar:
+            note = _unwrap_single_note(v)
+            return [note] if note else []
+    return []
+
+
+def _derive_kernthese(entry: dict) -> str:
+    """Best-effort kernthese aus den Feldern, die der Agent tatsächlich gefüllt hat.
+
+    Priorität nach Register-Nähe zur kernthese (deskriptiv, was der Artikel
+    behandelt): `theoretisch_methodisch` (deskriptiv, in der Praxis bei allen
+    fehlenden Fällen vorhanden) → erstes `bemerkenswert` → `verdict_begruendung`
+    (evaluativ, daher letzte Wahl).
+    """
+    tm = entry.get("theoretisch_methodisch")
+    if isinstance(tm, str) and tm.strip():
+        return tm.strip()
+    bem = entry.get("bemerkenswert") or []
+    if bem and isinstance(bem[0], str) and bem[0].strip():
+        return bem[0].strip()
+    vb = entry.get("verdict_begruendung")
+    if isinstance(vb, str) and vb.strip():
+        return vb.strip()
+    return ""
+
+
+def normalize_digest_entry(entry: Any) -> dict:
+    """Garantiert alle display-kritischen Keys eines agent_entry. Idempotent.
+
+    - Stellt die drei String- und zwei Listen-Felder mit sicheren, korrekt
+      typisierten Defaults bereit (fehlend/None/falscher Typ → "" bzw. []).
+    - Ist `kernthese` leer/fehlend, wird sie lokal aus den vom Agenten
+      gefüllten Feldern rekonstruiert (siehe _derive_kernthese). KEIN
+      LLM-Repair-Call → keine zusätzlichen API-Kosten (vgl. CLAUDE.md
+      Kostenregel).
+
+    Mutiert und liefert dasselbe Dict zurück (Vertrag wie der bisherige
+    _normalize_agent_entry in web/app.py). Nicht-Dict-Input ergibt ein frisches
+    Default-Dict. Bestehende, nicht-leere Werte bleiben unangetastet.
+    """
+    if not isinstance(entry, dict):
+        entry = {}
+    for f in _DIGEST_ENTRY_STR_FIELDS:
+        v = entry.get(f)
+        if not isinstance(v, str):
+            entry[f] = "" if v is None else str(v)
+    for f in _DIGEST_ENTRY_LIST_FIELDS:
+        if not isinstance(entry.get(f), list):
+            entry[f] = _coerce_to_list(
+                entry.get(f), wrap_scalar=(f in _DIGEST_ENTRY_STRING_LIST_FIELDS)
+            )
+    if not entry["kernthese"].strip():
+        entry["kernthese"] = _derive_kernthese(entry)
+    return entry
+
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS articles (
     id                  TEXT PRIMARY KEY,
@@ -305,6 +417,12 @@ class Store:
         suggested_subgroup_reason: str = "",
         suggested_subgroup_confidence: float = 0.0,
     ) -> None:
+        # Guarantee display-critical fields before persisting — the agent may
+        # have omitted `kernthese`. This is the single write choke point for
+        # agent results (CLI batch_digest + web deepen both route here), so
+        # normalizing here keeps every downstream renderer (web, markdown,
+        # Obsidian, Zotero) safe at the source.
+        entry = normalize_digest_entry(entry)
         with self._conn() as c:
             c.execute(
                 """
@@ -399,6 +517,9 @@ class Store:
                     ),
                 )
             else:
+                # Same guarantee as update_agent_result: never persist an
+                # agent_entry that is missing display-critical fields.
+                entry = normalize_digest_entry(entry)
                 c.execute(
                     """
                     UPDATE articles SET

@@ -106,6 +106,39 @@ MODEL_TRENDS = _profile.get("model_trends", "xiaomi/mimo-v2.5-pro")
 # 32000 reicht für die Markdown-Dossiers (Q-Check-Outputs: 9518–11406 chars, finish=stop).
 MAX_TOKENS_TRENDS = int(_profile.get("max_tokens_trends", 32000))
 
+# --- Lokales Recherche-LLM (Ollama, kostenfrei) ---
+# Der Recherche-Agent (web /agent, focused_db_chat) kann auf ein lokales,
+# kostenfreies Modell via Ollama umgeschaltet werden, statt jeden Tool-Loop bei
+# OpenRouter zu bezahlen. Ollama spricht die OpenAI-kompatible API auf :11434.
+# Override via profile.json (ollama_base_url / model_agent_local /
+# research_use_local) oder Env (MOJO_OLLAMA_URL / MOJO_MODEL_AGENT_LOCAL /
+# MOJO_RESEARCH_LOCAL).
+OLLAMA_BASE_URL = _profile.get(
+    "ollama_base_url", os.environ.get("MOJO_OLLAMA_URL", "http://localhost:11434/v1")
+)
+# Default: qwen3:8b. Der Agent-Loop steht und fällt mit STRUKTURIERTEN tool_calls.
+# Empirisch (2026-06-16, Ollama-App 0.12.11): qwen3:8b und llama3.3 liefern saubere
+# tool_calls; mistral-nemo NICHT (es leakt `[TOOL_CALLS][…]` in den Text, weil diese
+# Ollama-Version das Mistral-Tool-Format nicht parst) — daher als Default ungeeignet,
+# obwohl es auf neueren Ollama-Builds (0.30.x) am schnellsten/saubersten war. llama3.3
+# ist zu langsam (42 GB, ~36s/Call). Bei Tool-Calling-Problemen anderes Modell via
+# profile.json `model_agent_local` setzen (`ollama list`).
+MODEL_AGENT_LOCAL = _profile.get(
+    "model_agent_local", os.environ.get("MOJO_MODEL_AGENT_LOCAL", "qwen3:8b")
+)
+
+
+def _env_flag(name: str) -> bool:
+    return os.environ.get(name, "").strip().lower() in ("1", "true", "yes", "on")
+
+
+# Standard: AUS — Recherche läuft weiter über die Cloud, bis bewusst auf lokal
+# umgeschaltet wird (UI-Toggle / profile.json / Env). So bricht nichts, wenn
+# Ollama nicht installiert/erreichbar ist.
+RESEARCH_USE_LOCAL = bool(
+    _profile.get("research_use_local", _env_flag("MOJO_RESEARCH_LOCAL"))
+)
+
 # --- API-Key-Ablage ---
 _KEY_DIR = Path.home() / ".config" / "mojo"
 KEY_FILE = _KEY_DIR / "openrouter_key"
@@ -134,6 +167,9 @@ def save_profile(data: dict) -> None:
     _self.MODEL_AGENT = data.get("model_agent", _self.MODEL_AGENT)
     _self.MODEL_TRENDS = data.get("model_trends", _self.MODEL_TRENDS)
     _self.MAX_TOKENS_TRENDS = int(data.get("max_tokens_trends", _self.MAX_TOKENS_TRENDS))
+    _self.OLLAMA_BASE_URL = data.get("ollama_base_url", _self.OLLAMA_BASE_URL)
+    _self.MODEL_AGENT_LOCAL = data.get("model_agent_local", _self.MODEL_AGENT_LOCAL)
+    _self.RESEARCH_USE_LOCAL = bool(data.get("research_use_local", _self.RESEARCH_USE_LOCAL))
     _self.TRIGGER_AUTHOR_PATTERNS = tuple(data.get("trigger_author_patterns") or ())
     _self.TRIGGER_AUTHOR_SLUGS = tuple(data.get("trigger_author_slugs") or ())
 

@@ -193,7 +193,7 @@
       "short": "SAE",
       "type": "openalex",
       "url": "issn:0039-3541",
-      "tier": "A",
+      "tier": "B",
       "enabled": true
     },
     {
@@ -263,6 +263,24 @@
       "tier": "B",
       "enabled": true,
       "issn": "1529-8094"
+    },
+    {
+      "name": "Computational Culture",
+      "short": "CompCult",
+      "type": "custom",
+      "url": "",
+      "tier": "A",
+      "enabled": true,
+      "issn": "2047-2390"
+    },
+    {
+      "name": "The Fibreculture Journal",
+      "short": "Fibreculture",
+      "type": "rss",
+      "url": "https://fibreculturejournal.org/category/article/feed/",
+      "tier": "C",
+      "enabled": true,
+      "issn": "1449 – 1443"
     }
   ]
 }

@@ -201,14 +201,22 @@
     <span class="brand">MOJO</span>
     <a href="/" {% if request.path == "/" %}class="active"{% endif %}>Digest</a>
     <a href="/review" {% if request.path == "/review" %}class="active"{% endif %}>Review</a>
+    <a href="/label" {% if request.path == "/label" %}class="active"{% endif %}>Blind</a>
+    <a href="/kombiniert" {% if request.path == "/kombiniert" %}class="active"{% endif %}>Kombiniert</a>
     <a href="/diskurs" {% if request.path.startswith("/diskurs") %}class="active"{% endif %}>Diskursräume</a>
     <a href="/overrides" {% if request.path == "/overrides" %}class="active"{% endif %}>Overrides</a>
     <a href="/agent" {% if request.path == "/agent" %}class="active"{% endif %}>Agent</a>
     <a href="/setup" {% if request.path == "/setup" %}class="active"{% endif %}>Setup</a>
-    <form action="/search" method="get" style="margin-left:auto; display:flex; gap:.3rem;">
+    <form action="/search" method="get" style="margin-left:auto; display:flex; gap:.3rem; align-items:center;">
       <input type="text" name="q" placeholder="Suche…" value="{{ request.args.get('q', '') }}"
              style="font-size:.85rem; padding:3px 8px; border:1px solid var(--border);
                     border-radius:4px; width:180px; background:var(--input-bg); color:var(--fg);">
+      <label title="Suchbegriff als regulären Ausdruck interpretieren"
+             style="font-size:.8rem; color:var(--muted); display:flex; align-items:center;
+                    gap:.2rem; cursor:pointer; user-select:none;">
+        <input type="checkbox" name="regex" value="1"
+               {% if request.args.get('regex') %}checked{% endif %}>.*
+      </label>
       <button type="submit" style="font-size:.85rem; padding:3px 10px; border:none;
               border-radius:4px; background:var(--accent); color:#fff; cursor:pointer;">
         Suche

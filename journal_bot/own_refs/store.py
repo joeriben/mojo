@@ -200,6 +200,23 @@ class OwnRefsStore:
     def count_publications(self) -> int:
         return self.con.execute("SELECT COUNT(*) FROM publications").fetchone()[0]
 
+    def delete_publication(self, canonical_id: str) -> bool:
+        """Remove a publication and its dependent rows (pub_refs, source_refs).
+
+        Idempotent: returns True if a publications row existed and was removed,
+        False otherwise. Used by the build to self-heal empty source stubs
+        (no title + no PDF) so a single watched-collection junk item cannot
+        contaminate the grounding corpus.
+        """
+        existed = self.con.execute(
+            "SELECT 1 FROM publications WHERE canonical_id = ?", (canonical_id,)
+        ).fetchone() is not None
+        self.con.execute("DELETE FROM pub_refs WHERE canonical_id = ?", (canonical_id,))
+        self.con.execute("DELETE FROM source_refs WHERE canonical_id = ?", (canonical_id,))
+        self.con.execute("DELETE FROM publications WHERE canonical_id = ?", (canonical_id,))
+        self.con.commit()
+        return existed
+
     # --- source refs ---
 
     def upsert_source_ref(self, sr: SourceRef) -> None:

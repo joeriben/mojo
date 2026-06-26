@@ -45,6 +45,13 @@ Ein persönlicher Forschungsassistent für Benjamin Jörissen (FAU Erlangen-Nür
 - `batch_screen()` in `agent.py` wirft `CacheNotHitError` bei <50% Cache-Hits ab Batch 2 nur für cache-kritische/teure Modelle; DeepSeek-Screening darf wegen fehlender Cache-Metrik nicht hart abbrechen
 - Anthropic/OpenRouter-Cache-Mindestgrößen sind modellabhängig; Opus 4.6 braucht aktuell 4096 cachebare Tokens (`cache_control` ist darunter ein stiller No-Op)
 
+## Lokales Recherche-LLM (Ollama, kostenfrei)
+- Der Recherche-Agent (`research_agent.chat` / `focused_db_chat`, web `/agent`) kann pro Anfrage auf ein lokales Ollama-Modell umgeschaltet werden → Tool-Loops kostenfrei. Toggle „lokal" im Agent-Panel; persistiert pro Session.
+- Abstraktion: `llm_client.build_research_backend(local=...)` liefert ein `LLMBackend` (Client/Modell/Cache/extra_body). Lokal = Plain-String-System (kein `cache_control`), kein OpenRouter-`transforms`, Kosten 0.
+- Modellwahl: Dropdown im Agent-Panel, befüllt aus `llm_client.list_local_models()` (= `ollama list`); pro Session persistiert. Fallback-Default `model_agent_local` (profile.json/`MOJO_MODEL_AGENT_LOCAL`, aktuell `qwen3:8b`). Weitere Settings: `ollama_base_url` (`MOJO_OLLAMA_URL`), `research_use_local` (Default false, `MOJO_RESEARCH_LOCAL`).
+- `llm_client.check_local_backend()` macht Preflight (Server erreichbar / Modell gepullt / Runner lauffähig) UND probt, ob das Modell **strukturierte `tool_calls`** liefert (der Loop liest `choice.message.tool_calls`; sonst sucht er nie) — Ergebnis pro Modell gecacht, Probe dient zugleich als Warm-up. Bei Fehler handlungsanweisende Meldung statt 500; KEIN stiller Fallback auf die kostenpflichtige Cloud.
+- Tool-Calling-Verlässlichkeit ist modell × Ollama-Version-abhängig UND teils INTERMITTIEREND. Beobachtet (2026-06-16, App 0.12.11): `qwen3:8b` end-to-end validiert (langsam, „denkt"); `llama3.3` ✓ (42 GB, ~36s); `mistral-nemo` einmal `[TOOL_CALLS]`-Leak, danach mehrfach sauber → NICHT als „kaputt" verallgemeinern (Ein-Sample-Fehlschluss); `gemma3` kein Tool-Support. Die Probe fängt nur Stand-zur-Probe-Zeit; intermittierende Leaks können durchrutschen — Modellwahl bleibt User-Sache (Dropdown).
+
 ## Was NICHT tun
 - Keine `.env`-Dateien vorschreiben (User kennt das Konzept nicht / will es nicht)
 - Keine Zotero-Collections manuell anlegen lassen

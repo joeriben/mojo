@@ -65,6 +65,7 @@ class BuildStats:
     items_new: int = 0
     items_updated: int = 0
     items_skipped_unchanged: int = 0
+    items_skipped_empty: int = 0
     items_without_pdf: int = 0
     pdfs_extracted: int = 0
     pdfs_failed: int = 0
@@ -306,6 +307,23 @@ def _ingest_item(
 ) -> None:
     canonical = canonical_id_for(item.doi, item.title, item.year, item.authors)
     existing = store.get_publication(canonical)
+
+    # Empty-stub guard: a source item with no title AND no PDF carries zero
+    # grounding signal — it cannot be classified, embedded, or ref-extracted.
+    # Such items appear when a bare DOI is dropped into the watched Zotero
+    # collection without metadata retrieval (observed: 5 untitled AI&Society
+    # DOI stubs in QM7TZT44). Faithfully ingesting them contaminates the
+    # corpus and every coverage metric. Skip them, and self-heal any stub that
+    # a prior build already wrote (the build is otherwise additive/idempotent).
+    if not (item.title or "").strip() and not item.pdf_path:
+        stats.items_skipped_empty += 1
+        if existing is not None and store.delete_publication(canonical):
+            if verbose:
+                print(f"  [skip-empty] entfernt veralteten Leer-Stub: {canonical}")
+        elif verbose:
+            print(f"  [skip-empty] übersprungen (kein Titel, kein PDF): {canonical}")
+        return
+
     extract_needed = force_refresh or _should_extract(item, store)
 
     pub_kwargs: dict = {}

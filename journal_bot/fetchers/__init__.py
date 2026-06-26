@@ -10,6 +10,7 @@ from journal_bot.fetchers.html_fetcher import HTMLFetcher
 from journal_bot.fetchers.openalex_fetcher import OpenAlexFetcher
 from journal_bot.fetchers.dce_fetcher import DCEFetcher
 from journal_bot.fetchers.configurable_fetcher import ConfigurableFetcher
+from journal_bot.fetchers.computational_culture_fetcher import ComputationalCultureFetcher
 
 
 def build_fetcher(
@@ -17,6 +18,10 @@ def build_fetcher(
     since_year: int | None = None,
     end_year: int | None = None,
 ) -> Fetcher:
+    # Speziell für Computational Culture
+    if jc.short == "CompCult":
+        return ComputationalCultureFetcher(jc, since_year=since_year, end_year=end_year)
+
     if jc.type == "rss":
         return RSSFetcher(jc)
     if jc.type == "ojs":

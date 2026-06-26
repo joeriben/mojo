@@ -118,7 +118,19 @@
         <textarea id="chat-input" class="chat-input" rows="2"
                   placeholder="Frage stellen…"
                   onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage(event);}"></textarea>
-        <button type="submit" class="btn btn-primary" id="send-btn">Senden</button>
+        <div class="chat-send-col">
+          <button type="submit" class="btn btn-primary" id="send-btn">Senden</button>
+          <label class="local-toggle" title="Recherche lokal über Ollama laufen lassen (kostenfrei, kein Cloud-Call)">
+            <input type="checkbox" id="use-local" {% if use_local %}checked{% endif %}
+                   onchange="document.getElementById('local-model').disabled=!this.checked"> lokal
+          </label>
+          <select id="local-model" class="local-model-select" title="Lokales Ollama-Modell (aus „ollama list")"
+                  {% if not use_local %}disabled{% endif %}>
+            {% for m in local_models %}
+            <option value="{{ m }}" {% if m == local_model %}selected{% endif %}>{{ m }}</option>
+            {% endfor %}
+          </select>
+        </div>
       </form>
     </div>
   </div>
@@ -127,6 +139,12 @@
 <style>
   .agent-layout { display: grid; grid-template-columns: 380px 1fr; gap: 1rem; }
   @media (max-width: 900px) { .agent-layout { grid-template-columns: 1fr; } }
+  .chat-send-col { display: flex; flex-direction: column; align-items: stretch; gap: .25rem; }
+  .local-toggle { display: flex; align-items: center; gap: .25rem; font-size: .72rem;
+                  color: var(--muted); cursor: pointer; user-select: none; white-space: nowrap; }
+  .local-model-select { font-family: monospace; font-size: .68rem; max-width: 150px;
+                        padding: 1px 2px; border: 1px solid var(--border); border-radius: 3px;
+                        background: var(--input-bg); color: var(--fg); }
 
   .agent-sidebar { display: flex; flex-direction: column; gap: .75rem; }
 
@@ -286,10 +304,13 @@ function sendMessage(e) {
   document.getElementById('chat-loading').style.display = 'block';
   document.getElementById('send-btn').disabled = true;
 
+  const useLocal = document.getElementById('use-local').checked;
+  const localModel = document.getElementById('local-model').value;
   fetch('/api/agent/chat', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({message: text, history: chatHistory.slice(0, -1)})
+    body: JSON.stringify({message: text, history: chatHistory.slice(0, -1),
+                          local: useLocal, model: useLocal ? localModel : null})
   }).then(async (r) => {
     const raw = await r.text();
     let data = null;
