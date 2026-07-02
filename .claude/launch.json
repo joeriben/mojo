@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mojo-web",
+      "runtimeExecutable": ".venv/bin/python",
+      "runtimeArgs": ["-m", "journal_bot.web.app"],
+      "port": 5555
+    }
+  ]
+}
