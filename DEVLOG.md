@@ -760,3 +760,45 @@ ac16130 feat: Suche + Trend/Biblio/Profil in Diskursraum-UI
 | 2025-Nachverarbeitung | ~$0.06 |
 | Vertiefungs-Tests | ~$0.50 |
 | **DB-Gesamtkosten** | **~$28** |
+
+## Session 2026-07-02 — Re-Vision (Fable 5) + P0/P1a/P1b/P4
+
+**Kontext:** Benjamin bat per `/goal` um eine umfassende Einschätzung des Gesamtprojekts als
+Natural-Language-Coding-Experiment → `docs/mojo_re_vision_2026-07-02.md` (drei Werkschichten,
+Erfolge/Dead Ends, Prioritäten P0–P5). Danach Freigabe: „P0 machen, dann die anderen P."
+
+**P0 — Forschungsschicht committet.** ~96 untracked Dateien (die gesamte Mess- und Konzeptschicht
+seit Ende Mai: 50er-Filtermodell-Serie, Konfabulations-Audit, bezugsautoren, combine, Label-UI,
+corpus_explore, Re-Vision) in 13 thematischen Commits. HEAD war vorher ohne die untracked
+Templates/search_utils nicht lauffähig — behoben. `.gitignore` um bezugsautoren.db,
+label_exclusions.json, ranker_params.json ergänzt.
+
+**P1a — substitutiver Eintrags-Komponist produktiv** (`journal_bot/entry_composer.py`).
+Motiv: Konfabulations-Audit (nur 12,7 % der LLM-Werk-Bezüge corroborated, 55,9 % ungrounded).
+Der Eintrag wird jetzt komponiert statt erzählt: Abstract verbatim + „Bezüge zu Deinem Werk
+[gerechnet]" (Referenz-Schnittmenge, attributiert auf Eigenwerke mit Titel/Jahr/Zotero-Key) +
+Umfeld-Annotation (Autor-Ebene, per iter_44 strikt kein Relevanz-Urteil) + ehrliche Leerstelle.
+LLM-Analyse bleibt gespeichert (§4-Erhalt), in der UI nachgeordnet als markiertes Details-Element.
+Hook in `digest.process_article` (deckt auch web-Vertiefen ab). Backfill über den Bestand:
+**18 909 Einträge, 27,9 % konkret verankert / 0,6 % umfeld / 71,6 % ehrliche Leerstelle** ($0).
+
+**P1b — M-E-Ranker verdrahtet** (`journal_bot/ranker.py` + `scripts/ranker_build_params.py`).
+Formel exakt iter_46/50: `mc = z(z(rich_sim) + 0.5·z(max(0, pj−G)))`, Biblio-Veto-Up; rich_sim
+live (all-MiniLM-L6-v2 gegen die Opus-Summaries), EB-Journal-Prior k=5 nur-Lift, eingefrorene
+Gold-z-Parameter. Rollenvertrag aus der Serie im Code erzwungen: Drop **nur im Konsens** mit dem
+Screening (combine_votes; Dissens-Rescue → FN-Halbierung), Sortierung des Agent-Laufs nach mc,
+kein Urteil ohne Abstract, kein sicher-KEEP. Parameter-Validierung [gerechnet]: Drop-Band blind
+41/189 = **22 %, 0 LES darin** — reproduziert iter_46 exakt (Gold inzwischen 798 Verdikte).
+`algo_mc`/`algo_zone` persistiert (Nachkalibrierung, iter_48-Caveat). Trigger-Autor:innen aus
+profile.json statt hartkodiert (OS-Schuld getilgt).
+
+**P4 — bezugsautoren-Skalierung** auf alle les/scn/pfl-Artikel (`--verdicts`-Scope im
+Build-Script; ~4 600 Artikel → Erstautoren-Œuvres, OpenAlex polite/idempotent, $0). Danach
+Umfeld-Refresh des Composed-Backfills.
+
+**Tests:** 220 → 239 (Composer 8, Ranker 9, Batch-Integration 2). **API-Kosten der Session: $0**
+(alles algorithmisch/lokal; einzige Netzlast OpenAlex polite-pool).
+
+**Offen danach:** P2 launchd-Wochenmonitor (Benjamins Klick — plant wiederkehrende LLM-Ausgaben),
+P3 Volltext via eigene Zotero-Bibliothek (Pfad B), P5 Meta-Publikation; Governance-Gespräch
+(generalisierbare Einsichten aus der Selbstregulierungs-Schicht).

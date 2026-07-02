@@ -1,3 +1,39 @@
+# HANDOVER — Stand 2026-07-02 (nach Re-Vision + P0/P1)
+
+> Aktueller Rahmen: **`docs/mojo_re_vision_2026-07-02.md`** (umfassende Projekt-Einschätzung durch
+> Fable 5, von Benjamin angenommen; Prioritäten P0–P5 samt Unterlassungsliste). Die darunter
+> stehenden Blöcke (ab „Gescheiterte Session 2026-05-31") bleiben als Protokoll erhalten.
+
+**Erledigt in dieser Session (Details: DEVLOG „Session 2026-07-02", alles committet, Suite 239 grün):**
+- **P0**: Die gesamte Forschungsschicht seit Ende Mai (~96 Dateien) ist in 13 thematischen Commits
+  unter Versionskontrolle; `.gitignore` um bezugsautoren.db / label_exclusions.json /
+  ranker_params.json ergänzt.
+- **P1a**: Substitutiver Eintrags-Komponist produktiv (`journal_bot/entry_composer.py` + Store-Spalte
+  `composed_entry_json` + Digest-Hook + UI-Neuordnung). Bestand backfilled: 18 909 Einträge,
+  27,9 % konkret verankert, 71,6 % ehrliche Leerstelle. Die LLM-Erzählung ist aus der prominenten
+  Rolle raus (nachgeordnetes, markiertes Details-Element), bleibt aber gespeichert (§4-Erhalt).
+- **P1b**: M-E-Ranker im Wochenlauf (`journal_bot/ranker.py`; Parameter via
+  `scripts/ranker_build_params.py`, gitignored). Drop nur im Konsens mit dem Screening
+  (combine_votes), Dissens-Rescue, mc-Sortierung, `algo_mc`/`algo_zone` persistiert.
+  Validiert [gerechnet]: Drop-Band blind 22 %, 0 LES.
+- **P4**: bezugsautoren.db auf alle les/scn/pfl-Erstautoren skaliert (Build-Script `--verdicts`).
+
+**Als Nächstes (Reihenfolge mit Benjamin abgestimmt):**
+1. **P2** — launchd-Wochenmonitor installieren (Benjamins Entscheidung/Klick: plant wiederkehrende
+   LLM-Ausgaben) + Blind-Label-Ritual (~10/Woche) für wachsende Ground-Truth.
+2. **P3** — Volltext-Retrieval (Pfad B: kein Abstract → OA-PDF/eigene Zotero-Bibliothek statt
+   Metadaten-Urteil).
+3. **P5** — Meta-Publikation des Experiments.
+4. **Governance-Gespräch** — Benjamin will die generalisierbaren Einsichten aus der epistemischen
+   Selbstregulierungs-Schicht (P1–P16, [gerechnet]/[gelesen]/[asseriert], Scheiter-Protokolle)
+   explizit diskutieren (sein Anschluss an die Re-Vision: „das war mir ausgerechnet in diesem
+   Projekt gar nicht klar").
+
+**Nicht tun** (Unterlassungsliste der Re-Vision): weitere Plateau-Iterationen auf 461/798 Gold;
+SARAH-Code-Integration (nur Daten-Contract); neue Frameworks/Modelltests ohne Anlass.
+
+---
+
 # HANDOVER — Gescheiterte Session (2026-05-31)
 
 > Dieser Eintrag steht **vor** dem bisherigen Handover-Stand (ab „MOJO — Handover (2026-05-25)" weiter
