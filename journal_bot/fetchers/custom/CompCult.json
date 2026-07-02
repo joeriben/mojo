@@ -1,0 +1,24 @@
+{
+  "$schema": "mojo-custom-fetcher-v1",
+  "base_url": "https://example.com",
+  "strategy": "single_page",
+  "index": {
+    "url": "https://example.com/articles"
+  },
+  "article": {
+    "container": "article",
+    "title": "h2 a",
+    "url": "h2 a@href",
+    "authors": ".author",
+    "date": "time@datetime",
+    "abstract": ".abstract"
+  },
+  "detail": {
+    "enabled": false,
+    "abstract": ".full-abstract"
+  },
+  "url_fixup": {
+    "relative_to_base": true,
+    "doi_prefix_strip": true
+  }
+}
