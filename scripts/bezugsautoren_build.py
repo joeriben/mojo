@@ -11,6 +11,8 @@ sie die konfabulierten Fälle (Artikel koppelt 0, Autor-Œuvre koppelt)?
 Usage:
   python scripts/bezugsautoren_build.py --limit 15      # Verifikation
   python scripts/bezugsautoren_build.py --claims        # alle 224 Bezug-Artikel
+  python scripts/bezugsautoren_build.py \
+      --verdicts lesenswert,scannen,pflichtlektuere     # Skalierung les/scn (~80 min)
 """
 
 from __future__ import annotations
@@ -97,6 +99,9 @@ def classify(claims, works_hit, n_shared, zkey2cid):
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--claims", action="store_true", help="alle Bezug-Artikel")
+    ap.add_argument("--verdicts", default="",
+                    help="Scope per agent_verdict, kommasepariert "
+                         "(z.B. lesenswert,scannen,pflichtlektuere)")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--verbose", action="store_true")
@@ -109,14 +114,20 @@ def main() -> int:
     rows = con.execute(
         "SELECT id, title, journal_short, openalex_id, agent_verdict, "
         "openalex_refs, agent_entry_json FROM articles "
-        "WHERE agent_entry_json IS NOT NULL AND openalex_id IS NOT NULL AND openalex_id!=''"
+        "WHERE openalex_id IS NOT NULL AND openalex_id!=''"
     ).fetchall()
     con.close()
-    # Bezug-Artikel = mit ≥1 Werk-Behauptung
-    targets = [r for r in rows if llm_claims(r["agent_entry_json"])]
+    verdicts = {v.strip() for v in args.verdicts.split(",") if v.strip()}
+    if verdicts:
+        targets = [r for r in rows if (r["agent_verdict"] or "") in verdicts]
+        scope = f"agent_verdict ∈ {sorted(verdicts)}"
+    else:
+        # Bezug-Artikel = mit ≥1 Werk-Behauptung
+        targets = [r for r in rows if llm_claims(r["agent_entry_json"])]
+        scope = "Artikel mit LLM-Werk-Bezug"
     if args.limit:
         targets = targets[:args.limit]
-    print(f"Ziel: {len(targets)} Artikel mit LLM-Werk-Bezug (von {len(rows)} analysierten)")
+    print(f"Ziel: {len(targets)} Artikel [{scope}] (von {len(rows)} mit OpenAlex-ID)")
 
     con_bz = sqlite3.connect(str(bz.DEFAULT_DB)); con_bz.row_factory = sqlite3.Row
     bz.init_db(con_bz)

@@ -230,6 +230,9 @@ MIGRATIONS = [
     """
     ALTER TABLE articles ADD COLUMN zotero_key TEXT;
     """,
+    """
+    ALTER TABLE articles ADD COLUMN composed_entry_json TEXT;
+    """,
 ]
 
 
@@ -311,6 +314,9 @@ class StoredArticle:
     # Workflow
     archived_at: str = ""
     zotero_key: str = ""
+
+    # MOJO 2.0: substitutiver Eintrag (entry_composer, rein algorithmisch)
+    composed_entry: dict | None = None
 
     @property
     def effective_verdict(self) -> str:
@@ -462,6 +468,18 @@ class Store:
                     suggested_subgroup or None,
                     suggested_subgroup_reason or None,
                     suggested_subgroup_confidence or None,
+                    article_id,
+                ),
+            )
+
+    def update_composed_entry(self, article_id: str, composed: dict | None) -> None:
+        """MOJO 2.0: substitutiven Eintrag persistieren (additiv, berührt weder
+        Verdikte noch agent_entry_json). None löscht den komponierten Stand."""
+        with self._conn() as c:
+            c.execute(
+                "UPDATE articles SET composed_entry_json = ? WHERE id = ?",
+                (
+                    json.dumps(composed, ensure_ascii=False) if composed else None,
                     article_id,
                 ),
             )
@@ -709,4 +727,5 @@ def _row_to_article(row: sqlite3.Row) -> StoredArticle:
         user_verdict_at=row["user_verdict_at"] or "",
         archived_at=row["archived_at"] or "",
         zotero_key=row["zotero_key"] or "",
+        composed_entry=_j("composed_entry_json", None),
     )

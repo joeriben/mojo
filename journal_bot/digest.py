@@ -129,6 +129,16 @@ def process_article(
             suggested_subgroup_reason=attention.suggested_subgroup_reason,
             suggested_subgroup_confidence=attention.suggested_subgroup_confidence,
         )
+        # MOJO 2.0: substitutiven Eintrag komponieren (rein algorithmisch,
+        # berührt Verdikt/agent_entry nicht; Fehler brechen den Lauf nie ab).
+        try:
+            from journal_bot import entry_composer
+            entry_composer.compose_and_store(
+                store, sa, citation_hits=result.get("citation_hits", [])
+            )
+        except Exception as exc:
+            if verbose:
+                print(f"  [composer] übersprungen: {exc}")
 
     md = agent_mod.render_markdown(result)
     out_dir.mkdir(parents=True, exist_ok=True)

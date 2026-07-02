@@ -1,4 +1,8 @@
-{# Article detail body — used standalone and as HTMX swap target #}
+{# Article detail body — used standalone and as HTMX swap target.
+
+   MOJO 2.0 (substitutiver Eintrag): Abstract verbatim + gerechnete Signale +
+   geerdete Bezüge stehen vorn; die LLM-Analyse bleibt erhalten (§4-Erhalt),
+   ist aber nachgeordnet und als ungeerdert markiert. #}
 
 {% if a.agent_entry %}
 {% set e = a.agent_entry %}
@@ -24,6 +28,21 @@
   </p>
   {% endif %}
 </div>
+{% endif %}
+
+<!-- Original-Abstract (verbatim, primäre Inhaltsquelle) -->
+{% set abs = a.openalex_abstract or a.abstract %}
+{% if abs %}
+<div class="detail-section">
+  <h3>Original-Abstract</h3>
+  <p style="font-size:.95rem; line-height:1.55;">{{ abs }}</p>
+</div>
+{% else %}
+<div class="detail-section">
+  <h3>Original-Abstract</h3>
+  <p style="color:var(--muted); font-size:.9rem;">Kein Abstract verfügbar.</p>
+</div>
+{% endif %}
 
 <!-- Zitiert Dich -->
 {% if a.citation_hits %}
@@ -45,48 +64,119 @@
 </div>
 {% endif %}
 
-<!-- Kernthese -->
+<!-- Geerdete Bezüge (komponiert, rein algorithmisch) -->
+{% if a.composed_entry %}
+{% set c = a.composed_entry %}
+{% set g = c.grounded %}
 <div class="detail-section">
-  <h3>Kernthese</h3>
-  <p>{{ e.kernthese }}</p>
-</div>
-
-<!-- Bezüge -->
-<div class="detail-section">
-  <h3>Bezüge zu Deinem Werk</h3>
-  {% if e.bezuege %}
-  {% for b in e.bezuege %}
+  <h3>Bezüge zu Deinem Werk <span style="font-weight:normal; font-size:.78rem; color:var(--muted);">[gerechnet: geteilte Referenzen]</span></h3>
+  {% if g.works %}
+  <p style="font-size:.9rem;">
+    {{ g.n_shared_refs }} geteilte Referenz{{ "en" if g.n_shared_refs != 1 else "" }},
+    belegt über {{ g.n_works_hit }} deiner Werke
+    (Artikel: {{ g.n_oa_refs }} OA- / {{ g.n_doi_refs }} DOI-Referenzen).
+  </p>
+  {% for w in g.works %}
   <div class="bezug">
-    <strong>{{ b.pub_kurz }}</strong> <code>{{ b.pub_id }}</code>
-    <span class="bezug-rel">{{ relation_label.get(b.relation, b.relation) }}</span>
-    <p style="margin-top:.2rem; font-size:.9rem;">{{ b.bezug }}</p>
+    <strong>»{{ w.title[:90] }}«</strong> ({{ w.year }})
+    {% if w.zotero_key %}<code>{{ w.zotero_key }}</code>{% endif %}
+    <span class="bezug-rel">{{ w.n_shared }} geteilte Ref.</span>
+    {% for v in w.via %}
+    <p style="margin:.15rem 0 0 .9rem; font-size:.85rem; color:var(--muted);">
+      ↳ {% if v.title %}»{{ v.title[:90] }}«{% if v.year %} ({{ v.year }}){% endif %}{% elif v.kind == "oa" %}OpenAlex {{ v.id }}{% else %}doi:{{ v.id }}{% endif %}
+    </p>
+    {% endfor %}
+    {% if w.n_via_more %}
+    <p style="margin:.15rem 0 0 .9rem; font-size:.85rem; color:var(--muted);">↳ … +{{ w.n_via_more }} weitere</p>
+    {% endif %}
   </div>
   {% endfor %}
+  {% elif g.available %}
+  <p style="font-size:.9rem; color:var(--muted);">
+    KEINE nachweisbare bibliografische Anbindung — 0 geteilte Referenzen mit
+    deinem Korpus ({{ g.n_corpus_works }} Werke; Artikel:
+    {{ g.n_oa_refs }} OA- / {{ g.n_doi_refs }} DOI-Referenzen).
+    Thematische Nähe möglich, aber keine belegbare Werk-Verbindung — daher keine Bezugs-Behauptung.
+  </p>
   {% else %}
-  <p style="color:var(--muted);">Keine substantiellen Bezüge gefunden.</p>
+  <p style="font-size:.9rem; color:var(--muted);">own_refs.db nicht verfügbar — kein Abgleich möglich.</p>
   {% endif %}
 </div>
 
-<!-- Bemerkenswert -->
-{% if e.bemerkenswert %}
+<!-- Umfeld (Autor-Ebene, Annotation) -->
+{% set u = c.umfeld %}
+{% if u.available and (u.first_author or u.cited_works) %}
 <div class="detail-section">
-  <h3>Bemerkenswert</h3>
-  <ul style="padding-left:1.2rem; font-size:.9rem;">
-    {% for note in e.bemerkenswert %}
-    <li>{{ note }}</li>
-    {% endfor %}
-  </ul>
+  <h3>Umfeld <span style="font-weight:normal; font-size:.78rem; color:var(--muted);">[gerechnet: Autor-Ebene — Annotation, kein Relevanz-Urteil]</span></h3>
+  {% if u.first_author and u.first_author.n_shared_refs %}
+  <p style="font-size:.9rem;">
+    Erstautor:in <strong>{{ u.first_author.name or u.first_author.oa_id }}</strong>:
+    Œuvre ({{ u.first_author.n_works_sampled }} Werke) teilt
+    {{ u.first_author.n_shared_refs }} Referenzen mit deinem Korpus
+    (über {{ u.first_author.n_own_works }} deiner Werke).
+  </p>
+  {% elif u.first_author %}
+  <p style="font-size:.9rem; color:var(--muted);">
+    Erstautor:in {{ u.first_author.name or u.first_author.oa_id }}: keine Referenz-Überschneidung des Œuvres mit deinem Korpus.
+  </p>
+  {% endif %}
+  {% if u.cited_works %}
+  <p style="font-size:.9rem; margin-top:.4rem;">Zitiert Werke von Umfeld-Autor:innen (Erstautor:innen früherer MOJO-Sichtungen):</p>
+  {% for w in u.cited_works %}
+  <p style="margin:.15rem 0 0 .9rem; font-size:.85rem;">
+    <strong>{{ ", ".join(w.authors) }}</strong>: »{{ w.title[:90] }}«{% if w.year %} ({{ w.year }}){% endif %}
+  </p>
+  {% endfor %}
+  {% if u.n_cited_works and u.n_cited_works > u.cited_works|length %}
+  <p style="margin:.15rem 0 0 .9rem; font-size:.85rem; color:var(--muted);">… +{{ u.n_cited_works - u.cited_works|length }} weitere</p>
+  {% endif %}
+  {% endif %}
 </div>
 {% endif %}
-
-<!-- Methodisch/Theoretisch -->
-{% if e.theoretisch_methodisch %}
-<div class="detail-section">
-  <h3>Methodisch / Theoretisch</h3>
-  <p style="font-size:.9rem;">{{ e.theoretisch_methodisch }}</p>
-</div>
 {% endif %}
 
+<!-- LLM-Analyse (nachgeordnet, ungeerdert — §4-Erhalt) -->
+{% if a.agent_entry %}
+{% set e = a.agent_entry %}
+<details style="margin-top:1rem;" {% if not a.composed_entry %}open{% endif %}>
+  <summary><h3 style="display:inline;">LLM-Analyse <span style="font-weight:normal; font-size:.78rem; color:var(--muted);">[gelesen: Abstract-basiert, Bezugs-Behauptungen nicht bibliografisch geprüft]</span></h3></summary>
+  <div style="margin-top:.5rem; padding-left:.75rem; border-left:3px solid var(--border);">
+    <div class="detail-section">
+      <h3>Kernthese</h3>
+      <p>{{ e.kernthese }}</p>
+    </div>
+    <div class="detail-section">
+      <h3>Bezüge zu Deinem Werk (LLM-Behauptung)</h3>
+      {% if e.bezuege %}
+      {% for b in e.bezuege %}
+      <div class="bezug">
+        <strong>{{ b.pub_kurz }}</strong> <code>{{ b.pub_id }}</code>
+        <span class="bezug-rel">{{ relation_label.get(b.relation, b.relation) }}</span>
+        <p style="margin-top:.2rem; font-size:.9rem;">{{ b.bezug }}</p>
+      </div>
+      {% endfor %}
+      {% else %}
+      <p style="color:var(--muted);">Keine substantiellen Bezüge gefunden.</p>
+      {% endif %}
+    </div>
+    {% if e.bemerkenswert %}
+    <div class="detail-section">
+      <h3>Bemerkenswert</h3>
+      <ul style="padding-left:1.2rem; font-size:.9rem;">
+        {% for note in e.bemerkenswert %}
+        <li>{{ note }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+    {% if e.theoretisch_methodisch %}
+    <div class="detail-section">
+      <h3>Methodisch / Theoretisch</h3>
+      <p style="font-size:.9rem;">{{ e.theoretisch_methodisch }}</p>
+    </div>
+    {% endif %}
+  </div>
+</details>
 {% else %}
 <p style="color:var(--muted); margin-top:1rem;">(Kein Agent-Ergebnis vorhanden.)</p>
 {% endif %}
@@ -138,15 +228,6 @@
   {% endif %}
   {% include "_archive_button.html" %}
 </div>
-
-<!-- Original-Abstract -->
-{% set abs = a.openalex_abstract or a.abstract %}
-{% if abs %}
-<div class="detail-section" style="margin-top:1.5rem;">
-  <h3>Original-Abstract</h3>
-  <p style="font-size:.9rem; line-height:1.5; color:var(--fg); opacity:.85;">{{ abs }}</p>
-</div>
-{% endif %}
 
 {% if a.agent_entry and a.agent_entry._previous is defined %}
 {% set prev = a.agent_entry._previous %}
