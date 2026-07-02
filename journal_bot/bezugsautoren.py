@@ -25,12 +25,28 @@ from pathlib import Path
 
 import httpx
 
+from journal_bot.settings import OPENALEX_MAILTO
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_DB = PROJECT_ROOT / "bezugsautoren.db"
 
-POLITE_MAILTO = "mojo@localhost"
-USER_AGENT = f"mojo/2.0 bezugsautoren (mailto:{POLITE_MAILTO})"
+# Polite Pool nur mit ECHTER Kontakt-Mail (profile.json "openalex_mailto");
+# Fake-Mailtos provozieren Rate-Limits (Vorfall 2026-07-02: 429 auf allen
+# Werk-Listen-Queries ab ~500 Autoren, still als leere Œuvres gespeichert).
+USER_AGENT = "mojo/2.0 bezugsautoren" + (
+    f" (mailto:{OPENALEX_MAILTO})" if OPENALEX_MAILTO else ""
+)
 THROTTLE_SECONDS = 0.12
+# Backoff-Stufen für 429/5xx; Retry-After-Header wird bevorzugt (Cap 120 s)
+RETRY_SLEEPS = (1.0, 4.0, 16.0, 60.0)
+
+
+class WorksFetchError(RuntimeError):
+    """Werk-Listen-Query endgültig gescheitert (z. B. anhaltendes 429).
+
+    Wird geworfen statt still ein leeres Œuvre zu speichern — der Aufrufer
+    entscheidet (Retry später / lauter Abbruch), der Bestand bleibt sauber.
+    """
 # N kalibriert (scripts/bezugsautoren_sensitivity2.py): Sättigung ~30, darüber
 # nur noch Zufallszuwachs. 10 neueste + 10 meistzit. war zu früh abgeschnitten.
 RECENT_N = 30
@@ -123,21 +139,42 @@ def fetch_first_author(client: httpx.Client, work_oa_id: str) -> tuple[str, str]
 
 def _fetch_works_sorted(client: httpx.Client, author_oa_id: str, sort: str,
                         per_page: int) -> tuple[list[dict], int]:
-    try:
-        r = client.get("https://api.openalex.org/works", params={
-            "filter": f"author.id:{author_oa_id}",
-            "sort": sort, "per-page": per_page, "select": WORK_SELECT,
-        })
-        r.raise_for_status()
-        j = r.json()
-    except httpx.HTTPError:
-        return [], 0
-    return j.get("results", []), int(j.get("meta", {}).get("count") or 0)
+    """Werk-Liste mit Retry/Backoff; wirft WorksFetchError statt still [] zu
+    liefern (429/5xx werden mit Retry-After respektiert)."""
+    last_exc: Exception | None = None
+    for attempt in range(len(RETRY_SLEEPS) + 1):
+        try:
+            r = client.get("https://api.openalex.org/works", params={
+                "filter": f"author.id:{author_oa_id}",
+                "sort": sort, "per-page": per_page, "select": WORK_SELECT,
+            })
+            if r.status_code in (429, 500, 502, 503) and attempt < len(RETRY_SLEEPS):
+                wait = RETRY_SLEEPS[attempt]
+                try:
+                    wait = max(wait, float(r.headers.get("Retry-After") or 0))
+                except ValueError:
+                    pass
+                time.sleep(min(wait, 120.0))
+                continue
+            r.raise_for_status()
+            j = r.json()
+            return j.get("results", []), int(j.get("meta", {}).get("count") or 0)
+        except httpx.HTTPError as exc:
+            last_exc = exc
+            if attempt < len(RETRY_SLEEPS):
+                time.sleep(RETRY_SLEEPS[attempt])
+    raise WorksFetchError(
+        f"OpenAlex-Werk-Query für {author_oa_id} gescheitert: {last_exc}"
+    )
 
 
 def fetch_author_works(client: httpx.Client, author_oa_id: str
                        ) -> tuple[dict[str, dict], int]:
-    """10 neueste ∪ 10 meistzitierte Werke; markiert 'recent'/'cited'/'both'."""
+    """10 neueste ∪ 10 meistzitierte Werke; markiert 'recent'/'cited'/'both'.
+
+    Wirft WorksFetchError, wenn eine der beiden Listen endgültig scheitert —
+    lieber gar nicht speichern als ein leeres/halbes Œuvre als „fertig" markieren.
+    """
     recent, total = _fetch_works_sorted(client, author_oa_id, "publication_date:desc", RECENT_N)
     time.sleep(THROTTLE_SECONDS)
     cited, _ = _fetch_works_sorted(client, author_oa_id, "cited_by_count:desc", CITED_N)

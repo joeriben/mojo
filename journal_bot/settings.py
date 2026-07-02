@@ -74,6 +74,15 @@ TRIGGER_AUTHOR_SLUGS: tuple[str, ...] = tuple(
     _profile.get("trigger_author_slugs") or ()
 )
 
+# --- OpenAlex Polite Pool ---
+# Echte Kontakt-Mail für den OpenAlex Polite Pool (höhere Rate-Limits).
+# Vorfall 2026-07-02: Werk-Listen-Queries liefen mit Fake-Mailto in ein 429,
+# das der Build still schluckte. Pflege via profile.json {"openalex_mailto": …};
+# leer = anonymer Pool (niedrigere Limits, aber ehrlich).
+OPENALEX_MAILTO = _profile.get(
+    "openalex_mailto", os.environ.get("MOJO_OPENALEX_MAILTO", "")
+)
+
 # --- M-E-Keep-Ranker (journal_bot/ranker.py, 50er-Serie) ---
 # Aktiv sobald ranker_params.json existiert (scripts/ranker_build_params.py);
 # fehlt die Datei, läuft der Digest unverändert ohne Ranker. Abschalten:

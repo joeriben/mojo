@@ -13,6 +13,8 @@ Usage:
   python scripts/bezugsautoren_build.py --claims        # alle 224 Bezug-Artikel
   python scripts/bezugsautoren_build.py \
       --verdicts lesenswert,scannen,pflichtlektuere     # Skalierung les/scn (~80 min)
+  python scripts/bezugsautoren_build.py \
+      --repair-empty --throttle 1.0                     # leere Œuvres neu ziehen
 """
 
 from __future__ import annotations
@@ -96,16 +98,68 @@ def classify(claims, works_hit, n_shared, zkey2cid):
     return c
 
 
+MAX_CONSECUTIVE_FAILURES = 10
+
+
+def repair_empty(limit: int = 0) -> int:
+    """Autoren mit leerem Œuvre (Rate-Limit-Vorfall 2026-07-02) neu ziehen.
+
+    Idempotent: erfolgreiche Autoren verschwinden aus der Zielmenge. Bricht
+    nach MAX_CONSECUTIVE_FAILURES Folge-Fehlern laut ab (Limit steht noch).
+    """
+    con_bz = sqlite3.connect(str(bz.DEFAULT_DB)); con_bz.row_factory = sqlite3.Row
+    bz.init_db(con_bz)
+    aids = [r["author_oa_id"] for r in con_bz.execute(
+        "SELECT author_oa_id FROM authors "
+        "WHERE n_works_fetched=0 OR n_works_fetched IS NULL ORDER BY author_oa_id"
+    )]
+    if limit:
+        aids = aids[:limit]
+    print(f"Repair: {len(aids)} Autoren mit leerem Œuvre "
+          f"(Throttle {bz.THROTTLE_SECONDS}s, UA: {bz.USER_AGENT})")
+    client = bz.make_client()
+    ok = fail = streak = 0
+    try:
+        for i, aid in enumerate(aids, 1):
+            try:
+                n = bz.refresh_author(con_bz, client, aid, force=True)
+                ok += 1; streak = 0
+                if ok % 100 == 0:
+                    print(f"  … {i}/{len(aids)} repariert={ok} fehlgeschlagen={fail}")
+            except bz.WorksFetchError as exc:
+                fail += 1; streak += 1
+                if streak >= MAX_CONSECUTIVE_FAILURES:
+                    print(f"\nABBRUCH nach {streak} Folge-Fehlern (Rate-Limit steht "
+                          f"vermutlich noch): {exc}")
+                    print(f"Bisher repariert: {ok}, fehlgeschlagen: {fail}. "
+                          f"Später einfach erneut starten (idempotent).")
+                    return 1
+    finally:
+        client.close(); con_bz.close()
+    print(f"\nFertig: {ok} repariert, {fail} fehlgeschlagen.")
+    return 0 if fail == 0 else 1
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--claims", action="store_true", help="alle Bezug-Artikel")
     ap.add_argument("--verdicts", default="",
                     help="Scope per agent_verdict, kommasepariert "
                          "(z.B. lesenswert,scannen,pflichtlektuere)")
+    ap.add_argument("--repair-empty", action="store_true",
+                    help="Autoren mit 0 gespeicherten Werken neu ziehen "
+                         "(Reparatur nach Rate-Limit-Vorfall)")
+    ap.add_argument("--throttle", type=float, default=0.0,
+                    help="Throttle in Sekunden überschreiben (Repair: z.B. 1.0)")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--verbose", action="store_true")
     args = ap.parse_args()
+    if args.throttle > 0:
+        bz.THROTTLE_SECONDS = args.throttle
+
+    if args.repair_empty:
+        return repair_empty(limit=args.limit)
 
     oa2works, doi2works, zkey2cid = load_attribution()
     own_oa = set(oa2works)
@@ -136,8 +190,19 @@ def main() -> int:
     art_audit = Counter(); auth_audit = Counter()
     rescued = []          # Artikel: 0 Kopplung auf Artikel-Ebene, >0 auf Autor-Ebene
     n_done = 0
+    streak = 0            # Folge-Fehler → lauter Abbruch statt stiller Leer-Œuvres
     for r in targets:
-        res = bz.build_for_article(con_bz, client, r["id"], r["openalex_id"], force=args.force)
+        try:
+            res = bz.build_for_article(con_bz, client, r["id"], r["openalex_id"], force=args.force)
+            streak = 0
+        except bz.WorksFetchError as exc:
+            streak += 1
+            if streak >= MAX_CONSECUTIVE_FAILURES:
+                print(f"\nABBRUCH nach {streak} Folge-Fehlern (Rate-Limit?): {exc}")
+                print("Lauf ist idempotent — später einfach erneut starten.")
+                client.close(); con_bz.close()
+                return 1
+            res = None
         n_done += 1
         if n_done % 25 == 0:
             print(f"  … {n_done}/{len(targets)}")
