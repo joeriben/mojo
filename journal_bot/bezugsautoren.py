@@ -79,6 +79,7 @@ def init_db(con: sqlite3.Connection) -> None:
             PRIMARY KEY (author_oa_id, article_id)
         );
         CREATE INDEX IF NOT EXISTS idx_aw_author ON author_works(author_oa_id);
+        CREATE INDEX IF NOT EXISTS idx_aw_work   ON author_works(work_oa_id);
         """
     )
     if not con.execute("SELECT 1 FROM schema_version").fetchone():
