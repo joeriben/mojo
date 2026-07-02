@@ -74,6 +74,13 @@ TRIGGER_AUTHOR_SLUGS: tuple[str, ...] = tuple(
     _profile.get("trigger_author_slugs") or ()
 )
 
+# --- M-E-Keep-Ranker (journal_bot/ranker.py, 50er-Serie) ---
+# Aktiv sobald ranker_params.json existiert (scripts/ranker_build_params.py);
+# fehlt die Datei, läuft der Digest unverändert ohne Ranker. Abschalten:
+# profile.json {"ranker_enabled": false}. Der Ranker sortiert und stimmt beim
+# Konsens-Drop mit — er entscheidet nie allein (iter_46/50).
+RANKER_ENABLED = bool(_profile.get("ranker_enabled", True))
+
 # --- Zotero ---
 # Override via profile.json or environment: MOJO_ZOTERO_STORAGE, MOJO_ZOTERO_COLLECTION
 ZOTERO_STORAGE = Path(

@@ -26,6 +26,7 @@ journal_profiles.json
 own_refs.db
 bezugsautoren.db
 label_exclusions.json
+ranker_params.json
 own_refs_corpus_freq.json
 trigger_refs_index.json
 adversarial_corpus_freq.json

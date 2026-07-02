@@ -2,14 +2,21 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import Callable
 
 from journal_bot import agent as agent_mod
 from journal_bot import digest
 from journal_bot.citation_tracker import find_citations, load_authored_all, match_own_publication
+from journal_bot.combine import combine_votes
 from journal_bot.llm_log import cache_hit_stats, format_cache_report, wave_marker
-from journal_bot.settings import JOURNALS, MODEL_AGENT
+from journal_bot.settings import (
+    JOURNALS,
+    MODEL_AGENT,
+    RANKER_ENABLED,
+    TRIGGER_AUTHOR_PATTERNS,
+)
 from journal_bot.store import Store, StoredArticle
 
 LogFn = Callable[[str], None]
@@ -32,6 +39,10 @@ class BatchDigestResult:
     # diese Welle (gefüllt am Ende von run_batch_digest).
     cache_stats: list[dict] = field(default_factory=list)
     wave_started_at: str = ""
+    # M-E-Ranker (journal_bot/ranker.py): Stimm- und Sortier-Metadaten
+    ranker_active: bool = False
+    ranker_rescued: int = 0
+    ranker_consensus_dropped: int = 0
 
 
 def _is_junk_title(title: str) -> bool:
@@ -47,6 +58,34 @@ def _is_junk_title(title: str) -> bool:
 def _log(logger: LogFn | None, verbose: bool, message: str) -> None:
     if verbose and logger:
         logger(message)
+
+
+def _combine_screen_with_ranker(
+    filtered: list[StoredArticle],
+    ranked: dict[str, "object"],
+) -> tuple[list[StoredArticle], list[StoredArticle]]:
+    """Screening-Drops gegen die Algo-Stimme kombinieren (combine_votes,
+    Benjamins Festlegung 2026-05-30): verworfen wird nur im Konsens beider
+    Stimmen; Dissens wird recall-schützend behalten (Union halbierte die
+    False Negatives im Gold-Test, 40→20).
+
+    Returns (konsens_drop, rescued).
+    """
+    if not ranked:
+        return filtered, []
+    consensus: list[StoredArticle] = []
+    rescued: list[StoredArticle] = []
+    for sa in filtered:
+        ra = ranked.get(sa.id)
+        if ra is None:
+            algo_vote = None  # keine Stimme → Screening entscheidet (wie bisher)
+        elif ra.zone == "drop":
+            algo_vote = "ignorieren"
+        else:
+            algo_vote = "scannen"
+        ct = combine_votes([algo_vote, "ignorieren"])
+        (rescued if ct.keep else consensus).append(sa)
+    return consensus, rescued
 
 
 def _finalize_with_cache_report(
@@ -274,13 +313,54 @@ def run_batch_digest(
         _log(logger, verbose, f"    → {len(triage_scannen)} scannen, {len(triage_ignore)} ignorieren")
         pending = with_data
 
-    trigger_authors = ["macgilchrist", "jarke", "wendy chun", "wendy hui kyong"]
+    # Zitations-Hits einmal berechnen — Auto-Pass UND Biblio-Flag des Rankers
+    citation_by_id = {
+        sa.id: (find_citations(sa.crossref_refs, authored_all) if sa.crossref_refs else [])
+        for sa in pending
+    }
+
+    # M-E-Ranker (50er-Serie): Stimme + Sortierung, nie Allein-Entscheider.
+    # Fehlen Parameter/Summaries/Modell → transparent ohne Ranker weiter.
+    ranked: dict[str, "object"] = {}
+    if RANKER_ENABLED and pending:
+        try:
+            from journal_bot.ranker import Ranker
+            rk = Ranker.load()
+            if rk is None:
+                _log(logger, verbose,
+                     "[digest] Ranker inaktiv — ranker_params.json fehlt "
+                     "(einmalig: scripts/ranker_build_params.py).")
+            else:
+                from journal_bot.signals import load_signal_resources, signal_own_coupling
+                own_idx = load_signal_resources().get("own_refs_index")
+                biblio_flags = {}
+                for sa in pending:
+                    coup = signal_own_coupling(sa.crossref_refs, sa.openalex_refs, own_idx)
+                    biblio_flags[sa.id] = (
+                        bool(citation_by_id.get(sa.id)) or coup.get("n_union", 0) >= 1
+                    )
+                ranked = rk.score(pending, biblio_flags)
+                result.ranker_active = True
+                for sa in pending:
+                    ra = ranked.get(sa.id)
+                    if ra is not None:
+                        store.update_ranker_score(sa.id, ra.mc, ra.zone)
+                zones = Counter(ra.zone for ra in ranked.values())
+                n_biblio = sum(1 for ra in ranked.values() if ra.biblio)
+                _log(logger, verbose,
+                     f"[digest] Ranker (M-E): {zones.get('drop', 0)} sicher-DROP-Stimmen · "
+                     f"{zones.get('mid', 0)} Mittelband · {n_biblio} Biblio-Anker")
+        except Exception as exc:  # Ranker darf den Lauf nie brechen
+            _log(logger, verbose, f"[digest] Ranker übersprungen: {exc}")
+            ranked = {}
+
+    # Trigger-Autor:innen aus settings/profile.json (OS-Default: leer)
+    trigger_authors = [p.lower() for p in TRIGGER_AUTHOR_PATTERNS]
     auto_pass: list[tuple[StoredArticle, str]] = []
     screen_candidates: list[StoredArticle] = []
 
     for sa in pending:
-        refs = sa.crossref_refs or []
-        citation_hits = find_citations(refs, authored_all) if refs else []
+        citation_hits = citation_by_id.get(sa.id, [])
         authors_blob = " ".join(sa.authors).lower()
         is_trigger = any(t in authors_blob for t in trigger_authors)
 
@@ -330,6 +410,24 @@ def run_batch_digest(
             for sa in screen_candidates
             if screen_results[sa.id]["verdict"] == "ignorieren"
         ]
+
+        # Kombination mit der Algo-Stimme: Drop nur im Konsens, Dissens wird
+        # recall-schützend behalten (combine.py, Union halbiert FN).
+        rescued: list[StoredArticle] = []
+        if filtered and ranked:
+            filtered, rescued = _combine_screen_with_ranker(filtered, ranked)
+            if rescued:
+                result.ranker_rescued = len(rescued)
+                _log(logger, verbose,
+                     f"\n[digest] ↺ Ranker-Dissens: {len(rescued)} Screening-Drops "
+                     f"recall-schützend behalten:")
+                for sa in rescued:
+                    ra = ranked.get(sa.id)
+                    mc_txt = f" (mc={ra.mc:.2f})" if ra is not None else ""
+                    _log(logger, verbose,
+                         f"  ↺ {sa.journal_full or sa.journal_short}: {sa.title[:60]}{mc_txt}")
+                passed.extend(rescued)
+            result.ranker_consensus_dropped = len(filtered)
         result.screened_in = len(passed)
         result.screened_out = len(filtered)
 
@@ -341,6 +439,12 @@ def run_batch_digest(
                 _log(logger, verbose, f"  ⊘ {journal_name}: {sa.title[:65]}")
                 if grund:
                     _log(logger, verbose, f"    → {grund}")
+                ra = ranked.get(sa.id) if ranked else None
+                konsens_note = (
+                    " · Algo-Ranker: sicher-DROP — Konsens beider Stimmen."
+                    if ra is not None and ra.zone == "drop"
+                    else ""
+                )
                 store.update_agent_result(
                     sa.id,
                     verdict="ignorieren",
@@ -350,7 +454,7 @@ def run_batch_digest(
                         "bemerkenswert": [],
                         "theoretisch_methodisch": "",
                         "verdict": "ignorieren",
-                        "verdict_begruendung": f"Screening: {grund}",
+                        "verdict_begruendung": f"Screening: {grund}{konsens_note}",
                     },
                     citation_hits=[],
                     tokens_in=0,
@@ -410,6 +514,18 @@ def run_batch_digest(
     if not to_analyze:
         _log(logger, verbose, "[digest] Keine Artikel für Agent-Analyse übrig.")
         return _finalize_with_cache_report(result, logger=logger, verbose=verbose)
+
+    # Agent-Reihenfolge: Auto-Pass zuerst, dann nach M-E absteigend — bei
+    # Kostenlimit-Abbrüchen werden so die aussichtsreichsten zuerst analysiert.
+    if ranked:
+        auto_ids = {sa.id for sa, _ in auto_pass}
+        to_analyze.sort(
+            key=lambda sa: (
+                sa.id not in auto_ids,
+                -(ranked[sa.id].mc if sa.id in ranked else 0.0),
+            )
+        )
+        _log(logger, verbose, "[digest] Agent-Reihenfolge nach M-E sortiert (bester zuerst).")
 
     cost_check_after = 3
     max_cost_per_article = 0.15

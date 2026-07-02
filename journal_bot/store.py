@@ -233,6 +233,12 @@ MIGRATIONS = [
     """
     ALTER TABLE articles ADD COLUMN composed_entry_json TEXT;
     """,
+    """
+    ALTER TABLE articles ADD COLUMN algo_mc REAL;
+    """,
+    """
+    ALTER TABLE articles ADD COLUMN algo_zone TEXT;
+    """,
 ]
 
 
@@ -317,6 +323,11 @@ class StoredArticle:
 
     # MOJO 2.0: substitutiver Eintrag (entry_composer, rein algorithmisch)
     composed_entry: dict | None = None
+
+    # MOJO 2.0: M-E-Ranker-Score der Welle (journal_bot/ranker.py) — für
+    # Nachkalibrierung auf dem Produktions-Strom (iter_48-Caveat)
+    algo_mc: float | None = None
+    algo_zone: str = ""
 
     @property
     def effective_verdict(self) -> str:
@@ -482,6 +493,17 @@ class Store:
                     json.dumps(composed, ensure_ascii=False) if composed else None,
                     article_id,
                 ),
+            )
+
+    def update_ranker_score(
+        self, article_id: str, mc: float | None, zone: str
+    ) -> None:
+        """MOJO 2.0: M-E-Score der Welle persistieren (nur Sortier-/Zonen-
+        Metadatum, nie ein Verdikt)."""
+        with self._conn() as c:
+            c.execute(
+                "UPDATE articles SET algo_mc = ?, algo_zone = ? WHERE id = ?",
+                (mc, zone or None, article_id),
             )
 
     def set_archived(self, article_id: str, archived: bool = True) -> None:
@@ -728,4 +750,6 @@ def _row_to_article(row: sqlite3.Row) -> StoredArticle:
         archived_at=row["archived_at"] or "",
         zotero_key=row["zotero_key"] or "",
         composed_entry=_j("composed_entry_json", None),
+        algo_mc=row["algo_mc"],
+        algo_zone=row["algo_zone"] or "",
     )

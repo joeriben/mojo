@@ -29,6 +29,7 @@ Beide Quell-DBs sind optional: fehlt eine, degradiert der Baustein sichtbar
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -128,6 +129,13 @@ def get_resources(refresh: bool = False) -> ComposerResources:
 
 # ── Artikel-Referenzmengen ───────────────────────────────────────────────────
 
+def _clean_title(t: str | None) -> str | None:
+    """OpenAlex/Crossref-Titel tragen teils rohe HTML-Tags (<i>…</i>)."""
+    if not t:
+        return t
+    return re.sub(r"<[^>]+>", "", str(t)).strip() or None
+
+
 def article_ref_sets(
     openalex_refs: list[str] | None,
     crossref_refs: list[dict] | None,
@@ -147,8 +155,9 @@ def article_ref_sets(
         t = x.get("article-title") or x.get("title") or x.get("unstructured") or ""
         if isinstance(t, list):
             t = t[0] if t else ""
+        t = _clean_title(str(t)) if t else None
         if t:
-            doi_title[d] = str(t)[:160]
+            doi_title[d] = t[:160]
     return oa_ids, dois, doi_title
 
 
@@ -169,7 +178,7 @@ def _grounded_block(
             info = (oa_titles or {}).get(oa) or {}
             works_hit[cid].append({
                 "kind": "oa", "id": oa,
-                "title": info.get("title"), "year": info.get("year"),
+                "title": _clean_title(info.get("title")), "year": info.get("year"),
             })
     for d in dois & set(res.doi2works):
         shared_refs.add(f"doi:{d}")
@@ -286,7 +295,7 @@ def _umfeld_block(
             for r in rows:
                 w = by_work.setdefault(r["work_oa_id"], {
                     "oa_id": r["work_oa_id"],
-                    "title": r["title"] or "(ohne Titel)",
+                    "title": _clean_title(r["title"]) or "(ohne Titel)",
                     "year": r["publication_year"],
                     "authors": [],
                 })

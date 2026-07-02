@@ -2633,8 +2633,9 @@ def api_costs_fragment():
 
 
 def main():
-    print("[web] MOJO UI auf http://mojo.localhost:5555")
-    app.run(debug=True, host="127.0.0.1", port=5555)
+    port = int(os.environ.get("PORT", "5555"))
+    print(f"[web] MOJO UI auf http://mojo.localhost:{port}")
+    app.run(debug=True, host="127.0.0.1", port=port)
 
 
 if __name__ == "__main__":
