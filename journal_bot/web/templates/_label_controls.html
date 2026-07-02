@@ -1,0 +1,37 @@
+{# Blinde Label-Buttons: L/S/I → user_verdict OHNE Deepen; ⊘ → Ausschluss (Sidecar) #}
+<div class="label-controls" id="lc-{{ a.id }}">
+  {% if excluded %}
+  <span class="lbl-excluded">⊘ ausgeschlossen — kenne ich / Pflicht (kein Relevanztest)</span>
+  <button class="btn lbl-reset"
+          hx-post="/api/label"
+          hx-vals='{"article_id": "{{ a.id }}", "verdict": "__unexclude__"}'
+          hx-target="#lc-{{ a.id }}" hx-swap="outerHTML"
+          title="doch bewerten">↩ zurück</button>
+  {% else %}
+  {% set choices = [("lesenswert", "L · Lesenswert"), ("scannen", "S · Scannen"), ("ignorieren", "I · Ignorieren")] %}
+  {% for val, lbl in choices %}
+  <button class="btn lbl-btn lbl-{{ val }}{% if a.user_verdict == val %} lbl-active{% endif %}"
+          hx-post="/api/label"
+          hx-vals='{"article_id": "{{ a.id }}", "verdict": "{{ val }}"}'
+          hx-target="#lc-{{ a.id }}" hx-swap="outerHTML">
+    {{ lbl }}
+  </button>
+  {% endfor %}
+  <span class="lbl-sep">·</span>
+  <button class="btn lbl-exclude"
+          hx-post="/api/label"
+          hx-vals='{"article_id": "{{ a.id }}", "verdict": "__exclude__"}'
+          hx-target="#lc-{{ a.id }}" hx-swap="outerHTML"
+          title="Muss ich kennen / kenne ich ohnehin (eigenes Umfeld, Projekt) — aus der Wertung nehmen">
+    ⊘ kenne ich
+  </button>
+  {% if a.user_verdict %}
+  <button class="btn lbl-reset"
+          hx-post="/api/label"
+          hx-vals='{"article_id": "{{ a.id }}", "verdict": ""}'
+          hx-target="#lc-{{ a.id }}" hx-swap="outerHTML"
+          title="Zurücksetzen">✕</button>
+  <span class="lbl-done">✓ gespeichert</span>
+  {% endif %}
+  {% endif %}
+</div>

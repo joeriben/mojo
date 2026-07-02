@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Kombiniert · MOJO{% endblock %}
+
+{% macro vbadge(v) %}
+  {%- if v -%}<span class="badge badge-{{ v }}">{{ v[:4] }}</span>{%- else -%}<span class="badge badge-ignorieren">—</span>{%- endif -%}
+{% endmacro %}
+
+{% block content %}
+<style>
+  .kpi { display:flex; gap:1.5rem; flex-wrap:wrap; margin:.5rem 0 1rem; }
+  .kpi .box { border:1px solid var(--border); border-radius:6px; padding:.6rem .9rem; background:var(--card-bg); }
+  .kpi .num { font-size:1.4rem; font-weight:700; }
+  .kpi .lbl { font-size:.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; }
+  .fnflow { font-size:1.1rem; font-weight:600; }
+  .fnflow .down { color:var(--lesenswert); }
+  .states { display:flex; gap:.6rem; flex-wrap:wrap; margin-bottom:1rem; }
+  .stbox { border:1px solid var(--border); border-radius:6px; padding:.5rem .8rem; text-decoration:none; color:var(--fg); }
+  .stbox.active { border-color:var(--accent); border-width:2px; }
+  .stbox .stn { font-weight:700; font-size:1.1rem; }
+  .stbox .stlbl { font-size:.78rem; color:var(--muted); }
+  .stbox.s-konsens_behalten { border-left:4px solid var(--lesenswert); }
+  .stbox.s-dissens { border-left:4px solid var(--scannen); }
+  .stbox.s-konsens_wegwerfen { border-left:4px solid var(--ignorieren); }
+  .stbox.s-ein_signal { border-left:4px solid var(--muted); }
+  .ctab { border-collapse:collapse; width:100%; font-size:.85rem; }
+  .ctab th, .ctab td { padding:5px 8px; border-bottom:1px solid var(--border); text-align:left; }
+  .ctab th { font-size:.72rem; text-transform:uppercase; color:var(--muted); letter-spacing:.03em; }
+  .ctab td.c { text-align:center; white-space:nowrap; }
+  .ctab .jr { color:var(--muted); font-size:.78rem; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ok { color:var(--lesenswert); font-weight:700; }
+  .no { color:var(--pflichtlektuere); font-weight:700; }
+  .flag { color:var(--scannen); }
+  .arrow { color:var(--muted); }
+</style>
+
+<h2 style="margin-top:0">Kombinierte Triage <span class="section-count">— Cascade + LLM gegen dein Urteil ({{ data.n }} Artikel, Gold-Satz)</span></h2>
+
+<div class="kpi">
+  <div class="box"><div class="num">{{ data.wahr_behalten }}/{{ data.n }}</div><div class="lbl">wirklich behaltenswert</div></div>
+  <div class="box">
+    <div class="fnflow">Falsch-Negative: Cascade {{ data.fn_cascade }} <span class="arrow">→</span> LLM {{ data.fn_llm }} <span class="arrow">→</span> <span class="down">Kombi {{ data.fn_comb }}</span></div>
+    <div class="lbl">verlorene Treffer — Vereinigung halbiert sie</div>
+  </div>
+  <div class="box"><div class="num">{{ ((data.wahr_behalten - data.fn_comb) / data.wahr_behalten * 100) | round }}%</div><div class="lbl">behalten-Recall (Kombi)</div></div>
+</div>
+
+<div class="states">
+  <a class="stbox {% if not state_filter %}active{% endif %}" href="/kombiniert">
+    <div class="stn">{{ data.n }}</div><div class="stlbl">alle</div></a>
+  {% for st in data.state_order %}
+  <a class="stbox s-{{ st }} {% if state_filter == st %}active{% endif %}" href="/kombiniert?state={{ st }}">
+    <div class="stn">{{ data.states[st].n }}</div>
+    <div class="stlbl">{{ state_label[st] }}<br>{{ data.states[st].pct_behalten }}% behaltenswert</div>
+  </a>
+  {% endfor %}
+</div>
+
+<p style="font-size:.82rem; color:var(--muted); margin-bottom:.75rem;">
+  Spalten: <b>C</b> = Cascade-Stimme (M9), <b>L</b> = LLM-Stimme, <b>→</b> = kombinierte Entscheidung,
+  <b>Du</b> = dein Urteil. <span class="ok">✓</span>/<span class="no">✗</span> = Kombi vs. dein Behalten/Wegwerfen.
+  <span class="flag">⚑</span> = Dissens (recall-schützend behalten). Konsens-wegwerfen ist der einzige Wegwurf.
+</p>
+
+<table class="ctab">
+  <thead><tr>
+    <th>Journal</th><th>Titel</th><th class="c">C</th><th class="c">L</th><th class="c">→</th><th class="c">Du</th><th class="c"></th>
+  </tr></thead>
+  <tbody>
+  {% for e in entries %}
+    <tr>
+      <td class="jr" title="{{ e.journal }}">{{ e.journal }}{% if e.year %} · {{ e.year }}{% endif %}</td>
+      <td><a href="/article/{{ e.id }}" title="{{ e.title }}">{{ e.title[:90] }}{% if e.title|length > 90 %}…{% endif %}</a></td>
+      <td class="c">{{ vbadge(e.cascade) }}</td>
+      <td class="c">{{ vbadge(e.llm) }}</td>
+      <td class="c"><b>{{ 'behalten' if e.decision == 'behalten' else 'wegwerf.' }}</b>{% if e.flagged %} <span class="flag" title="Dissens">⚑</span>{% endif %}</td>
+      <td class="c">{{ vbadge(e.user) }}</td>
+      <td class="c">{% if e.correct %}<span class="ok">✓</span>{% else %}<span class="no">✗</span>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
