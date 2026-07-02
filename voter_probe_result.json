@@ -1,0 +1,1045 @@
+{
+ "sample": [
+  {
+   "id": "0368932b4c0919021c3a127945020f18",
+   "home_space": "digitale_kultur",
+   "user_verdict": "scannen",
+   "title": "How AI is rewiring the human brain: the generational transformation of cognition and knowing"
+  },
+  {
+   "id": "0c21c1da06ba34598bed0cd359ba9201",
+   "home_space": "digitale_kultur",
+   "user_verdict": "lesenswert",
+   "title": "The coalescent architecture of agency: normative directionality as the key to human–AI integration"
+  },
+  {
+   "id": "0f8e0b13497b166f5d94ec2da1ddc427",
+   "home_space": "digitale_kultur",
+   "user_verdict": "scannen",
+   "title": "<i>AI failure loops</i> in devalued work: The confluence of overconfidence in AI and underconfidence in worker expertise"
+  },
+  {
+   "id": "007f0cd267ad8b545d01c851e384bb75",
+   "home_space": "digitale_kultur",
+   "user_verdict": "ignorieren",
+   "title": "Undisciplined Learning Spaces: An Environmental Model for Interdisciplinary Education"
+  },
+  {
+   "id": "022b31d83980aa3579ece7dbf8ce05ce",
+   "home_space": "digitale_kultur",
+   "user_verdict": "ignorieren",
+   "title": "Design‐based implementation research for digitally enabled education reform: Teacher professional development in Tanzania"
+  },
+  {
+   "id": "0455a6a0ff53767054f264581cc1e1b9",
+   "home_space": "medienpaed",
+   "user_verdict": "scannen",
+   "title": "Gendered Organizations reloaded"
+  },
+  {
+   "id": "080e0d572ca2c77fbf213c17ce68b7cf",
+   "home_space": "medienpaed",
+   "user_verdict": "lesenswert",
+   "title": "Das Normative in der Medienpädagogik"
+  },
+  {
+   "id": "092b2cc3d75090150e4701aba8e9fc62",
+   "home_space": "medienpaed",
+   "user_verdict": "lesenswert",
+   "title": "Soziale Medienräume"
+  },
+  {
+   "id": "010ab8bc90fbc3b7aa2efe3a9fbce51a",
+   "home_space": "medienpaed",
+   "user_verdict": "ignorieren",
+   "title": "Mit der VR-Brille ins Orchesterkonzert"
+  },
+  {
+   "id": "0d3c32c5e11f3f90844c10062adb8751",
+   "home_space": "medienpaed",
+   "user_verdict": "ignorieren",
+   "title": "EU Kids Online: Digitale Technologien wirken sehr unterschiedlich"
+  },
+  {
+   "id": "18542de97a8ed5a146e58eb37e225727",
+   "home_space": "aesthetische_kulturelle_bildung",
+   "user_verdict": "scannen",
+   "title": "Pedagogical Embodied Responses Through the Video Way of Thinking"
+  },
+  {
+   "id": "19df0fcd7d882d336505ff720613788a",
+   "home_space": "aesthetische_kulturelle_bildung",
+   "user_verdict": "scannen",
+   "title": "Ecologies of Death, Ecologies of Mourning: A Biophilosophy of Non/Living Arts"
+  },
+  {
+   "id": "1a58e2614e237f245f2a4aa9a6dc70b3",
+   "home_space": "aesthetische_kulturelle_bildung",
+   "user_verdict": "scannen",
+   "title": "Insurrections in the age of counter-revolutions: Rethinking cultural politics and political education"
+  },
+  {
+   "id": "0b8114c8b55d1604160b635af60c6472",
+   "home_space": "aesthetische_kulturelle_bildung",
+   "user_verdict": "ignorieren",
+   "title": "<i>Femigenocide</i> in the Gaza Strip and counter-pedagogies of cruelty: Academic mobilization and educational interruption against symbolic scholasticide"
+  },
+  {
+   "id": "0d9ec654ec851e5eb6b8322d38a64f56",
+   "home_space": "aesthetische_kulturelle_bildung",
+   "user_verdict": "ignorieren",
+   "title": "Fighting epistemological oblivion: The expanded materialism of power in critical pedagogies from the global south"
+  }
+ ],
+ "cost_total": 0.16173199999999996,
+ "cost_by_model": {
+  "deepseek/deepseek-v3.2": 0.016001,
+  "google/gemini-3.5-flash": 0.14573099999999997
+ },
+ "summary": {
+  "sym_onepass": {
+   "fn": 0,
+   "recall": 100.0,
+   "prec": 60.0,
+   "kept": 15
+  },
+  "sym_perspace": {
+   "fn": 0,
+   "recall": 100.0,
+   "prec": 60.0,
+   "kept": 15
+  }
+ },
+ "results": {
+  "0": {
+   "sym_onepass": {
+    "deepseek/deepseek-v3.2": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Engages philosophical and cognitive aspects of digitization, reframing knowledge through AI's epistemic role.",
+      "cost": 0.000321
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Der Artikel thematisiert",
+      "cost": 0.002622
+     }
+    }
+   },
+   "sym_perspace": {
+    "deepseek/deepseek-v3.2": {
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — engages medienpädagogik's core concerns about how technology transforms cognition, knowledge, and learning.",
+      "cost": 0.0002905
+     },
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — examines how AI reshapes cognition and epistemology across generations",
+      "cost": 0.000277
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — it engages epistemic and cognitive transformation in educational and cultural contexts.",
+      "cost": 0.0002877
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Es thematisiert die",
+      "cost": 0.002529
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Behandelt",
+      "cost": 0.0025545
+     },
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Der Artikel analysiert die",
+      "cost": 0.0025395
+     }
+    }
+   }
+  },
+  "1": {
+   "sym_onepass": {
+    "deepseek/deepseek-v3.2": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Engage digitale Kultur, linking agency and AI governance to posthuman normative practices.",
+      "cost": 0.0002291
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben —",
+      "cost": 0.002349
+     }
+    }
+   },
+   "sym_perspace": {
+    "deepseek/deepseek-v3.2": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Engages normative agency, directionality, and human-AI integration debates within digital culture.",
+      "cost": 0.0002043
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — normative directionality and agency erosion link to educational media design",
+      "cost": 0.0001906
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — discursively connects aesthetic agency and human-AI normativity",
+      "cost": 0.0002022
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben —",
+      "cost": 0.0022665
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Behand",
+      "cost": 0.002256
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Der Artikel befasst",
+      "cost": 0.0022815
+     }
+    }
+   }
+  },
+  "2": {
+   "sym_onepass": {
+    "deepseek/deepseek-v3.2": {
+     "_": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Technologie-Arbeitsplatz-Soziologie ohne Medien-/Kulturbildungsbezug",
+      "cost": 0.0002645
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Es thematisiert gesellschaft",
+      "cost": 0.0024225
+     }
+    }
+   },
+   "sym_perspace": {
+    "deepseek/deepseek-v3.2": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — engaged with digitization's impact on labor/valuation in AI-augmented workplaces",
+      "cost": 0.0002301
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — examines sociotechnical failure loops in AI deployment intersecting expertise devaluation.",
+      "cost": 0.0002228
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — addresses how devaluation of expertise impacts AI governance and cultural dynamics of work",
+      "cost": 0.0002344
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "Abstract:* Focus",
+      "cost": 0.00234
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Behandelt KI-",
+      "cost": 0.0023295
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Der Artikel befasst",
+      "cost": 0.002355
+     }
+    }
+   }
+  },
+  "3": {
+   "sym_onepass": {
+    "deepseek/deepseek-v3.2": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — articulates a relational, postdigital understanding of learning spaces and pedagogy.",
+      "cost": 0.0002524
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Der Artikel ent",
+      "cost": 0.0024285
+     }
+    }
+   },
+   "sym_perspace": {
+    "deepseek/deepseek-v3.2": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — explicitly links postdigital, relational, and interdisciplinary spaces to digital culture",
+      "cost": 0.0002228
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Engages pedagogy of spaces and digital learning contexts.",
+      "cost": 0.0002155
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — engagiert ästhetisch-kulturelle Bildungsräume als dynamische, relationale Umgebungen.",
+      "cost": 0.0002447
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Der Artikel entwir",
+      "cost": 0.002346
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Bezieht sich",
+      "cost": 0.002361
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Es thematisiert hybr",
+      "cost": 0.0023355
+     }
+    }
+   }
+  },
+  "4": {
+   "sym_perspace": {
+    "deepseek/deepseek-v3.2": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — addresses digital education reform through implementation research and stakeholder dynamics.",
+      "cost": 0.0002761
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — es bezieht sich auf digitale Bildungsreform im Lehrerfortbildungskontext, was medienpädagogische Kernfragen berührt.",
+      "cost": 0.000304
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — focused on edtech implementation, not ästhetische/kulturelle Bildung or Kunstpädagogik.",
+      "cost": 0.0002996
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Untersucht die",
+      "cost": 0.002511
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Es be",
+      "cost": 0.0025005
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Es befasst sich mit digitaler",
+      "cost": 0.002526
+     }
+    }
+   },
+   "sym_onepass": {
+    "deepseek/deepseek-v3.2": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — engages digitally enabled education reform, teacher PD, technology in resource-constrained contexts.",
+      "cost": 0.0003121
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "_": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Behand",
+      "cost": 0.0025935
+     }
+    }
+   }
+  },
+  "5": {
+   "sym_onepass": {
+    "deepseek/deepseek-v3.2": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — behandelt Medien- und Organisationspädagogik mit Fokus auf Digitalität",
+      "cost": 0.0003251
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Der Beitrag ver",
+      "cost": 0.0025815
+     }
+    }
+   },
+   "sym_perspace": {
+    "deepseek/deepseek-v3.2": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — engagement with digital culture via gendered structures in digital organizations",
+      "cost": 0.0002875
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — nutzt medienpädagogische Perspektive, um organisationales Lernen und Ungleichheit in digitalen Kontexten zu analysieren.",
+      "cost": 0.000317
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Fokussiert Organisationstheorie und Gender, nicht Kunst-/kulturelle Bildung.",
+      "cost": 0.0003078
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Der Beitrag verknüp",
+      "cost": 0.0024885
+     },
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Der Beitrag untersucht theoret",
+      "cost": 0.002499
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Der Beitrag befasst sich",
+      "cost": 0.002514
+     }
+    }
+   }
+  },
+  "6": {
+   "sym_onepass": {
+    "deepseek/deepseek-v3.2": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — The article explicitly engages with the normative foundations of media pedagogy, situating them within post-digital transformation and media educa",
+      "cost": 0.0002765
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Der Beitrag",
+      "cost": 0.002409
+     }
+    }
+   },
+   "sym_perspace": {
+    "deepseek/deepseek-v3.2": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — engages the postdigital culture discourse by normatively examining digital transformation and subjectivity.",
+      "cost": 0.0002325
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — es behandelt normative Ansprüche der Medienpädagogik im digitalen Wandel.",
+      "cost": 0.0002348
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — focus on media education norms, not aesthetic/cultural Bildung.",
+      "cost": 0.0002352
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Der Beitrag reflektiert",
+      "cost": 0.0023265
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Der Beitrag reflektiert",
+      "cost": 0.002316
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Der Beitrag befasst",
+      "cost": 0.0023415
+     }
+    }
+   }
+  },
+  "7": {
+   "sym_onepass": {
+    "deepseek/deepseek-v3.2": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — entwickelt medienpädagogische Analyseperspektive für soziale Medien und Bildungsfragen",
+      "cost": 0.0002603
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben —",
+      "cost": 0.002397
+     }
+    }
+   },
+   "sym_perspace": {
+    "deepseek/deepseek-v3.2": {
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — entwickelt medienpädagogische Analysekategorie für soziale Medien und Machtverhältnisse.",
+      "cost": 0.000233
+     },
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Analyzes digital social spaces as hybrid realities shaping discourse and power.",
+      "cost": 0.0002243
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — verknüpft digitale Medienräume mit Machtverhältnissen und Selbstbestimmung als Bildungsfrage.",
+      "cost": 0.000251
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Der Artikel entwickelt theoretische",
+      "cost": 0.0023145
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Der Artikel entwickelt theoret",
+      "cost": 0.002304
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Der Artikel befasst",
+      "cost": 0.0023295
+     }
+    }
+   }
+  },
+  "8": {
+   "sym_perspace": {
+    "deepseek/deepseek-v3.2": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — untersucht digitale Kultur durch VR-Musikerleben und musikpädagogischen Diskurs.",
+      "cost": 0.0003162
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — untersucht VR als musikpädagogisches Vermittlungsformat, medienpädagogisch relevant.",
+      "cost": 0.0003185
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — discusses VR concerts as informal music education within aesthetic and cultural Bildung discourses.",
+      "cost": 0.0003189
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Untersucht VR",
+      "cost": 0.0025245
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Der Artikel",
+      "cost": 0.002514
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "(music mediation/education) and \"",
+      "cost": 0.0025395
+     }
+    }
+   },
+   "sym_onepass": {
+    "google/gemini-3.5-flash": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben —",
+      "cost": 0.002607
+     }
+    },
+    "deepseek/deepseek-v3.2": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Artikel analysiert VR-Musikerlebnis im Kontext ästhetischer/kultureller Bildung und Medienpädagogik.",
+      "cost": 0.0003586
+     }
+    }
+   }
+  },
+  "9": {
+   "sym_onepass": {
+    "deepseek/deepseek-v3.2": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Artikel thematisiert medienpädagogische Handlungsansätze und Befunde zur Jugendl. Nutzung digitaler Technologien",
+      "cost": 0.0004072
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben —",
+      "cost": 0.0027315
+     }
+    }
+   },
+   "sym_perspace": {
+    "deepseek/deepseek-v3.2": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — greift spezifisch Wirkungen digitaler Technologien auf Jugendliche auf und leitet medienpädagogische Handlungsempfehlungen ab.",
+      "cost": 0.0003888
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — adressiert medienpädagogischen Bedarf für differenzierte Förderung digitaler Mediennutzung",
+      "cost": 0.0003671
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Es analysiert Mediennutzungseffekte, nicht ästhetisch-kulturelle Bildungsprozesse.",
+      "cost": 0.0003803
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Der Beitrag",
+      "cost": 0.0026385
+     },
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "ik), digital",
+      "cost": 0.002649
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Der Artikel befasst sich",
+      "cost": 0.002664
+     }
+    }
+   }
+  },
+  "10": {
+   "sym_onepass": {
+    "deepseek/deepseek-v3.2": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — explicitly engages embodied pedagogy and artistic response within early childhood education, aligning with aesthetic and media education discourse",
+      "cost": 0.0002225
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Der Artikel verbindet",
+      "cost": 0.00231
+     }
+    }
+   },
+   "sym_perspace": {
+    "deepseek/deepseek-v3.2": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — reframes digital culture through posthuman, embodied, agential video practices.",
+      "cost": 0.0001865
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — combines video-based pedagogy, agency, and embodied learning in early childhood.",
+      "cost": 0.0001824
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — embodied artistic practices align with aesthetic and cultural Bildung",
+      "cost": 0.0001844
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Es untersucht postdigitale",
+      "cost": 0.0022275
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben —",
+      "cost": 0.0022425
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Der Artikel befasst",
+      "cost": 0.002217
+     }
+    }
+   }
+  },
+  "11": {
+   "sym_onepass": {
+    "deepseek/deepseek-v3.2": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Behandelt planetare Krise, Trauer und mehr-als-menschliche Verletzlichkeit durch ästhetische/kulturelle Praxen.",
+      "cost": 0.0002483
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "Ästhetische und kulturelle Bildung",
+      "cost": 0.0023295
+     }
+    }
+   },
+   "sym_perspace": {
+    "deepseek/deepseek-v3.2": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — untersucht postdigitale Trauer und Umweltkrise durch zeitgenössische Kunst.",
+      "cost": 0.0001963
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Artikel untersucht kunstpädagogische Trauer- und Todesimaginationen im ökologischen Kontext.",
+      "cost": 0.0002102
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — nicht medienpädagogisch, sondern kunsttheoretisch und ökophilosophisch.",
+      "cost": 0.0001938
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Der Artikel befasst",
+      "cost": 0.002247
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Behand",
+      "cost": 0.0022365
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Der Artikel be",
+      "cost": 0.002262
+     }
+    }
+   }
+  },
+  "12": {
+   "sym_onepass": {
+    "deepseek/deepseek-v3.2": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — greift Fragen politischer Bildung und Kulturpolitik in digitalen Zeiten auf",
+      "cost": 0.0003381
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Es ver",
+      "cost": 0.002658
+     }
+    }
+   },
+   "sym_perspace": {
+    "deepseek/deepseek-v3.2": {
+     "medienpaed": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — zwar pädagogische Relevanz, aber Fokus auf politische Theorie, nicht Medienpädagogik",
+      "cost": 0.0003172
+     },
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — examines cultural politics, digital media's role in political education",
+      "cost": 0.0003021
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Fokus liegt auf politischer Bildung und Ideologie, nicht auf ästhetischen oder künstlerischen Bildungskonzepten.",
+      "cost": 0.0003352
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Analysiert politische Bildung",
+      "cost": 0.0025755
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Es them",
+      "cost": 0.002565
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Behandelt politische",
+      "cost": 0.0025905
+     }
+    }
+   }
+  },
+  "13": {
+   "sym_onepass": {
+    "google/gemini-3.5-flash": {
+     "_": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Behandelt feminist",
+      "cost": 0.0024555
+     }
+    },
+    "deepseek/deepseek-v3.2": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — greift medienpädagogische Fragen der kritischen Bildung und Gegenöffentlichkeit auf.",
+      "cost": 0.0002733
+     }
+    }
+   },
+   "sym_perspace": {
+    "deepseek/deepseek-v3.2": {
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — focuses on political mobilization, not on aesthetic or cultural education.",
+      "cost": 0.0002432
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — it applies Segato's counter-pedagogies of cruelty to educational action.",
+      "cost": 0.0002396
+     },
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — uses Segato's counter-pedagogies of cruelty as digital/postdigital cultural interruption.",
+      "cost": 0.0002453
+     }
+    },
+    "google/gemini-3.5-flash": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Der",
+      "cost": 0.002373
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Der Artikel be",
+      "cost": 0.0023625
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Behand",
+      "cost": 0.002388
+     }
+    }
+   }
+  },
+  "14": {
+   "sym_onepass": {
+    "google/gemini-3.5-flash": {
+     "_": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Behandelt kritische",
+      "cost": 0.0024495
+     }
+    },
+    "deepseek/deepseek-v3.2": {
+     "_": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Engages pedagogical power and epistemology, aligning with Digitale Kultur and Medienpädagogik.",
+      "cost": 0.0002663
+     }
+    }
+   },
+   "sym_perspace": {
+    "google/gemini-3.5-flash": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Der Artikel befasst sich",
+      "cost": 0.002367
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Behandelt",
+      "cost": 0.0023565
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "ignorieren",
+      "raw": "ignorieren — Behandelt krit",
+      "cost": 0.002382
+     }
+    },
+    "deepseek/deepseek-v3.2": {
+     "digitale_kultur": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — engages postdigital culture's focus on restoring excluded epistemologies.",
+      "cost": 0.0002287
+     },
+     "aesthetische_kulturelle_bildung": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — engages critical pedagogies and cultural hegemony in education.",
+      "cost": 0.000233
+     },
+     "medienpaed": {
+      "role": "sym",
+      "word": "weitergeben",
+      "raw": "weitergeben — Engages media pedagogy's core questions of power, education, and marginalized knowledge.",
+      "cost": 0.0002326
+     }
+    }
+   }
+  }
+ }
+}
