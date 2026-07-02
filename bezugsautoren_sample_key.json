@@ -1,0 +1,406 @@
+[
+  {
+    "n": 1,
+    "id": "5faded57258f5384befb1fcc6515b494",
+    "title": "Blameless responsibility: Schooling, selection, and the governance of possibilities",
+    "journal": "European Educational Research Journal",
+    "year": 2026,
+    "bucket": "ungrounded",
+    "idf": 0.0,
+    "shared_n": 0,
+    "hit_works": []
+  },
+  {
+    "n": 2,
+    "id": "723264de3350ed55c5b687e93ada8bf4",
+    "title": "Psychological absorption and the maintenance of agency in AI-mediated cognition: a relapse prevention perspective—V4",
+    "journal": "AI & Society",
+    "year": 2026,
+    "bucket": "ungrounded",
+    "idf": 0.0,
+    "shared_n": 0,
+    "hit_works": []
+  },
+  {
+    "n": 3,
+    "id": "deaaa04a8860bfc8a0f227c4925efefa",
+    "title": "Navigating the AI Revolution: Generative AI as a Potential Disorienting Dilemma in Adult and Continuing Education",
+    "journal": "Journal of Transformative Education",
+    "year": 2026,
+    "bucket": "ungrounded",
+    "idf": 0.0,
+    "shared_n": 0,
+    "hit_works": []
+  },
+  {
+    "n": 4,
+    "id": "fa5e606458d4287aa7280873b52c17ec",
+    "title": "The epistemic readiness gap: rethinking AI readiness indices through ILIA 2025",
+    "journal": "AI & Society",
+    "year": 2026,
+    "bucket": "ungrounded",
+    "idf": 0.0,
+    "shared_n": 0,
+    "hit_works": []
+  },
+  {
+    "n": 5,
+    "id": "ccff5384c14c151fe5484d9485e1a92a",
+    "title": "Solmuja vyyhdissä",
+    "journal": "Research in Arts and Education",
+    "year": 2025,
+    "bucket": "corroborated",
+    "idf": 0.62,
+    "shared_n": 2,
+    "hit_works": [
+      {
+        "cid": "doi:10.30965/25890581-10102018",
+        "title": "Nachhaltigkeit und kulturelle Resilienz: Prozesse und Dynamiken relationalen Werdens in verteilten ›agencies‹",
+        "year": 2025
+      },
+      {
+        "cid": "hash:6839b2118380813f",
+        "title": "„Cultural Resilience“ and the Cultivation of a Postdigital Planetary Dissensus",
+        "year": 2026
+      }
+    ]
+  },
+  {
+    "n": 6,
+    "id": "007f0cd267ad8b545d01c851e384bb75",
+    "title": "Undisciplined Learning Spaces: An Environmental Model for Interdisciplinary Education",
+    "journal": "Postdigital Science and Education",
+    "year": 2026,
+    "bucket": "weak",
+    "idf": 1.5,
+    "shared_n": 5,
+    "hit_works": []
+  },
+  {
+    "n": 7,
+    "id": "1be537b10af26c1485188e25a5e6f31b",
+    "title": "Data colonialism and indigenous languages in AI: a critical review of existing initiatives and their struggles with data sovereignty",
+    "journal": "AI & Society",
+    "year": 2026,
+    "bucket": "ungrounded",
+    "idf": 0.0,
+    "shared_n": 0,
+    "hit_works": []
+  },
+  {
+    "n": 8,
+    "id": "77c18b27733eda52591544fab9a73259",
+    "title": "Intergenerational Formative Epistemic Injustice: A Wittgensteinian Critique of Dominant World‐Pictures",
+    "journal": "Educational Theory",
+    "year": 2025,
+    "bucket": "ungrounded",
+    "idf": 0.0,
+    "shared_n": 0,
+    "hit_works": []
+  },
+  {
+    "n": 9,
+    "id": "d4969c00591e482bef693097405f6224",
+    "title": "Repainting the Stifled Canvas: Awakening Personally and Culturally Relevant Artmaking in Postcolonial Classrooms",
+    "journal": "Studies in Art Education",
+    "year": 2024,
+    "bucket": "ungrounded",
+    "idf": 0.35,
+    "shared_n": 1,
+    "hit_works": []
+  },
+  {
+    "n": 10,
+    "id": "e0f124ad6ad49eed51dbbf7106e87fe1",
+    "title": "Artificial intelligence, conceptions of distillation and the reframing of reasoning",
+    "journal": "Big Data and Society",
+    "year": 2026,
+    "bucket": "corroborated",
+    "idf": 1.86,
+    "shared_n": 5,
+    "hit_works": [
+      {
+        "cid": "doi:10.2307/jj.26657240",
+        "title": "Wahrnehmungskrisen - „Generative Künstliche Intelligenz\" als Herausforderung pädagogischer und erziehungswissenschaftlicher Wahrnehmungsweisen",
+        "year": 2025
+      }
+    ]
+  },
+  {
+    "n": 11,
+    "id": "844dce3a63e5a83cfd9a3e34dd13c206",
+    "title": "Between datafication and digital entanglement: Swedish farmers’ everyday use and understanding of weather through apps",
+    "journal": "Big Data and Society",
+    "year": 2026,
+    "bucket": "ungrounded",
+    "idf": 0.0,
+    "shared_n": 0,
+    "hit_works": []
+  },
+  {
+    "n": 12,
+    "id": "5e2a510b5156c5bd50da21ddf18bc2e4",
+    "title": "Körper und Kacheln",
+    "journal": "MedienPädagogik (medienpaed.com)",
+    "year": 2025,
+    "bucket": "corroborated",
+    "idf": 18.63,
+    "shared_n": 24,
+    "hit_works": [
+      {
+        "cid": "hash:9891acae33c969c9",
+        "title": "„Ästhetische Bildung“ im Regime des Komputablen",
+        "year": 2020
+      },
+      {
+        "cid": "doi:10.1007/978-3-658-24734-8_28-1",
+        "title": "Schule und Medialität",
+        "year": 2022
+      }
+    ]
+  },
+  {
+    "n": 13,
+    "id": "53315838a70fb68a717c39dd821a7d7a",
+    "title": "The ontological politics of synthetic data: Normalities, outliers, and intersectional hallucinations",
+    "journal": "Big Data and Society",
+    "year": 2025,
+    "bucket": "weak",
+    "idf": 3.91,
+    "shared_n": 8,
+    "hit_works": []
+  },
+  {
+    "n": 14,
+    "id": "5971a0fc2bf28d47d6ed2f8efe088be2",
+    "title": "The dashboard school: governing teachers, students and parents in the data-driven school",
+    "journal": "Discourse: Studies in the Cultural Politics of Education",
+    "year": 2025,
+    "bucket": "corroborated",
+    "idf": 2.04,
+    "shared_n": 7,
+    "hit_works": [
+      {
+        "cid": "hash:2faccde7903e6fdc",
+        "title": "Digitalität im erziehungstheoretischen Blick: Strukturelle und epistemische Perspektiven",
+        "year": 2025
+      }
+    ]
+  },
+  {
+    "n": 15,
+    "id": "32d8df094181594979ceb1113e741bbc",
+    "title": "Sexualized deepfakes as a socio-technical continuation of gendered power",
+    "journal": "AI & Society",
+    "year": 2026,
+    "bucket": "ungrounded",
+    "idf": 0.0,
+    "shared_n": 0,
+    "hit_works": []
+  },
+  {
+    "n": 16,
+    "id": "080e0d572ca2c77fbf213c17ce68b7cf",
+    "title": "Das Normative in der Medienpädagogik",
+    "journal": "MedienPädagogik (medienpaed.com)",
+    "year": 2024,
+    "bucket": "corroborated",
+    "idf": 7.55,
+    "shared_n": 12,
+    "hit_works": [
+      {
+        "cid": "hash:4af2886c0b61298a",
+        "title": "Medienbildung (Springer Online First)",
+        "year": 2021
+      },
+      {
+        "cid": "hash:ae828fbec2c335cd",
+        "title": "Medienbildung 2021 - kritisch, unkritisch, post-kritisch?",
+        "year": 2021
+      }
+    ]
+  },
+  {
+    "n": 17,
+    "id": "092b2cc3d75090150e4701aba8e9fc62",
+    "title": "Soziale Medienräume",
+    "journal": "MedienPädagogik (medienpaed.com)",
+    "year": 2025,
+    "bucket": "corroborated",
+    "idf": 1.71,
+    "shared_n": 4,
+    "hit_works": [
+      {
+        "cid": "doi:10.1007/978-3-658-23578-9_10",
+        "title": "Medienbildung",
+        "year": 2022
+      }
+    ]
+  },
+  {
+    "n": 18,
+    "id": "a74bc024af5b080de215690d72b4d955",
+    "title": "Socially sustainable teaching and learning: Foregrounding the relational turn in transformative education",
+    "journal": "Educational Philosophy and Theory",
+    "year": 2026,
+    "bucket": "ungrounded",
+    "idf": 0.0,
+    "shared_n": 0,
+    "hit_works": []
+  },
+  {
+    "n": 19,
+    "id": "6a43fa6922ec7687e52aa7a8f90078ad",
+    "title": "Sleep by the numbers: human-centeredness and the immanent posthumanism of users",
+    "journal": "AI & Society",
+    "year": 2026,
+    "bucket": "ungrounded",
+    "idf": 0.2,
+    "shared_n": 1,
+    "hit_works": []
+  },
+  {
+    "n": 20,
+    "id": "ecda02483be0b6ed3389e992e6264d3f",
+    "title": "Mit Medienpädagogik in die Zukunft",
+    "journal": "MedienPädagogik (medienpaed.com)",
+    "year": 2024,
+    "bucket": "corroborated",
+    "idf": 6.05,
+    "shared_n": 9,
+    "hit_works": [
+      {
+        "cid": "hash:9891acae33c969c9",
+        "title": "„Ästhetische Bildung“ im Regime des Komputablen",
+        "year": 2020
+      }
+    ]
+  },
+  {
+    "n": 21,
+    "id": "530d4a2904aa34a2326601399d24f4ca",
+    "title": "Negated Identities in Dominican Art Education",
+    "journal": "Studies in Art Education",
+    "year": 2024,
+    "bucket": "ungrounded",
+    "idf": 0.0,
+    "shared_n": 0,
+    "hit_works": []
+  },
+  {
+    "n": 22,
+    "id": "a4fe396f3b151a2d3592fe0b22d7273e",
+    "title": "Is A Star A Document? Catalogued Students and Learning Analytics",
+    "journal": "Postdigital Science and Education",
+    "year": 2024,
+    "bucket": "weak",
+    "idf": 3.68,
+    "shared_n": 11,
+    "hit_works": []
+  },
+  {
+    "n": 23,
+    "id": "528391ff5b9cb6ff2641aa5e3ff63904",
+    "title": "Synthetic chamber: agentic mediation in representative democracy",
+    "journal": "AI & Society",
+    "year": 2026,
+    "bucket": "ungrounded",
+    "idf": 0.0,
+    "shared_n": 0,
+    "hit_works": []
+  },
+  {
+    "n": 24,
+    "id": "f96898df901beee750aed4c19cdf5c3d",
+    "title": "Bildungsübergänge in der Digitalität",
+    "journal": "MedienPädagogik (medienpaed.com)",
+    "year": 2025,
+    "bucket": "weak",
+    "idf": 1.1,
+    "shared_n": 3,
+    "hit_works": []
+  },
+  {
+    "n": 25,
+    "id": "b17bff305e9fd4c37083e8397afd1f3b",
+    "title": "Postdigital Science and Education and The Majority World",
+    "journal": "Postdigital Science and Education",
+    "year": 2025,
+    "bucket": "weak",
+    "idf": 1.15,
+    "shared_n": 3,
+    "hit_works": []
+  },
+  {
+    "n": 26,
+    "id": "d41685ced11e909ab2c38d7ab27cab03",
+    "title": "Kritik der Ästhetik und Ästhetik der Kritik",
+    "journal": "MedienPädagogik (medienpaed.com)",
+    "year": 2024,
+    "bucket": "ungrounded",
+    "idf": 0.48,
+    "shared_n": 1,
+    "hit_works": []
+  },
+  {
+    "n": 27,
+    "id": "e160a38312cede7d7b6d8edad1ef6109",
+    "title": "Bildkommunikation – Jugend – Nachhaltigkeit",
+    "journal": "MedienPädagogik (medienpaed.com)",
+    "year": 2025,
+    "bucket": "corroborated",
+    "idf": 5.63,
+    "shared_n": 9,
+    "hit_works": [
+      {
+        "cid": "hash:62ac00d57f12003c",
+        "title": "Postdigitale Jugendkultur: Kernergebnisse einer qualitativen Studie zur digitalen Transformation ästhetischer und künstlerischer Praktiken",
+        "year": 2020
+      }
+    ]
+  },
+  {
+    "n": 28,
+    "id": "77fbebadc860b412e218eebc7132aaef",
+    "title": "Postdigital Education and the GenAI-Human Relation: Orientalism, Paternalism, Extractivism",
+    "journal": "Postdigital Science and Education",
+    "year": 2026,
+    "bucket": "ungrounded",
+    "idf": 0.18,
+    "shared_n": 1,
+    "hit_works": []
+  },
+  {
+    "n": 29,
+    "id": "272c826d7010493dfedb5981693df87e",
+    "title": "The message hidden within the pattern: a reverse alignment problem for debates in artificial intelligence",
+    "journal": "AI & Society",
+    "year": 2026,
+    "bucket": "ungrounded",
+    "idf": 0.0,
+    "shared_n": 0,
+    "hit_works": []
+  },
+  {
+    "n": 30,
+    "id": "f8c88c5b6532a4abe6c169055d44cacf",
+    "title": "The hidden functions of sycophancy in AI systems: steering, consistency, and cognitive dependency",
+    "journal": "AI & Society",
+    "year": 2026,
+    "bucket": "ungrounded",
+    "idf": 0.0,
+    "shared_n": 0,
+    "hit_works": []
+  },
+  {
+    "n": 31,
+    "id": "b3b74cbd500b224e9d9b08f0b3974d8f",
+    "title": "Amanda Weate's Genealogy of Creativity",
+    "journal": "Journal of Aesthetic Education",
+    "year": 2025,
+    "bucket": "ungrounded",
+    "idf": 0.94,
+    "shared_n": 2,
+    "hit_works": []
+  }
+]
