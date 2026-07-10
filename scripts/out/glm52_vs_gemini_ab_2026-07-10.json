@@ -1,0 +1,1977 @@
+{
+  "generated_at": "2026-07-10T20:24:37.555420+00:00",
+  "sample": [
+    {
+      "id": "eaab8fbec10635679dd7e8d38320dff3",
+      "user_verdict": "lesenswert",
+      "journal": "BJET",
+      "abstract_poor": false
+    },
+    {
+      "id": "de4ac5cbc17b7e9f498c2a0efd47bb40",
+      "user_verdict": "lesenswert",
+      "journal": "AIandSoc",
+      "abstract_poor": false
+    },
+    {
+      "id": "283be2524522d8febff069c11f2fc3d3",
+      "user_verdict": "lesenswert",
+      "journal": "MedienPaed",
+      "abstract_poor": false
+    },
+    {
+      "id": "59b41fadc626dac8d50c95250ab72b47",
+      "user_verdict": "lesenswert",
+      "journal": "ZfE",
+      "abstract_poor": false
+    },
+    {
+      "id": "e8a2c291f8a7e54f2b3797c5ab2bebf2",
+      "user_verdict": "lesenswert",
+      "journal": "BDS",
+      "abstract_poor": false
+    },
+    {
+      "id": "910d8402db4d5cde8691d36bdc87c08c",
+      "user_verdict": "lesenswert",
+      "journal": "CompCult",
+      "abstract_poor": false
+    },
+    {
+      "id": "5600ea9e78f4119c6e3c297d7cac22d3",
+      "user_verdict": "pflichtlektuere",
+      "journal": "MedienPaed",
+      "abstract_poor": false
+    },
+    {
+      "id": "af6f9705f1c19ad76d563fa1e137b28b",
+      "user_verdict": "scannen",
+      "journal": "AIandSoc",
+      "abstract_poor": false
+    },
+    {
+      "id": "721e8ae04e772623006908ddbaf2f808",
+      "user_verdict": "scannen",
+      "journal": "BDS",
+      "abstract_poor": false
+    },
+    {
+      "id": "a61faadb88daa6af4a8eb1d5e7cd1bc4",
+      "user_verdict": "scannen",
+      "journal": "REPCS",
+      "abstract_poor": false
+    },
+    {
+      "id": "598d79c944193dab810dea751015fc88",
+      "user_verdict": "scannen",
+      "journal": "EthicsEd",
+      "abstract_poor": false
+    },
+    {
+      "id": "ac3bc611f5e0f4be6575f885001d33e2",
+      "user_verdict": "scannen",
+      "journal": "JRTE",
+      "abstract_poor": false
+    },
+    {
+      "id": "74f223f51fced5138d20b7ba94fc5504",
+      "user_verdict": "scannen",
+      "journal": "MedienPaed",
+      "abstract_poor": true
+    },
+    {
+      "id": "b756f0c8e6190877f982fde045878a90",
+      "user_verdict": "ignorieren",
+      "journal": "AIandSoc",
+      "abstract_poor": false
+    },
+    {
+      "id": "b56e34a4cf6a1be4257ea32e9c97fa7f",
+      "user_verdict": "ignorieren",
+      "journal": "BJET",
+      "abstract_poor": false
+    },
+    {
+      "id": "9c28670eeb0d8171190dcce10ec76a51",
+      "user_verdict": "ignorieren",
+      "journal": "Discourse",
+      "abstract_poor": false
+    },
+    {
+      "id": "10e15383607724179c30f37cca278760",
+      "user_verdict": "ignorieren",
+      "journal": "EERJ",
+      "abstract_poor": false
+    },
+    {
+      "id": "285f36c132b2761190d95a0366b45320",
+      "user_verdict": "ignorieren",
+      "journal": "PDSE",
+      "abstract_poor": false
+    },
+    {
+      "id": "45972f0bbd137f84ec1b7aac1f68dcc1",
+      "user_verdict": "ignorieren",
+      "journal": "ZfE",
+      "abstract_poor": false
+    },
+    {
+      "id": "167708764b14244eacea2f87b91c7abd",
+      "user_verdict": "ignorieren",
+      "journal": "AIandSoc",
+      "abstract_poor": true
+    }
+  ],
+  "records": [
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~3357 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Systematischer Review von 56 empirischen Studien zu generativer KI in der Bildung, analysiert durch das AIED-HCD-Framework, das drei Interaktionsmodi entlang der Dimensionen menschliche)\n",
+      "phase1_verdict": "scannen",
+      "phase1_latency_s": 11.97,
+      "entry": {
+        "kernthese": "Systematischer Review von 56 empirischen Studien zu generativer KI in der Bildung, analysiert durch das AIED-HCD-Framework, das drei Interaktionsmodi entlang der Dimensionen menschliche Kontrolle und KI-Automatisierung unterscheidet. Die Studie zeigt, dass ein Modus mit sowohl hoher menschlicher Kontrolle als auch hoher KI-Automatisierung als Trend aufkommend ist, und deckt methodische Schwächen in der statistischen Berichterstattung vieler Studien auf.",
+        "bezuege": [],
+        "theoretisch_methodisch": "Quantitativer systematischer Review im AIED/HCD-Paradigma (Human-Centered Design for AI in Education). Analysiert empirische Studien entlang einer Taxonomie von Human-AI-Interaktionsmodi (menschliche Kontrolle × KI-Automatisierung) und ergänzt dies um eine Sensitivitätsanalyse statistischer Power und Effektstärken. Kein Bezug zu kultur-, medien- oder bildungstheoretischen Perspektiven.",
+        "bemerkenswert": [
+          "Die Taxonomie von Human-AI-Interaktionsmodi (human control × AI automation) bietet ein empirisch fundiertes Vokabular, das sich produktiv gegen Jörissens Konzepte der ‚digitalen Souveränität' und ‚digital-ästhetischen Souveränität' (DiäS-KuBi) reiben könnte – insbesondere der Befund, dass ein Modus hoher menschlicher Kontrolle UND hoher KI-Automatisierung als Trend aufkommend ist.",
+          "Die Sensitivitätsanalyse zeigt, dass viele empirische GenAI-in-Education-Studien unzureichende statistische Power und mangelhafte Berichterstattung aufweisen – ein methodologischer Befund, der für die Bewertung der empirischen Evidenzbasis im Umfeld von AI4ArtsEd relevant sein könnte.",
+          "Der Review ist rein im HCI/AIED-Paradigma verankert und enthält keinerlei Anschlüsse an kulturelle, ästhetische oder kritisch-pädagogische Perspektiven auf GenAI – ein Indikator für die disziplinäre Schieflage des empirischen GenAI-in-Education-Diskurses."
+        ],
+        "verdict": "scannen",
+        "verdict_begruendung": "Der Artikel kartiert das empirische Forschungsfeld zu GenAI in Education im HCI/AIED-Paradigma und ist für Diskursübersicht nützlich. Die Human-AI-Interaktionstaxonomie berührt konzeptionell Jörissens Souveränitätsbegriff, doch der Artikel bietet keine ästhetische, kulturelle oder kritisch-pädagogische Dimension, die für die aktiven Projekte (ai4artsed, DiäS-KuBi, Cultural Resilience) spezifisch anregend wäre."
+      },
+      "agent_verdict": "scannen",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 32755,
+      "tokens_out": 1492,
+      "tokens_cached_read": 0,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.0524218,
+      "phase2_triggered": false,
+      "latency_s": 11.97,
+      "finished_at": "2026-07-10T20:11:52.907195+00:00",
+      "started_at": "2026-07-10T20:11:40.938437+00:00",
+      "model_key": "glm",
+      "model_id": "z-ai/glm-5.2",
+      "article_id": "eaab8fbec10635679dd7e8d38320dff3",
+      "journal_short": "BJET",
+      "user_verdict": "lesenswert",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~2684 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30144, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"The article explores what a decolonial approach to AI ethics would entail, arguing that mainstream AI ethics frameworks remain grounded in Western epistemological traditions and reprodu)\n",
+      "phase1_verdict": "lesenswert",
+      "phase1_latency_s": 14.06,
+      "phase2_triggered": true,
+      "entry": {
+        "kernthese": "The article explores what a decolonial approach to AI ethics would entail, arguing that mainstream AI ethics frameworks remain grounded in Western epistemological traditions and reproduce colonial hierarchies in technological design and deployment. It proposes three reflections: (1) AI as a means to redress power asymmetries and structural exploitation, (2) AI grounded in local data sovereignty and equitable epistemic participation, and (3) AI conceived as relationally entangled with humans, more-than-humans, and the Earth. The paper calls for pluriversal, situated, and ecologically embedded forms of ethical reasoning that foreground the material and ecological dimensions of data infrastructures.",
+        "bezuege": [
+          {
+            "pub_id": "L224MAYL",
+            "pub_kurz": "Jörissen & Baumann 2026 — Prompt Interception",
+            "bezug": "The Prompt Interception paper already explicitly engages decolonial perspectives — it mentions 'decolonial voices' as essential for diversity work, conducts counterfactual prompting with Kenyan partners, and identifies cultural bias in CLIP/Stable Diffusion as a structural problem of Western training data. The new article extends this practical-critical work by providing a broader decolonial ethical framework (pluriversal ethics, data sovereignty, relational entanglement with more-than-humans) that could theoretically scaffold and contextualize the specific practices of prompt interception and counterfactual prompting described in L224MAYL.",
+            "relation": "erweitert"
+          },
+          {
+            "pub_id": "3W9X5QLZ",
+            "pub_kurz": "Jörissen & Klepacki 2025 — Cultural Resilience and Postdigital Planetary Dissensus",
+            "bezug": "The Cultural Resilience paper shares the new article's critique of Western epistemological frameworks: it references Boaventura de Sousa Santos, discusses how Western educational thinking's 'discovery' of sustainability is itself an effect of colonial history, and calls for engagement with non-Western knowledge systems. The new article extends this decolonial critique specifically into AI ethics, proposing data sovereignty and ecological embeddedness as ethical principles — which structurally resonate with the Rootedness (belonging/place), Resourcefulness (local capacities/sovereignty), and Resistance (redressing power asymmetries) framework. The new article's third reflection (AI as relationally entangled with humans, more-than-humans, and Earth) comes from a decolonial-studies tradition rather than agential realism, providing productive friction with the Barad/Haraway-based ontology of Cultural Resilience.",
+            "relation": "erweitert"
+          }
+        ],
+        "theoretisch_methodisch": "The article operates within decolonial studies and critical data studies, drawing on authors like Escobar (pluriverse), Couldry & Mejias (data colonialism), and Birhane (algorithmic colonization). It is a literature-based conceptual exploration rather than an empirical study, structured around three thematic reflections. The theoretical framework draws on decolonial philosophy (Dussel, Mignolo-adjacent), critical data studies, and indigenous thought (Krenak), positioning itself explicitly against the universalist and procedural tendencies of mainstream Western AI ethics (Floridi, Jobin et al.). The approach is exploratory and situated, acknowledging its own limitations.",
+        "bemerkenswert": [
+          "The article's concept of 'data sovereignty' (drawing on Couture & Toupin 2019) reframes sovereignty from a state-level or individual-level concept to a collective, decolonial, and geopolitical one — this productively frictions with the DiäS-KuBi project's concern with 'digital-aesthetic sovereignty' at the teacher/individual level, suggesting a scalar expansion of the concept.",
+          "The citation of Ailton Krenak's 'Ideas to postpone the end of the world' and 'Futuro Ancestral' introduces an indigenous cosmological framework (postponing the end of the world through ancestral futures) that could enrich the Cultural Resilience project's engagement with non-Western temporalities and futurity concepts, complementing the existing engagement with Iñupiaq and Māori perspectives.",
+          "The paper's critique of 'universalist and procedural tendencies of Western ethical paradigms' structurally parallels Jörissen's critique of solutionism (Morozov) and the 'Regime des Komputablen' — both identify a structural limitation in how Western frameworks address technological transformation, but from different theoretical traditions (decolonial vs. Rancièrean aesthetics).",
+          "The article foregrounds the material and ecological dimensions of data — extractive infrastructures, environmental externalities, geo-political inequalities — which connects to the Anthropocene/materiality concerns in BRYT324Y (Digitalization/Digital Transformation) and the 'immaterial bias' critique articulated there."
+        ],
+        "verdict": "lesenswert",
+        "verdict_begruendung": "The article directly extends two central publications: L224MAYL (Prompt Interception) by providing a broader decolonial ethical framework for the specific AI bias practices already developed there, and 3W9X5QLZ (Cultural Resilience) by translating the critique of Western epistemological hegemony into the domain of AI ethics. Its decolonial-studies tradition provides productive friction with Jörissen's agential-realist and bildungstheoretisch approach. It is relevant for two active projects (AI4ArtsEd and Cultural Resilience) and offers conceptual resources (data sovereignty, pluriversal ethics, ecological embeddedness of data) that could stimulate further theoretical development."
+      },
+      "agent_verdict": "lesenswert",
+      "iterations": 3,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "L224MAYL",
+          "search_term": "decolonial",
+          "chars": 6226
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "3W9X5QLZ",
+          "search_term": "pluriversal",
+          "chars": 16183
+        },
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 2,
+      "submit_logged": true,
+      "tokens_in": 105779,
+      "tokens_out": 4101,
+      "tokens_cached_read": 64000,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.093175,
+      "phase2_stdout": "[agent] System-Prompt (full): ~28420 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~3673 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] finish=tool_calls\n[agent] → read_publication({\"pub_id\": \"L224MAYL\", \"search_term\": \"decolonial\"})\n[agent] → read_publication({\"pub_id\": \"3W9X5QLZ\", \"search_term\": \"pluriversal\"})\n\n[agent] --- Iteration 2 ---\n[agent] cache: read=33856, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"The article explores what a decolonial approach to AI ethics would entail, arguing that mainstream AI ethics frameworks remain grounded in Western epistemological traditions and reprodu)\n",
+      "latency_s": 30.25,
+      "finished_at": "2026-07-10T20:12:23.155847+00:00",
+      "started_at": "2026-07-10T20:11:52.908035+00:00",
+      "model_key": "glm",
+      "model_id": "z-ai/glm-5.2",
+      "article_id": "de4ac5cbc17b7e9f498c2a0efd47bb40",
+      "journal_short": "AIandSoc",
+      "user_verdict": "lesenswert",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Zitationstreffer: 1 (davon 1 mit hoher Confidence)\n[agent] User-Content: ~1809 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30144, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Beitrag verfolgt aus designhistorischer Perspektive, wie Design von der Industrialisierung bis zur Gegenwart programmatische Gesellschafts- und Subjektentwürfe konfiguriert und über)\n",
+      "phase1_verdict": "lesenswert",
+      "phase1_latency_s": 22.24,
+      "phase2_triggered": true,
+      "entry": {
+        "kernthese": "Der Beitrag verfolgt aus designhistorischer Perspektive, wie Design von der Industrialisierung bis zur Gegenwart programmatische Gesellschafts- und Subjektentwürfe konfiguriert und über Interaktionsdesign digitaler Technologien einschreibt. Er argumentiert, dass digitale Technologien durch Affordanzen und „nutzerfreundliches Design\" Ordnungs- und Steuerungslogiken unsichtbar in den Alltag einschmieben und dabei Subjektivationen aktualisieren. Als medienpädagogische Antwort wird „Critical Design\" (Dunne & Raby) vorgeschlagen: eine gestalterisch-kreative Analysemethode, die eingeschriebene Werte sichtbar macht und alternative Zukünfte über fiktive Design-Artefakte aufzeigt.",
+        "bezuege": "[{\"pub_id\": \"XTJR5DRD\", \"pub_kurz\": \"Jörissen 2018: Subjektivation und ästhetische Bildung in der post-digitalen Kultur\", \"bezug\": \"Jörissen diskutiert hier, wie „digital designs\" die Bedingungen von Subjektivationsprozessen auf multiplen Ebenen transformieren, und verbindet Design als konstitutives Moment postdigitaler Subjektivation mit ästhetischer Bildung als artikulativer Relationierung. Der neue Beitrag erweitert diese Perspektive um eine designhistorische Genealogie: Er zeigt auf, dass die Verschränkung von Design und Subjektivation keine rein digitale Entwicklung ist, sondern sich von der Industrialisierung über das Bauhaus bis zu kybernetischen Steuerungsprogrammatiken nachverfolgen lässt. Die historische Tiefendimension unterfüttert Jörissens Bestimmung von Design als subjektivationskonstitutivem Moment.\", \"relation\": \"erweitert\"}, {\"pub_id\": \"Y3R8HWUA\", \"pub_kurz\": \"Meyer & Jörissen 2018: Post Internet Art Education\", \"bezug\": \"Meyer und Jörissen entwickeln hier „Cultural Hacking\" als Kulturtechnik des subversiven Spiels mit kulturellen Codes und Kontrollprojekten sowie als bildungstheoretische Figur für post-digitale Bedingungen. Das Konzept des „Critical Design\" im neuen Beitrag ist strukturell parallel: Beide zielen auf gestalterisch-kreative Dekonstruktion eingeschriebener Ordnungen und die Sichtbarmachung von in Technologien eingeschriebenen Werten. Während Cultural Hacking als allgemeines Praxisprinzip der Digitalkultur formuliert ist, operationalisiert Critical Design diesen Impuls als konkrete medienpädagogische Analysemethode mit fiktiven Design-Artefakten.\", \"relation\": \"parallelisiert\"}, {\"pub_id\": \"M8RZJRHN\", \"pub_kurz\": \"Jörissen 2020: Ästhetische Bildung im Regime des Komputablen\", \"bezug\": \"Jörissen analysiert hier den digitalen Solutionismus (nach Morozov) als hegemoniale „Police\", die durch Software als non-humanen Logos die Aufteilung des Sinnlichen rekonfiguriert und ein compliance-basiertes Nutzer*innen-Subjekt hervorbringt. Der neue Beitrag liefert eine historische Tiefendimension zu dieser Kritik: Die designhistorische Genealogie von Bauhaus-Ordnungsentwürfen über kybernetische Verhaltenssteuerung bis zu gegenwärtigem Interaktionsdesign zeigt, dass die solutionistische Logik eine längere Tradierungslinie hat, als der Solutionismus-Begriff suggeriert. Die „stille Anwesenheit\" digitaler Technologien entspricht dabei Jörissens Bestimmung der Invisibilisierung medialer Vollzüge im Regime des Komputablen.\", \"relation\": \"erweitert\"}]",
+        "theoretisch_methodisch": "Der Beitrag verbindet designhistorische Genealogie (Industrialisierung → Bauhaus → Kybernetik → Interaktionsdesign) mit medienpädagogischer Subjektivationstheorie und Affordanzkonzepten (Gibson). Er operationalisiert Speculative/Critical Design (Dunne & Raby) als medienpädagogische Analysemethode und Praxis. Theoretisch verortet er sich im Spannungsfeld zwischen kritischer Theorie, Designforschung und Medienpädagogik, ohne jedoch die relationale Ontologie (Barad, Haraway) zu bemühen, die bei Jörissens Anschlussarbeiten prägend ist — das ist eine produktive Reibung, kein Defizit.",
+        "bemerkenswert": "[\"Der Beitrag zitiert explizit Jörissens „Bildung der Dinge: Design und Subjektivation\" (2015) — ein starkes Signal, dass die Autor*innen an dessen Verbindung von Designtheorie und Subjektivationsanalyse anknüpfen.\", \"Das Konzept von Critical/Speculative Design als medienpädagogische Praxis ist methodisch anschlussfähig an Jörissens Konzept des „Cultural Hacking\" (Y3R8HWUA) und an „Prompt Interception\" als kritisch-kreative Praxis (L224MAYL) — jeweils geht es um gestalterische Dekonstruktion eingeschriebener Ordnungen.\", \"Die These der „stillen Anwesenheit\" digitaler Technologien, die Subjekt- und Gesellschaftsentwürfe unmerklich aktualisieren, berührt strukturell das Konzept der „Environmentalität\" (LEHKCH59) und der dreifachen Invisibilisierung von Verdatungsprozessen (62A5VC7E).\", \"Für das Projekt DiäS-KuBi relevant: Critical Design als Methode, digital-ästhetische Souveränität praktisch zu entwickeln — Sichtbarmachung von Affordanzen als Voraussetzung nicht-affirmativer Selbstbestimmung.\", \"Für Cultural Resilience relevant: Critical Design als konkrete Operationalisierung von Resourcefulness (diffraktionale Welthervorbringung durch fiktive Artefakte) und Resistance (Sichtbarmachung hegemonialer Einschränkungen).\", \"Die Designgeschichte von Bauhaus über Kybernetik bis zu gegenwärtigem Interaction Design liefert eine genealogische Tiefendimension, die Jörissens Solutionismus-Kritik (M8RZJRHN) historisch unterfüttern könnte — Design als langfristige Tradierungslinie von Steuerungsprogrammatiken.\"]",
+        "verdict": "lesenswert",
+        "verdict_begruendung": "Der Beitrag erweitert Jörissens design-theoretische Subjektivationsperspektive (XTJR5DRD, NDZFTDYB) um eine historische Genealogie und operationalisiert mit Critical Design eine konkrete medienpädagogische Praxismethode, die für mehrere aktive Projekte (DiäS-KuBi, Cultural Resilience, AI4ArtsEd) produktiv ist. Die Autor*innen setzen sich explizit mit Jörissens Arbeit auseinander."
+      },
+      "agent_verdict": "lesenswert",
+      "iterations": 5,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "XTJR5DRD",
+          "search_term": "Design",
+          "chars": 5058
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "M8RZJRHN",
+          "search_term": "Solutionismus",
+          "chars": 6150
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "Y3R8HWUA",
+          "search_term": "Cultural Hacking",
+          "chars": 10929
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "62A5VC7E",
+          "search_term": "Invisibilisierung",
+          "chars": 6195
+        },
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 4,
+      "submit_logged": true,
+      "tokens_in": 194799,
+      "tokens_out": 6653,
+      "tokens_cached_read": 178496,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.09850636,
+      "phase2_stdout": "[agent] System-Prompt (full): ~28420 Tokens (53 Publikationen im Index)\n[agent] Zitationstreffer: 1 (davon 1 mit hoher Confidence)\n[agent] User-Content: ~3629 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30336, write=0\n[agent] finish=tool_calls\n[agent] → read_publication({\"pub_id\": \"XTJR5DRD\", \"search_term\": \"Design\"})\n[agent] → read_publication({\"pub_id\": \"M8RZJRHN\", \"search_term\": \"Solutionismus\"})\n\n[agent] --- Iteration 2 ---\n[agent] cache: read=35968, write=0\n[agent] finish=tool_calls\n[agent] → read_publication({\"pub_id\": \"Y3R8HWUA\", \"search_term\": \"Cultural Hacking\"})\n\n[agent] --- Iteration 3 ---\n[agent] cache: read=39168, write=0\n[agent] finish=tool_calls\n[agent] → read_publication({\"pub_id\": \"62A5VC7E\", \"search_term\": \"Invisibilisierung\"})\n\n[agent] --- Iteration 4 ---\n[agent] cache: read=42880, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Beitrag verfolgt aus designhistorischer Perspektive, wie Design von der Industrialisierung bis zur Gegenwart programmatische Gesellschafts- und Subjektentwürfe konfiguriert und über)\n",
+      "latency_s": 48.28,
+      "finished_at": "2026-07-10T20:13:11.436312+00:00",
+      "started_at": "2026-07-10T20:12:23.157208+00:00",
+      "model_key": "glm",
+      "model_id": "z-ai/glm-5.2",
+      "article_id": "283be2524522d8febff069c11f2fc3d3",
+      "journal_short": "MedienPaed",
+      "user_verdict": "lesenswert",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~1855 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30144, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Aufsatz von Arnd-Michael Nohl diskutiert aus der Perspektive der „Pädagogik kollektiver Zugehörigkeiten“, welche Konsequenzen postkoloniale Theorien für empirische erziehungswissens)\n",
+      "phase1_verdict": "lesenswert",
+      "phase1_latency_s": 29.0,
+      "phase2_triggered": true,
+      "entry": {
+        "kernthese": "Der Aufsatz von Arnd-Michael Nohl diskutiert aus der Perspektive der „Pädagogik kollektiver Zugehörigkeiten“, welche Konsequenzen postkoloniale Theorien für empirische erziehungswissenschaftliche Forschung und pädagogische Diagnose haben. Er entwickelt den Begriff der „postkolonialen Lagerung\" als rekonstruktiven Suchbegriff, um mögliche postkoloniale Erfahrungen empirisch zu analysieren, und argumentiert für eine Mehrebenenanalyse (Organisation, Milieu, Interaktion) der Eigenlogiken rassistischer Diskriminierung sowie für die Berücksichtigung überlappender Diskriminierungsdimensionen (Intersektionalität). Diskriminierung wird als „totale Identifizierung\" von Menschen konzipiert, die es auf verschiedenen Ebenen – von expliziten Zuschreibungen bis zu impliziten Suppositionen – zu rekonstruieren gilt.",
+        "bezuege": "[{\"pub_id\": \"6WYG2HJG\", \"pub_kurz\": \"Jörissen 2019, Territorien der Theorie\", \"bezug\": \"Jörissen problematisiert in diesem Text die strukturelle Marginalisierung postkolonialer Perspektiven im bildungstheoretischen Diskurs und fragt, ob Bildungstheorien in ihrer Tiefenstruktur kolonialen Weltverhältnissen geschuldet sind – konkret anhand der „Setzung des Individuums\" als territorialer Praxis der Subjektivation. Nohls Aufsatz erweitert diese Problemstellung auf die empirisch-methodologische Ebene: Wo Jörissen die theoretische Setzung des Subjekts als koloniales Settlement dekonstruiert, entwickelt Nohl mit dem Begriff der „postkolonialen Lagerung\" und der Konzeption von Diskriminierung als „totaler Identifizierung\" einen rekonstruktiven Forschungszugang, der genau solche impliziten Suppositionen und stillschweigenden Identifizierungen empirisch fassbar macht. Nohls Pädagogik kollektiver Zugehörigkeiten operationalisiert damit gewissermaßen das, was Jörissen als „territoriale Praxis der Subjektivation\" theoretisch fasst – auf der Ebene empirischer Forschung.\", \"relation\": \"erweitert\"}, {\"pub_id\": \"ZSSJ4BPL\", \"pub_kurz\": \"Klepacki/Jörissen 2023, Freiheit und Entanglement\", \"bezug\": \"Klepacki und Jörissen kritisieren individualistische Freiheitskonzepte als „Reflex einer universalisierten und globalisierten Herrschaftsideologie\" (mit Verweis auf Mignolo) und entwickeln kulturelle Resilienz als relationale Freiheitstheorie, deren Rootedness-Dimension kollektive Zugehörigkeiten und sinnliches Gewahrwerden von Entanglement betont. Nohls „Pädagogik kollektiver Zugehörigkeiten\" teilt die Kritik am individualistischen Paradigma und die Aufmerksamkeit für kollektive Orientierungen, kommt aber aus einer wissenssoziologisch-praxeologischen Tradition (Bohnsack) statt aus dem agentiellen Realismus. Sein Konzept der „postkolonialen Lagerung\" könnte die Rootedness-Dimension von Cultural Resilience empirisch-operational erweitern, da es einen rekonstruktiven Zugang zu kollektiven Zugehörigkeitserfahrungen unter postkolonialen Bedingungen bietet, den die Cultural-Resilience-Theorie bisher eher theoretisch fasst.\", \"relation\": \"erweitert\"}]",
+        "theoretisch_methodisch": "Nohl verankert seine Argumentation in der praxeologischen Wissenssoziologie und dokumentarischen Methode (Bohnsack, Mannheim, Polanyi) und erweitert diese um postkoloniale Theoriebezüge (Bhabha, Spivak, Fanon, Mignolo, Quijano). Der Aufsatz ist konzeptionell-methodologisch angelegt: Er entwickelt den Suchbegriff der „postkolonialen Lagerung\" als heuristische Figur für die rekonstruktive Forschung und argumentiert gegen einen objektivistischen Forschungszugang, der den Forschenden einen privilegierten Wirklichkeitszugang zuschreibt. Die Mehrebenenanalyse (Organisation, Milieu, Interaktion) mit jeweiligen Eigenlogiken der Reproduktion oder Nicht-Reproduktion von Rassismus ist ein methodologischer Vorschlag, der strukturelle Analyse mit empirischer Rekonstruktion verbindet.",
+        "bemerkenswert": "[\"Nohls Begriff der „postkolonialen Lagerung\" als rekonstruktiver Suchbegriff bietet eine methodologische Operationalisierung für den empirischen Zugang zu kollektiven Zugehörigkeiten unter postkolonialen Bedingungen – dies ist strukturell relevant für die Rootedness-Dimension von Cultural Resilience, die ebenfalls mit kollektiven Orientierungen und Entanglement operiert, aber bisher keinen solchen empirisch-rekonstruktiven Zugriff formuliert hat.\", \"Die Argumentation für eine Mehrebenenanalyse (Organisation/Milieu/Interaktion) mit jeweiligen Eigenlogiken der Reproduktion oder Nicht-Reproduktion von Rassismus ist anschlussfähig an Jörissens Unterscheidung verschiedener Strukturebenen (z.B. in 62A5VC7E zu Digitalität als Zusammenwirken exekutiver, formativer, empirischer, materieller, relationaler und kommunikativ-phänomenaler Strukturmomente) und könnte für das MetaKuBi-Projekt methodologisch fruchtbar sein.\", \"Nohl kommt aus der gleichen wissenssoziologisch-praxeologischen Tradition (Bohnsack/dokumentarische Methode), die auch in Jörissens empirischen Publikationen vielfach als methodologischer Referenzrahmen dient (z.B. QDFB9TNJ, BKDGAKVU, 8MLTG7RB) – die postkoloniale Erweiterung dieses Ansatzes ist daher von direkter Diskursrelevanz.\", \"Die Kritik an einer rein rassismuszentrierten Perspektive zugunsten einer intersektionalen Mehrdimensionalität (Geschlecht, Klasse, Bildung etc.) berührt die Frage postkolonialer Subjektkonstitution, die Jörissen in 6WYG2HJG als „Setzung des Individuums\" und „territoriale Praxis der Subjektivation\" problematisiert.\"]",
+        "verdict": "lesenswert",
+        "verdict_begruendung": "Der Aufsatz erweitert die postkoloniale Kritik, die Jörissen in 6WYG2HJG theoretisch formuliert, um eine empirisch-methodologische Operationalisierung („postkoloniale Lagerung\", Mehrebenenanalyse, rekonstruktiver Zugang) und ist direkt anschlussfähig an die Rootedness-Dimension von Cultural Resilience. Da beide aus der gleichen praxeologisch-wissenssoziologischen Tradition kommen, bietet Nohls postkoloniale Erweiterung dieser Tradition produktives Anregungspotenzial für mehrere laufende Projekte (Cultural Resilience, MetaKuBi, ComeArts)."
+      },
+      "agent_verdict": "lesenswert",
+      "iterations": 3,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "6WYG2HJG",
+          "search_term": "postkolonial",
+          "chars": 5777
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "ZSSJ4BPL",
+          "search_term": "postkolonial",
+          "chars": 6179
+        },
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 2,
+      "submit_logged": true,
+      "tokens_in": 103307,
+      "tokens_out": 5074,
+      "tokens_cached_read": 94016,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.05977716,
+      "phase2_stdout": "[agent] System-Prompt (full): ~28420 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~2944 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30336, write=0\n[agent] finish=tool_calls\n[agent] → read_publication({\"pub_id\": \"6WYG2HJG\", \"search_term\": \"postkolonial\"})\n[agent] → read_publication({\"pub_id\": \"ZSSJ4BPL\", \"search_term\": \"postkolonial\"})\n\n[agent] --- Iteration 2 ---\n[agent] cache: read=33536, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Aufsatz von Arnd-Michael Nohl diskutiert aus der Perspektive der „Pädagogik kollektiver Zugehörigkeiten“, welche Konsequenzen postkoloniale Theorien für empirische erziehungswissens)\n",
+      "latency_s": 60.99,
+      "finished_at": "2026-07-10T20:15:23.464887+00:00",
+      "started_at": "2026-07-10T20:14:22.477830+00:00",
+      "model_key": "glm",
+      "model_id": "z-ai/glm-5.2",
+      "article_id": "59b41fadc626dac8d50c95250ab72b47",
+      "journal_short": "ZfE",
+      "user_verdict": "lesenswert",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~1966 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30144, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Beitrag untersucht Social Scoring Systems (SSS) — algorithmische Systeme staatlicher Akteure, die Bürger*innenrechte, -leistungen und -möglichkeiten beeinflussen — am Beispiel der S)\n",
+      "phase1_verdict": "scannen",
+      "phase1_latency_s": 18.22,
+      "entry": {
+        "kernthese": "Der Beitrag untersucht Social Scoring Systems (SSS) — algorithmische Systeme staatlicher Akteure, die Bürger*innenrechte, -leistungen und -möglichkeiten beeinflussen — am Beispiel der Schweiz. Auf Basis einer Dokumentanalyse und iterativen Codierens werden 51 Systeme identifiziert und hinsichtlich Dimensionen wie Würde, Privatsphäre und sozialer Gleichheit analysiert. Der Beitrag entwickelt einen replizierbaren Codebook zur Systematisierung von SSS-Merkmalen und gesellschaftlichen Implikationen und identifiziert bislang unterbelichtete Dimensionen digitaler Würde: Agency, mitfühlende Entscheidungsfindung, individuelles und kulturelles Identitätsempfinden sowie die dynamische Natur menschlicher Wesen.",
+        "bezuege": [],
+        "theoretisch_methodisch": "Die Studie kombiniert Dokumentenanalyse mit iterativem Coding zur Entwicklung eines systematisierenden Codebooks für Social Scoring Systems. Sie verortet sich im Feld der Data Governance und digitalen Rechteethik, mit Fokus auf empirischer Systematisierung und Entwicklung eines Assessments-Tools für Stakeholder. Der theoretische Rahmen bezieht sich auf Konzepte digitaler Würde, Fairness und Grundrechte, ohne auf bildungstheoretische oder erziehungswissenschaftliche Perspektiven zurückzugreifen.",
+        "bemerkenswert": [
+          "Der Beitrag operationalisiert ‚digital dignity' über vier unterbelichtete Dimensionen — Agency, compassionate decision-making, individuelles/kulturelles Identitätsempfinden, dynamische Natur des Menschen — die konzeptionell an den Widerstands- und Freiheitsaspekt von Jörissens Cultural Resilience-Konzept angrenzen, jedoch aus einer datenethischen (nicht bildungstheoretischen) Tradition kommen.",
+          "Die systematische Entwicklung eines replizierbaren Codebooks zur Kategorisierung algorithmischer Systeme (51 Fälle, Schweiz) bietet methodologische Anregung für die Systematisierungsarbeiten im MetaKuBi-Projekt, das ebenfalls diskurs- und feldkartierende Zugänge sucht.",
+          "Der Fokus auf staatliche Algorithmik als Subjektivationspraxis bei öffentlichen Verwaltungen und Strafverfolgungsbehörden ergänzt Jörissens Arbeiten zur Datafizierung in Educational Governance (pub_id 62A5VC7E) und zum ‚Regime des Komputablen' (pub_id M8RZJRHN) um eine empirisch-systematisierende Außenperspektive aus dem Datenschutz-/Governance-Diskurs."
+        ],
+        "verdict": "scannen",
+        "verdict_begruendung": "Der Beitrag bietet Diskursübersicht im Bereich algorithmischer Governance und datenethischer Konzeptualisierung digitaler Würde, was Jörissens Arbeiten zur Algorithmizität und Subjektivation strukturell berührt. Die spezifische Anregung für aktuelle Projekte bleibt jedoch indirekt: Es geht um staatliche Scoring-Systeme in der Schweiz, nicht um Bildung, ästhetische Praxis oder kulturelle Resilienz. Die konzeptionelle Nähe der Würde-Dimensionen zu Cultural Resilience/DiäS-KuBi rechtfertigt Kenntnisnahme, aber keine Volltextlektüre."
+      },
+      "agent_verdict": "scannen",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 31894,
+      "tokens_out": 2027,
+      "tokens_cached_read": 30144,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.01920624,
+      "phase2_triggered": false,
+      "latency_s": 18.22,
+      "finished_at": "2026-07-10T20:15:41.687002+00:00",
+      "started_at": "2026-07-10T20:15:23.466314+00:00",
+      "model_key": "glm",
+      "model_id": "z-ai/glm-5.2",
+      "article_id": "e8a2c291f8a7e54f2b3797c5ab2bebf2",
+      "journal_short": "BDS",
+      "user_verdict": "lesenswert",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~571 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30144, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Artikel untersucht zwei Design-Forschungsprojekte, die auf Escobars Konzept des Pluriversums und „diseñar\\\" (Traum-Design) zurückgreifen, um maschinelles Lernen und KI aus einer dez)\n",
+      "phase1_verdict": "lesenswert",
+      "phase1_latency_s": 40.16,
+      "phase2_triggered": true,
+      "entry": {
+        "kernthese": "Der Artikel untersucht zwei Design-Forschungsprojekte, die auf Arturo Escobars Konzept des Pluriversums und „disoñar\" (Traum-Design) zurückgreifen, um maschinelles Lernen und KI aus einer dezidiert afrikanischen und dekolonialen Perspektive zugänglich zu machen. Zentral ist die Vermittlung Bayesianischer Wahrscheinlichkeit als mathematische Grundlage von KI an junge Menschen in Afrika durch Bildungs-Tools wie ScratchTuring und Probabilistic Programming Languages (PPLs), die mit Beispielen aus afrikanischen Settings arbeiten. Die Autor*innen juxtapozieren diese Bildungsarbeit mit der Entwicklung domänenspezifischer PPLs zur Modellierung komplexerer Szenarien und argumentieren für eine Pluralisierung der Weise, wie Zukünfte gedacht und berechnet werden können.",
+        "bezuege": [
+          {
+            "pub_id": "L224MAYL",
+            "pub_kurz": "Jörissen/Baumann 2026 — Prompt Interception",
+            "bezug": "Beide Arbeiten befassen sich mit dekolonialer KI-Bildung in afrikanischen Kontexten, jedoch aus fundamental unterschiedlichen methodischen Traditionen: Während Jörissen/Baumann in AI4ArtsEd mit Kenianischen Partnern kulturellen Bias in generativer KI durch counterfactual prompting und Prompt Interception als kritisch-ästhetische Praxis sichtbar machen und unterlaufen, verfolgen Blackwell et al. einen mathematisch-didaktischen Empowerment-Ansatz, der Bayesianische Wahrscheinlichkeit als Grundlage des maschinellen Lernens vermittelt. Der neue Artikel erweitert das Feld von AI4ArtsEd um eine Dimension, die in Jörissen/Baumanns Ansatz implizit bleibt: die mathematische Literalität als Voraussetzung für nicht-extraktivistische, dekoloniale KI-Praxis. Beide teilen die Grundannahme, dass KI-Bildung nicht bloß Kompetenzerwerb, sondern kritisch-dekoloniale Praxis sein muss.",
+            "relation": "erweitert"
+          },
+          {
+            "pub_id": "LEHKCH59",
+            "pub_kurz": "Jörissen/Klepacki/Flasche 2025 — Wahrnehmungskrisen",
+            "bezug": "Jörissen et al. analysieren die epistemologische Differenz zwischen menschlichen gestaltbasierten Ordnungssystemen und maschinellen statistisch-vektoriellen Repräsentationen und identifizieren die Verwechslung von 'verisimile' und 'probabile' als Grund einer Wahrnehmungskrise. Der neue Artikel macht genau die mathematische Grundlage (Bayesianische Wahrscheinlichkeit) didaktisch zugänglich, die dieser statistisch-vektoriellen Repräsentation zugrunde liegt. Beide Texte arbeiten am selben epistemologischen Problem, aber aus unterschiedlichen Perspektiven — Jörissen et al. aus erziehungs- und medientheoretischer, Blackwell et al. aus mathematikdidaktischer und HCI-Perspektive. Eine direkte theoretische Auseinandersetzung findet jedoch nicht statt.",
+            "relation": "tangential"
+          }
+        ],
+        "theoretisch_methodisch": "Der Artikel verbindet Design Research (HCI) mit dekolonialer Theorie (Escobar) und Mathematikdidaktik (Bayesianische Wahrscheinlichkeit als bildender Zugang zu KI). Methodisch handelt es sich um Design Investigations mit partizipativer Einbindung afrikanischer Lehrkräfte und Curriculum-Designer*innen. Der pluriversale Rahmen Escobars wird nicht nur theoretisch zitiert, sondern in konkrete Bildungs-Tools (ScratchTuring, PPLs) übersetzt, was eine seltene operationalisierung dekolonialer Theorie in computationale Praxis darstellt.",
+        "bemerkenswert": "[\"Die Autor*innen machen Bayesianische Wahrscheinlichkeit als epistemologischen Kern maschinellen Lernens didaktisch zugänglich — ein Ansatz, der Jörissens Analyse der Vektorisierung und statistisch-vektoriellen Repräsentation in LEHKCH59 aus einer Mathematik-didaktischen Perspektive ergänzt, ohne auf die bildungstheoretischen Implikationen einzugehen.\", \"Die Arbeit mit afrikanischen Bildungspartnern und Escobars Pluriversalitäts-Konzept bietet eine konkrete dekoloniale Rahmung für KI-Bildung, die direkt an die AI4ArtsEd-Kooperation mit Kenia und die Frage kultureller Hegemonie in KI-Systemen (L224MAYL) anschließt — allerdings aus einer Mathematik/HCI-Tradition statt aus einer medienpädagogisch-kulturtheoretischen.\", \"Das Konzept des „disoñar\" (Traum-Design) als pluralisierte Zukunftsimaginierung hat strukturelle Affinität zur Resourcefulness-Dimension der Cultural Resilience (ZSSJ4BPL, 3W9X5QLZ) — kollektives diffraktionales World-Making als Zukunftspraxis — ohne dass dies im Artikel selbst theoretisch ausgearbeitet wird.\", \"Computational Culture als Publikationsort verbindet Cultural Studies/HCI mit Informatik — eine disziplinäre Positionierung, die für Jörissens eigene Arbeit an der Schnittstelle von Medientheorie, Bildung und Technik relevant ist und einen seltenen transdisziplinären Raum markiert.\"]",
+        "verdict": "lesenswert",
+        "verdict_begruendung": "Der Artikel erweitert die AI4ArtsEd-Forschung um eine mathematisch-didaktische Dimension dekolonialer KI-Bildung, die in Jörissen/Baumanns kritisch-ästhetischem Ansatz nicht abgedeckt ist. Die Arbeit in afrikanischen Kontexten mit dekolonialer Rahmung und die Operationalisierung von Escobars Pluriversum in Bildungs-Tools bieten konkretes Anregungspotenzial für das AI4ArtsEd-Projekt und produktive Reibung mit der Cultural-Resilience-Theorie."
+      },
+      "agent_verdict": "lesenswert",
+      "iterations": 5,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "L224MAYL",
+          "search_term": "Kenya Africa counterfactual prompting",
+          "chars": 16259
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "3W9X5QLZ",
+          "search_term": "Escobar pluriversal",
+          "chars": 16191
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "LEHKCH59",
+          "search_term": "Bayesian probability vectorization statistical",
+          "chars": 16282
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "AC9GZ3JY",
+          "search_term": "Escobar pluriversal disoñar",
+          "chars": 16202
+        },
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 4,
+      "submit_logged": true,
+      "tokens_in": 199577,
+      "tokens_out": 6001,
+      "tokens_cached_read": 180032,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.10057572000000001,
+      "phase2_stdout": "[agent] System-Prompt (full): ~28420 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~2046 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30336, write=0\n[agent] finish=tool_calls\n[agent] → read_publication({\"pub_id\": \"L224MAYL\", \"search_term\": \"Kenya Africa counterfactual prompting\"})\n[agent] → read_publication({\"pub_id\": \"3W9X5QLZ\", \"search_term\": \"Escobar pluriversal\"})\n\n[agent] --- Iteration 2 ---\n[agent] cache: read=33536, write=0\n[agent] finish=tool_calls\n[agent] → read_publication({\"pub_id\": \"LEHKCH59\", \"search_term\": \"Bayesian probability vectorization statistical\"})\n\n[agent] --- Iteration 3 ---\n[agent] cache: read=40832, write=0\n[agent] finish=tool_calls\n[agent] → read_publication({\"pub_id\": \"AC9GZ3JY\", \"search_term\": \"Escobar pluriversal disoñar\"})\n\n[agent] --- Iteration 4 ---\n[agent] cache: read=45184, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Artikel untersucht zwei Design-Forschungsprojekte, die auf Arturo Escobars Konzept des Pluriversums und „disoñar\\\" (Traum-Design) zurückgreifen, um maschinelles Lernen und KI aus ei)\n",
+      "latency_s": 91.96,
+      "finished_at": "2026-07-10T20:17:13.646164+00:00",
+      "started_at": "2026-07-10T20:15:41.688762+00:00",
+      "model_key": "glm",
+      "model_id": "z-ai/glm-5.2",
+      "article_id": "910d8402db4d5cde8691d36bdc87c08c",
+      "journal_short": "CompCult",
+      "user_verdict": "lesenswert",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Zitationstreffer: 3 (davon 3 mit hoher Confidence)\n[agent] User-Content: ~2045 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30144, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Dieser Beitrag ist eine Publikation von Leopold Klepacki, Tanja Klepacki und Benjamin Jörissen selbst. Er untersucht Entgrenzungspotenziale ästhetischer Praktiken in Schule und Unterric)\n",
+      "phase1_verdict": "pflichtlektuere",
+      "phase1_latency_s": 16.64,
+      "entry": {
+        "kernthese": "Dieser Beitrag ist eine Publikation von Leopold Klepacki, Tanja Klepacki und Benjamin Jörissen selbst. Er untersucht Entgrenzungspotenziale ästhetischer Praktiken in Schule und Unterricht aus einer praxeologisch-kulturtheoretischen Perspektive. Zentral ist die Konzeption ästhetischer Praktiken als „Third Spacing\" (anschlussfähig an Bhabha und Schechner), das liminale Räume zwischen „Schule – Nicht-Schule – Nicht-Nicht-Schule\" eröffnet, in denen Subjektpositionen jenseits tradierter kultureller Normen hervorgebracht werden können.",
+        "bezuege": [],
+        "theoretisch_methodisch": "Der Beitrag verbindet praxeologisch-kulturtheoretische Perspektiven (Mollenhauer, Löw) mit Bhabhas Third-Space-Konzept und Schechners Figur der doppelten Negation, um ästhetische Praktiken als transgressive Momente schulischer Ordnung zu fassen. Er arbeitet empirisch induktiv („empirische Indizien\") und entwickelt theoretisch den Entgrenzungsbegriff als immanente „Veranderung\" schulischer Praxis durch Reflexivierung kultureller Ordnungen.",
+        "bemerkenswert": "[\"Dieser Beitrag ist identisch mit der bereits im Publikationsverzeichnis indexierten Publikation H2C4LUW8 (2023). Es handelt sich um eine Eigenpublikation des Forschers — kein neu zu lesender Text, sondern ein bereits bekannte eigener Beitrag.\", \"Die Zitationstreffer (D73DWMNK, XTJR5DRD, NR8HCIKC) sind Selbstzitate: Der Beitrag baut auf Jörissens eigenem Konzept der „transgressiven Artikulation\" (2015) sowie auf der gemeinsam mit Klepacki entwickelten Konzeption der Schule als „transgressiv-reflexiver Kulturort\" (2021) auf.\", \"Die OpenAlex-Topics (Sociology and Education Studies, Linguistic Education) und Concepts (Humanities, Philosophy, Political Science) spiegeln die interdisziplinäre Verortung zwischen Bildungstheorie, Kultursoziologie und Ästhetik wider.\"]",
+        "verdict": "pflichtlektuere",
+        "verdict_begruendung": "Es handelt sich um eine Eigenpublikation des Forschers, die bereits als H2C4LUW8 im Publikationsverzeichnis indexiert ist. Der Text ist zentral für die aktuellen Projekte MetaKuBi (Schulkultur/Transformationsdynamiken) und ComeArts (ästhetische Praktiken in Schule), da er die theoretische Grundlage für das Verständnis ästhetischer Praktiken als transgressive Momente schulischer Ordnung bildet."
+      },
+      "agent_verdict": "pflichtlektuere",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 32620,
+      "tokens_out": 1439,
+      "tokens_cached_read": 30144,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.01763544,
+      "phase2_triggered": false,
+      "latency_s": 16.64,
+      "finished_at": "2026-07-10T20:17:30.290605+00:00",
+      "started_at": "2026-07-10T20:17:13.648393+00:00",
+      "model_key": "glm",
+      "model_id": "z-ai/glm-5.2",
+      "article_id": "5600ea9e78f4119c6e3c297d7cac22d3",
+      "journal_short": "MedienPaed",
+      "user_verdict": "pflichtlektuere",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~3444 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30144, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Beitrag ist eine systematische Übersichtsarbeit (PRISMA-Methode) zur Rolle von KI-Systemen im Shared Decision-Making (SDM) im Gesundheitswesen. Basierend auf 66 eingeschlossenen Stu)\n",
+      "phase1_verdict": "scannen",
+      "phase1_latency_s": 23.08,
+      "entry": {
+        "kernthese": "Der Beitrag ist eine systematische Übersichtsarbeit (PRISMA-Methode) zur Rolle von KI-Systemen im Shared Decision-Making (SDM) im Gesundheitswesen. Basierend auf 66 eingeschlossenen Studien aus 927 initialen Treffern analysieren die Autor*innen, wie KI den kollaborativen Entscheidungsprozess zwischen Patient*innen und medizinischen Teams unterstützt oder beeinträchtigt. Die Studie identifiziert Risiken wie Kommunikationsversagen, mangelnde Berücksichtigung von Patientenpräferenzen und fehlendes Co-Design, aber auch Potenziale wie gesteigerte klinische Effizienz und verbesserte Patient*innen-Partizipation.",
+        "bezuege": [],
+        "theoretisch_methodisch": "Systematische Literaturreview nach PRISMA-Standard mit deduktivem Kategorienschema (Jahr, Fachgebiet, Artikeltyp, KI-Methode, klinischer Kontext, Bias/Ethik/Transparenz). Die Studie ist deskriptiv-klassifizierend angelegt, ohne eigene theoretische Rahmung jenseits des medizinethischen SDM-Paradigmas. Der Fokus liegt auf klinischen Anwendungen, nicht auf pädagogischen oder bildungstheoretischen Fragestellungen.",
+        "bemerkenswert": [
+          "Die systematische Erfassung von Risiken des KI-Einsatzes – Kommunikationsversagen, Ignorieren von Präferenzen, fehlendes Co-Design – bietet eine Struktur, die sich konzeptionell auf kritisch-pädagogische Perspektiven auf KI übertragen ließe (z.B. für AI4ArtsEd: welche Kommunikations- und Partizipationsrisiken entstehen, wenn KI in kreative/künstlerische Bildungsprozesse interveniert?).",
+          "Der Befund, dass 48,7% der Studien keine KI-Methode spezifizieren, ist ein Indikator für einen verbreiteten epistemischen Nachlässigkeits- bzw. Invisibilisierungstrend in der KI-Forschung – ein Befund, der LEHKCH59s These zur Opazität generativer KI-Systeme quer zur Disziplin bestätigt.",
+          "Das Konzept des »co-designing« als Kriterium für gelingende KI-Mediation hat strukturelle Parallelen zum partizipativen Forschungsdesign von AI4ArtsEd (Prompt Interception), wird hier aber rein im medizinethischen Rahmen entwickelt."
+        ],
+        "verdict": "scannen",
+        "verdict_begruendung": "Der Beitrag berührt themes (KI-Bias, Transparenz, Opazität, Co-Design, menschliche Agency in KI-mediierten Entscheidungsprozessen), die strukturelle Parallelen zu Jörissens Arbeiten zu KI-Opazität (LEHKCH59) und partizipativer KI-Kritik (L224MAYL/AI4ArtsEd) aufweisen. Der medizinethische Kontext des Shared Decision-Making bietet jedoch keine direkte Anregung für die bildungstheoretische oder medienpädagogische Arbeit; die konzeptionelle Übertragbarkeit der identifizierten Risikostruktur auf pädagogische KI-Kontexte ist denkbar, aber nicht im Artikel selbst angelegt."
+      },
+      "agent_verdict": "scannen",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 33582,
+      "tokens_out": 1846,
+      "tokens_cached_read": 30144,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.02077304,
+      "phase2_triggered": false,
+      "latency_s": 23.08,
+      "finished_at": "2026-07-10T20:17:53.369904+00:00",
+      "started_at": "2026-07-10T20:17:30.292704+00:00",
+      "model_key": "glm",
+      "model_id": "z-ai/glm-5.2",
+      "article_id": "af6f9705f1c19ad76d563fa1e137b28b",
+      "journal_short": "AIandSoc",
+      "user_verdict": "scannen",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~1633 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30144, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Beitrag untersucht, wie Googles Einsatz von Computer-Vision-Modellen die Wissensinfrastruktur des Webs transformiert hat. Durch einen internationalen Vergleich von Google Search- un)\n",
+      "phase1_verdict": "lesenswert",
+      "phase1_latency_s": 24.93,
+      "phase2_triggered": true,
+      "entry": {
+        "kernthese": "Der Beitrag untersucht, wie Googles Einsatz von Computer-Vision-Modellen die Wissensinfrastruktur des Webs transformiert hat. Durch einen internationalen Vergleich von Google Search- und Google Images-Ergebnissen zu Umweltthemen (Klimawandel, Biodiversitätsverlust) in sechs Ländern zeigen die Autor*innen, dass Google Images weniger autoritative Quellen liefert und eine schmale, homogenisierte visuelle Repräsentation erzeugt. Die zentrale These ist eine Transformation der Web-Epistemologie von „ranking-by-authority\" (Web-Links) zu „ranking-by-similarity\" (Computer Vision), angetrieben durch einen Wechsel der calculative technology von Web-Links zu Computer-Vision-Modellen.",
+        "bezuege": "[{\"pub_id\": \"LEHKCH59\", \"pub_kurz\": \"Jörissen/Klepacki/Flasche 2025: Wahrnehmungskrisen generativer KI\", \"bezug\": \"Pearce et al. liefern eine empirische Konkretion der in LEHKCH59 theoretisch diagnostizierten epistemologischen Differenz zwischen menschlichen gestaltbasierten Ordnungssystemen und maschinellen statistisch-vektoriellen Repräsentationen. Der von Jörissen et al. zitierte Mackenzie-Passus („Similarity and belonging no longer rely on resemblance or a common genesis but on measures of proximity or distance\") findet in Pearce et al. seine empirische Bestätigung: Der Shift von authority-ranking (verknüpft mit menschlicher Gestaltwahrnehmung und institutioneller Geltung) zu similarity-ranking (verknüpft mit statistischer Vektorproximität) ist genau die Substitution von „verisimile\" durch „probabile\", die Jörissen et al. als Kern der Wahrnehmungskrise identifizieren. Pearce et al. erweitern diese Diagnose um die Dimension der Wissensinfrastruktur – die Krise betrifft nicht nur generative Produktion, sondern auch die retrieval-basierte Bereitstellung von Wissen.\", \"relation\": \"erweitert\"}, {\"pub_id\": \"L224MAYL\", \"pub_kurz\": \"Jörissen/Baumann 2026: Prompt Interception (AI4ArtsEd)\", \"bezug\": \"In L224MAYL wird analysiert, wie CLIP als vorgelagerte Technologie der Bildgenerierung durch statistisches Similarity-Matching in einem gemeinsamen Vektorraum kulturelle Bias und Homogenisierung erzeugt („CLIP is optimized to capture regularities rather than outliers; this functional logic tends to privilege the average and attenuate the atypical\"). Pearce et al. zeigen dieselbe Wirkungslogik auf der Ebene von Suchinfrastruktur: Computer-Vision-gestütztes Ranking in Google Images erzeugt länderübergreifend ein homogenisiertes, eingeengtes visuelles Repertoire. Beide Texte adressieren strukturell dasselbe Problem – kulturelle Homogenisierung durch statistical similarity in embedding spaces –, aber Pearce et al. tun dies für das retrieval-Ende (Suchergebnisse), während L224MAYL das generations-Ende (text-to-image) analysiert. Die Befunde komplementieren sich gegenseitig und erweitern den Geltungsbereich der Kritik.\", \"relation\": \"erweitert\"}]",
+        "theoretisch_methodisch": "Der Beitrag verbindet STS- und Digital-Methods-Ansätze mit einer neuartigen Methodenkombination aus quantitativ-qualitativer visueller Inhaltsanalyse, Social Semiotics und Computer-Vision-Netzwerkanalyse. Die Theoretisierung von „web epistemology\" als dynamisches Gefüge aus calculative technology und issue configuration bietet eine präzise heuristic framework, die sich als Analyseraster auch für Jörissens Fragen nach dem „Regime des Komputablen\" und der „Environmentalität\" digitaler Sozio-Technologien eignen könnte. Die internationale Vergleichsperspektive (sechs Länder) ist eine Stärke, die die Homogenisierungsthese robust untermauert.",
+        "bemerkenswert": [
+          "Die Konzeptualisierung eines Epistemologie-Shifts von 'authority' zu 'similarity' ist eine prägnante theoretische Figur, die sich direkt auf Jörissens Analyse des 'Regime des Komputablen' (M8RZJRHN) und die 'Wahrnehmungskrise' generativer KI (LEHKCH59) beziehen lässt: Was hier empirisch für Google Images gezeigt wird, ist der infrastrukturelle Vollzug der Substitution menschlich-gestaltbasierter Ordnungssysteme durch statistisch-vektorielle Similarity-Matching.",
+          "Die Befunde zur kulturellen Homogenisierung der Bildergebnisse über sechs Länder hinweg sind direkt relevant für das AI4ArtsEd-Projekt: Die in L224MAYL durch 'counterfactual prompting' sichtbar gemachte westlich-anglozentrische Verzerrung in CLIP findet hier ihre Entsprechung auf der Ebene der Suchergebnis-Infrastruktur — die Homogenisierung erfolgt durch dasselbe Similarity-Matching computer-vision-gestützter Systeme, aber auf der retrieval- statt der generation-Seite.",
+          "Die Untersuchung von Suchergebnissen zu Umweltthemen (Klimawandel, Biodiversitätsverlust) berührt das Cultural-Resilience-Projekt: Die algorithmische Homogenisierung visueller Repräsentationen planetarer Krisen ist ein Aspekt der 'Anästhetisierung', die Jörissen & Klepacki (ZSSJ4BPL) als Gefahr für Rootedness diskutieren — das sinnlich-leibliche Gewahrwerden von Entanglement wird durch homogenisierte algorithmische Bildregime erschwert.",
+          "Die Methodenkombination aus Social Semiotics und Computer-Vision-Netzwerkanalyse ist methodologisch anregend für das AI4ArtsEd-Projekt, das ebenfalls an der Schnittstelle von kritischer Bildanalyse und KI-Technologie arbeitet — hier könnte die Übertragung des ‚ranking-by-similarity'-Frameworks auf die Analyse eigener generierter Bildserien methodisch fruchtbar sein."
+        ],
+        "verdict": "lesenswert",
+        "verdict_begruendung": "Der Beitrag erweitert zwei zentrale Publikationen (LEHKCH59, L224MAYL) empirisch und konzeptionell: Er liefert konkrete Evidenz für den von Jörissen et al. theoretisch diagnostizierten Epistemologie-Shift von gestaltbasierter Autorität zu statistisch-vektorieller Similarität und zeigt die Homogenisierungsdynamik computer-vision-basierter Systeme auf Infrastrukturebene. Die aus einer anderen Theorietradition (STS/Digital Methods) bearbeitete gleiche Problemstellung schafft produktive Reibung und ist für mehrere aktive Projekte (AI4ArtsEd, Cultural Resilience, DiäS-KuBi) anschlussfähig."
+      },
+      "agent_verdict": "lesenswert",
+      "iterations": 4,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "LEHKCH59",
+          "search_term": "Vektorisierung Similarity authority",
+          "chars": 16271
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "L224MAYL",
+          "search_term": "CLIP bias homogenization similarity",
+          "chars": 16257
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "L224MAYL",
+          "search_term": "CLIP similarity homogenization",
+          "chars": 16252
+        },
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 3,
+      "submit_logged": true,
+      "tokens_in": 150098,
+      "tokens_out": 4602,
+      "tokens_cached_read": 134400,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.07717,
+      "phase2_stdout": "[agent] System-Prompt (full): ~28420 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~2786 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30336, write=0\n[agent] finish=tool_calls\n[agent] → read_publication({\"pub_id\": \"LEHKCH59\", \"search_term\": \"Vektorisierung Similarity authority\"})\n[agent] → read_publication({\"pub_id\": \"L224MAYL\", \"search_term\": \"CLIP bias homogenization similarity\"})\n\n[agent] --- Iteration 2 ---\n[agent] cache: read=32960, write=0\n[agent] finish=tool_calls\n[agent] → read_publication({\"pub_id\": \"L224MAYL\", \"search_term\": \"CLIP similarity homogenization\"})\n\n[agent] --- Iteration 3 ---\n[agent] cache: read=40960, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Beitrag untersucht, wie Googles Einsatz von Computer-Vision-Modellen die Wissensinfrastruktur des Webs transformiert hat. Durch einen internationalen Vergleich von Google Search- un)\n",
+      "latency_s": 53.79,
+      "finished_at": "2026-07-10T20:18:47.165896+00:00",
+      "started_at": "2026-07-10T20:17:53.373608+00:00",
+      "model_key": "glm",
+      "model_id": "z-ai/glm-5.2",
+      "article_id": "721e8ae04e772623006908ddbaf2f808",
+      "journal_short": "BDS",
+      "user_verdict": "scannen",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~1836 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30144, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Beitrag entwickelt die theoretische und pädagogische Konzeption eines experimentellen Cultural-Studies-in-Education-Seminars, das gesellschaftliche Bildungszwecke durch eine „Medita)\n",
+      "phase1_verdict": "lesenswert",
+      "phase1_latency_s": 23.62,
+      "phase2_triggered": true,
+      "entry": {
+        "kernthese": "Der Beitrag entwickelt die theoretische und pädagogische Konzeption eines experimentellen Cultural-Studies-in-Education-Seminars, das gesellschaftliche Bildungszwecke durch eine „Meditation über die Katastrophe der Gegenwart\" reflektiert. Gestützt auf Adornos Negative Dialektik und Stuart Halls konjunkturanalytischen Cultural-Studies-Ansatz theoretisiert der Text die gegenwärtige historische Konstellation (Klimawandel, Rechtspopulismus, Faschismus) und leitet daraus pädagogische Praktiken ab. Es ist die erste von drei geplanten Studien, gefolgt von qualitativ-empirischer Erforschung der Seminarerfahrungen und einer Erweiterung um Critical Disability Studies.",
+        "bezuege": [
+          {
+            "pub_id": "M8RZJRHN",
+            "pub_kurz": "Jörissen 2020: Ästhetische Bildung im Regime des Komputablen",
+            "bezug": "Beide Texte konzipieren ästhetische/kulturelle Bildung als kritische Praxis in hegemonial geprägten Wahrnehmungsordnungen, aber aus unterschiedlichen kritischen Theorietraditionen: Jörissen über Rancières Dissensus-Konzept (Aufteilung des Sinnlichen, Police), Ellison/Iqtadar über Adornos Negative Dialektik und Halls Konjunkturanalyse. Die Parallelität besteht darin, dass beide Bildung als Widerstandspraxis gegen Naturalisierung hegemonialer Ordnungen denken — Jörissen im Kontext digitaler Solutionismen, Ellison/Iqtadar im Kontext von Klimakatastrophe und Faschismus. Die Differenz der theoretischen Grundlagen (Rancières ästhetisch-politischer vs. Adornos negativ-dialektischer Ansatz) markiert eine produktive Reibung, ohne dass der neue Artikel Jörissens Argumente direkt erweiterte oder widerspräche.",
+            "relation": "parallelisiert"
+          },
+          {
+            "pub_id": "ZSSJ4BPL",
+            "pub_kurz": "Klepacki/Jörissen 2023: Freiheit und Entanglement – Kulturelle Resilienz als relationale Bildungstheorie",
+            "bezug": "Beide Texte bearbeiten dasselbe Problemfeld: Bildung in planetarischer Krise, Kritik neoliberaler Freiheitskonzepte und Widerstand als pädagogische Praxis. Jörissen/Klepacki entwickeln Resistance als performative intra-aktionale Praxis aus agentiellem Realismus (Barad); Ellison/Iqtadar entwickeln Widerstand aus Adornos kritischer Theorie und Halls Konjunkturanalyse. Die ontologischen Grundlagen unterscheiden sich grundlegend (relationaler Posthumanismus vs. kritische Theorie), aber die thematische Konvergenz (Krise, Hegemonie, Widerstand, Pädagogik) ist strukturell. Der neue Artikel bietet einen kontrastiven Zugriff auf die Resistance-Dimension des Cultural-Resilience-Ansatzes, ohne diesen direkt zu erweitern oder zu widersprechen.",
+            "relation": "parallelisiert"
+          }
+        ],
+        "theoretisch_methodisch": "Der Artikel verbindet Adornos Negative Dialektik (inkl. „Authoritarian Personality\" und Spätwerk zum Rechtsextremismus) mit Stuart Halls konjunkturanalytischem Cultural-Studies-Ansatz und Gramscis Interregnum-Konzept, um eine pädagogische Praxis in der Krise zu entwickeln. Methodisch handelt es sich um Theoriearbeit im Rahmen eines Seminar-Designs — keine empirische Studie, sondern die theoretisch-pädagogische Fundierung eines experimentellen Lehrkonzepts. Der dreiteilige Projektaufbau (theoretisch-pädagogisch → qualitativ-empirisch → Critical Disability Studies) ist methodisch ambitioniert.",
+        "bemerkenswert": "[\"Das Konzept des „Interregnum\" (Gramsci) als Rahmung gegenwärtiger Krisenhaftigkeit bietet einen historisch-materialistischen Kontrapunkt zu neomaterialistischen/posthumanistischen Krisenrahmungen (Barad, Haraway), die Jörissens Cultural-Resilience-Ansatz prägen — produktive Reibung zwischen unterschiedlichen theoretischen Traditionen bei ähnlichem Gegenstandsbezug.\", \"Die explizite Verbindung von Adorno (Negative Dialektik, Autoritäre Persönlichkeit, neuer Rechtsextremismus) mit Stuart Halls konjukturanalytischem Cultural-Studies-Ansatz für Bildungsfragen ist eine theoretische Konstellation, die im deutschsprachigen erziehungswissenschaftlichen Diskurs selten systematisch entfaltet wird.\", \"Der dreiteilige Projektaufbau (theoretisch-pädagogisch → qualitativ-empirisch → Critical Disability Studies) sequenziert theoretische Reflexion, empirische Erforschung gelebter Seminarerfahrung und interdisziplinäre Erweiterung — methodisch anspruchsvoll und für MetaKuBi-artige Forschungsdesigns interessant.\"]",
+        "verdict": "lesenswert",
+        "verdict_begruendung": "Der Artikel bearbeitet dasselbe Problemfeld wie das Cultural-Resilience-Projekt (Bildung in planetarischer/politischer Krise, Kritik hegemonialer Ordnungen, Widerstand als pädagogische Praxis), aber aus einer anderen theoretischen Tradition (Adorno/Hall/Gramsci statt Barad/Haraway/Rancière). Diese produktive Reibung zwischen kritischer Theorie und neomaterialistischer Bildungstheorie bietet Anregungspotenzial für die Resistance- und Rootedness-Dimension des Cultural-Resilience-Ansatzes. Die Bezüge zu Jörissens Publikationen sind parallelisierend, nicht direkt erweiternd — die Relevanz begründet sich aus der Projektzugehörigkeit."
+      },
+      "agent_verdict": "lesenswert",
+      "iterations": 3,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "M8RZJRHN",
+          "search_term": "Adorno",
+          "chars": 16147
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "ZSSJ4BPL",
+          "search_term": "Widerstand Resistance",
+          "chars": 16194
+        },
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 2,
+      "submit_logged": true,
+      "tokens_in": 112143,
+      "tokens_out": 5808,
+      "tokens_cached_read": 96064,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.07304244,
+      "phase2_stdout": "[agent] System-Prompt (full): ~28420 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~3656 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30336, write=0\n[agent] finish=tool_calls\n[agent] → read_publication({\"pub_id\": \"M8RZJRHN\", \"search_term\": \"Adorno\"})\n[agent] → read_publication({\"pub_id\": \"ZSSJ4BPL\", \"search_term\": \"Widerstand Resistance\"})\n\n[agent] --- Iteration 2 ---\n[agent] cache: read=35584, write=0\n[agent] assistant: Having read both candidate publications, I can now assess the connections.\n\n**M8RZJRHN**: The text draws on Rancière (dissensus, distribution of the sensible, police) to frame aesthetic education as critical practice under digital hegemony. Adorno is not cited. The theoretical foundation is Rancière's political aesthetics, not Frankfurt School critical theory. The new article's Adorno/Hall framework operates in a different critical theory lineage.\n\n**ZSSJ4BPL**: The text develops Cultural Resili\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Beitrag entwickelt die theoretische und pädagogische Konzeption eines experimentellen Cultural-Studies-in-Education-Seminars, das gesellschaftliche Bildungszwecke durch eine „Medita)\n",
+      "latency_s": 62.95,
+      "finished_at": "2026-07-10T20:19:50.115816+00:00",
+      "started_at": "2026-07-10T20:18:47.169371+00:00",
+      "model_key": "glm",
+      "model_id": "z-ai/glm-5.2",
+      "article_id": "a61faadb88daa6af4a8eb1d5e7cd1bc4",
+      "journal_short": "REPCS",
+      "user_verdict": "scannen",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~1207 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30144, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Beitrag argumentiert, dass place-based environmental education, fundiert durch einen Capabilities-Ansatz (Sen/Nussbaum-Tradition), eco-anxiety und schwindende Agency junger Menschen)\n",
+      "phase1_verdict": "lesenswert",
+      "phase1_latency_s": 26.71,
+      "phase2_triggered": true,
+      "entry": {
+        "kernthese": "Der Beitrag argumentiert, dass place-based environmental education, fundiert durch den Capabilities-Ansatz (Sen/Nussbaum-Tradition), eco-anxiety und schwindende Agency junger Menschen angesichts ökologischer Krisen adressieren kann. Am Fallbeispiel des Morecambe Bay Curriculum (MBC) wird ein „Head, Heart, Hands\"-Framework operationalisiert: kritisches Wissen (Head), emotionale Verbundenheit (Heart) und meaningful environmental action (Hands). Der Text versteht sich als Modell für replizierbare grassroots curriculum reform, die agency und wellbeing freedoms fördert.",
+        "bezuege": [
+          {
+            "pub_id": "ZSSJ4BPL",
+            "pub_kurz": "Klepacki/Jörissen 2023: Freiheit und Entanglement",
+            "bezug": "Der Beitrag arbeitet mit dem Capabilities-Ansatz (Sen/Nussbaum), der Freiheit als Verwirklichungschance (capability/freedom) konzipiert — ein individualistisch-humanistisches Freiheitsverständnis. Jörissen/Klepacki entwickeln in ZSSJ4BPL demgegenüber eine relationale Freiheitstheorie, die Freiheit nicht als Position außerhalb von Bindungen, sondern als Rekonfiguration von Bindungsgefügen innerhalb materieller Kollektive fasst (agentieller Realismus nach Barad). Beide Ansätze adressieren Agency/Freiheit im Kontext planetarischer Krisen, aber aus grundlegend unterschiedlichen ontologischen Traditionen: humanistischer Individualismus vs. post-anthropozentrische Relationalität. Diese Spannung ist produktiv für die theoretische Schärfung des Cultural Resilience-Konzepts, wird aber vom neuen Beitrag nicht direkt auf Jörissens Position bezogen.",
+            "relation": "parallelisiert"
+          },
+          {
+            "pub_id": "3W9X5QLZ",
+            "pub_kurz": "Jörissen/Klepacki 2025: Cultural Resilience and Postdigital Planetary Dissensus",
+            "bezug": "Das Head/Heart/Hands-Framework des neuen Beitrags weist eine strukturelle Parallelität zu den drei Strukturmomenten kultureller Resilienz (Rootedness/Resourcefulness/Resistance nach Katrina Brown) auf: Heart (emotionale Verbundenheit mit Ort) ↔ Rootedness (sinnlich-leibliches Gewahrwerden von Entanglement, belonging); Head (kritisches Wissen) ↔ Resourcefulness (diffraktionale Praxis, Ressourcen-Neuverbindung); Hands (meaningful action) ↔ Resistance (performative Praxis der Kritik/Transformation). Die Parallelität entsteht aus unterschiedlichen Theorietraditionen (capabilities/place-based education vs. agentieller Realismus/Brown's resilience model) und wird vom Beitrag nicht als Bezug hergestellt. Sie ist dennoch konzeptionell ergiebig, da beide Frameworks dieselbe Problemstruktur (Krise-Ort-Agency-Transformation) mit unterschiedlichen Mitteln fassen.",
+            "relation": "parallelisiert"
+          }
+        ],
+        "theoretisch_methodisch": "Der Beitrag verbindet den Capabilities-Ansatz (Sen/Nussbaum) mit place-based education und operationalisiert dies empirisch durch Analyse von Strategy Documents, Teaching Resources und educators' reflections im Rahmen des Morecambe Bay Curriculum. Die Methodik ist qualitativ-dokumentenanalytisch mit Fallstudiencharakter. Theoretisch fundiert der Text das Head/Heart/Hands-Framework capabilities-theoretisch — ein Zugang, der Freiheit und Agency als Verwirklichungschancen innerhalb sozialer und materieller Kontexte fasst, aber im Gegensatz zu Barad's agentiellem Realismus nicht die Ontologie selbst relationalisiert. Die Reibung zwischen humanistisch-kapabilitätsbasierter und post-anthropozentrisch-relationaler Perspektive auf ökologische Bildungskrisen ist das theoretisch Interessanteste an diesem Text.",
+        "bemerkenswert": [
+          "Das Head/Heart/Hands-Framework weist eine strukturelle Homologie zu den drei Strukturmomenten kultureller Resilienz (Rootedness/Resourcefulness/Resistance nach Katrina Brown) auf, entstammt aber einer völlig anderen Theorietradition (place-based education / capabilities approach). Diese Homologie ist beachtlich, weil sie auf eine konvergente Problemstruktur hindeutet, die unabhängig von der theoretischen Tradition ähnliche Dimensionen der Bewältigung ökologischer Krisen im Bildungsbereich identifiziert.",
+          "Der Capabilities-Ansatz als Freiheitstheorie steht in produktiver Spannung zu Jörissens freedom-as-reconfiguration-These: Wo Capabilities individualistisch-humanistisch fundiert sind (auch mit kollektiven Erweiterungen, vgl. Ibrahim 2020 im Literaturverzeichnis), operiert Cultural Resilience mit agentiell-realistischer Rekonfiguration von Entanglements. Diese Reibung könnte für die theoretische Schärfung und Abgrenzung des Cultural Resilience-Konzepts ergiebig sein.",
+          "Der Begriff der eco-anxiety als pädagogische Herausforderung verbindet sich mit dem Cultural Resilience-Projektthema der affectiven Dimension planetarer Krisen (Rootedness-Moment), ohne dies im neo-materialistischen Sinne zu fassen — ein Beispiel dafür, wie dasselbe Phänomen aus einer unterschiedlichen Theorietradition heraus bearbeitet wird."
+        ],
+        "verdict": "lesenswert",
+        "verdict_begruendung": "Der Beitrag arbeitet aus einer anderen Theorietradition (Capabilities-Ansatz, place-based education) am selben Problemfeld wie das Cultural Resilience-Projekt: ökologische Krise, Agency, Freiheit, place/Verwurzelung und kollektive Transformationspraxis. Die bezuege sind parallelisiert (kein direktes erweitert/widerspricht/importiert), aber die produktive Reibung zwischen humanistischem Capabilities-Ansatz und post-anthropozentrischer Cultural Resilience-Theorie — insbesondere in der Frage von Freiheit/Agency — bietet Anregungspotenzial für die theoretische Schärfung des eigenen Konzepts. Zudem ist die strukturelle Homologie zwischen Head/Heart/Hands und Rootedness/Resourcefulness/Resistance bemerkenswert genug, um eine Positionsbestimmung zu rechtfertigen."
+      },
+      "agent_verdict": "lesenswert",
+      "iterations": 3,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "ZSSJ4BPL",
+          "search_term": "Freiheit",
+          "chars": 5060
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "3W9X5QLZ",
+          "search_term": "Rootedness Resourcefulness Resistance",
+          "chars": 16209
+        },
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 2,
+      "submit_logged": true,
+      "tokens_in": 101201,
+      "tokens_out": 4806,
+      "tokens_cached_read": 92800,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.0570358,
+      "phase2_stdout": "[agent] System-Prompt (full): ~28420 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~2146 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30336, write=0\n[agent] finish=tool_calls\n[agent] → read_publication({\"pub_id\": \"ZSSJ4BPL\", \"search_term\": \"Freiheit\"})\n[agent] → read_publication({\"pub_id\": \"3W9X5QLZ\", \"search_term\": \"Rootedness Resourcefulness Resistance\"})\n\n[agent] --- Iteration 2 ---\n[agent] cache: read=32320, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Beitrag argumentiert, dass place-based environmental education, fundiert durch den Capabilities-Ansatz (Sen/Nussbaum-Tradition), eco-anxiety und schwindende Agency junger Menschen a)\n",
+      "latency_s": 57.63,
+      "finished_at": "2026-07-10T20:20:47.753126+00:00",
+      "started_at": "2026-07-10T20:19:50.119442+00:00",
+      "model_key": "glm",
+      "model_id": "z-ai/glm-5.2",
+      "article_id": "598d79c944193dab810dea751015fc88",
+      "journal_short": "EthicsEd",
+      "user_verdict": "scannen",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~702 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30144, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"The article presents a mixed-methods study with 71 university students in a web design course, examining how generative AI interacts with learners' factual knowledge in cognitively dema)\n",
+      "phase1_verdict": "scannen",
+      "phase1_latency_s": 11.4,
+      "entry": {
+        "kernthese": "The article presents a mixed-methods study with 71 university students in a web design course, examining how generative AI interacts with learners' factual knowledge in cognitively demanding problem-solving tasks. It finds that GenAI reduces cognitive load (especially extraneous load) and particularly benefits students with lower factual knowledge, while factual knowledge remains essential for critically evaluating and refining AI-generated outputs. The study is framed within cognitive load theory and human–AI collaboration in education.",
+        "bezuege": [],
+        "theoretisch_methodisch": "The study operates within a cognitive load theory framework, using a mixed-methods design (quantitative measures of cognitive load and task performance plus qualitative analysis of student interactions with GenAI). It treats GenAI instrumentally as a scaffolding tool for learning and problem-solving, without engaging with cultural, aesthetic, critical, or posthumanist dimensions of AI in education. The theoretical horizon is instructional design and learning sciences, not Bildungstheorie or critical media pedagogy.",
+        "bemerkenswert": [
+          "The finding that factual knowledge is necessary for critically evaluating GenAI outputs empirically echoes — from a cognitive-psychology perspective — what Jörissen's work frames as the need for critical-aesthetic engagement with AI. This convergence from an entirely different theoretical tradition could serve as a contrast case in arguing for why domain-specific cultural/aesthetic knowledge matters for AI literacy (relevant for AI4ArtsEd).",
+          "The study exemplifies the 'solutionist' paradigm (Morozov) that Jörissen critically engages with: GenAI is framed as an optimization tool for cognitive load reduction, with no reflection on epistemic opacity, cultural bias, or the constitutive effects of AI on perception and subjectivation."
+        ],
+        "verdict": "scannen",
+        "verdict_begruendung": "The article belongs to the broader AI-in-education discourse field and empirically confirms that domain knowledge is needed for critical AI engagement — a finding that is marginally relevant to AI4ArtsEd's concern with critical AI literacy. However, its cognitive-load-theoretical framework is too distant from Jörissen's bildungstheoretisch and critical-aesthetic approach to offer productive friction or specific conceptual stimulation."
+      },
+      "agent_verdict": "scannen",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 30883,
+      "tokens_out": 1236,
+      "tokens_cached_read": 30144,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.01431044,
+      "phase2_triggered": false,
+      "latency_s": 11.4,
+      "finished_at": "2026-07-10T20:20:59.161470+00:00",
+      "started_at": "2026-07-10T20:20:47.757670+00:00",
+      "model_key": "glm",
+      "model_id": "z-ai/glm-5.2",
+      "article_id": "ac3bc611f5e0f4be6575f885001d33e2",
+      "journal_short": "JRTE",
+      "user_verdict": "scannen",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~65 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30144, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Ein Editorial in der Zeitschrift MedienPädagogik, das — sofern der Titel Hinweis gibt — die „Gesellschaft der Medienpädagogik\\\" thematisiert, also vermutlich die fachliche Gemeinschaft,)\n",
+      "phase1_verdict": "scannen",
+      "phase1_latency_s": 9.35,
+      "entry": {
+        "kernthese": "Ein Editorial in der Zeitschrift MedienPädagogik, das — sofern der Titel Hinweis gibt — die „Gesellschaft der Medienpädagogik\" thematisiert, also vermutlich die fachliche Gemeinschaft, Profession oder das Selbstverständnis des medienpädagogischen Feldes reflektiert. Ein Abstract ist nicht verfügbar.",
+        "bezuege": [],
+        "theoretisch_methodisch": "Ohne Abstract oder Volltext lässt sich die methodisch-theoretische Anlage nicht beurteilen. Es handelt sich um ein Editorial, das typischerweise reflexiv-essayistisch verfasst ist und sich an das Fachpublikum der Medienpädagogik richtet.",
+        "bemerkenswert": [
+          "Ein Editorial in einer der zentralen deutschsprachigen Zeitschriften der Medienpädagogik, das möglicherweise das Selbstverständnis und die Entwicklung des Fachs reflektiert — relevant als Diskursindikator für das Feld, in dem Jörissen mit seinen Arbeiten zu Medienbildung, Postdigitalität und Kultureller Bildung stark verortet ist."
+        ],
+        "verdict": "scannen",
+        "verdict_begruendung": "Ein Editorial im zentralen Fachorgan, das das medienpädagogische Feld reflektiert — relevant für Diskursübersicht, aber ohne Abstract lässt sich kein spezifisches Anregungspotenzial für die aktiven Projekte oder publizierten Argumente erkennen."
+      },
+      "agent_verdict": "scannen",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 30235,
+      "tokens_out": 830,
+      "tokens_cached_read": 30144,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.01161684,
+      "phase2_triggered": false,
+      "latency_s": 9.35,
+      "finished_at": "2026-07-10T20:21:08.511006+00:00",
+      "started_at": "2026-07-10T20:20:59.164312+00:00",
+      "model_key": "glm",
+      "model_id": "z-ai/glm-5.2",
+      "article_id": "74f223f51fced5138d20b7ba94fc5504",
+      "journal_short": "MedienPaed",
+      "user_verdict": "scannen",
+      "abstract_poor": true
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~3078 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30144, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Beitrag entwickelt das Konzept der „Human Firewall\\\" als systemischen soziotechnischen Rahmen, der Resilienz gegen KI-gesteuerte Manipulation auf kognitiver, organisatorischer und k)\n",
+      "phase1_verdict": "scannen",
+      "phase1_latency_s": 51.85,
+      "entry": {
+        "kernthese": "Der Beitrag entwickelt das Konzept der „Human Firewall\" als systemischen soziotechnischen Rahmen, der Resilienz gegen KI-gesteuerte Manipulation auf kognitiver, organisatorischer und kultureller Ebene verankert. Er argumentiert, dass KI kognitive Domänen penetriert (Cognitive Hacking, Grooming, agentic misalignment), Menschen als adaptive Verteidiger in hybriden Ökosystemen reconzeptualisiert werden müssen und Verteidigung agentenbasierte Modellierung, Verhaltensanalytik und soziotechnisches Red-Teaming erfordert. Ein exploratives Computermodell illustriert konzeptionell die Detektion von Verhaltensdrift in Mensch-KI-Interaktionen.",
+        "bezuege": [],
+        "theoretisch_methodisch": "Der Beitrag verortet sich im Spannungsfeld von Cybersicherheitsforschung, AI Governance und kognitiver Wissenschaft. Methodisch kombiniert er agentenbasierte Modellierung (ABM), User and Entity Behavior Analytics (UEBA) und soziotechnisches Red-Teaming zu einem adaptiven Governance-Ökosystem. Theoretisch wird Resilienz als Verteidigungs- und Vulnerabilitätsmanagement-Konzept operationalisiert, nicht als relationaler Bildungsprozess.",
+        "bemerkenswert": [
+          "Der Beitrag zeigt, wie 'Resilienz' im KI-Governance-Diskurs als Verteidigungs- und Vulnerabilitätsmanagement-Konzept gerahmt wird – ein nutzvoller Kontrast zu Jörissens Verständnis kultureller Resilienz als relationalem, post-anthropozentrischem Bildungsprozess.",
+          "Das Konzept des 'Cognitive Hacking' als KI-gesteuerte großflächige Manipulation der kognitiven Domäne ist eine sicherheitszentrierte Parallele zu Jörissens/Klepacki/Flasches Konzept der 'Wahrnehmungskrise' durch generative KI – allerdings ohne bildungstheoretische oder ästhetische Dimension.",
+          "Die Rahmung des Menschen als 'adaptive defender' statt als 'point of failure' teilt mit Jörissens Medienbildungskonzept die Abkehr vom rein instrumentellen Subjektverständnis, bleibt aber im Paradigma der Systemverteidigung verhaftet."
+        ],
+        "verdict": "scannen",
+        "verdict_begruendung": "Der Beitrag berührt die Themenfelder KI, Resilienz und Vulnerabilität, die für mehrere Aktivprojekte relevant sind, bietet jedoch aus einer Cybersicherheits- und Governance-Perspektive keine spezifische Anregung für die bildungstheoretische, ästhetische oder kulturpädagogische Arbeit. Der Resilienzbegriff wird defensiv-operational gefasst, nicht als relationaler Bildungsprozess. Nützlich für Diskursübersicht zur Verwendung von Resilienz in KI-Adjazenzfeldern."
+      },
+      "agent_verdict": "scannen",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 33182,
+      "tokens_out": 2044,
+      "tokens_cached_read": 30144,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.02108424,
+      "phase2_triggered": false,
+      "latency_s": 51.85,
+      "finished_at": "2026-07-10T20:22:00.367987+00:00",
+      "started_at": "2026-07-10T20:21:08.513770+00:00",
+      "model_key": "glm",
+      "model_id": "z-ai/glm-5.2",
+      "article_id": "b756f0c8e6190877f982fde045878a90",
+      "journal_short": "AIandSoc",
+      "user_verdict": "ignorieren",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~3224 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30144, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Die Studie untersucht mit einem 2×4 experimentellen Design (352 chinesische Studierende), wie Vorwissen und verschiedene Instruktionsdesigns (Prä-Fragen, Feedback-Typen) bei Videolehren)\n",
+      "phase1_verdict": "ignorieren",
+      "phase1_latency_s": 10.09,
+      "entry": {
+        "kernthese": "Die Studie untersucht mit einem 2×4 experimentellen Design (352 chinesische Studierende), wie Vorwissen und verschiedene Instruktionsdesigns (Prä-Fragen, Feedback-Typen) bei Videolehren interagieren. Mittels Eye-Tracking und kognitiver Lastmessung zeigt sie, dass Prä-Fragen universell die Aufmerksamkeitszuwendung beschleunigen und dass elaboriertes Feedback nur bei Lernenden mit geringem Vorwissen hilfreich ist, bei erfahrenen Lernenden jedoch redundante Belastung erzeugt.",
+        "bezuege": [],
+        "theoretisch_methodisch": "Kognitiv-psychologische Experimentalstudie im Paradigma der Cognitive Load Theory (Sweller) und des Multimedia Learning (Mayer). Quantitativ-experimentelles Design mit Eye-Tracking und ANOVA, ohne bildungstheoretische, medientheoretische oder kulturpädagogische Perspektive.",
+        "bemerkenswert": [],
+        "verdict": "ignorieren",
+        "verdict_begruendung": "Die Studie verortet sich vollständig im kognitionspsychologischen/instruktionsdesign-orientierten Paradigma der Multimedia-Learning-Forschung (Cognitive Load Theory, Eye-Tracking, experimentelles Design). Sie hat keine Berührungspunkte zu den bildungstheoretischen, medienpädagogischen, kulturpädagogischen oder postdigitalen Ansätzen, die das Forschungsprofil prägen."
+      },
+      "agent_verdict": "ignorieren",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 32701,
+      "tokens_out": 651,
+      "tokens_cached_read": 30144,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.01428164,
+      "phase2_triggered": false,
+      "latency_s": 10.09,
+      "finished_at": "2026-07-10T20:22:10.457558+00:00",
+      "started_at": "2026-07-10T20:22:00.370427+00:00",
+      "model_key": "glm",
+      "model_id": "z-ai/glm-5.2",
+      "article_id": "b56e34a4cf6a1be4257ea32e9c97fa7f",
+      "journal_short": "BJET",
+      "user_verdict": "ignorieren",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~765 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30144, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Beitrag untersucht mit Multimodaler Kritischer Diskursanalyse die Rekrutierungs-Websites japanbasierter Online-Englischschulen, die überwiegend philippinische Lehrkräfte einstellen.)\n",
+      "phase1_verdict": "scannen",
+      "phase1_latency_s": 20.33,
+      "entry": {
+        "kernthese": "Der Beitrag untersucht mit Multimodaler Kritischer Diskursanalyse die Rekrutierungs-Websites japanbasierter Online-Englischschulen, die überwiegend philippinische Lehrkräfte einstellen. Er identifiziert eine wiederkehrende „Promise-Gate-Constraint\"-Rhetorik: verlockende Versprechen locken Bewerber*innen an, niedrige Eintrittsbarrieren maximieren das Arbeitskräfteangebot, und verschleierte Restriktionen normalisieren Prekarität. Die Studie zeigt, wie diese Rekrutierungsinterfaces sprachliche Hierarchien (Native-Speakerism) reproduzieren und die pädagogischen Bedingungen digitaler Lernumgebungen mitprägen.",
+        "bezuege": [],
+        "theoretisch_methodisch": "Multimodale Kritische Diskursanalyse (MKDA) von sieben Rekrutierungs-Websites, gestützt auf Fairclough und van Leeuwen. Theoretischer Rahmen verbindet Platform-Capitalism (Srnicek) mit kritischer Pädagogik und Native-Speakerism-Forschung (Holliday). Die Methode ist etabliert im Feld der Critical Discourse Studies; der empirische Gegenstand ist spezifisch (Online-ESL-Recruiting für philippinische Lehrkräfte).",
+        "bemerkenswert": [
+          "Die Verbindung von Platform-Capitalism-Analyse (Srnicek) mit einer postkolonialen Perspektive auf linguistische Hierarchien (Native-Speakerism, philippinische Arbeitsmigration) ist ein Beispiel dafür, wie Plattformökonomie und Postkolonialismus in der Bildungsforschung zusammengedacht werden — ein Anschluss, der auch für Jörissens postkoloniale bildungstheoretische Reflexionen (vgl. 6WYG2HJG) relevant sein könnte.",
+          "Der Befund, dass digitale Rekrutierungsinterfaces nicht nur Arbeitsbedingungen, sondern auch pädagogische Bedingungen der digitalen Lernumgebungen mitprägen, ist strukturell verwandt mit Jörissens Überlegungen zur Environmentalität digitaler Sozio-Technologien (LEHKCH59), wird aber aus einer Arbeits- und Gerechtigkeitsperspektive (nicht aus einer Wahrnehmungs- oder Bildungstheorie-Perspektive) entwickelt."
+        ],
+        "verdict": "scannen",
+        "verdict_begruendung": "Der Beitrag berührt Jörissens Themenfelder (Plattformökonomie, Postkolonialismus, Digitalisierung in der Bildung), entwickelt diese aber an einem empirischen Gegenstand (Online-ESL-Recruiting für philippinische Lehrkräfte), der keine spezifische Anregung für die aktiven Projekte oder publizierten Argumente bietet. Die MKDA-Methodik und der Platform-Capitalism-Bezug sind bekannt; der postkoloniale Zugriff auf linguistische Hierarchien ist für Diskursübersicht nützlich, aber nicht anschlussfähig genug für eine Lesenswert-Einstufung."
+      },
+      "agent_verdict": "scannen",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 30942,
+      "tokens_out": 1253,
+      "tokens_cached_read": 30144,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.01446784,
+      "phase2_triggered": false,
+      "latency_s": 20.33,
+      "finished_at": "2026-07-10T20:22:30.790381+00:00",
+      "started_at": "2026-07-10T20:22:10.460425+00:00",
+      "model_key": "glm",
+      "model_id": "z-ai/glm-5.2",
+      "article_id": "9c28670eeb0d8171190dcce10ec76a51",
+      "journal_short": "Discourse",
+      "user_verdict": "ignorieren",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~2665 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30144, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Beitrag untersucht, wie der Prozess der „Europäisierung\\\" die Universität Gent in den späten 1980er und 1990er Jahren veränderte. Am Beispiel des Erasmus-Programms zeigt die Autorin)\n",
+      "phase1_verdict": "ignorieren",
+      "phase1_latency_s": 41.77,
+      "entry": {
+        "kernthese": "Der Beitrag untersucht, wie der Prozess der „Europäisierung\" die Universität Gent in den späten 1980er und 1990er Jahren veränderte. Am Beispiel des Erasmus-Programms zeigt die Autorin, wie eine „diskursive Europäisierung\" über Wettbewerbsrhetorik und Corporate Branding die Universitätsverwaltung stärkte, die institutionelle Mission auf den Europäischen Binnenmarkt ausrichtete und Forschung in einen europäischen Epistemik-Rahmen stellte.",
+        "bezuege": [],
+        "theoretisch_methodisch": "Historisch-archivarische Fallstudienanalyse einer einzelnen Universität (Gent) auf Basis von Universitätsarchiven der 1980er–1990er Jahre. Verbindet Higher-Education-Governance-Forschung mit diskursanalytischer Perspektive auf institutionellen Wandel durch supranationale Politik.",
+        "bemerkenswert": [],
+        "verdict": "ignorieren",
+        "verdict_begruendung": "Der Beitrag behandelt Higher-Education-Governance und europäische Hochschulgeschichte ohne Bezug zu Jörissens Forschungsbereichen (Medienbildung, kulturelle/ästhetische Bildung, Digitalität, kulturelle Resilienz, Posthumanismus) oder aktiven Projekten. Weder thematisch noch methodisch gibt es eine Anknüpfungsfläche."
+      },
+      "agent_verdict": "ignorieren",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 32930,
+      "tokens_out": 781,
+      "tokens_cached_read": 30144,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.01517424,
+      "phase2_triggered": false,
+      "latency_s": 41.77,
+      "finished_at": "2026-07-10T20:23:12.564354+00:00",
+      "started_at": "2026-07-10T20:22:30.795622+00:00",
+      "model_key": "glm",
+      "model_id": "z-ai/glm-5.2",
+      "article_id": "10e15383607724179c30f37cca278760",
+      "journal_short": "EERJ",
+      "user_verdict": "ignorieren",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~2313 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30144, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Beitrag analysiert die Darstellung von Frauen in australischen digitalen Nachrichtenmedien bei Berichten über häusliche Gewalt aus einer „postdigital feminist\\\" Perspektive. Die Aut)\n",
+      "phase1_verdict": "scannen",
+      "phase1_latency_s": 23.41,
+      "entry": {
+        "kernthese": "Der Beitrag analysiert die Darstellung von Frauen in australischen digitalen Nachrichtenmedien bei Berichten über häusliche Gewalt aus einer „postdigital feminist\" Perspektive. Die Autor*innen nutzen Butlers Konzepte der Geschlechterperformativität und Prekarität sowie Martin & Whites Appraisal-Framework, um zu zeigen, wie digitale Nachrichtenberichte heteropatriarchale Moralordnungen reproduzieren und Bedingungen der Prekarität aufrechterhalten.",
+        "bezuege": [],
+        "theoretisch_methodisch": "Die Studie kombiniert eine postdigitale feministische Theorieperspektive (Butler, Barad) mit linguistischer Diskursanalyse (Appraisal-Framework nach Martin & White) und untersucht 2024 berichtete Fälle häuslicher Gewalt in den sieben meistgenutzten australischen digitalen Nachrichtenportalen. Der Ansatz ist empirisch-qualitativ mit diskursanalytischem Fokus auf evaluative Sprache und Positionierung.",
+        "bemerkenswert": [
+          "The article deploys a theoretical constellation — Barad's entanglement + Butler's performativity within a postdigital framing — that overlaps with Jörissen's theoretical toolkit (agential realism, subjectivation theory, postdigitality), but applied to gender-based violence media discourse rather than arts/cultural education. This is a useful indicator of how these concepts circulate in adjacent postdigital research fields.",
+          "Der Begriff 'postdigital feminist' wird hier als eigenständige theoretische Perspektive benutzt (vgl. Hurley 2023, Evans & Ringrose 2025), was auf eine sich formierende Teildiskurslinie im Postdigital-Diskurs hinweist, die für die Verortung des eigenen postdigitalen Bildungsverständnisses relevant sein könnte."
+        ],
+        "verdict": "scannen",
+        "verdict_begruendung": "Der Beitrag teilt theoretische Ressourcen mit Jörissens Arbeit (Barad, Butler, Postdigitalität) und erscheint im selben Diskursraum (Postdigital Science and Education), sein substantieller Gegenstand — australische Nachrichtenmedienberichterstattung über häusliche Gewalt — liegt jedoch fern der bildungstheoretischen, ästhetischen und kulturellen Bildungsfragen, die Jörissens Arbeit antreiben. Die theoretische Überlappung bietet Diskursübersicht, aber kein spezifisches Anregungspotenzial für aktuelle Projekte."
+      },
+      "agent_verdict": "scannen",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 32491,
+      "tokens_out": 1440,
+      "tokens_cached_read": 30144,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.01745924,
+      "phase2_triggered": false,
+      "latency_s": 23.41,
+      "finished_at": "2026-07-10T20:23:35.975021+00:00",
+      "started_at": "2026-07-10T20:23:12.566923+00:00",
+      "model_key": "glm",
+      "model_id": "z-ai/glm-5.2",
+      "article_id": "285f36c132b2761190d95a0366b45320",
+      "journal_short": "PDSE",
+      "user_verdict": "ignorieren",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~2823 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30144, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Die Studie untersucht den Einfluss pädagogischer Prozessqualitätsmerkmale (Sprachlehrstrategien und Dialogqualität) auf die Sprachentwicklung von 3- bis 5-jährigen Kindern im Elementarb)\n",
+      "phase1_verdict": "ignorieren",
+      "phase1_latency_s": 18.8,
+      "entry": {
+        "kernthese": "Die Studie untersucht den Einfluss pädagogischer Prozessqualitätsmerkmale (Sprachlehrstrategien und Dialogqualität) auf die Sprachentwicklung von 3- bis 5-jährigen Kindern im Elementarbereich. In einem Prätest-Posttest-Follow-Up-Interventionsdesign mit Mehrebenen-Mediationsanalysen zeigt der Autor, dass Dialogqualität und Input-Strategien die kindliche Sprachentwicklung positiv beeinflussen, während Modellierungs- und Korrekturtechniken teils negative Effekte haben. Die Studie belegt zudem das Potenzial dieser Prozessqualitätsmerkmale als Übertragungsmechanismus für Fortbildungen zur alltagsintegrierten Sprachbildung.",
+        "bezuege": [],
+        "theoretisch_methodisch": "Die Studie ist eine quantitativ-empirische Interventionsstudie im Bereich frühkindlicher Sprachentwicklung mit Prätest-Posttest-Follow-Up-Kontrollgruppendesign, Video-basierten Prozessqualitätsmessungen und Mehrebenen-Mediationsanalysen. Theoretisch verankert sie sich in der Forschung zu dialogic teaching und alltagsintegrierter Sprachförderung.",
+        "bemerkenswert": [],
+        "verdict": "ignorieren",
+        "verdict_begruendung": "Die Studie behandelt frühkindliche Sprachentwicklung und Sprachförderung im Elementarbereich – ein Gegenstandsbereich, der keine Berührungspunkte mit Jörissens Forschungsschwerpunkten (Medienbildung, kulturelle Resilienz, postdigitale Kultur, ästhetische/kulturelle Bildung, KI in der Kunstbildung) aufweist. Weder die theoretischen Rahmen noch die aktiven Projekte haben Anknüpfungspunkte zu diesem Thema."
+      },
+      "agent_verdict": "ignorieren",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 33340,
+      "tokens_out": 719,
+      "tokens_cached_read": 30144,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.01547544,
+      "phase2_triggered": false,
+      "latency_s": 18.8,
+      "finished_at": "2026-07-10T20:23:54.774796+00:00",
+      "started_at": "2026-07-10T20:23:35.978187+00:00",
+      "model_key": "glm",
+      "model_id": "z-ai/glm-5.2",
+      "article_id": "45972f0bbd137f84ec1b7aac1f68dcc1",
+      "journal_short": "ZfE",
+      "user_verdict": "ignorieren",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~53 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=30144, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Beitrag „Spot on\\\" von Gabriel Lanyi erschien in AI & Society (Springer). Da kein Abstract vorliegt, lässt sich der Inhalt nicht näher bestimmen — der Titel ist zu allgemein, um Rüc)\n",
+      "phase1_verdict": "scannen",
+      "phase1_latency_s": 14.16,
+      "entry": {
+        "kernthese": "Der Beitrag „Spot on\" von Gabriel Lanyi erschien in AI & Society (Springer). Da kein Abstract vorliegt, lässt sich der Inhalt nicht näher bestimmen — der Titel ist zu allgemein, um Rückschlüsse auf Gegenstand oder Argumentation zuzulassen. Die Zeitschrift AI & Society deckt ein Spektrum von kritischen, sozialwissenschaftlichen und kulturwissenschaftlichen Perspektiven auf KI ab, was zum Beobachtungsfeld des Forschers gehört.",
+        "bezuege": [],
+        "theoretisch_methodisch": "Ohne Abstract oder weitere Inhaltsangaben lässt sich die theoretische und methodische Ausrichtung des Beitrags nicht einschätzen. Die Publikation in AI & Society deutet auf eine Auseinandersetzung mit gesellschaftlichen Implikationen von KI hin, doch ob dies empirisch, theoretisch oder kommentierend geschieht, ist unbekannt.",
+        "bemerkenswert": [
+          "Der Beitrag hat keinen Abstract, was bei einer Zeitschrift wie AI & Society ungewöhnlich ist und auf eine möglicherweise sehr kurze Form (Editorial, Kommentar, Spotlight) hindeuten könnte.",
+          "Die Zeitschrift AI & Society ist ein relevanter Publikationsort für kritische KI-Studien; die bloße Existenz des Beitrags dort markiert Diskursaktivität im Beobachtungsfeld, auch wenn der konkrete Inhalt nicht beurteilbar ist."
+        ],
+        "verdict": "scannen",
+        "verdict_begruendung": "Die Zeitschrift AI & Society gehört zum Beobachtungsfeld (kritische KI-Studien, KI und Gesellschaft), und der Beitrag könnte für die Projekte AI4ArtsEd oder DiäS-KuBi relevant sein — ohne Abstract ist jedoch keine inhaltliche Einschätzung möglich, sodass nur ein Scannen zur Diskursübersicht gerechtfertigt ist."
+      },
+      "agent_verdict": "scannen",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 30240,
+      "tokens_out": 840,
+      "tokens_cached_read": 30144,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.01166784,
+      "phase2_triggered": false,
+      "latency_s": 14.16,
+      "finished_at": "2026-07-10T20:24:08.935573+00:00",
+      "started_at": "2026-07-10T20:23:54.777600+00:00",
+      "model_key": "glm",
+      "model_id": "z-ai/glm-5.2",
+      "article_id": "167708764b14244eacea2f87b91c7abd",
+      "journal_short": "AIandSoc",
+      "user_verdict": "ignorieren",
+      "abstract_poor": true
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~3357 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"verdict_begruendung\": \"Der Review bietet einen hilfreichen quantitativ-strukturellen Überblick über die Verteilung von Interaktionsmodi im internationalen EdTech-Diskurs. Für die eigene, kultur- und)\n",
+      "phase1_verdict": "scannen",
+      "phase1_latency_s": 14.41,
+      "entry": {
+        "verdict_begruendung": "Der Review bietet einen hilfreichen quantitativ-strukturellen Überblick über die Verteilung von Interaktionsmodi im internationalen EdTech-Diskurs. Für die eigene, kultur- und ästhetiktheoretisch fokussierte Forschung ist der Beitrag primär zur informationellen Diskursübersicht über empirische Trends und deren methodische Qualität nützlich.",
+        "kernthese": "Der systematische Review untersucht 56 empirische Studien zur Anwendung generativer KI in der Bildung aus einer Human-AI-Interaktionsperspektive. Entlang des AIED-HCD-Frameworks analysieren die Autor*innen das Verhältnis von menschlicher Kontrolle und KI-Automatisierung und stellen fest, dass das Interesse an hybriden Szenarien (hohe menschliche Kontrolle bei gleichzeitig hoher systemischer Automatisierung) zunimmt, während rein automatisierte Ansätze in der Praxis weiterhin zurückhaltend bewertet werden.",
+        "verdict": "scannen",
+        "theoretisch_methodisch": "Es handelt sich um ein systematisches Review auf Basis des Human-Centered Design for AI in Education (AIED-HCD) Frameworks, ergänzt durch eine statistische Sensitivitäts- und Power-Analyse der einbezogenen empirischen Befunde.",
+        "bemerkenswert": [
+          "Bemerkenswert ist die methodenkritische Sensitivitätsanalyse der Autor*innen, die aufdeckt, dass ein Großteil der aktuellen empirischen Studien zu generativer KI in der Bildung eklatante Mängel in der statistischen Berichterstattung sowie eine unzureichende statistische Power (Effektstärken) aufweist."
+        ],
+        "bezuege": []
+      },
+      "agent_verdict": "scannen",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 30259,
+      "tokens_out": 1775,
+      "tokens_cached_read": 0,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.0613635,
+      "phase2_triggered": false,
+      "latency_s": 14.41,
+      "finished_at": "2026-07-10T20:13:46.157187+00:00",
+      "started_at": "2026-07-10T20:13:31.747934+00:00",
+      "model_key": "gemini",
+      "model_id": "google/gemini-3.5-flash",
+      "article_id": "eaab8fbec10635679dd7e8d38320dff3",
+      "journal_short": "BJET",
+      "user_verdict": "lesenswert",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~2684 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"theoretisch_methodisch\": \"Es handelt sich um eine literaturgesicherte, begrifflich-theoretische Sondierung an der Schnittstelle von Decolonial Studies, Critical Data Studies und Technikphilosophie.\")\n",
+      "phase1_verdict": "lesenswert",
+      "phase1_latency_s": 14.93,
+      "entry": {
+        "theoretisch_methodisch": "Es handelt sich um eine literaturgesicherte, begrifflich-theoretische Sondierung an der Schnittstelle von Decolonial Studies, Critical Data Studies und Technikphilosophie.",
+        "verdict_begruendung": "Der Aufsatz ist hochgradig anschlussfähig für das Projekt 'AI4ArtsEd' (Bezugnahme auf dekoloniale und epistemische Diversität bei generativer KI) sowie für das Projekt 'Cultural Resilience' (Hervorhebung relationaler und post-anthropozentrischer Verschränkungen).",
+        "bezuege": [],
+        "bemerkenswert": [
+          "Der Beitrag verbindet dekoloniale Datenethik explizit mit der ökologischen und materiellen Dimension von IT-Infrastrukturen (Extraktivismus), wodurch Umweltschäden als koloniale Ausbeutung gerahmt werden.",
+          "Die Betonung von Pluriversalität und indigenen Ontologien bietet eine theoretische Brücke, um algorithmische Kolonialisierung jenseits rein prozeduraler europäischer Regulierungsansätze (wie dem EU AI Act) zu kritisieren."
+        ],
+        "verdict": "lesenswert",
+        "kernthese": "Der Artikel kritisiert gängige KI-Ethik-Frameworks als eurozentrisch und schlägt stattdessen eine dekoloniale, pluriversale Perspektive vor. Diese basiert auf drei Säulen: dem Abbau von Machtasymmetrien, lokaler Datensouveränität sowie einer relationalen Einbettung von KI in menschliche, nicht-menschliche und planetare Ökologien."
+      },
+      "agent_verdict": "lesenswert",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 30528,
+      "tokens_out": 1324,
+      "tokens_cached_read": 0,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.057708,
+      "phase2_triggered": false,
+      "latency_s": 14.93,
+      "finished_at": "2026-07-10T20:14:01.085134+00:00",
+      "started_at": "2026-07-10T20:13:46.158585+00:00",
+      "model_key": "gemini",
+      "model_id": "google/gemini-3.5-flash",
+      "article_id": "de4ac5cbc17b7e9f498c2a0efd47bb40",
+      "journal_short": "AIandSoc",
+      "user_verdict": "lesenswert",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Zitationstreffer: 1 (davon 1 mit hoher Confidence)\n[agent] User-Content: ~1809 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Artikel untersucht das gestalterische Potenzial von Design als konstitutivem Faktor für medienpädagogisches Denken und Handeln. Er argumentiert, dass Interaktionsdesign digitaler Te)\n",
+      "phase1_verdict": "lesenswert",
+      "phase1_latency_s": 10.21,
+      "entry": {
+        "kernthese": "Der Artikel untersucht das gestalterische Potenzial von Design als konstitutivem Faktor für medienpädagogisches Denken und Handeln. Er argumentiert, dass Interaktionsdesign digitaler Technologien unmerklich Handlungsmuster und Gesellschaftsentwürfe formt, und schlägt \"Kritisches Design\" (Speculative/Critical Design) als medienpädagogische Methode vor, um diese impliziten Affordanzen gestalterisch-fiktional offenzulegen und alternative Zukünfte zu diskutieren.",
+        "bezuege": [],
+        "verdict": "lesenswert",
+        "verdict_begruendung": "Der Artikel ist direkt relevant für die Projekte 'diaes_kubi' und 'cultural_resilience', da er mit dem Konzept des 'Kritischen Designs' ein konkretes methodisch-ästhetisches Werkzeug zur Förderung digital-ästhetischer Souveränität sowie zur spekulativ-ressourcenorientierten Gestaltung alternativer Zukünfte (Resourcefulness/Resistance) anbietet. Zudem greift er die eigene theoretische Linie zu Design, Dinglichkeit und Subjektivation produktiv auf.",
+        "bemerkenswert": [
+          "Der Beitrag rekonstruiert historisch die zunehmende Delegation gesellschaftlicher Steuerung in die Gestaltung digitaler Interfaces und schlägt vor, \"Critical Design\" (nach Dunne & Raby) als medienpädagogische Methode zu etablieren.",
+          "Das Konzept nutzt fiktive Artefakte und spekulative Narrative, um unmerklich eingeschriebene Subjektentwürfe in Technologien reflexiv zu dekonstruieren."
+        ],
+        "theoretisch_methodisch": "Der Beitrag verbindet designhistorische Analysen von der Industrialisierung bis zum Ubiquitous Computing mit kritischen Designtheorien (Dunne & Raby) und medienpädagogischer Theoriebildung zu technologischen Affordanzen."
+      },
+      "agent_verdict": "lesenswert",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 29559,
+      "tokens_out": 1406,
+      "tokens_cached_read": 0,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.0569925,
+      "phase2_triggered": false,
+      "latency_s": 10.21,
+      "finished_at": "2026-07-10T20:14:11.295652+00:00",
+      "started_at": "2026-07-10T20:14:01.086332+00:00",
+      "model_key": "gemini",
+      "model_id": "google/gemini-3.5-flash",
+      "article_id": "283be2524522d8febff069c11f2fc3d3",
+      "journal_short": "MedienPaed",
+      "user_verdict": "lesenswert",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~1855 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"theoretisch_methodisch\": \"Theoretisch verortet in der Pädagogik kollektiver Zugehörigkeiten und der praxeologischen Wissenssoziologie (Mannheim, Bohnsack). Methodisch plädiert der Beitrag für einen )\n",
+      "phase1_verdict": "lesenswert",
+      "phase1_latency_s": 6.33,
+      "phase2_triggered": true,
+      "entry": {
+        "kernthese": "Der Artikel untersucht die Herausforderungen postkolonialer Theorien für die Erziehungswissenschaft und schlägt aus der Perspektive der 'Pädagogik kollektiver Zugehörigkeiten' einen rekonstruktiven, praxeologischen Forschungszugang vor. Zentral ist dabei die Einführung des Suchbegriffs der 'postkolonialen Lagerung', die es erlauben soll, postkoloniale Erfahrungen und implizite Orientierungen empirisch (insb. mittels der Dokumentarischen Methode) zu rekonstruieren, ohne in objektivistische oder eindimensionale Zuschreibungen zu verfallen.",
+        "verdict": "lesenswert",
+        "bemerkenswert": [
+          "Der Artikel von Arnd-Michael Nohl liefert mit dem Suchbegriff der 'postkoloniale Lagerung' ein handhabbares forschungspraktisches Werkzeug, um postkoloniale Erfahrungen im Rahmen der Dokumentarischen Methode und der praxeologischen Wissenssoziologie empirisch zu rekonstruieren. Er grenzt sich dabei produktiv von pauschalierenden oder rein thesenbasierten postkoloniale Ansätzen ab, indem er die multidimensionale Natur von Differenzerfahrungen und die Eigenlogiken unterschiedlicher sozialer Ebenen (Organisationen, Milieus, Interaktionen) betont."
+        ],
+        "bezuege": [
+          {
+            "pub_kurz": "Jörissen 2019: Territorien der Theorie",
+            "pub_id": "6WYG2HJG",
+            "bezug": "Der Beitrag schließt an Jörissens Auseinandersetzung mit der postkoloniale Irritation etablierter eurozentrischer Bildungstheorien und der Notwendigkeit an, nicht-westliche Konzepte und gemeinschaftliche Relationen ernster zu nehmen. Nohls Vorschlag einer rekonstruktiven Methodologie und das Konzept der 'postkolonialen Lagerung' bieten hierfür ein empirisches Fundament, das Jörissens theoretischen Entwurf eines materiellen 'Settlement' fruchtbar ergänzt.",
+            "relation": "erweitert"
+          }
+        ],
+        "theoretisch_methodisch": "Der Beitrag nutzt die praxeologische Wissenssoziologie, die Relationale Typenbildung und die Dokumentarische Methode (nach Nohl/Bohnsack), um postkoloniale Theoriebildung für die qualitative Sozialforschung handhabbar zu machen. Methodologisch wird ein mehrdimensionaler Zugang vorgeschlagen, der rassistische Diskriminierung mit anderen Ungleichheitsdimensionen verschränkt und die Spezifik lokaler Interaktionsräume und Organisationen (Eigenlogiken) berücksichtigt.",
+        "verdict_begruendung": "Der Artikel von Arnd-Michael Nohl bietet erhebliche Anregungspotenziale für den Bereich 'metakubi' (Diskusanalyse gesellschaftlicher Transformationsprozesse und Postkolonialismus in der Bildungsforschung) sowie für 'comearts' (Diversitätssensibilität) durch die methodologische Operationalisierung postkolonialen Denkens für die Dokumentarische Methode. Der Begriff der 'postkolonialen Lagerung' schließt direkt an Jörissens eigene Suchbewegungen nach einer nicht-eurozentrischen, relationalen und praxeologischen Bildungstheorie an."
+      },
+      "agent_verdict": "lesenswert",
+      "iterations": 3,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "6WYG2HJG",
+          "search_term": "Nohl",
+          "chars": 16186
+        },
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 1,
+      "submit_logged": true,
+      "tokens_in": 97129,
+      "tokens_out": 1397,
+      "tokens_cached_read": 0,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.15826649999999998,
+      "phase2_stdout": "[agent] System-Prompt (full): ~28420 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~2578 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] finish=tool_calls\n[agent] → read_publication({\"search_term\": \"Nohl\", \"pub_id\": \"6WYG2HJG\"})\n\n[agent] --- Iteration 2 ---\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Artikel untersucht die Herausforderungen postkolonialer Theorien für die Erziehungswissenschaft und schlägt aus der Perspektive der 'Pädagogik kollektiver Zugehörigkeiten' einen rek)\n",
+      "latency_s": 14.54,
+      "finished_at": "2026-07-10T20:14:38.677750+00:00",
+      "started_at": "2026-07-10T20:14:24.139734+00:00",
+      "model_key": "gemini",
+      "model_id": "google/gemini-3.5-flash",
+      "article_id": "59b41fadc626dac8d50c95250ab72b47",
+      "journal_short": "ZfE",
+      "user_verdict": "lesenswert",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~1966 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=4060, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"verdict\": \"scannen\", \"verdict_begruendung\": \"Der Artikel bietet einen wertvollen begrifflichen Rahmen für das Konzept der 'digital dignity', das starke theoretische Schnittmengen mit Konzepten der ')\n",
+      "phase1_verdict": "scannen",
+      "phase1_latency_s": 11.4,
+      "entry": {
+        "verdict": "scannen",
+        "verdict_begruendung": "Der Artikel bietet einen wertvollen begrifflichen Rahmen für das Konzept der 'digital dignity', das starke theoretische Schnittmengen mit Konzepten der 'digital-ästhetischen Souveränität' (DiäS-KuBi) und Überlegungen zum 'Regime des Komputablen' (M8RZJRHN) aufweist. Da der Fokus jedoch auf öffentlicher Verwaltung und Strafverfolgung in der Schweiz liegt, ist eine detaillierte Lektüre für die pädagogischen Projekte nicht zwingend erforderlich, das Konzept der digitalen Würde sollte jedoch für die Diskursübersicht gescannt werden.",
+        "bezuege": [],
+        "kernthese": "Der Artikel untersucht die Funktionsweise, Verbreitung und gesellschaftlichen Auswirkungen von Scoring-Systemen (SSS) in der Schweiz anhand von 51 identifizierten Systemen. Die Autor*innen entwickeln ein replizierbares Codebuch zur systematischen Erfassung dieser Systeme und plädieren dafür, die ethische Debatte über Fairness und Antidiskriminierung hinaus auf das Konzept der 'digitalen Würde' (digital dignity) auszuweiten, welches auch menschliche Handlungsfähigkeit, Identität und die dynamische Offenheit menschlicher Entwicklung schützt.",
+        "bemerkenswert": [
+          "Interessant ist die Operationalisierung von \"digital dignity\" über konkrete Indikatoren (wie Agentat, mitleidvolle Entscheidungsfindung, kulturelle Identität und die Dynamik menschlichen Werdens), was eine Brücke zu bildungstheoretischen Subjektitätskonzeptionen in der Digitalität schlägt.",
+          "Die Untersuchung basiert auf einem umfassenden Datensatz von 51 algorithmischen Systemen in der Schweiz (v.a. Verwaltung und innere Sicherheit), was empirisch dichte Einblicke in europäische administrative Scoring-Praktiken abseits der bekannten Extremfälle (China/USA) gewährt."
+        ],
+        "theoretisch_methodisch": "Das Paper nutzt eine systematische Dokumentenanalyse und ein iterativ entwickeltes qualitatives Kodierungsverfahren (Thematic Analysis) zur Klassifikation der Systeme. Theoretisch wird ein multidimensionaler Rahmen für 'digital dignity' entfaltet, der juristische, soziologische und ethische Dimensionen integriert."
+      },
+      "agent_verdict": "scannen",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 29480,
+      "tokens_out": 1552,
+      "tokens_cached_read": 4060,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.052707,
+      "phase2_triggered": false,
+      "latency_s": 11.4,
+      "finished_at": "2026-07-10T20:14:50.083937+00:00",
+      "started_at": "2026-07-10T20:14:38.679372+00:00",
+      "model_key": "gemini",
+      "model_id": "google/gemini-3.5-flash",
+      "article_id": "e8a2c291f8a7e54f2b3797c5ab2bebf2",
+      "journal_short": "BDS",
+      "user_verdict": "lesenswert",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~571 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=26384, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"candidate_reads\": [], \"bemerkenswert\": [\"Die Verwendung von probabilistischer Programmierung (Probabilistic Programming Languages / PPLs) und Bayes'scher probabilistischer Modellierung als didaktisc)\n",
+      "phase1_verdict": "lesenswert",
+      "phase1_latency_s": 9.66,
+      "entry": {
+        "bemerkenswert": [
+          "Die Verwendung von probabilistischer Programmierung (Probabilistic Programming Languages / PPLs) und Bayes'scher probabilistischer Modellierung als didaktischer Heuristik zur Entmystifizierung von KI-Systemen stellt einen bemerkenswerten methodischen Kontrast zu rein nutzungsorientierten 'AI Literacy'-Ansätzen dar.",
+          "Die programmatische Verknüpfung von Arturo Escobars dekolonialer Designtheorie (Designs for the Pluriverse / disoñar) mit konkreten Programmierwerkzeugen (ScratchTuring) für den afrikanischen Kontext bietet einen innovativen Pfad für eine pluriversale Technikbildung."
+        ],
+        "verdict": "lesenswert",
+        "bezuege": [],
+        "theoretisch_methodisch": "Theoretisch knüpft der Text an post- und dekoloniale Designtheorien (Arturo Escobar) sowie kritische Algorithmenstudien an. Methodisch kontrastiert er großskalige, statistische Deep-Learning-Verfahren (wie ChatGPT) mit lokal verortbaren, mathematisch transparenten Bayes'schen Netzen im Bildungskontext.",
+        "kernthese": "Der Artikel schlägt ein Konzept pluriversalen Berechnens vor, das auf Bayes'scher Wahrscheinlichkeitstheorie und probabilistischer Programmierung basiert, um imperiale und hegemoniale Logiken aktueller KI-Systeme zu unterwandern. Am Beispiel von Bildungssoftware-Entwicklungen für junge Menschen in Afrika (wie ScratchTuring) wird aufgezeigt, wie alternative Repräsentationssysteme und pragmatische Kausalmodellierungen ein selbstbestimmtes, dekoloniales Entwerfen und Gestalten mit Computertechnologien ermöglichen.",
+        "verdict_begruendung": "Der Beitrag ist hochgradig anschlussfähig für das Projekt 'AI4ArtsEd' sowie für theoretische Rahmungen von 'Cultural Resilience', da er konkrete dekoloniale und pluriversale Alternativen zu westlich-hegemonialen KI-Infrastrukturen diskutiert und entwicklungspädagogisch (ScratchTuring) erprobt. Ein wertvoller Impuls für die Reflexion nicht-extraktiver KI-Bildungspraktiken im globalen Dialog."
+      },
+      "agent_verdict": "lesenswert",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 28086,
+      "tokens_out": 1217,
+      "tokens_cached_read": 26384,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.0174636,
+      "phase2_triggered": false,
+      "latency_s": 9.66,
+      "finished_at": "2026-07-10T20:14:59.743210+00:00",
+      "started_at": "2026-07-10T20:14:50.085228+00:00",
+      "model_key": "gemini",
+      "model_id": "google/gemini-3.5-flash",
+      "article_id": "910d8402db4d5cde8691d36bdc87c08c",
+      "journal_short": "CompCult",
+      "user_verdict": "lesenswert",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Zitationstreffer: 3 (davon 3 mit hoher Confidence)\n[agent] User-Content: ~2045 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"bemerkenswert\": [], \"theoretisch_methodisch\": \"Praxeologisch-kulturtheoretische Abhandlung unter Rückgriff auf Entgrenzungs- und Raumtheorien (Bhabha, Löw, Schechner).\", \"kernthese\": \"Der Beitrag th)\n",
+      "phase1_verdict": "ignorieren",
+      "phase1_latency_s": 9.55,
+      "entry": {
+        "bemerkenswert": [],
+        "theoretisch_methodisch": "Praxeologisch-kulturtheoretische Abhandlung unter Rückgriff auf Entgrenzungs- und Raumtheorien (Bhabha, Löw, Schechner).",
+        "kernthese": "Der Beitrag thematisiert das transformative und transgressive Potenzial ästhetischer Praktiken im Schulkontext. Er argumentiert, dass solche Praktiken temporäre liminale Zwischenräume („Third Spaces“) im Sinne eines Zustands von „Schule – Nicht-Schule – Nicht-Nicht-Schule“ eröffnen können, die herkömmliche schulische Ordnungen und Subjektpositionen irritieren und verhandeln lassen.",
+        "verdict": "ignorieren",
+        "verdict_begruendung": "Es handelt sich hierbei um die eigene Publikation der Autor*innen (identisch mit dem Datenbankeintrag pub_id: H2C4LUW8), weshalb eine Lektüreempfehlung obsolet ist.",
+        "bezuege": []
+      },
+      "agent_verdict": "ignorieren",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 30045,
+      "tokens_out": 1160,
+      "tokens_cached_read": 0,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.0555075,
+      "phase2_triggered": false,
+      "latency_s": 9.55,
+      "finished_at": "2026-07-10T20:15:09.299254+00:00",
+      "started_at": "2026-07-10T20:14:59.745018+00:00",
+      "model_key": "gemini",
+      "model_id": "google/gemini-3.5-flash",
+      "article_id": "5600ea9e78f4119c6e3c297d7cac22d3",
+      "journal_short": "MedienPaed",
+      "user_verdict": "pflichtlektuere",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~3444 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"bemerkenswert\": [], \"verdict_begruendung\": \"Der Beitrag befasst sich ausschließlich mit Anwendungen von KI-Systemen im medizinischen und klinischen Sektor (Arzt-Patienten-Verhältnis, Onkologie, Kard)\n",
+      "phase1_verdict": "ignorieren",
+      "phase1_latency_s": 7.26,
+      "entry": {
+        "bemerkenswert": [],
+        "verdict_begruendung": "Der Beitrag befasst sich ausschließlich mit Anwendungen von KI-Systemen im medizinischen und klinischen Sektor (Arzt-Patienten-Verhältnis, Onkologie, Kardiologie etc.). Er weist keine Berührungspunkte zu Fragen der Erziehungswissenschaft, Medienpädagogik oder allgemeinen Bildungstheorie auf.",
+        "bezuege": [],
+        "kernthese": "Die Arbeit ist eine systematische Literaturübersicht zum Einfluss künstlicher Intelligenz auf den Prozess der geteilten Entscheidungsfindung (Shared Decision-Making, SDM) in der Medizin. Sie untersucht anhand von 66 Studien die Potenziale (z. B. zeitliche Effizienz, personalisierte Entscheidungshilfen) und Risiken (z. B. Kommunikationsstörungen, mangelnde Berücksichtigung von Patient*innenpräferenzen, Black-Box-Problematik) von KI-Systemen im klinischen Kontext.",
+        "theoretisch_methodisch": "Systematische Literaturübersicht (Systematic Review) nach der PRISMA-Methodik unter Auswertung der Datenbanken PubMed, Scopus (medizinischer Bereich) und Web of Science.",
+        "verdict": "ignorieren"
+      },
+      "agent_verdict": "ignorieren",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 31344,
+      "tokens_out": 859,
+      "tokens_cached_read": 0,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.054747,
+      "phase2_triggered": false,
+      "latency_s": 7.26,
+      "finished_at": "2026-07-10T20:15:16.562475+00:00",
+      "started_at": "2026-07-10T20:15:09.300859+00:00",
+      "model_key": "gemini",
+      "model_id": "google/gemini-3.5-flash",
+      "article_id": "af6f9705f1c19ad76d563fa1e137b28b",
+      "journal_short": "AIandSoc",
+      "user_verdict": "scannen",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~1633 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=4060, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Artikel untersucht den epistemologischen Strukturwandel von Google-Suchmaschinen und argumentiert, dass die Integration von Computer Vision (Google Images) eine Verschiebung von ein)\n",
+      "phase1_verdict": "lesenswert",
+      "phase1_latency_s": 12.86,
+      "phase2_triggered": true,
+      "entry": {
+        "kernthese": "Der Artikel untersucht den epistemologischen Strukturwandel digitaler Wissensinfrastrukturen am Beispiel von Google. Er argumentiert, dass der Übergang von linkbasierten Textsuchalgorithmen zu computer-vision-basierten Bildsuchsystemen (Google Images) eine fundamentale Verschiebung der Web-Epistemologie bewirkt: Weg von einer Hierarchisierung nach 'Autorität' (ranking-by-authority) hin zu einer Sortierung nach 'Ähnlichkeit' (ranking-by-similarity). Dies führt am Beispiel von Umweltthemen nachweislich zu einer globalen Homogenisierung des visuellen Repertoires und einem drastischen Rückgang verlässlicher Quellen.",
+        "verdict_begruendung": "Der Artikel ist für die Projekte AI4ArtsEd und DiäS-KuBi hochgradig anregend, da er die dort verhandelte Kritik an unhinterfragten Bild-Vektorisierungen empirisch untermauert und einen innovativen methodischen Zugang zur Rekonstruktion hegemonialer Bildwelten im Netz demonstriert.",
+        "verdict": "lesenswert",
+        "bemerkenswert": [
+          "Die methodische Kopplung von Social Semiotics und 'Computer Vision Network Analysis' (CVNA) bietet ein innovatives Tableau zur empirischen Kartierung standardisierter Bildregler auf Plattformen."
+        ],
+        "bezuege": [
+          {
+            "pub_kurz": "Jörissen et al. 2025: Wahrnehmungskrisen",
+            "bezug": "Die rekonstruierte Transformation von einer linkbasierten 'ranking-by-authority'-Logik zu einer bildbasierten 'ranking-by-similarity'-Logik durch computer-vision-basierte Bildsuchen parallelisiert die bei Jörissen et al. (2025) entfaltete medienkritische Logik der Vektorisierung. Dort wird (unter Bezugnahme auf Mackenzie) gezeigt, wie in multidimensionalen Vektorräumen Ähnlichkeit und Zugehörigkeit nicht mehr auf phänomenaler Verwandtschaft, sondern auf mathematischen Distanz- und Proximitätsmaßen ('measures of proximity') beruhen, was eine fundamentale epistemologische Verschiebung im Modus der Weltwahrnehmung konstituiert.",
+            "pub_id": "LEHKCH59",
+            "relation": "parallelisiert"
+          },
+          {
+            "pub_id": "L224MAYL",
+            "relation": "erweitert",
+            "bezug": "Die empirischen Befunde des Beitrags über die globale Homogenisierung und Verengung des visuellen Repertoires bei komplexen globalen Krisen wie dem Klimawandel stützen und erweitern die im Projekt AI4ArtsEd (L224MAYL) dargelegten Analysen globaler und hegemonialer Bias-Strukturen in multimodal trainierten Modellen (wie CLIP). Beide Arbeiten verweisen darauf, dass statistische Repräsentationslogiken in latenten Vektorräumen systematisch zu einer Verengung des visuell Darstellbaren und einer Ausgrenzung bzw. Exotisierung des Nicht-Normativen führen.",
+            "pub_kurz": "Jörissen & Baumann 2026: Prompt Interception"
+          }
+        ],
+        "theoretisch_methodisch": "Der Artikel verbindet theoretische Konzepte der Web-Epistemologie mit einem quantitativ-qualitativen Mixed-Methods-Design (Digital Methods), das visuelle Inhaltsanalyse, soziale Semiotik und Computer Vision Network Analysis (CVNA) integriert. Dieser methodische Apparat ermöglicht den systematischen, länderübergreifenden Vergleich bildlicher Repräsentationen."
+      },
+      "agent_verdict": "lesenswert",
+      "iterations": 4,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "LEHKCH59",
+          "search_term": "similarity",
+          "chars": 6241
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "L224MAYL",
+          "search_term": "homogenised",
+          "chars": 16233
+        },
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 2,
+      "submit_logged": true,
+      "tokens_in": 126338,
+      "tokens_out": 2812,
+      "tokens_cached_read": 4060,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.209334,
+      "phase2_stdout": "[agent] System-Prompt (full): ~28420 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~2304 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] finish=tool_calls\n[agent] → read_publication({\"pub_id\": \"LEHKCH59\", \"search_term\": \"similarity\"})\n\n[agent] --- Iteration 2 ---\n[agent] finish=tool_calls\n[agent] → read_publication({\"pub_id\": \"L224MAYL\", \"search_term\": \"homogenised\"})\n\n[agent] --- Iteration 3 ---\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Der Artikel untersucht den epistemologischen Strukturwandel digitaler Wissensinfrastrukturen am Beispiel von Google. Er argumentiert, dass der Übergang von linkbasierten Textsuchalgorit)\n",
+      "latency_s": 24.73,
+      "finished_at": "2026-07-10T20:15:41.293561+00:00",
+      "started_at": "2026-07-10T20:15:16.565825+00:00",
+      "model_key": "gemini",
+      "model_id": "google/gemini-3.5-flash",
+      "article_id": "721e8ae04e772623006908ddbaf2f808",
+      "journal_short": "BDS",
+      "user_verdict": "scannen",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~1836 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"verdict\": \"lesenswert\", \"candidate_reads\": [], \"bemerkenswert\": [\"Der Text führt das kulturwissenschaftliche Konzept der Konjunkturanalyse (Stuart Hall) und des Interregnums (Gramsci) mit Adornos Sp)\n",
+      "phase1_verdict": "lesenswert",
+      "phase1_latency_s": 9.66,
+      "entry": {
+        "verdict": "lesenswert",
+        "bemerkenswert": [
+          "Der Text führt das kulturwissenschaftliche Konzept der Konjunkturanalyse (Stuart Hall) und des Interregnums (Gramsci) mit Adornos Spätwerk zusammen, um einer erziehungswissenschaftlichen Handlungsunfähigkeit im Angesicht multipler globaler Krisen (Klimakrise, Neofaschismus) zu begegnen."
+        ],
+        "bezuege": [],
+        "theoretisch_methodisch": "Theoretische Konzeptualisierung und Lehrplan-Reflektion im Schnittfeld von Kritischer Theorie (Frankfurter Schule), Cultural Studies (Birmingham School) und politischer Ökonomie. Der methodische Zugang beruht auf einer theoriegeleiteten Rekonstruktion zeitgenössischer historischer Krisenmomente für die pädagogische Praxis.",
+        "kernthese": "Der Artikel entwirft das theoretische und didaktische Fundament für ein experimentelles kulturwissenschaftliches Hauptseminar, das sich der 'Katastrophe der Gegenwart' widmet. Durch eine Synthese von Theodor W. Adornos kritischen Modellen und Stuart Halls Konzept der Konjunkturanalyse wird eine Pädagogik für Zeiten der Krise und des 'Interregnums' (Gramsci) entwickelt, die die gesellschaftlichen Ziele von Bildung neu verhandelt.",
+        "verdict_begruendung": "Der Beitrag ist für das Projekt [cultural_resilience] hochgradig anregend, da er die identische Problemstellung – das pädagogische Antworten auf planetarische und politische Krisen im Horizont einer kollabierenden Moderne – aufspannt, dies jedoch aus einer klassischen diskursanalytisch-kritischen Tradition (Adorno/Hall) anstelle eines Neomaterialismus löst. Dieser Kontrast bietet produktives Reibungspotenzial für die relationale Bildungstheorie."
+      },
+      "agent_verdict": "lesenswert",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 29483,
+      "tokens_out": 1091,
+      "tokens_cached_read": 0,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.0540435,
+      "phase2_triggered": false,
+      "latency_s": 9.66,
+      "finished_at": "2026-07-10T20:15:50.955437+00:00",
+      "started_at": "2026-07-10T20:15:41.295802+00:00",
+      "model_key": "gemini",
+      "model_id": "google/gemini-3.5-flash",
+      "article_id": "a61faadb88daa6af4a8eb1d5e7cd1bc4",
+      "journal_short": "REPCS",
+      "user_verdict": "scannen",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~1207 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"theoretisch_methodisch\": \"Der Beitrag nutzt ein qualitativ-rekonstruktives Design zur Untersuchung von co-kreativen Strategiepapieren, Unterrichtsmaterialien und Lehrer*innenreflexionen eines region)\n",
+      "phase1_verdict": "lesenswert",
+      "phase1_latency_s": 9.24,
+      "phase2_triggered": true,
+      "entry": {
+        "theoretisch_methodisch": "Die Arbeit verknüpft theoretisch den Capabilities-Approach (Sen/Nussbaum) mit Konzepten der ortsbezogenen Umweltbildung (Place-based Education) und dem 'Head, Heart, Hands'-Rahmenwerk. Methodisch basiert der Beitrag auf einer qualitativen Fallstudienanalyse des 'Morecambe Bay Curriculum' unter Einbezug von Strategiedokumenten, Lehrmaterialien und Lehrerbefragungen.",
+        "verdict_begruendung": "Obwohl der Artikel thematisch das hochrelevante Feld der transformativen Umweltbildung im Angesicht der Klimakrise adressiert, verbleibt er theoretisch im klassischen Capabilities-Ansatz und der 'Head, Heart, Hands'-Trias. Da er die medien- und digitalitätsbezogenen sowie posthumanistischen Dimensionen, die für die Projekte des Forschers (wie [cultural_resilience]) leitend sind, weitgehend ausspart, ist er als Diskursübersicht (scannen) einzustufen, bietet jedoch keine direkte theoretische Erweiterung.",
+        "bezuege": [
+          {
+            "bezug": "Obwohl die Hypothese einer lexikalischen oder direkten theoretischen Verknüpfung über den Begriff 'capabilities' nicht bestätigt wurde (da das Konzept in 3W9X5QLZ nicht explizit verhandelt wird), zeigt sich eine bemerkenswerte strukturelle und funktionale Parallelisierung. Die Trias von Head (kritisches Wissen), Heart (emotionale Verbundenheit zum Ort) und Hands (Handlungsfähigkeit) harmoniert eng mit den drei Momenten kultureller Resilienz (Rootedness, Resourcefulness, Resistance), indem sie ebenfalls eine Überwindung bloß instrumenteller Bildungslogiken im Angesicht planetarischer Krisen anstrebt.",
+            "relation": "parallelisiert",
+            "pub_kurz": "Jörissen & Klepacki 2025: „Cultural Resilience“ and the Cultivation of a Postdigital Planetary Dissensus",
+            "pub_id": "3W9X5QLZ"
+          }
+        ],
+        "bemerkenswert": [
+          "Der Artikel operationalisiert das klassische reformerische Trias von 'Kopf, Herz, Hand' (Head, Heart, Hands) für die zeitgenössische Umwelt- und Nachhaltigkeitsbildung (Place-based Education) und verbindet dieses mit dem Capabilities-Ansatz nach Sen/Nussbaum, um dem Phänomen der Klima-Angst (eco-anxiety) pädagogisch zu begegnen."
+        ],
+        "verdict": "scannen",
+        "kernthese": "Der Artikel schlägt einen capabilities-orientierten, ortsbezogenen Ansatz (Place-based Education) für die Umweltbildung vor, der am Fallbeispiel des 'Morecambe Bay Curriculum' (MBC) untersucht wird. Durch die ganzheitliche Trias 'Head, Heart, Hands' soll technizistischen Bildungsansätzen entgegengesteuert und die von ökologischen Krisen bedrohte Agency sowie das Wohlbefinden junger Menschen gestärkt werden."
+      },
+      "agent_verdict": "scannen",
+      "iterations": 3,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        },
+        {
+          "tool": "read_publication",
+          "pub_id": "3W9X5QLZ",
+          "search_term": "capabilities",
+          "chars": 16184
+        },
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 1,
+      "submit_logged": true,
+      "tokens_in": 92049,
+      "tokens_out": 1947,
+      "tokens_cached_read": 0,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.1555965,
+      "phase2_stdout": "[agent] System-Prompt (full): ~28420 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~1864 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] finish=tool_calls\n[agent] → read_publication({\"pub_id\": \"3W9X5QLZ\", \"search_term\": \"capabilities\"})\n\n[agent] --- Iteration 2 ---\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"theoretisch_methodisch\": \"Die Arbeit verknüpft theoretisch den Capabilities-Approach (Sen/Nussbaum) mit Konzepten der ortsbezogenen Umweltbildung (Place-based Education) und dem 'Head, Heart, Hands')\n",
+      "latency_s": 16.75,
+      "finished_at": "2026-07-10T20:16:07.706657+00:00",
+      "started_at": "2026-07-10T20:15:50.957245+00:00",
+      "model_key": "gemini",
+      "model_id": "google/gemini-3.5-flash",
+      "article_id": "598d79c944193dab810dea751015fc88",
+      "journal_short": "EthicsEd",
+      "user_verdict": "scannen",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~702 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"candidate_reads\": [], \"theoretisch_methodisch\": \"Es handelt sich um ein empirisches Mixed-Methods-Design (N=71) auf der theoretischen Grundlage der kognitiven Lasttheorie (Cognitive Load Theory) und)\n",
+      "phase1_verdict": "scannen",
+      "phase1_latency_s": 8.37,
+      "entry": {
+        "theoretisch_methodisch": "Es handelt sich um ein empirisches Mixed-Methods-Design (N=71) auf der theoretischen Grundlage der kognitiven Lasttheorie (Cognitive Load Theory) und klassischen Taxonomien (Bloom/Anderson).",
+        "verdict_begruendung": "Der Beitrag verortet sich in einem stark kognitionspsychologischen und instruktionsdesignorientierten Paradigma der EdTech-Forschung. Er bietet für Jörissens relational-posthumanistische Perspektive auf generative KI und bildungstheoretische Souveränität wenig theoretische Reibungsfläche, ist aber zur Diskursbeobachtung im Bereich der Hochschul- und Medienpädagogik von Interesse.",
+        "bemerkenswert": [
+          "Die Studie versucht, die empirische Trennung zwischen deklarativem Faktenwissen und prozeduraler Problemlösekompetenz im Kontext von LLMs zu recomputieren – ein Kernargument in aktuellen bildungspolitischen Transformationsdebatten."
+        ],
+        "verdict": "scannen",
+        "bezuege": [],
+        "kernthese": "Der Artikel unterscheidet empirisch, wie generative KI das Problemlösen von Studierenden in einem Webdesign-Kurs in Abhängigkeit von deren Faktenwissen unterstützt. GenAI reduziert demnach den kognitiven Workload (Cognitive Load Theory) insbesondere für Lernende mit geringem Faktenwissen, allerdings bleibt ein solides Faktenwissen unersetzlich, um die von der KI generierten Outputs kritisch zu bewerten und anzupassen."
+      },
+      "agent_verdict": "scannen",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 28437,
+      "tokens_out": 912,
+      "tokens_cached_read": 0,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.0508635,
+      "phase2_triggered": false,
+      "latency_s": 8.37,
+      "finished_at": "2026-07-10T20:16:16.075549+00:00",
+      "started_at": "2026-07-10T20:16:07.709025+00:00",
+      "model_key": "gemini",
+      "model_id": "google/gemini-3.5-flash",
+      "article_id": "ac3bc611f5e0f4be6575f885001d33e2",
+      "journal_short": "JRTE",
+      "user_verdict": "scannen",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~65 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Das Editorial von Christian Swertz adressiert die disziplinäre Verfassung, gesellschaftliche Rolle und das Selbstverständnis der deutschsprachigen Medienpädagogik. Es reflektiert die St)\n",
+      "phase1_verdict": "scannen",
+      "phase1_latency_s": 13.81,
+      "entry": {
+        "kernthese": "Das Editorial von Christian Swertz adressiert die disziplinäre Verfassung, gesellschaftliche Rolle und das Selbstverständnis der deutschsprachigen Medienpädagogik. Es reflektiert die Strukturen der medienpädagogischen Gemeinschaft und deren Verortung im disziplinären Gefüge der Erziehungswissenschaft.",
+        "verdict_begruendung": "Das Issue betrifft unmittelbar das institutionelle und disziplinäre Feld der Medienpädagogik, in dem der Forscher verortet ist. Es dient der allgemeinen Diskursübersicht über die aktuelle fachpolitische und disziplinäre Selbstbeschreibung des Fachs, bietet jedoch keine direkte konzeptionelle Reibungsfläche für die aktiven Verbundprojekte.",
+        "verdict": "scannen",
+        "bemerkenswert": [],
+        "bezuege": [],
+        "theoretisch_methodisch": "Disziplingeschichtlicher und fachpolitischer Essay bzw. Rahmungstext eines Editorials ohne explizit ausgewiesenes empirisches Design."
+      },
+      "agent_verdict": "scannen",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 27727,
+      "tokens_out": 1181,
+      "tokens_cached_read": 0,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.0522195,
+      "phase2_triggered": false,
+      "latency_s": 13.81,
+      "finished_at": "2026-07-10T20:16:29.889945+00:00",
+      "started_at": "2026-07-10T20:16:16.077252+00:00",
+      "model_key": "gemini",
+      "model_id": "google/gemini-3.5-flash",
+      "article_id": "74f223f51fced5138d20b7ba94fc5504",
+      "journal_short": "MedienPaed",
+      "user_verdict": "scannen",
+      "abstract_poor": true
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~3078 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"verdict\": \"lesenswert\", \"bemerkenswert\": [\"Der Beitrag importiert das Konzept der 'Human Firewall' (eine klassische Metapher der IT-Sicherheit für sicherheitsbewusste Mitarbeitende) in die Debatte u)\n",
+      "phase1_verdict": "lesenswert",
+      "phase1_latency_s": 15.26,
+      "entry": {
+        "verdict": "lesenswert",
+        "bemerkenswert": [
+          "Der Beitrag importiert das Konzept der 'Human Firewall' (eine klassische Metapher der IT-Sicherheit für sicherheitsbewusste Mitarbeitende) in die Debatte um kognitives Hacking und generative KI-Systeme.",
+          "Interessant ist die Kombination aus organisationsökonomischen, neurokognitiven und komplexitätswissenschaftlichen (Agent-Based Modeling) Anschlüssen für ein adaptives Governance-Modell von Mensch-KI-Interaktionen."
+        ],
+        "bezuege": [],
+        "kernthese": "Der Artikel argumentiert, dass KI-Modelle Bedrohungsszenarien auf die kognitive Ebene verschieben (z. B. durch Beziehungspflege, subtile Manipulation und cognitive hacking). Anstatt den Menschen rein als Sicherheitsrisiko zu betrachten, entwirft die Autorin ein Modell der 'human firewall', das menschliche Akteure als adaptive, resiliente Knotenpunkte innerhalb hybrider soziotechnischer Ökosysteme versteht.",
+        "verdict_begruendung": "Der Artikel ist hochgradig anregend für die Projekte 'cultural_resilience' (da er ein stark systemisch-institutionelles, aber nicht-posthumanistisches Verständnis von Resilienz in hybriden KI-Phänomenen entfaltet) und 'ai4artsed' (bzgl. kritischer KI-Literacy und 'situational awareness' als Schutzfaktoren). Er bietet ein wertvolles kontrastierendes Begriffsmodell zur 'kulturellen Resilienz' im US-amerikanisch geprägten soziotechnologischen Diskurs.",
+        "theoretisch_methodisch": "Der Text verbindet Systemtheorie, soziotechnische Resilienzforschung und kognitive Sicherheitswissenschaften mit einem explorativen, behavioralen agentenbasierten Modell (ABM), um Verhaltensänderungen bei Mensch-KI-Interaktionen konzeptionell zu beschreiben."
+      },
+      "agent_verdict": "lesenswert",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 30889,
+      "tokens_out": 1288,
+      "tokens_cached_read": 0,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.0579255,
+      "phase2_triggered": false,
+      "latency_s": 15.26,
+      "finished_at": "2026-07-10T20:16:45.157574+00:00",
+      "started_at": "2026-07-10T20:16:29.892660+00:00",
+      "model_key": "gemini",
+      "model_id": "google/gemini-3.5-flash",
+      "article_id": "b756f0c8e6190877f982fde045878a90",
+      "journal_short": "AIandSoc",
+      "user_verdict": "ignorieren",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~3224 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=26401, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"kernthese\": \"Die Wirksamkeit von Vorab-Fragen (pre-questions) und verschiedenen Feedback-Typen (einfach vs. detailliert) in Lernvideos hängt stark vom Vorwissen der Lernenden ab. Während Anfänger (l)\n",
+      "phase1_verdict": "ignorieren",
+      "phase1_latency_s": 15.6,
+      "entry": {
+        "kernthese": "Die Wirksamkeit von Vorab-Fragen (pre-questions) und verschiedenen Feedback-Typen (einfach vs. detailliert) in Lernvideos hängt stark vom Vorwissen der Lernenden ab. Während Anfänger (low prior knowledge) von Vorab-Fragen mit einfachem oder keinem Feedback profitieren und durch elaboriertes Feedback kognitiv überlastet werden, zeigen sich bei fortgeschrittenen Lernenden kaum Leistungsunterschiede zwischen den instruktionalen Designs.",
+        "bemerkenswert": [],
+        "bezuege": [],
+        "verdict": "ignorieren",
+        "theoretisch_methodisch": "Quantitativ-experimentelles Design (2x4-faktoriell) mit N=352 chinesischen Studierenden. Eingesetzt wurden Eye-Tracking (Fixationsmaße) und standardisierte kognitive Last-Messungen (Intrinsic, Extraneous, Germane Cognitive Load) sowie varianzanalytische Auswertungsverfahren (ANOVA).",
+        "verdict_begruendung": "Der Beitrag verortet sich in einem stark kognitionspsychologischen und instruktionstechnologischen Paradigma (Cognitive Load Theory, Multimedialernen nach Mayer). Da er keine Anknüpfungspunkte an post-digitale, ästhetische oder relationale Theorien der Medienbildung bietet, ist er für die Arbeit von Benjamin Jörissen nicht von Relevanz."
+      },
+      "agent_verdict": "ignorieren",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 30213,
+      "tokens_out": 1507,
+      "tokens_cached_read": 26401,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.02324115,
+      "phase2_triggered": false,
+      "latency_s": 15.6,
+      "finished_at": "2026-07-10T20:17:00.755854+00:00",
+      "started_at": "2026-07-10T20:16:45.160011+00:00",
+      "model_key": "gemini",
+      "model_id": "google/gemini-3.5-flash",
+      "article_id": "b56e34a4cf6a1be4257ea32e9c97fa7f",
+      "journal_short": "BJET",
+      "user_verdict": "ignorieren",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~765 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=4059, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"verdict\": \"ignorieren\", \"bemerkenswert\": [], \"candidate_reads\": [], \"theoretisch_methodisch\": \"Multimodale kritische Diskursanalyse (MCDA) von Rekrutierungs-Websites im theoretischen Horizont von Pl)\n",
+      "phase1_verdict": "ignorieren",
+      "phase1_latency_s": 4.11,
+      "entry": {
+        "verdict": "ignorieren",
+        "bemerkenswert": [],
+        "theoretisch_methodisch": "Multimodale kritische Diskursanalyse (MCDA) von Rekrutierungs-Websites im theoretischen Horizont von Plattformkapitalismus (Srnicek) und neoliberaler Bildungssteuerung.",
+        "verdict_begruendung": "Der Artikel befasst sich mit der Arbeitsausbeutung und Plattformisierung im Bereich des globalen kommerziellen Fremdsprachenunterrichts (EFL). Auch wenn er Aspekte von Plattformisierung und digitaler Arbeit berührt, liegt der Fokus primär auf arbeitssoziologischen und linguistisch-postkolonialen Dynamiken des asiatischen ESL-Marktes. Er bietet keine hinreichenden theoretischen oder konzeptionellen Anknüpfungspunkte für die medien-, kunst- oder kultur-pädagogischen Forschungsprojekte im Bereich der Kulturellen Bildung oder Posthumanistischen Pädagogik von Benjamin Jörissen.",
+        "kernthese": "Der Artikel untersucht die Rekrutierungsrhetoriken von in Japan ansässigen Online-Englischschulen, die philippinische Lehrkräfte anwerben. Mittels einer multimodalen kritischen Diskursanalyse von sieben Rekrutierungs-Websites wird eine „Promise-Gate-Constraint“-Rhetorik rekonstruiert, die Flexibilität verspricht, aber prekäre Arbeitsbedingungen und linguistische Hierarchien in digitalen Lernumgebungen normalisiert und verschleiert.",
+        "bezuege": []
+      },
+      "agent_verdict": "ignorieren",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 28483,
+      "tokens_out": 335,
+      "tokens_cached_read": 4059,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.04025985,
+      "phase2_triggered": false,
+      "latency_s": 4.11,
+      "finished_at": "2026-07-10T20:17:04.867230+00:00",
+      "started_at": "2026-07-10T20:17:00.757828+00:00",
+      "model_key": "gemini",
+      "model_id": "google/gemini-3.5-flash",
+      "article_id": "9c28670eeb0d8171190dcce10ec76a51",
+      "journal_short": "Discourse",
+      "user_verdict": "ignorieren",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~2665 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"candidate_reads\": [], \"theoretisch_methodisch\": \"Die Studie basiert auf einer detaillierten historischen Archivrecherche (Akten der Universität Gent aus dem Zeitraum 1970–1990er Jahre) und betreibt )\n",
+      "phase1_verdict": "ignorieren",
+      "phase1_latency_s": 3.23,
+      "entry": {
+        "theoretisch_methodisch": "Die Studie basiert auf einer detaillierten historischen Archivrecherche (Akten der Universität Gent aus dem Zeitraum 1970–1990er Jahre) und betreibt eine diskursanalytisch informierte historische Rekonstruktion von Governance-Prozessen.",
+        "bezuege": [],
+        "verdict": "ignorieren",
+        "bemerkenswert": [],
+        "kernthese": "Der Artikel untersucht, wie die europäische Integration ab Ende der 1980er Jahre die administrative Struktur und das Selbstbildnis der Universität Gent transformiert hat. Am Beispiel der Einführung des Erasmus-Programms wird gezeigt, dass 'Europäisierung' von Beginn an als wettbewerbsorientiertes Branding-Projekt interpretiert wurde, was die zentrale Universitätsverwaltung stärkte und Forschung sowie Lehre an den Erfordernissen des europäischen Binnenmarktes ausrichtete.",
+        "verdict_begruendung": "Der Beitrag behandelt die historische und administrative Transformation einer europäischen Universität im Kontext von supranationaler Governance (Erasmus, Europeanisation) und berührt weder medien- und kulturwissenschaftliche Fragestellungen noch die theoretischen Rahmenwerke oder aktiven Forschungsprojekte des Arbeitsbereichs."
+      },
+      "agent_verdict": "ignorieren",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 30502,
+      "tokens_out": 275,
+      "tokens_cached_read": 0,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.048228,
+      "phase2_triggered": false,
+      "latency_s": 3.23,
+      "finished_at": "2026-07-10T20:17:08.098194+00:00",
+      "started_at": "2026-07-10T20:17:04.869384+00:00",
+      "model_key": "gemini",
+      "model_id": "google/gemini-3.5-flash",
+      "article_id": "10e15383607724179c30f37cca278760",
+      "journal_short": "EERJ",
+      "user_verdict": "ignorieren",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~2313 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"theoretisch_methodisch\": \"Die Studie kombiniert eine postdigitale feministische Perspektive mit Judith Butlers Konzepten der Performativität und Prekarität. Empirisch wird ein Korpus aus Berichten d)\n",
+      "phase1_verdict": "scannen",
+      "phase1_latency_s": 9.79,
+      "entry": {
+        "theoretisch_methodisch": "Die Studie kombiniert eine postdigitale feministische Perspektive mit Judith Butlers Konzepten der Performativität und Prekarität. Empirisch wird ein Korpus aus Berichten der sieben populärsten australischen Online-Nachrichtenmedien des Jahres 2024 mittels des sprachwissenschaftlichen 'Appraisal Framework' (Martin & White) untersucht.",
+        "kernthese": "Der Artikel analysiert die Darstellung von Frauen in der australischen Online-Berichterstattung zu Fällen häuslicher Gewalt und zeigt auf, dass digitale Nachrichtenmedien trotz feministischer Fortschritte weiterhin heteropatriarchale Normen und geschlechtsspezifische Prekarität reproduzieren. Unter Verwendung von Judith Butlers Konzepten der Performativität und Prekarität wird argumentiert, dass die postdigitale Medienumgebung aktiv zu realweltlichen Macht- und Ohnmachtsverhältnissen in intimen Beziehungen beiträgt.",
+        "verdict_begruendung": "Der Beitrag ist für die Diskursübersicht im Bereich der postdigitalen Medien- und Kulturkritik relevant, da er theoretische Bezüge zu Butler und dem Postdigitalen teilt, verbleibt jedoch thematisch in einem sehr spezifischen Bereich der journalistischen Medienanalyse und weist keinen direkten Bezug zu ästhetischen Bildungs- oder Resilienzprojekten auf.",
+        "bemerkenswert": [
+          "Die methodische Kombination des linguistischen 'Appraisal Framework' nach Martin/White mit postdigitalen und butlerianischen Konzepten von Performativität und Prekarität demonstriert eine hochstrukturierte Form der kritischen Diskursanalyse im postdigitalen Raum."
+        ],
+        "verdict": "scannen",
+        "bezuege": []
+      },
+      "agent_verdict": "scannen",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 30163,
+      "tokens_out": 1412,
+      "tokens_cached_read": 0,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.0579525,
+      "phase2_triggered": false,
+      "latency_s": 9.79,
+      "finished_at": "2026-07-10T20:17:17.891990+00:00",
+      "started_at": "2026-07-10T20:17:08.099480+00:00",
+      "model_key": "gemini",
+      "model_id": "google/gemini-3.5-flash",
+      "article_id": "285f36c132b2761190d95a0366b45320",
+      "journal_short": "PDSE",
+      "user_verdict": "ignorieren",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~2823 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] cache: read=26406, write=0\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"theoretisch_methodisch\": \"Es handelt sich um ein empirisch-quantitatives Interventions-Kontrollgruppendesign im Feld der frühkindlichen Bildung mit statistischen Mehrebenen-Mediationsanalysen basier)\n",
+      "phase1_verdict": "ignorieren",
+      "phase1_latency_s": 9.62,
+      "entry": {
+        "theoretisch_methodisch": "Es handelt sich um ein empirisch-quantitatives Interventions-Kontrollgruppendesign im Feld der frühkindlichen Bildung mit statistischen Mehrebenen-Mediationsanalysen basierend auf standardisierten Sprachtests und Videokodierungen.",
+        "verdict": "ignorieren",
+        "bezuege": [],
+        "verdict_begruendung": "Der Beitrag verortet sich im Bereich der empirischen Spracherwerbs- und Elementarpädagogikforschung und weist keinerlei Anknüpfungspunkte zu den medien-, kultur- oder allgemein bildungstheoretischen Schwerpunkten des Arbeitsbereichs auf.",
+        "bemerkenswert": [],
+        "kernthese": "Die Studie untersucht den Einfluss lokaler Interaktionsqualität (Sprachlehrstrategien der Fachkräfte sowie dialogische Qualität) auf den Sprachzuwachs von Kindern im Alter von 3 bis 5 Jahren. Mittels einer quantitativen Mediationsanalyse wird gezeigt, dass dialogische Beziehungsgestaltung und der bewusste Einsatz von Input-Strategien langfristige Lern- und Sprachentwicklungseffekte begünstigen, während korrigierende Techniken sich eher negativ auswirken."
+      },
+      "agent_verdict": "ignorieren",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 30893,
+      "tokens_out": 1081,
+      "tokens_cached_read": 26406,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.0204204,
+      "phase2_triggered": false,
+      "latency_s": 9.62,
+      "finished_at": "2026-07-10T20:17:27.514667+00:00",
+      "started_at": "2026-07-10T20:17:17.895695+00:00",
+      "model_key": "gemini",
+      "model_id": "google/gemini-3.5-flash",
+      "article_id": "45972f0bbd137f84ec1b7aac1f68dcc1",
+      "journal_short": "ZfE",
+      "user_verdict": "ignorieren",
+      "abstract_poor": false
+    },
+    {
+      "mode": "tools",
+      "phase1_stdout": "[agent] System-Prompt (assessment): ~28321 Tokens (53 Publikationen im Index)\n[agent] Keine Forscher-Zitate in den Refs\n[agent] User-Content: ~53 Tokens\n\n[agent] --- Iteration 1 ---\n[agent] finish=tool_calls\n[agent] → submit_digest_entry({\"bezuege\": [], \"verdict_begruendung\": \"Da kein Abstract oder inhaltlicher Text vorliegt, lässt sich kein konkreter Bezug zu den active research projects (wie AI4ArtsEd oder Cultural Resilience) oder )\n",
+      "phase1_verdict": "ignorieren",
+      "phase1_latency_s": 7.73,
+      "entry": {
+        "bezuege": [],
+        "verdict_begruendung": "Da kein Abstract oder inhaltlicher Text vorliegt, lässt sich kein konkreter Bezug zu den active research projects (wie AI4ArtsEd oder Cultural Resilience) oder den medien- und bildungstheoretischen Publikationen von Benjamin Jörissen herstellen.",
+        "bemerkenswert": [],
+        "kernthese": "Der sehr kurze Beitrag (oder dessen Eintrag ohne Abstract/Volltext) lässt keinen inhaltlichen Kern bestimmen. Es handelt sich mutmaßlich um einen kurzen Kommentar oder eine Glosse im Journal 'AI & Society'.",
+        "theoretisch_methodisch": "Keine methodischen oder theoretischen Ansätze rekonstruierbar, da kein Abstract oder Volltext vorliegt.",
+        "verdict": "ignorieren"
+      },
+      "agent_verdict": "ignorieren",
+      "iterations": 1,
+      "tool_calls": [
+        {
+          "tool": "submit_digest_entry"
+        }
+      ],
+      "read_publication_count": 0,
+      "submit_logged": true,
+      "tokens_in": 27743,
+      "tokens_out": 790,
+      "tokens_cached_read": 0,
+      "tokens_cache_write": 0,
+      "cost_usd": 0.0487245,
+      "phase2_triggered": false,
+      "latency_s": 7.73,
+      "finished_at": "2026-07-10T20:17:35.244418+00:00",
+      "started_at": "2026-07-10T20:17:27.516235+00:00",
+      "model_key": "gemini",
+      "model_id": "google/gemini-3.5-flash",
+      "article_id": "167708764b14244eacea2f87b91c7abd",
+      "journal_short": "AIandSoc",
+      "user_verdict": "ignorieren",
+      "abstract_poor": true
+    }
+  ]
+}
