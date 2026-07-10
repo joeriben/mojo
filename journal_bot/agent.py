@@ -355,7 +355,12 @@ TOOLS = [
                         "type": "array",
                         "description": (
                             "Concrete connections to publications you have READ. "
-                            "Empty if no substantive connections found."
+                            "Empty if no substantive connections found. "
+                            "FORMAT: must be an actual JSON array of objects — "
+                            "never a JSON-encoded string containing the array. "
+                            "Inside string values, escape every double quote "
+                            "as \\\" or use typographic quotes („…“ / “…”); a "
+                            "bare \" inside a value breaks the payload."
                         ),
                         "items": {
                             "type": "object",
@@ -889,6 +894,135 @@ def handle_read_publication(
 TOOLS_SUBMIT_ONLY = [t for t in TOOLS if t["function"]["name"] == "submit_digest_entry"]
 
 
+# ------------------------------------------------------- Tool-Args-Repair --
+# GLM-5.2-Defekt (A/B-Test 2026-07-10, docs/glm52_vs_gemini_agent_ab_2026-07-10.md):
+# In 3/7 Läufen mit befüllten Bezügen kam `bezuege` als JSON-STRING statt als
+# Array, und der String war wegen unescapeter deutscher Anführungszeichen
+# („…" — öffnend U+201E, schließend als nacktes ASCII 0x22) nicht parsebar.
+# Die Kaskade hier entpackt solche Payloads SICHTBAR (Marker + Log, nie still);
+# was auch dann nicht parsebar ist, bleibt als Roh-String in `bezuege_unparsed`
+# erhalten statt verworfen zu werden.
+
+
+def _escape_stray_quotes_in_json_strings(raw: str) -> str:
+    """Escape ASCII double quotes that are content INSIDE JSON string values.
+
+    Two stacked heuristics, beide nur zum Entpacken (Inhalte werden nicht
+    umgeschrieben, das ASCII-Zeichen bleibt erhalten, nur escaped):
+
+    1. German-quote pairing: nach einem noch offenen „ (U+201E) innerhalb
+       desselben JSON-Strings ist das nächste ASCII-`"` das schließende
+       deutsche Anführungszeichen → Content, escapen. (Deckt den Fall
+       `„Police",` ab, wo Regel 2 fälschlich ein String-Ende sähe.)
+       Ein korrektes typografisches “ (U+201C) schließt das „ ebenfalls.
+    2. Follower-Regel: ein `"` terminiert den String nur legitim, wenn das
+       nächste Nicht-Whitespace-Zeichen ein JSON-Strukturzeichen
+       (`,`, `}`, `]`, `:`) oder das Eingabe-Ende ist; sonst Content.
+    """
+    out: list[str] = []
+    in_string = False
+    open_german = 0  # unclosed „ within the current JSON string
+    i = 0
+    n = len(raw)
+    while i < n:
+        c = raw[i]
+        if not in_string:
+            if c == '"':
+                in_string = True
+                open_german = 0
+            out.append(c)
+            i += 1
+            continue
+        if c == "\\" and i + 1 < n:
+            out.append(c)
+            out.append(raw[i + 1])
+            i += 2
+            continue
+        if c == "„":  # „
+            open_german += 1
+            out.append(c)
+            i += 1
+            continue
+        if c == "“" and open_german > 0:  # “ schließt „ typografisch
+            open_german -= 1
+            out.append(c)
+            i += 1
+            continue
+        if c == '"':
+            if open_german > 0:
+                out.append('\\"')
+                open_german -= 1
+                i += 1
+                continue
+            j = i + 1
+            while j < n and raw[j] in " \t\r\n":
+                j += 1
+            if j >= n or raw[j] in ",}]:":
+                in_string = False
+                out.append(c)
+            else:
+                out.append('\\"')
+            i += 1
+            continue
+        out.append(c)
+        i += 1
+    return "".join(out)
+
+
+def _coerce_bezuege(entry: dict) -> dict | None:
+    """Normalize a string-typed `bezuege` field in-place (visible repair).
+
+    Returns a repair-info dict when something was done, else None.
+    Repair paths:
+      - valid list of dicts        → untouched, returns None
+      - dict (single bezug object) → wrapped into a list
+      - str                        → json.loads; on failure quote-escape +
+                                     json.loads; on failure moved to
+                                     `bezuege_unparsed` (raw, preserved)
+      - other shapes               → moved to `bezuege_unparsed` (repr)
+    Every repair sets `bezuege_repaired: true` + `bezuege_repair_method`;
+    unparseable payloads set `bezuege` to [] and keep the raw string.
+    """
+    bez = entry.get("bezuege")
+    if bez is None:
+        return None
+    if isinstance(bez, list) and all(isinstance(b, dict) for b in bez):
+        return None
+
+    def _mark(method: str) -> dict:
+        entry["bezuege_repaired"] = True
+        entry["bezuege_repair_method"] = method
+        return {"field": "bezuege", "method": method}
+
+    if isinstance(bez, dict):
+        entry["bezuege"] = [bez]
+        return _mark("wrapped_single_object")
+
+    if isinstance(bez, str):
+        for method, candidate in (
+            ("json_loads", bez),
+            ("quote_escape_json_loads", _escape_stray_quotes_in_json_strings(bez)),
+        ):
+            try:
+                parsed = json.loads(candidate)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(parsed, list) and all(isinstance(b, dict) for b in parsed):
+                entry["bezuege"] = parsed
+                return _mark(method)
+            if isinstance(parsed, dict):
+                entry["bezuege"] = [parsed]
+                return _mark(method + "+wrapped_single_object")
+        entry["bezuege"] = []
+        entry["bezuege_unparsed"] = bez
+        return _mark("unparsed_kept_raw")
+
+    # Liste mit Nicht-dict-Items oder sonstige Typen: nichts wegwerfen.
+    entry["bezuege"] = [b for b in bez if isinstance(b, dict)] if isinstance(bez, list) else []
+    entry["bezuege_unparsed"] = json.dumps(bez, ensure_ascii=False, default=str)
+    return _mark("unparsed_kept_raw")
+
+
 # ------------------------------------------------- Assessment-Phase Prompt --
 
 
@@ -1051,6 +1185,7 @@ def run_agent(
 
     final_entry: dict | None = None
     tool_call_log: list[dict] = []
+    format_repairs: list[dict] = []
     total_in = 0
     total_out = 0
     total_cached_read = 0
@@ -1173,6 +1308,15 @@ def run_agent(
                     except json.JSONDecodeError:
                         pass
                 final_entry = args if isinstance(args, dict) else None
+                if final_entry is not None:
+                    # Per-Feld-Repair (GLM-5.2: bezuege als String) — sichtbar,
+                    # nie still: Marker am Entry + Zähler im Result + Log-Zeile.
+                    repair = _coerce_bezuege(final_entry)
+                    if repair is not None:
+                        format_repairs.append(repair)
+                        if verbose:
+                            print(f"[agent] ⚠ Format-Repair {repair['field']}: "
+                                  f"{repair['method']}")
                 tool_call_log.append({"tool": name})
                 messages.append(
                     {
@@ -1203,6 +1347,7 @@ def run_agent(
         "entry": final_entry,
         "iterations": it,
         "tool_calls": tool_call_log,
+        "format_repairs": format_repairs,
         "new_article": new_article,
         "enrichment": enrichment_data,
         "citation_hits": [h.__dict__ for h in citation_hits],
@@ -1363,6 +1508,9 @@ def assess_then_verify(
     verification["tool_calls"] = (
         assessment.get("tool_calls", []) + verification.get("tool_calls", [])
     )
+    verification["format_repairs"] = (
+        assessment.get("format_repairs", []) + verification.get("format_repairs", [])
+    )
     # Stash assessment for transparency
     verification["assessment"] = entry
 
@@ -1481,14 +1629,22 @@ def render_markdown(result: dict) -> str:
     lines.append("")
 
     bezuege = entry.get("bezuege") or []
+    if not isinstance(bezuege, list):
+        bezuege = []
+    bezuege = [b for b in bezuege if isinstance(b, dict)]
     lines.append("### Bezüge zu Deinem Werk")
-    if not bezuege:
+    if not bezuege and not entry.get("bezuege_unparsed"):
         lines.append("_Keine substantiellen Bezüge gefunden._")
     else:
         for b in bezuege:
             rel = RELATION_LABEL.get(b.get("relation", ""), b.get("relation", ""))
             lines.append(f"\n**{b.get('pub_kurz', '?')}** (`{b.get('pub_id', '?')}`, {rel})")
             lines.append(b.get("bezug", ""))
+    if entry.get("bezuege_unparsed"):
+        lines.append("")
+        lines.append("_⚠ Bezüge kamen in defektem Format (Modell lieferte keinen "
+                     "parsebaren JSON-Array); Rohtext unverändert:_")
+        lines.append(str(entry["bezuege_unparsed"]))
     lines.append("")
 
     bemerkenswert = entry.get("bemerkenswert") or []
