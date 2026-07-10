@@ -155,3 +155,30 @@ Konfabulations-Anfälligkeit: In den gelesenen Begründungen behauptet keines de
 ## Einordnung
 
 n=20 pro Arm, ein Testtag, ein Prompt-Stand. Die user_verdicts sind über Monate selektiv gewachsen und die exakten Agreement-Werte (55 %/60 %) sind deshalb keine Qualitätsmessung der Modelle gegen eine neutrale Wahrheit, sondern gegen ein historisch mitgeprägtes Urteilskorpus. Belastbar sind vor allem die Protokoll-Befunde (0 Abbrüche; 3/20 Format-Defekte bei GLM), die Kosten-/Latenz-Relationen und die Fehler-Richtungen (GLM über-behält, Gemini schneidet schärfer und produzierte den einzigen false-keep). Für eine Umstiegs-Entscheidung wäre ein Repair-Layer für GLMs bezuege-Strings Voraussetzung; danach spräche ökonomisch wenig gegen, latenzseitig einiges gegen GLM im interaktiven Betrieb — im nächtlichen Batch-Lauf ist Latenz nachrangig [Einschätzung].
+
+---
+
+## Nachtrag 2026-07-11 — bezuege-Härtung + der eigentliche GLM-Blocker: Output-Truncation
+
+Die im A/B-Test als „Voraussetzung für einen Umstieg" benannte bezuege-Reparatur wurde umgesetzt (Commit `199d05c`) und in einem Re-Test überprüft. Der Re-Test förderte einen **zweiten, gewichtigeren** Fehlermodus zutage, den der Erstlauf per Zufall nicht getroffen hatte.
+
+**Skript:** `scripts/_bezuege_retest.py` · **Rohdaten:** `scripts/out/bezuege_retest_2026-07-11.json` · articles-Tabelle durchgängig read-only (max `agent_processed_at` unverändert 2026-07-07), Kosten über `llm_calls`.
+
+### 1. bezuege-Härtung: greift wie vorgesehen
+- **Schema-Vorgabe** in der `submit_digest_entry`-Tool-Beschreibung (echtes Array, Quotes escapen) — modellneutral. **Parser-Kaskade** `_coerce_bezuege` (json.loads → gezielte Quote-Normalisierung → `bezuege_unparsed`), sichtbar statt still: `bezuege_repaired`-Marker + `format_repairs`-Zähler; Unparsebares bleibt als Roh-String erhalten, `render_markdown` bricht nicht mehr an String-bezuege.
+- **Fixtures:** die 3 realen Defekt-Payloads des A/B-Laufs → alle 3 entpacken vollständig (`tests/test_bezuege_repair.py`, 10/10) [gerechnet]; Gemini-Regression negativ (valide Arrays byte-identisch).
+- **Live beobachtet:** im Re-Test lief die Kaskade an einem realen Fall korrekt an (`59b41f…`: `bezuege_repaired=true` → sauberes Array) [gerechnet].
+
+### 2. Der eigentliche GLM-Blocker: `finish_reason=length`
+Der Re-Test der 7 Bezüge-Artikel ergab zunächst 3× `verdict=None` (leeres Entry) — **schlimmer** als der bezuege-Defekt, weil der GANZE Eintrag fehlt, nicht nur die Referenzen. Ursache-Diagnose (voller stdout-Mitschnitt):
+- Es ist **kein** Quote-Bruch und **keine** Härtungs-Regression, sondern **Output-Truncation**: GLM-5.2 (Reasoning-Klasse) erzeugt auf verbosen bzw. Phase-2-schweren Artikeln mehr als die 4000 Output-Token des Agent-Loops (`agent.py`, `run_agent`). Gemessen an denselben Artikeln: **4374 / 4602 / 4883 / 5163** Output-Tokens [gerechnet]. Bei `max_tokens=4000` wird der `submit_digest_entry`-Tool-Call mitten in der Generierung abgeschnitten (`finish_reason=length`) → kein Dict → `final_entry=None`.
+- Der Erstlauf des A/B-Tests (dort 20/20 Submits) hatte diese Artikel per Streuung knapp unter 4000 erwischt — die „20/20"-Robustheit war teils Glück an der Token-Grenze.
+
+**Fix (Commit dieses Nachtrags):** Agent-Loop `max_tokens` 4000 → **8000** (`journal_bot/agent.py`). Reine Obergrenze — nur real erzeugte Tokens werden berechnet; Gemini bleibt mit Ø 1266 Output-Tokens weit darunter, für es folgenlos. Volle Test-Suite 262/262 grün.
+- **Verifikation nach Fix** (committeter Code, cap 8000): die zuvor scheiternden Artikel laufen durch — `59b41f…` (4602 Tok, sauberes Array), `721e8a…` (3686 Tok), `283be2…` (5163 Tok, Phase 2 mit 5 read_publication-Calls) [gerechnet].
+
+### 3. Residual — ehrliche Restunsicherheit
+Ein einzelner Post-Fix-Lauf von `283be2…` lieferte `verdict=None` bei nur **2511** Output-Tokens (also **nicht** Truncation) und reproduzierte sich in den Folgeläufen nicht — GLM zeigt eine geringe run-zu-run-Totalausfallrate auch bei ausreichendem Token-Budget (konsistent mit der schon im A/B notierten GLM-Varianz). Kein systematischer zweiter Fehlermodus, aber ein realer Zuverlässigkeits-Vorbehalt.
+
+### Konsequenz für die Umstiegs-Entscheidung
+GLM-5.2 ist auf der Agent-Stufe tragfähig **mit** beiden Härtungen (bezuege-Kaskade + `max_tokens`-Anhebung). Vor dem Umstellen von `model_agent` in profile.json empfohlen: **ein Produktions-Canary** (ein realer Wochen-Batch, Provenance/finish_reason mitschreiben) plus das **Blind-Label-Ritual (P2)** als belastbare Urteilsbasis — n=20 + beobachtete Varianz heißt „beobachten, nicht fire-and-forget". Die recall-freundliche Fehlerrichtung (GLM über-behält, 0 false-keeps) bleibt der inhaltliche Grund für den Kandidaten. Kosten des Nachtrags-Re-Tests: ~$0.88 (GLM), Tag gesamt $3.02 inkl. A/B [gerechnet].

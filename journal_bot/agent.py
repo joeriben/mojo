@@ -1199,7 +1199,12 @@ def run_agent(
 
         resp = client.chat.completions.create(
             model=model,
-            max_tokens=4000,
+            # Obergrenze, nur die real erzeugten Tokens werden berechnet. 4000
+            # schnitt glm-5.2 auf verbose Artikeln mitten im submit-Tool-Call ab
+            # (finish_reason=length → gar kein Entry; Re-Test 2026-07-11 maß 4374
+            # und 4883 Output-Tokens auf zwei der drei betroffenen Artikel).
+            # Gemini bleibt deutlich darunter, für es folgenlos.
+            max_tokens=8000,
             messages=messages,
             tools=TOOLS if allow_read else TOOLS_SUBMIT_ONLY,
             extra_body=extra_body,
