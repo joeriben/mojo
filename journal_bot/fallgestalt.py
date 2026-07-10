@@ -33,6 +33,7 @@ from __future__ import annotations
 import os
 import re
 import time
+import unicodedata
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -236,7 +237,11 @@ def parse_profile(raw: str, topology: dict[str, dict[str, Any]]) -> ParsedProfil
     has_position = False
 
     for raw_line in raw.split("\n"):
-        line = raw_line.strip()
+        # Markdown-Echo tolerieren: Emphasis-Sternchen (»**[QUELLEN]**«, »**QUELLE:**«)
+        # und führende Listenzeichen (»- QUELLE: …«) sind Modell-Marotten, keine
+        # Inhalte — vor dem Parsen strippen statt die Zeile still zu verlieren.
+        line = raw_line.strip().replace("**", "")
+        line = re.sub(r"^[-•*]\s+", "", line)
         if not line or line == "—":
             continue
 
@@ -250,8 +255,10 @@ def parse_profile(raw: str, topology: dict[str, dict[str, Any]]) -> ParsedProfil
                 "TRAJEKTORIE": "traj",
             }.get(h)
             continue
-        # Erklär-/Vokabular-Zeilen des Prompts überspringen (kein KEY: am Anfang).
+        # Zeilen ohne KEY:-Form (Präambeln, Vokabular-Echo) nicht still verlieren,
+        # sondern als unparsed ausweisen (Befund, kein Fehler).
         if not re.match(r"^[A-ZÄÖÜ]+\s*:", line):
+            unparsed.append(line)
             continue
 
         f = _parse_fields(line)
@@ -269,8 +276,18 @@ def parse_profile(raw: str, topology: dict[str, dict[str, Any]]) -> ParsedProfil
             has_position = True
 
         elif block == "src" and f.get("QUELLE"):
-            rel = (f.get("RELATION") or "").lower()
-            if rel not in RELATION_KINDS:
+            # RELATION lenient: Zusätze (»affirms (mit Vorbehalt)«) kosten nicht die
+            # ganze Quelle — das in Textreihenfolge erste bekannte Relations-Wort
+            # zählt; ohne erkennbares Vokabular bleibt die Zeile unparsed (sichtbar).
+            rel_raw = (f.get("RELATION") or "").lower()
+            rel: str | None = None
+            rel_pos: int | None = None
+            for k in RELATION_KINDS:
+                m = re.search(rf"\b{k}\b", rel_raw)
+                if m and (rel_pos is None or m.start() < rel_pos):
+                    rel_pos = m.start()
+                    rel = k
+            if rel is None:
                 unparsed.append(line)
                 continue
             key = f"source:{f['QUELLE']}"
@@ -378,6 +395,87 @@ def parse_profile(raw: str, topology: dict[str, dict[str, Any]]) -> ParsedProfil
     return ParsedProfile(nodes=nodes, edges=edges, unparsed=unparsed)
 
 
+# ── Verbatim-BELEG-Gate (Port aus SARAH profile-parse.ts) ──────────────────
+#
+# Wörtlichkeit der Belege nicht nur im Prompt fordern, sondern mechanisch gegen
+# den Volltext prüfen. Normalisierung beidseitig identisch (Quote-/Strich-
+# Glyphen, Whitespace); Ellipsen teilen den Beleg in unabhängig prüfbare
+# Stücke. Fails werden markiert (belegVerified: False) und gezählt — nicht
+# verworfen (Abweichung sichtbar machen, kein stilles Droppen).
+
+
+def normalize_for_beleg_match(s: str) -> str:
+    """Vereinheitlicht Anführungs-/Strich-Glyphen + Whitespace für den
+    Verbatim-Vergleich (NFKC, klein, Soft Hyphen raus, Glyphen-Varianten
+    vereinheitlicht)."""
+    s = unicodedata.normalize("NFKC", s).lower()
+    s = s.replace("\xad", "")  # Soft Hyphen (Silbentrennung aus PDF/DOCX-Extrakten)
+    s = re.sub("[\"'„“”«»‹›’‘`´]", "", s)
+    s = re.sub(r"[–—‒−]", "-", s)
+    s = re.sub(r"\s+", " ", s)
+    return s.strip()
+
+
+# Unterhalb dieser normalisierten Länge ist ein Zitat-Stück kein belastbarer Check.
+BELEG_MIN_CHECKABLE = 12
+
+
+def _beleg_pieces(beleg: str) -> list[str]:
+    """Prüfstücke eines Belegs: an Ellipsen UND an Quote-Glyphen gesplittet,
+    normalisiert, nur prüfbar lange Stücke behalten. Der Quote-Split fängt
+    Mehrfach-Zitate in einem BELEG-Feld (»«Zitat1» sowie «Zitat2»« — real
+    beobachtet, MiMo/JK26): jedes Stück muss einzeln im Text stehen; die
+    Verkettung müsste es nicht. Apostrophe bleiben ungesplittet
+    (Binnen-'quotes' gehören zum Zitat). Spiegel von SARAH profile-parse.ts."""
+    raw_pieces = re.split(r"\[\s*(?:…|\.{3})\s*\]|…|\.{3}|[«»„“”\"]", beleg)
+    pieces = [normalize_for_beleg_match(p) for p in raw_pieces]
+    return [p for p in pieces if len(p) >= BELEG_MIN_CHECKABLE]
+
+
+@dataclass
+class BelegGateResult:
+    """Ergebnis des Verbatim-Gates. `checked` = Anzahl distinkter Belege mit
+    mindestens einem prüfbaren Stück."""
+
+    checked: int = 0
+    failed: int = 0
+    failures: list[dict[str, str]] = field(default_factory=list)
+
+
+def verify_belege(parsed: ParsedProfile, full_text: str) -> BelegGateResult:
+    """Prüft alle »beleg«-Properties (Knoten UND Kanten) verbatim gegen den
+    Volltext. Nicht verifizierbare Belege werden in place mit
+    belegVerified=False markiert (verifizierte bleiben unmarkiert — minimale
+    Extrakt-Berührung) und einmal pro distinktem Beleg-Text in `failures`
+    ausgewiesen."""
+    haystack = normalize_for_beleg_match(full_text)
+    verdict_by_beleg: dict[str, bool] = {}
+    failures: list[dict[str, str]] = []
+
+    def check(obj: dict[str, Any], where: str) -> None:
+        beleg = (obj.get("properties") or {}).get("beleg")
+        if not isinstance(beleg, str):
+            return
+        pieces = _beleg_pieces(beleg)
+        if not pieces:
+            return  # zu kurz für einen belastbaren Check
+        ok = verdict_by_beleg.get(beleg)
+        if ok is None:
+            ok = all(p in haystack for p in pieces)
+            verdict_by_beleg[beleg] = ok
+            if not ok:
+                failures.append({"where": where, "beleg": beleg})
+        if not ok:
+            obj.setdefault("properties", {})["belegVerified"] = False
+
+    for n in parsed.nodes:
+        check(n, f"{n['nodeType']}:{n['label']}")
+    for e in parsed.edges:
+        check(e, f"{e['edgeKind']}→{e['toKey']}")
+
+    return BelegGateResult(checked=len(verdict_by_beleg), failed=len(failures), failures=failures)
+
+
 # ── Export: 4-wertige Haltung → MoJos 2-wertiges Set (Port aus SARAH export.ts) ──
 
 _STRUCTURAL_KINDS = {"bears", "coins", "condenses", "cites_back", "trajectory"}
@@ -446,7 +544,13 @@ def run_document_profile_h7(
 ) -> dict[str, Any]:
     """Führt EINEN co-präsenten Werk-Positionierungs-Pass aus (Port aus SARAHs
     runDocumentProfileH7). Bis zu 4 Content-Versuche (Temperatur steigt bei
-    Leer-/Degenerat-Output, wie SARAH); pro Versuch 429-Backoff-Retry."""
+    Leer-/Degenerat-Output, wie SARAH); pro Versuch 429-Backoff-Retry. Nach
+    jedem nicht-degenerierten Kandidaten läuft das Verbatim-BELEG-Gate gegen
+    GENAU den Text, der ans Modell ging — scheitern die Belege breit (>50%
+    bei belastbarer Basis ≥3 geprüfter Belege) UND sind noch Versuche übrig,
+    wird der Kandidat verworfen und mit höherer Temperatur neu gelesen (Port
+    aus SARAH profile-read.ts, Konfabulations-Bremse). Einzelne Fails bleiben
+    Befund (Marker), kein Abbruch."""
     route = ROUTES[route_key]
     topology = build_source_topology(fulltext)
     prefix = build_profile_prefix(fulltext, topology)
@@ -454,6 +558,8 @@ def run_document_profile_h7(
     messages = make_messages(prefix, USER_MSG, route)
 
     content = ""
+    parsed = ParsedProfile()
+    gate = BelegGateResult()
     tokens_in = 0
     tokens_out = 0
     for attempt in range(4):
@@ -488,16 +594,26 @@ def run_document_profile_h7(
                 f"len={len(cand)} tok_in={stats.tokens_in} tok_out={stats.tokens_out} "
                 f"degenerate={is_degenerate_generation(cand)}"
             )
-        if cand and not is_degenerate_generation(cand):
-            content = cand
-            break
+        if not cand or is_degenerate_generation(cand):
+            continue
+        p = parse_profile(cand, topology)
+        g = verify_belege(p, fulltext)
+        # Verbatim-Gate als Konfabulations-Bremse: scheitern die Belege breit
+        # UND sind noch Versuche übrig, wird der Versuch verworfen und mit
+        # der nächsten Temperatur neu gelesen (Port aus SARAH profile-read.ts).
+        if g.checked >= 3 and g.failed / g.checked > 0.5 and attempt < 3:
+            continue
+        content = cand
+        parsed = p
+        gate = g
+        break
 
-    parsed = parse_profile(content, topology)
     return {
         "raw": content,
         "nodes": parsed.nodes,
         "edges": parsed.edges,
         "unparsed": parsed.unparsed,
+        "belegFailures": gate.failures,
         "topology": topology,
         "tokens": {"input": tokens_in, "output": tokens_out},
         "model": {"provider": route.provider, "model": route.model},

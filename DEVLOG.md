@@ -802,3 +802,20 @@ Umfeld-Refresh des Composed-Backfills.
 **Offen danach:** P2 launchd-Wochenmonitor (Benjamins Klick — plant wiederkehrende LLM-Ausgaben),
 P3 Volltext via eigene Zotero-Bibliothek (Pfad B), P5 Meta-Publikation; Governance-Gespräch
 (generalisierbare Einsichten aus der Selbstregulierungs-Schicht).
+
+## Session 2026-07-10 — H7-Fallgestalt: Parser-Härtung + Verbatim-BELEG-Gate (Spiegel SARAH 7308ad9)
+
+`journal_bot/fallgestalt.py` zieht die in SARAH gehärtete Referenz nach (dort commit `7308ad9`,
+`profile-parse.ts`): **Parser** toleriert Markdown-Echo (`**`-Emphasis, führende Listenzeichen),
+weist KEY-lose Zeilen als `unparsed` aus statt sie still zu verlieren, und normalisiert RELATION
+aufs in Textreihenfolge erste Vokabular-Wort statt bei Zusätzen („affirms (mit Vorbehalt)") die
+ganze Quelle zu verwerfen. **Gate:** jeder `beleg` (Knoten UND Kanten) wird normalisiert verbatim
+gegen den Volltext geprüft (NFKC, Quote-/Strich-Glyphen, Whitespace; Ellipsen- + Guillemet-Split
+für Mehrfach-Zitate, Stücke ≥ 12 Zeichen); Fails markieren `belegVerified=false` und zählen einmal
+pro distinktem Beleg — nichts wird verworfen (Befund, kein Blocker). **Run-Flow:** Parse+Gate in
+der bestehenden 4-Versuche-Schleife; >50 % Fail-Quote (ab 3 geprüften Belegen) verwirft den
+Versuch zur nächsten Temperatur; `belegFailures` im Ergebnis neben `unparsed`. SYS_PROFILE/USER_MSG
+byte-identisch belassen (Prompt-Parität zu SARAH ist vertraglich).
+
+**Tests:** 242 → 252; neu `tests/test_fallgestalt.py` = 1:1-Spiegel der 10 Fälle aus SARAHs
+`profile-parse.test.ts` (Verhaltens-Vertrag beider Ports). Kein LLM-Call in der Session ($0).
