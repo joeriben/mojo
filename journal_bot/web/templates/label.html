@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Blind-Bewertung — MOJO{% endblock %}
+{% block title %}MOJO — Blindtest{% endblock %}
 {% block content %}
 <style>
   .label-controls { display:flex; gap:.5rem; margin-top:.75rem; flex-wrap:wrap; align-items:center; }
@@ -21,15 +21,17 @@
   .card.is-excluded { opacity:.5; }
 </style>
 
-<h2>Blinde Relevanz-Bewertung
+<h2>Blindtest — Bewertung ohne Systemvorschlag
   <span class="section-count">{{ done }}/{{ total }} bewertet{% if excluded_n %} · {{ excluded_n }} ausgeschlossen{% endif %}</span>
 </h2>
 <p style="color:var(--muted); font-size:.9rem; margin-bottom:1.25rem; max-width:72ch;">
-  {{ total }} <strong>aktuelle (≥ {{ min_year }}), externe</strong> Artikel mit MOJO-1-Werk-Bezug,
-  die du noch nie bewertet hast. Kopplungs-Bucket verborgen — Urteil nur am Abstract.
-  Klick schreibt direkt in <code>articles.db</code>; kein LLM-Call, keine Kosten.
-  Was du institutionell kennen musst / aus eigenem Umfeld ohnehin kennst (Projekt, Ko-Autor:in),
-  per <strong>⊘ kenne ich</strong> aus der Wertung nehmen — kein erzwungenes L/S/I.
+  {{ total }} <strong>aktuelle (ab {{ min_year }}), externe</strong> Artikel, denen das System
+  einen Bezug zu deinem Werk zuschreibt und die du noch nie bewertet hast.
+  Du siehst nur Titel, Autor:innen und Abstract — keine Einstufung des Systems.
+  Dein Urteil wird gespeichert und dient als unabhängiger Prüfmaßstab für die automatische
+  Vorsortierung; es entstehen keine Kosten.
+  Was du institutionell kennen musst oder aus eigenem Umfeld ohnehin kennst (Projekt, Ko-Autor:in),
+  nimmst du per <strong>⊘ kenne ich</strong> aus der Wertung — dort ist kein Urteil nötig.
 </p>
 
 {% for it in items %}
@@ -45,5 +47,5 @@
   {% with a = it.a, excluded = it.excluded %}{% include "_label_controls.html" %}{% endwith %}
 </div>
 {% endfor %}
-{% if not items %}<p>Kein Label-Set gefunden ({{ set_name }}).</p>{% endif %}
+{% if not items %}<p>Kein Testsatz gefunden.</p>{% endif %}
 {% endblock %}

@@ -37,7 +37,7 @@
     {% endfor %}
   </select>
   <select name="verdict">
-    <option value="">Alle Verdicts</option>
+    <option value="">Alle Einstufungen</option>
     {% for v, label in verdict_label.items() %}
     <option value="{{ v }}" {% if filters.verdict == v %}selected{% endif %}>{{ label }}</option>
     {% endfor %}
@@ -49,7 +49,7 @@
     {% endfor %}
   </select>
   <select name="sort">
-    <option value="verdict" {% if filters.sort != "project" %}selected{% endif %}>Nach Verdict</option>
+    <option value="verdict" {% if filters.sort != "project" %}selected{% endif %}>Nach Einstufung</option>
     <option value="project" {% if filters.sort == "project" %}selected{% endif %}>Nach Projektkontext</option>
   </select>
   <button type="submit">Filtern</button>
@@ -63,7 +63,7 @@
   {% for a in cites_you %}
   <div class="art-row">
     <span class="badge badge-{{ a.effective_verdict }}">{{ verdict_label.get(a.effective_verdict, a.effective_verdict) }}</span>
-    {% if a.user_verdict %}<span class="override-indicator">&#9998;</span>{% endif %}
+    {% if a.user_verdict %}<span class="override-indicator" title="Dein Urteil">&#9998;</span>{% endif %}
     <span class="art-journal">{{ a.journal_full }}</span>
     {{ title_link(a) }}
     <span class="art-year">{{ a.year }}</span>

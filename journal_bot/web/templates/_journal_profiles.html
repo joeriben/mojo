@@ -12,7 +12,7 @@
       · {{ journal_profiles.size_kb }} KB
       {% if journal_profiles.updated_at %} · aktualisiert: {{ journal_profiles.updated_at }}{% endif %}
     {% else %}
-      Noch keine persistierten Journalprofile. Ein Refresh erzeugt <code>journal_profiles.json</code>.
+      Noch keine gespeicherten Journalprofile — „Profile aktualisieren“ legt sie lokal an.
     {% endif %}
   </div>
 
@@ -22,9 +22,9 @@
       <thead>
         <tr>
           <th style="text-align:left;">Journal</th>
-          <th style="text-align:center;">Tier</th>
-          <th style="text-align:center;">Fit</th>
-          <th style="text-align:left;">Disziplinäre Lagerung</th>
+          <th style="text-align:center;" title="Zugeordnete Stufe (Gründlichkeit der Prüfung)">Stufe</th>
+          <th style="text-align:center;" title="Themenfit zum eigenen Forschungsprofil">Fit</th>
+          <th style="text-align:left;">Disziplinäre Verortung</th>
           <th style="text-align:left;">Signale</th>
           <th style="text-align:left;">Top-Themen</th>
         </tr>

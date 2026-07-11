@@ -4,7 +4,7 @@
         hx-post="/api/archive/{{ a.id }}"
         hx-target="#archive-{{ a.id }}"
         hx-swap="outerHTML"
-        title="Aus Archiv holen">
+        title="Aus dem Archiv zurückholen">
   Archiviert ✓
 </button>
 {% else %}
@@ -12,7 +12,7 @@
         hx-post="/api/archive/{{ a.id }}"
         hx-target="#archive-{{ a.id }}"
         hx-swap="outerHTML"
-        title="Archivieren (aus Digest ausblenden)">
+        title="Archivieren (aus dem Digest ausblenden)">
   Archivieren
 </button>
 {% endif %}

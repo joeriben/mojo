@@ -68,6 +68,13 @@
     nav a { color: var(--fg); }
     nav a:hover { color: var(--accent); }
     nav a.active { border-bottom: 2px solid var(--accent); }
+    nav .nav-lab { display: inline-flex; gap: .75rem; align-items: baseline;
+                   padding-left: 1rem; border-left: 1px solid var(--border); }
+    nav .nav-lab-tag { font-size: .7rem; color: var(--muted);
+                       text-transform: uppercase; letter-spacing: .04em; }
+    nav .nav-lab a { color: var(--muted); font-size: .85rem; }
+    nav .nav-lab a:hover { color: var(--accent); }
+    nav .nav-lab a.active { color: var(--fg); }
 
     /* Cards */
     .card { background: var(--card-bg); border: 1px solid var(--border);
@@ -199,14 +206,18 @@
 <body>
   <nav>
     <span class="brand">MOJO</span>
+    <a href="/review" {% if request.path == "/review" %}class="active"{% endif %}>Sichten</a>
     <a href="/" {% if request.path == "/" %}class="active"{% endif %}>Digest</a>
-    <a href="/review" {% if request.path == "/review" %}class="active"{% endif %}>Review</a>
-    <a href="/label" {% if request.path == "/label" %}class="active"{% endif %}>Blind</a>
-    <a href="/kombiniert" {% if request.path == "/kombiniert" %}class="active"{% endif %}>Kombiniert</a>
     <a href="/diskurs" {% if request.path.startswith("/diskurs") %}class="active"{% endif %}>Diskursräume</a>
-    <a href="/overrides" {% if request.path == "/overrides" %}class="active"{% endif %}>Overrides</a>
-    <a href="/agent" {% if request.path == "/agent" %}class="active"{% endif %}>Agent</a>
-    <a href="/setup" {% if request.path == "/setup" %}class="active"{% endif %}>Setup</a>
+    <a href="/agent" {% if request.path == "/agent" %}class="active"{% endif %}>Recherche</a>
+    {% if ui_lab %}
+    <span class="nav-lab">
+      <span class="nav-lab-tag">Labor</span>
+      <a href="/label" {% if request.path == "/label" %}class="active"{% endif %}>Blindtest</a>
+      <a href="/kombiniert" {% if request.path == "/kombiniert" %}class="active"{% endif %}>Triage-Vergleich</a>
+      <a href="/overrides" {% if request.path == "/overrides" %}class="active"{% endif %}>Meine Korrekturen</a>
+    </span>
+    {% endif %}
     <form action="/search" method="get" style="margin-left:auto; display:flex; gap:.3rem; align-items:center;">
       <input type="text" name="q" placeholder="Suche…" value="{{ request.args.get('q', '') }}"
              style="font-size:.85rem; padding:3px 8px; border:1px solid var(--border);
@@ -222,6 +233,7 @@
         Suche
       </button>
     </form>
+    <a href="/setup" {% if request.path == "/setup" %}class="active"{% endif %}>Einstellungen</a>
     <button id="theme-toggle" onclick="toggleTheme()" title="Tag/Nacht umschalten"
             style="background:none; border:none; font-size:1.1rem; cursor:pointer;
                    padding:2px 6px; line-height:1;">

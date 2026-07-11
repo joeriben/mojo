@@ -1,11 +1,12 @@
 <h2 style="margin-top:0;">
-  Journal-Matrix
+  Journal-Zuordnung
   <span class="section-count">({{ journals|length }} Journals × {{ spaces|length }} Diskursräume)</span>
 </h2>
 <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
-  Tier: <span class="badge badge-tier-a">A</span> Opus + Tools
-  · <span class="badge badge-tier-b">B</span> Opus ohne Tools
-  · <span class="badge badge-tier-c">C</span> Nur Screening
+  Stufe (Gründlichkeit der Prüfung):
+  <span class="badge badge-tier-a">A</span> gründliche Analyse mit Blick ins eigene Werk
+  · <span class="badge badge-tier-b">B</span> gründliche Analyse
+  · <span class="badge badge-tier-c">C</span> nur automatische Vorprüfung
 </p>
 
 <form id="matrix-form">
@@ -14,9 +15,9 @@
       <thead>
         <tr>
           <th class="matrix-journal-col" style="text-align:left;">Journal</th>
-          <th class="matrix-type-col" title="Retrieval-Typ">Typ</th>
-          <th class="matrix-count-col" style="text-align:right;" title="Artikel in DB">Artikel</th>
-          <th class="matrix-tier-col" colspan="3">Tier</th>
+          <th class="matrix-type-col" title="Bezugsquelle — wie neue Artikel abgerufen werden">Quelle</th>
+          <th class="matrix-count-col" style="text-align:right;" title="Artikel in der lokalen Datenbank">Artikel</th>
+          <th class="matrix-tier-col" colspan="3" title="Gründlichkeit der Prüfung">Stufe</th>
           {% for key, meta in spaces %}
           <th class="matrix-cluster-col">
             <span class="cluster-header" title="{{ meta.description }}">{{ meta.name }}</span>
@@ -33,7 +34,7 @@
             <span class="journal-short">{{ j.short }}</span>
           </td>
           <td class="matrix-type-col">
-            <span class="badge badge-type-{{ j.type }}" title="{{ j.type }}">{{ j.type }}</span>
+            <span class="badge badge-type-{{ j.type }}" title="{{ {'openalex': 'OpenAlex (ISSN)', 'rss': 'RSS-Feed', 'ojs': 'OJS-Feed', 'custom': 'Eigene Abruf-Konfiguration'}.get(j.type, j.type) }}">{{ j.type }}</span>
           </td>
           <td class="matrix-count-col" style="text-align:right; color:var(--muted);">
             {{ journal_counts.get(j.short, 0) }}
@@ -78,7 +79,7 @@
 
   <div class="matrix-actions">
     <button type="button" class="btn btn-primary" onclick="saveMatrix()" id="save-matrix-btn" disabled>
-      Matrix speichern
+      Zuordnung speichern
     </button>
     <span id="matrix-status" style="margin-left:.5rem; font-size:.85rem;"></span>
   </div>

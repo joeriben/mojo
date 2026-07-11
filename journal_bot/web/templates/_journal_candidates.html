@@ -1,7 +1,7 @@
 <div class="card" style="padding:.9rem;">
   {% if result.resolved_topics %}
   <div style="font-size:.82rem; color:var(--muted); margin-bottom:.75rem;">
-    Verwendete Topics:
+    Verwendete Themen (OpenAlex):
     {% for item in result.resolved_topics %}
       <span style="white-space:nowrap;">
         <strong>{{ item.topic_name }}</strong>
@@ -18,8 +18,8 @@
         <tr>
           <th style="text-align:left;">Journal</th>
           <th style="text-align:right;">Werke</th>
-          <th style="text-align:center;">Hinweis</th>
-          <th style="text-align:left;">Profil-Matches</th>
+          <th style="text-align:center;" title="Empfohlene Stufe (Gründlichkeit der Prüfung) und Themenfit">Hinweis</th>
+          <th style="text-align:left;">Profil-Treffer</th>
           <th style="text-align:left;">Top-Themen</th>
           <th style="text-align:left;">Status</th>
         </tr>
@@ -42,7 +42,7 @@
             {% endif %}
           </td>
           <td style="text-align:center;">
-            <span class="badge badge-tier-{{ c.fit.tier_hint|lower }}">~{{ c.fit.tier_hint }}</span>
+            <span class="badge badge-tier-{{ c.fit.tier_hint|lower }}" title="Empfohlene Stufe {{ c.fit.tier_hint }}">~{{ c.fit.tier_hint }}</span>
             <div style="font-size:.75rem; color:var(--muted); margin-top:.2rem;">
               {{ c.fit.fit_label }} · {{ c.fit.score }}
             </div>
@@ -78,7 +78,7 @@
   </div>
   {% else %}
   <div style="font-size:.85rem; color:var(--muted);">
-    Keine Kandidaten gefunden. Profil-Topics oder Limits anpassen.
+    Keine Kandidaten gefunden. Themen im Profil oder Limits anpassen.
   </div>
   {% endif %}
 </div>

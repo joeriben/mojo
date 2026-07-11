@@ -1,11 +1,16 @@
 {% extends "base.html" %}
 {% from "_macros.html" import title_link %}
-{% block title %}MOJO — Review{% endblock %}
+{% block title %}MOJO — Sichten{% endblock %}
 {% block content %}
 
 <h1 style="font-size:1.3rem; margin-bottom:.75rem;">
-  Review-Queue <span class="section-count">({{ total }} unbestätigt)</span>
+  Sichten <span class="section-count">({{ total }})</span>
 </h1>
+{% if total %}
+<p style="color:var(--muted); font-size:.9rem; margin-bottom:1rem;">
+  {{ total }} Vorschl{{ "ag wartet" if total == 1 else "äge warten" }} auf dein Urteil — bestätigen oder überschreiben.
+</p>
+{% endif %}
 
 <form class="filters" method="get" action="/review">
   <select name="year">
@@ -15,7 +20,7 @@
     {% endfor %}
   </select>
   <select name="verdict">
-    <option value="">Alle Verdicts</option>
+    <option value="">Alle Einstufungen</option>
     {% for v in ["pflichtlektuere", "lesenswert", "scannen"] %}
     <option value="{{ v }}" {% if filters.verdict == v %}selected{% endif %}>{{ verdict_label[v] }}</option>
     {% endfor %}
@@ -27,11 +32,12 @@
     {% endfor %}
   </select>
   <select name="sort">
-    <option value="verdict" {% if filters.sort != "project" %}selected{% endif %}>Nach Verdict</option>
+    <option value="verdict" {% if filters.sort != "project" %}selected{% endif %}>Nach Einstufung</option>
     <option value="project" {% if filters.sort == "project" %}selected{% endif %}>Nach Projektkontext</option>
   </select>
   <button type="submit">Filtern</button>
   <a href="/review" class="btn reset">Reset</a>
+  <a href="/overrides" style="margin-left:auto; font-size:.85rem; color:var(--muted);">Meine Korrekturen</a>
 </form>
 
 {% if not articles %}

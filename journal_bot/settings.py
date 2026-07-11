@@ -155,6 +155,9 @@ RESEARCH_USE_LOCAL = bool(
     _profile.get("research_use_local", _env_flag("MOJO_RESEARCH_LOCAL"))
 )
 
+# Show the Labor (dev/eval) pages in the web UI nav. Default off.
+UI_LAB = bool(_profile.get("ui_lab", _env_flag("MOJO_UI_LAB")))
+
 # --- API-Key-Ablage ---
 _KEY_DIR = Path.home() / ".config" / "mojo"
 KEY_FILE = _KEY_DIR / "openrouter_key"

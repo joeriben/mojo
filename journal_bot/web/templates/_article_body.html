@@ -11,20 +11,19 @@
 <div class="detail-section">
   {% include "_verdict_controls.html" %}
   <p style="margin-top:.4rem;">{{ e.verdict_begruendung }}</p>
-  {% if a.selection_mode or a.discourse_indicator or a.signal_group %}
+  {% if a.selection_mode or a.discourse_indicator or a.signal_group or a.suggested_subgroup %}
   <p style="margin-top:.5rem; font-size:.85rem; color:var(--muted);">
-    {% if a.selection_mode %}<span>Selektion: <code>{{ a.selection_mode }}</code></span>{% endif %}
-    {% if a.discourse_indicator %}<span>{% if a.selection_mode %} · {% endif %}Diskursindikator: <code>{{ a.discourse_indicator }}</code></span>{% endif %}
-    {% if a.signal_group %}<span>{% if a.selection_mode or a.discourse_indicator %} · {% endif %}Signalgruppe: <code>{{ a.signal_group }}</code></span>{% endif %}
-    {% if a.suggested_subgroup %}<span>{% if a.selection_mode or a.discourse_indicator or a.signal_group %} · {% endif %}Sub-Motiv-Vorschlag: <code>{{ a.suggested_subgroup }}</code></span>{% endif %}
+    Gefunden über: {{ [
+      selection_mode_label(a.selection_mode) if a.selection_mode else none,
+      discourse_indicator_label(a.discourse_indicator) if a.discourse_indicator else none,
+      ('Signalgruppe „' ~ signal_group_label(a.signal_group) ~ '“') if a.signal_group else none,
+      ('Motiv-Vorschlag „' ~ humanize_key(a.suggested_subgroup) ~ '“') if a.suggested_subgroup else none
+    ] | select | join(' · ') }}
   </p>
   {% endif %}
   {% if a.suggested_subgroup_reason %}
   <p style="margin-top:.25rem; font-size:.82rem; color:var(--muted);">
     {{ a.suggested_subgroup_reason }}
-    {% if a.suggested_subgroup_confidence %}
-    · Confidence: {{ "%.2f"|format(a.suggested_subgroup_confidence) }}
-    {% endif %}
   </p>
   {% endif %}
 </div>
@@ -74,13 +73,13 @@
   <p style="font-size:.9rem;">
     {{ g.n_shared_refs }} geteilte Referenz{{ "en" if g.n_shared_refs != 1 else "" }},
     belegt über {{ g.n_works_hit }} deiner Werke
-    (Artikel: {{ g.n_oa_refs }} OA- / {{ g.n_doi_refs }} DOI-Referenzen).
+    (Artikel: {{ g.n_oa_refs }} OpenAlex- / {{ g.n_doi_refs }} DOI-Referenzen).
   </p>
   {% for w in g.works %}
   <div class="bezug">
     <strong>»{{ w.title[:90] }}«</strong> ({{ w.year }})
     {% if w.zotero_key %}<code>{{ w.zotero_key }}</code>{% endif %}
-    <span class="bezug-rel">{{ w.n_shared }} geteilte Ref.</span>
+    <span class="bezug-rel">{{ w.n_shared }} geteilte {{ 'Referenz' if w.n_shared == 1 else 'Referenzen' }}</span>
     {% for v in w.via %}
     <p style="margin:.15rem 0 0 .9rem; font-size:.85rem; color:var(--muted);">
       ↳ {% if v.title %}»{{ v.title[:90] }}«{% if v.year %} ({{ v.year }}){% endif %}{% elif v.kind == "oa" %}OpenAlex {{ v.id }}{% else %}doi:{{ v.id }}{% endif %}
@@ -93,13 +92,13 @@
   {% endfor %}
   {% elif g.available %}
   <p style="font-size:.9rem; color:var(--muted);">
-    KEINE nachweisbare bibliografische Anbindung — 0 geteilte Referenzen mit
+    Keine nachweisbare bibliografische Anbindung — 0 geteilte Referenzen mit
     deinem Korpus ({{ g.n_corpus_works }} Werke; Artikel:
-    {{ g.n_oa_refs }} OA- / {{ g.n_doi_refs }} DOI-Referenzen).
+    {{ g.n_oa_refs }} OpenAlex- / {{ g.n_doi_refs }} DOI-Referenzen).
     Thematische Nähe möglich, aber keine belegbare Werk-Verbindung — daher keine Bezugs-Behauptung.
   </p>
   {% else %}
-  <p style="font-size:.9rem; color:var(--muted);">own_refs.db nicht verfügbar — kein Abgleich möglich.</p>
+  <p style="font-size:.9rem; color:var(--muted);">Referenz-Abgleich nicht möglich — die Referenzdatenbank deines eigenen Werks fehlt.</p>
   {% endif %}
 </div>
 
@@ -139,14 +138,14 @@
 {% if a.agent_entry %}
 {% set e = a.agent_entry %}
 <details style="margin-top:1rem;" {% if not a.composed_entry %}open{% endif %}>
-  <summary><h3 style="display:inline;">LLM-Analyse <span style="font-weight:normal; font-size:.78rem; color:var(--muted);">[gelesen: Abstract-basiert, Bezugs-Behauptungen nicht bibliografisch geprüft]</span></h3></summary>
+  <summary><h3 style="display:inline;">KI-Analyse <span style="font-weight:normal; font-size:.78rem; color:var(--muted);">[gelesen: Abstract-basiert, Bezugs-Behauptungen nicht bibliografisch geprüft]</span></h3></summary>
   <div style="margin-top:.5rem; padding-left:.75rem; border-left:3px solid var(--border);">
     <div class="detail-section">
       <h3>Kernthese</h3>
       <p>{{ e.kernthese }}</p>
     </div>
     <div class="detail-section">
-      <h3>Bezüge zu Deinem Werk (LLM-Behauptung)</h3>
+      <h3>Bezüge zu Deinem Werk (KI-Behauptung)</h3>
       {% if e.bezuege %}
       {% for b in e.bezuege %}
       <div class="bezug">
@@ -178,15 +177,13 @@
   </div>
 </details>
 {% else %}
-<p style="color:var(--muted); margin-top:1rem;">(Kein Agent-Ergebnis vorhanden.)</p>
+<p style="color:var(--muted); margin-top:1rem;">(Keine Analyse vorhanden.)</p>
 {% endif %}
 
-<!-- Meta footer -->
-<div class="meta-footer">
-  {{ a.iterations }} Iterationen ·
-  {{ a.tokens_in|default(0) }} in / {{ a.tokens_out|default(0) }} out
-  {% if a.tokens_cached_read %} · Cache: {{ a.tokens_cached_read }} read{% endif %}
-  {% if a.cost_usd %} · ${{ "%.3f"|format(a.cost_usd) }}{% endif %}
+<!-- Meta footer (token details on hover via title attribute) -->
+<div class="meta-footer"
+     title="Token-Details: {{ a.tokens_in|default(0) }} in / {{ a.tokens_out|default(0) }} out{% if a.tokens_cached_read %} · {{ a.tokens_cached_read }} aus dem Cache{% endif %}">
+  Analyse: {{ a.iterations }} {{ 'Durchlauf' if a.iterations == 1 else 'Durchläufe' }}{% if a.cost_usd %} · Kosten ${{ "%.3f"|format(a.cost_usd) }}{% endif %}
 </div>
 
 <!-- Actions -->
@@ -234,7 +231,7 @@
 <details style="margin-top:1.5rem;">
   <summary><h3 style="display:inline; color:var(--muted);">Vorherige Analyse (vor Vertiefung)</h3></summary>
   <div style="opacity:.7; margin-top:.5rem; padding-left:.75rem; border-left:3px solid var(--border);">
-    <p style="font-size:.85rem;"><strong>Verdict:</strong> {{ verdict_label.get(prev.verdict, prev.verdict or '?') }} — {{ prev.verdict_begruendung or '' }}</p>
+    <p style="font-size:.85rem;"><strong>Vorschlag:</strong> {{ verdict_label.get(prev.verdict, prev.verdict or '?') }} — {{ prev.verdict_begruendung or '' }}</p>
     {% if prev.kernthese %}
     <p style="font-size:.85rem; margin-top:.4rem;"><strong>Kernthese:</strong> {{ prev.kernthese }}</p>
     {% endif %}

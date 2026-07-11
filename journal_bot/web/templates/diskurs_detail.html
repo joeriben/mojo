@@ -23,7 +23,7 @@
   <span><span class="badge badge-{{ v }}">{{ verdict_label[v] }}</span> {{ count }}</span>
   {% endif %}
   {% endfor %}
-  <span style="color:var(--muted);">Total: {{ total }}</span>
+  <span style="color:var(--muted);">Gesamt: {{ total }}</span>
 </div>
 
 <!-- Analyse-Buttons -->
@@ -57,11 +57,11 @@
           hx-target="#diskurs-trends-result"
           hx-swap="innerHTML"
           hx-indicator="#trends-spinner"
-          hx-confirm="Trend-Analyse kostet ~$1-3 (LLM-Call). Fortfahren?">
+          hx-confirm="Die Trend-Analyse nutzt ein Sprachmodell und kostet ~$1-3. Fortfahren?">
     Trend-Analyse (~$1-3)
   </button>
   <span id="trends-spinner" class="htmx-indicator" style="font-size:.85rem; color:var(--muted);">
-    Analyse l&auml;uft (LLM-Call)&hellip;
+    Trend-Analyse l&auml;uft&hellip;
   </span>
 </div>
 
@@ -72,9 +72,9 @@
 
 {% if signal_groups %}
 <div class="card" style="margin-bottom:1.5rem;">
-  <h2 style="margin-top:0;">Diskursignale</h2>
+  <h2 style="margin-top:0;">Diskurssignale</h2>
   <p style="font-size:.9rem; color:var(--muted);">
-    Verdichtete Muster aus Artikeln mit Diskursindikator. Die Liste zeigt Signalgruppen statt nur Einzeltitel.
+    Verdichtete Muster aus Artikeln mit Diskurssignal. Die Liste zeigt Signalgruppen statt nur Einzeltitel.
   </p>
   {% for group in signal_groups %}
   <div style="margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border);">
@@ -82,28 +82,28 @@
       <strong>{{ group.label }}</strong>
       <span style="font-size:.85rem; color:var(--muted);">{{ group.count }} Artikel</span>
       {% if group.strong_count %}
-      <span class="badge badge-lesenswert">{{ group.strong_count }} stark</span>
+      <span class="badge badge-lesenswert">{{ group.strong_count }}&times; starkes Signal</span>
       {% endif %}
     </div>
     {% if group.subgroups %}
     <div style="margin-top:.3rem; font-size:.82rem; color:var(--muted);">
-      Vorschläge:
+      Untergruppen:
       {% for subgroup, count in group.subgroups %}
-      <span style="margin-right:.5rem;"><code>{{ subgroup }}</code> ({{ count }})</span>
+      <span style="margin-right:.5rem;">{{ humanize_key(subgroup) }} ({{ count }})</span>
       {% endfor %}
     </div>
     {% endif %}
     {% if group.emergent_suggestions %}
     <div style="margin-top:.6rem; padding:.7rem .8rem; background:rgba(0,0,0,.02); border:1px solid var(--border); border-radius:8px;">
       <div style="font-size:.82rem; color:var(--muted); margin-bottom:.35rem;">
-        Emergent aus unzugeordneten starken Restartikeln der letzten 3 Jahre:
+        Mögliche neue Motive — aus noch nicht zugeordneten Artikeln mit starkem Signal (letzte 3 Jahre):
       </div>
       {% for motif in group.emergent_suggestions %}
       <div style="margin-top:.45rem;">
-        <strong><code>{{ motif.label }}</code></strong>
+        <strong>{{ humanize_key(motif.label) }}</strong>
         <span style="font-size:.82rem; color:var(--muted);">
           {{ motif.article_count }} Artikel in {{ motif.journal_count }} Journals
-          {% if motif.strong_count %} · {{ motif.strong_count }} stark{% endif %}
+          {% if motif.strong_count %} · {{ motif.strong_count }}&times; starkes Signal{% endif %}
         </span>
         <div style="margin-top:.18rem; font-size:.85rem;">
           {% for a in motif.articles %}
@@ -124,7 +124,7 @@
         <span class="badge badge-{{ a.effective_verdict }}">{{ verdict_label.get(a.effective_verdict, a.effective_verdict) }}</span>
         {{ title_link(a) }}
         {% if a.suggested_subgroup %}
-        <span style="font-size:.78rem; color:var(--muted);"><code>{{ a.suggested_subgroup }}</code></span>
+        <span style="font-size:.78rem; color:var(--muted);">{{ humanize_key(a.suggested_subgroup) }}</span>
         {% endif %}
         <span class="art-year">{{ a.year }}</span>
       </div>

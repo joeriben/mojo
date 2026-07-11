@@ -1,28 +1,28 @@
 <div class="card" style="margin-top:.5rem; background:var(--code-bg);">
   <h3 style="margin-top:0; margin-bottom:.5rem;">Scan-Lauf</h3>
   <div style="font-size:.85rem; line-height:1.5;">
-    <div><strong>Scope:</strong> {{ scope.label }}</div>
+    <div><strong>Bereich:</strong> {{ scope.label }}</div>
     <div><strong>Agent-Modell:</strong> <code>{{ model }}</code></div>
-    <div><strong>Screening-Modell:</strong> <code>{{ screen_model }}</code></div>
+    <div><strong>Modell für die Vorprüfung:</strong> <code>{{ screen_model }}</code></div>
     <div><strong>Kostenlimit:</strong> ${{ "%.2f"|format(cost_limit_usd) }}</div>
     <div style="margin-top:.4rem;">
-      Vorher: {{ preview_before.pending_articles }} ungeprozessiert
-      · Nachher: {{ summary_after.pending_articles }} ungeprozessiert
+      Vorher: {{ preview_before.pending_articles }} offen
+      · Nachher: {{ summary_after.pending_articles }} offen
     </div>
     <div style="margin-top:.25rem;">
-      Neu verarbeitet: {{ batch.processed_articles }}
+      Neu bewertet: {{ batch.processed_articles }}
       · Kosten: ${{ "%.3f"|format(batch.total_cost_usd) }}
-      {% if batch.non_articles %} · {{ batch.non_articles }} Nicht-Artikel ignoriert{% endif %}
-      {% if batch.c_tier_only %} · {{ batch.c_tier_only }} C-Tier nur gescreent{% endif %}
-      {% if batch.screened_out %} · {{ batch.screened_out }} im Screening aussortiert{% endif %}
+      {% if batch.non_articles %} · {{ batch.non_articles }} Nicht-Artikel übersprungen{% endif %}
+      {% if batch.c_tier_only %} · {{ batch.c_tier_only }} nur vorgeprüft (Stufe C){% endif %}
+      {% if batch.screened_out %} · {{ batch.screened_out }} in der Vorprüfung aussortiert{% endif %}
     </div>
     <div style="margin-top:.4rem;">
-      Im Scope jetzt: {{ summary_after.total_articles }} Artikel
+      Im Bereich jetzt: {{ summary_after.total_articles }} Artikel
       · {{ summary_after.processed_articles }} bewertet
       · {{ summary_after.pending_articles }} offen
     </div>
     <div style="margin-top:.25rem;">
-      Aktualisierte Schätzung offen: ${{ "%.2f"|format(summary_after.estimated_cost_usd) }}
+      Kostenschätzung für die offenen Artikel: ${{ "%.2f"|format(summary_after.estimated_cost_usd) }}
       <span style="color:var(--muted);">
         (Ø ${{ "%.3f"|format(summary_after.avg_cost_usd) }}/Artikel, Basis: {{ cost_source_label }})
       </span>
@@ -52,23 +52,24 @@
 
   {% if batch.cache_stats %}
   <details style="margin-top:.75rem;" open>
-    <summary><strong>Cache-Hit-Rate (Welle)</strong></summary>
+    <summary><strong>Cache-Trefferquote (dieser Lauf)</strong></summary>
     <table style="width:100%; margin-top:.5rem; font-size:.82rem; border-collapse:collapse;">
       <thead>
         <tr style="text-align:left; border-bottom:1px solid var(--muted);">
-          <th style="padding:.25rem .4rem;">Endpoint</th>
+          <th style="padding:.25rem .4rem;">Schritt</th>
           <th style="padding:.25rem .4rem;">Modell</th>
-          <th style="padding:.25rem .4rem; text-align:right;">Calls</th>
-          <th style="padding:.25rem .4rem; text-align:right;">Hit%</th>
+          <th style="padding:.25rem .4rem; text-align:right;">Aufrufe</th>
+          <th style="padding:.25rem .4rem; text-align:right;">Treffer%</th>
           <th style="padding:.25rem .4rem; text-align:right;">Ø$</th>
           <th style="padding:.25rem .4rem; text-align:right;">Σ$</th>
           <th style="padding:.25rem .4rem;"></th>
         </tr>
       </thead>
       <tbody>
+        {% set step_names = {"batch_screen": "Vorprüfung", "triage": "Vorprüfung (einzeln)", "run_agent": "Analyse", "assess": "Analyse", "verify": "Verifikation"} %}
         {% for row in batch.cache_stats %}
         <tr style="border-bottom:1px solid var(--code-bg);">
-          <td style="padding:.2rem .4rem;"><code>{{ row.endpoint }}</code></td>
+          <td style="padding:.2rem .4rem;" title="{{ row.endpoint }}">{{ step_names.get(row.endpoint) or humanize_key(row.endpoint) }}</td>
           <td style="padding:.2rem .4rem;"><code>{{ row.model }}</code></td>
           <td style="padding:.2rem .4rem; text-align:right;">{{ row.calls }}</td>
           <td style="padding:.2rem .4rem; text-align:right;">{{ "%.0f"|format(row.cache_hit_rate * 100) }}%</td>
@@ -84,9 +85,8 @@
       </tbody>
     </table>
     <div style="margin-top:.35rem; font-size:.75rem; color:var(--muted);">
-      ⚠ markiert cache-kritische Endpoints (batch_screen, run_agent, assess, verify)
-      unter 80&nbsp;% Hit-Rate ab 2 Calls. Token-gewichtet
-      (cached&nbsp;/&nbsp;total&nbsp;prompt).
+      ⚠ markiert kostenkritische Schritte, deren Cache-Trefferquote ab 2 Aufrufen
+      unter 80&nbsp;% liegt (token-gewichtet). Eine niedrige Quote macht den Lauf teurer als nötig.
     </div>
   </details>
   {% endif %}

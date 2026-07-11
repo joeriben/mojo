@@ -2,16 +2,17 @@
 <div class="verdict-controls" id="vc-{{ a.id }}">
   <div style="display:flex; gap:.4rem; align-items:center; flex-wrap:wrap;">
     {# Current effective verdict badge #}
-    <span class="badge badge-{{ a.effective_verdict }}">
+    <span class="badge badge-{{ a.effective_verdict }}" title="Einstufung">
       {{ verdict_label.get(a.effective_verdict, a.effective_verdict) }}
     </span>
 
     {% if a.user_verdict and a.user_verdict == a.agent_verdict %}
     {# Confirmed: checkmark, no strikethrough #}
-    <span class="ack-check" title="Bestätigt">&#10003;</span>
+    <span class="ack-check" title="Vorschlag bestätigt">&#10003;</span>
     {% elif a.user_verdict and a.user_verdict != a.agent_verdict %}
     {# Override: show old verdict struck through #}
-    <span style="font-size:.75rem; color:var(--muted); text-decoration:line-through;">
+    <span style="font-size:.75rem; color:var(--muted); text-decoration:line-through;"
+          title="Überschriebener Vorschlag">
       {{ verdict_label.get(a.agent_verdict, a.agent_verdict) }}
     </span>
     {% endif %}
@@ -23,7 +24,7 @@
             hx-vals='{"article_id": "{{ a.id }}", "verdict": "{{ a.agent_verdict }}"}'
             hx-target="#vc-{{ a.id }}"
             hx-swap="outerHTML"
-            title="Bestätigen (Agent-Verdict OK)">
+            title="Vorschlag bestätigen">
       OK
     </button>
     {% endif %}
@@ -37,7 +38,7 @@
             hx-vals='{"article_id": "{{ a.id }}", "verdict": "{{ v }}"}'
             hx-target="#vc-{{ a.id }}"
             hx-swap="outerHTML"
-            title="→ {{ verdict_label[v] }}">
+            title="Dein Urteil: {{ verdict_label[v] }}">
       → {{ verdict_label[v] }}
     </button>
     {% endif %}
@@ -50,7 +51,7 @@
             hx-vals='{"article_id": "{{ a.id }}", "verdict": ""}'
             hx-target="#vc-{{ a.id }}"
             hx-swap="outerHTML"
-            title="Zurücksetzen (unreviewed)">
+            title="Dein Urteil zurücknehmen — es gilt wieder der Vorschlag">
       ✕
     </button>
     {% endif %}
@@ -75,7 +76,7 @@
        Buttons, damit sie die Verdict-Aktionen nicht visuell überlagern. #}
     <span class="verdict-exports" style="margin-left:auto; font-size:.8rem; white-space:nowrap;">
       {% if a.zotero_key %}
-      <span style="color:var(--lesenswert);" title="In Zotero (Key: {{ a.zotero_key }})">✓ Zotero</span>
+      <span style="color:var(--lesenswert);" title="In Zotero gespeichert">✓ Zotero</span>
       {% else %}
       <span id="zotero-{{ a.id }}" style="display:inline;">
         <a href="#" style="color:var(--muted); text-decoration:none;"
@@ -88,7 +89,7 @@
       <span id="obsidian-{{ a.id }}" style="display:inline;">
         <a href="#" style="color:var(--muted); text-decoration:none;"
            hx-post="/api/obsidian/{{ a.id }}" hx-target="#obsidian-{{ a.id }}" hx-swap="innerHTML"
-           title="Als Markdown in Obsidian-Vault exportieren"
+           title="Als Markdown in den Obsidian-Vault exportieren"
            onclick="event.preventDefault();">→ Obsidian</a>
       </span>
     </span>

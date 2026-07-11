@@ -1,22 +1,22 @@
 <div class="card" style="margin-top:.5rem; background:var(--code-bg);">
   <h3 style="margin-top:0; margin-bottom:.5rem;">Vorschau</h3>
   <div style="font-size:.85rem; line-height:1.5;">
-    <div><strong>Scope:</strong> {{ scope.label }}</div>
-    <div><strong>Fenster:</strong> {{ scope.start_year }}{% if scope.end_year != scope.start_year %}–{{ scope.end_year }}{% endif %}</div>
+    <div><strong>Bereich:</strong> {{ scope.label }}</div>
+    <div><strong>Zeitraum:</strong> {{ scope.start_year }}{% if scope.end_year != scope.start_year %}–{{ scope.end_year }}{% endif %}</div>
     {% if scope.mode == "journal_history" %}
     <div><strong>Gewählte Jahrgänge:</strong> {{ scope.selected_years|join(", ") }}</div>
     <div><strong>Verfügbare Jahrgänge:</strong> {{ scope.available_years|length }}</div>
     {% endif %}
     <div style="margin-top:.4rem;">
-      {{ preview.total_articles }} Artikel im Scope
-      · {{ preview.pending_articles }} ungeprozessiert
+      {{ preview.total_articles }} Artikel im Bereich
+      · {{ preview.pending_articles }} noch offen
       · {{ preview.processed_articles }} bereits bewertet
     </div>
     <div style="margin-top:.25rem;">
       Metadaten-Import: {{ preview.new_in_store }} neu
-      · {{ preview.enriched_ok }} Enrichment ok
+      · {{ preview.enriched_ok }} mit ergänzten Metadaten
       {% if preview.enrichment_skipped %} · {{ preview.enrichment_skipped }} ohne DOI{% endif %}
-      {% if preview.enrichment_failed %} · {{ preview.enrichment_failed }} Enrichment-Fehler{% endif %}
+      {% if preview.enrichment_failed %} · {{ preview.enrichment_failed }} Fehler bei der Ergänzung{% endif %}
     </div>
     <div style="margin-top:.4rem;">
       <strong>Grobe Kostenschätzung:</strong>
@@ -29,7 +29,7 @@
 
   {% if preview.fetch_errors %}
   <details style="margin-top:.65rem;">
-    <summary><strong>Fetch-Hinweise</strong></summary>
+    <summary><strong>Hinweise zum Abruf</strong></summary>
     <ul style="margin:.5rem 0 0 1.1rem; font-size:.82rem;">
       {% for err in preview.fetch_errors %}
       <li>{{ err }}</li>

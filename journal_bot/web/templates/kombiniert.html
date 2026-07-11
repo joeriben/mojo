@@ -1,8 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Kombiniert · MOJO{% endblock %}
+{% block title %}MOJO — Triage-Vergleich{% endblock %}
 
 {% macro vbadge(v) %}
-  {%- if v -%}<span class="badge badge-{{ v }}">{{ v[:4] }}</span>{%- else -%}<span class="badge badge-ignorieren">—</span>{%- endif -%}
+  {%- set vfull = {"pflichtlektuere": "Pflichtlektüre", "lesenswert": "Lesenswert", "scannen": "Scannen", "ignorieren": "Ignorieren"} -%}
+  {%- if v -%}<span class="badge badge-{{ v }}">{{ vfull.get(v, v) }}</span>{%- else -%}<span class="badge badge-ignorieren">—</span>{%- endif -%}
 {% endmacro %}
 
 {% block content %}
@@ -33,15 +34,15 @@
   .arrow { color:var(--muted); }
 </style>
 
-<h2 style="margin-top:0">Kombinierte Triage <span class="section-count">— Cascade + LLM gegen dein Urteil ({{ data.n }} Artikel, Gold-Satz)</span></h2>
+<h2 style="margin-top:0">Triage-Vergleich (Labor) <span class="section-count">— algorithmische Vorsortierung + KI-Screening gegen dein Urteil ({{ data.n }} Artikel im Vergleichssatz)</span></h2>
 
 <div class="kpi">
   <div class="box"><div class="num">{{ data.wahr_behalten }}/{{ data.n }}</div><div class="lbl">wirklich behaltenswert</div></div>
   <div class="box">
-    <div class="fnflow">Falsch-Negative: Cascade {{ data.fn_cascade }} <span class="arrow">→</span> LLM {{ data.fn_llm }} <span class="arrow">→</span> <span class="down">Kombi {{ data.fn_comb }}</span></div>
-    <div class="lbl">verlorene Treffer — Vereinigung halbiert sie</div>
+    <div class="fnflow">Falsch-Negative: Vorsortierung {{ data.fn_cascade }} <span class="arrow">→</span> KI-Screening {{ data.fn_llm }} <span class="arrow">→</span> <span class="down">kombiniert {{ data.fn_comb }}</span></div>
+    <div class="lbl">verlorene Treffer — die Kombination halbiert sie</div>
   </div>
-  <div class="box"><div class="num">{{ ((data.wahr_behalten - data.fn_comb) / data.wahr_behalten * 100) | round }}%</div><div class="lbl">behalten-Recall (Kombi)</div></div>
+  <div class="box"><div class="num">{{ ((data.wahr_behalten - data.fn_comb) / data.wahr_behalten * 100) | round }}%</div><div class="lbl">Behalten-Recall (kombiniert)</div></div>
 </div>
 
 <div class="states">
@@ -56,9 +57,9 @@
 </div>
 
 <p style="font-size:.82rem; color:var(--muted); margin-bottom:.75rem;">
-  Spalten: <b>C</b> = Cascade-Stimme (M9), <b>L</b> = LLM-Stimme, <b>→</b> = kombinierte Entscheidung,
-  <b>Du</b> = dein Urteil. <span class="ok">✓</span>/<span class="no">✗</span> = Kombi vs. dein Behalten/Wegwerfen.
-  <span class="flag">⚑</span> = Dissens (recall-schützend behalten). Konsens-wegwerfen ist der einzige Wegwurf.
+  Spalten: <b>C</b> = algorithmische Vorsortierung, <b>L</b> = KI-Screening, <b>→</b> = kombinierte Entscheidung,
+  <b>Du</b> = dein Urteil. <span class="ok">✓</span>/<span class="no">✗</span> = kombinierte Entscheidung trifft dein Behalten/Wegwerfen — oder verfehlt es.
+  <span class="flag">⚑</span> = die beiden Stimmen widersprechen sich (im Zweifel behalten). Aussortiert wird nur, wenn beide übereinstimmend wegwerfen.
 </p>
 
 <table class="ctab">
@@ -72,7 +73,7 @@
       <td><a href="/article/{{ e.id }}" title="{{ e.title }}">{{ e.title[:90] }}{% if e.title|length > 90 %}…{% endif %}</a></td>
       <td class="c">{{ vbadge(e.cascade) }}</td>
       <td class="c">{{ vbadge(e.llm) }}</td>
-      <td class="c"><b>{{ 'behalten' if e.decision == 'behalten' else 'wegwerf.' }}</b>{% if e.flagged %} <span class="flag" title="Dissens">⚑</span>{% endif %}</td>
+      <td class="c"><b>{{ 'behalten' if e.decision == 'behalten' else 'wegwerfen' }}</b>{% if e.flagged %} <span class="flag" title="Dissens">⚑</span>{% endif %}</td>
       <td class="c">{{ vbadge(e.user) }}</td>
       <td class="c">{% if e.correct %}<span class="ok">✓</span>{% else %}<span class="no">✗</span>{% endif %}</td>
     </tr>

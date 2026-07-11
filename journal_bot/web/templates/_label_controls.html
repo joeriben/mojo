@@ -1,14 +1,14 @@
 {# Blinde Label-Buttons: L/S/I → user_verdict OHNE Deepen; ⊘ → Ausschluss (Sidecar) #}
 <div class="label-controls" id="lc-{{ a.id }}">
   {% if excluded %}
-  <span class="lbl-excluded">⊘ ausgeschlossen — kenne ich / Pflicht (kein Relevanztest)</span>
+  <span class="lbl-excluded">⊘ ausgeschlossen — kenne ich / muss ich kennen (zählt nicht in die Wertung)</span>
   <button class="btn lbl-reset"
           hx-post="/api/label"
           hx-vals='{"article_id": "{{ a.id }}", "verdict": "__unexclude__"}'
           hx-target="#lc-{{ a.id }}" hx-swap="outerHTML"
           title="doch bewerten">↩ zurück</button>
   {% else %}
-  {% set choices = [("lesenswert", "L · Lesenswert"), ("scannen", "S · Scannen"), ("ignorieren", "I · Ignorieren")] %}
+  {% set choices = [("lesenswert", "Lesenswert"), ("scannen", "Scannen"), ("ignorieren", "Ignorieren")] %}
   {% for val, lbl in choices %}
   <button class="btn lbl-btn lbl-{{ val }}{% if a.user_verdict == val %} lbl-active{% endif %}"
           hx-post="/api/label"

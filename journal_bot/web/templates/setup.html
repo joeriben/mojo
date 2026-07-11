@@ -1,17 +1,17 @@
 {% extends "base.html" %}
-{% block title %}MOJO — Setup{% endblock %}
+{% block title %}MOJO — Einstellungen{% endblock %}
 {% block content %}
-<h1 style="font-size:1.3rem; margin-bottom:1rem;">Setup</h1>
+<h1 style="font-size:1.3rem; margin-bottom:1rem;">Einstellungen</h1>
 
 <!-- Tabs -->
 <div class="tab-bar">
   <button class="tab active" onclick="switchTab('profil', this)">Profil</button>
-  <button class="tab" onclick="switchTab('zotero', this)">Zotero & Corpus</button>
+  <button class="tab" onclick="switchTab('zotero', this)">Zotero & Korpus</button>
   <button class="tab" onclick="switchTab('matrix', this)">Journals & Diskursräume</button>
   <button class="tab" onclick="switchTab('projekte', this)">Projekte</button>
-  <button class="tab" onclick="switchTab('monitoring', this)">Monitoring</button>
+  <button class="tab" onclick="switchTab('monitoring', this)">Wochenlauf</button>
   <button class="tab" onclick="switchTab('kosten', this)">Kosten</button>
-  <button class="tab" onclick="switchTab('system', this)">System</button>
+  <button class="tab" onclick="switchTab('system', this)">Daten & Sicherung</button>
 </div>
 
 <!-- ═══════════════════════ TAB: Profil ═══════════════════════ -->
@@ -21,8 +21,8 @@
     <div class="card">
       <h2 style="margin-top:0;">Forscherprofil</h2>
       <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
-        Diese Angaben steuern alle LLM-Prompts, das Citation-Tracking und die UI.
-        Änderungen werden in <code>profile.json</code> gespeichert und sofort wirksam.
+        Diese Angaben fließen in die Relevanz-Bewertung, die Zitations-Erkennung und die Anzeige ein.
+        Änderungen werden <span title="profile.json">im Profil gespeichert</span> und sind sofort wirksam.
       </p>
       <div class="form-row">
         <div class="form-group" style="flex:1;">
@@ -35,11 +35,11 @@
         </div>
       </div>
       <div class="form-group">
-        <label>Forschungsgebiete <span style="color:var(--muted); font-size:.8rem;">(Freitext, wird in Prompts eingesetzt)</span></label>
+        <label>Forschungsgebiete <span style="color:var(--muted); font-size:.8rem;">(Freitext — Grundlage der automatischen Bewertung)</span></label>
         <textarea name="areas" class="form-input" rows="3">{{ profile.areas }}</textarea>
       </div>
       <div class="form-group">
-        <label>Triage-Topics <span style="color:var(--muted); font-size:.8rem;">(eins pro Zeile — steuern Screening-Relevanzbewertung)</span></label>
+        <label>Relevanz-Themen <span style="color:var(--muted); font-size:.8rem;">(eins pro Zeile — fließen in die automatische Relevanz-Prüfung ein)</span></label>
         <textarea name="triage_topics" class="form-input" rows="6">{{ profile.triage_topics|join('\n') }}</textarea>
       </div>
     </div>
@@ -48,12 +48,12 @@
       <h2 style="margin-top:0;">Pfade & Zotero</h2>
       <div class="form-row">
         <div class="form-group" style="flex:1;">
-          <label>Zotero-Collection</label>
+          <label>Zotero-Sammlung</label>
           <input type="text" name="zotero_collection" value="{{ profile.zotero_collection }}"
                  class="form-input" placeholder="My publications">
         </div>
         <div class="form-group" style="flex:1;">
-          <label>Seit Jahr <span style="color:var(--muted); font-size:.8rem;">(ältester Jahrgang im Corpus)</span></label>
+          <label>Seit Jahr <span style="color:var(--muted); font-size:.8rem;">(ältester Jahrgang im Korpus)</span></label>
           <input type="number" name="since_year" value="{{ profile.since_year }}"
                  class="form-input" style="max-width:120px;" min="1990" max="2030">
         </div>
@@ -71,18 +71,18 @@
     </div>
 
     <div class="card">
-      <h2 style="margin-top:0;">LLM-Modelle</h2>
+      <h2 style="margin-top:0;">KI-Modelle</h2>
       <p style="font-size:.8rem; color:var(--muted); margin-bottom:.75rem;">
-        API-Keys werden im System-Tab verwaltet.
+        API-Keys werden im Tab „Daten &amp; Sicherung“ verwaltet.
       </p>
       <div class="form-row">
         <div class="form-group" style="flex:1;">
-          <label>Agent-Modell <span style="color:var(--muted); font-size:.8rem;">(Hauptanalyse)</span></label>
+          <label>Analyse-Modell <span style="color:var(--muted); font-size:.8rem;">(Artikel-Analyse)</span></label>
           <input type="text" name="model_agent" value="{{ profile.model_agent }}"
                  class="form-input" placeholder="z.B. deepseek/deepseek-v3.2">
         </div>
         <div class="form-group" style="flex:1;">
-          <label>Summarize-Modell <span style="color:var(--muted); font-size:.8rem;">(Corpus-Summaries)</span></label>
+          <label>Werkprofil-Modell <span style="color:var(--muted); font-size:.8rem;">(Kurzprofile der eigenen Publikationen)</span></label>
           <input type="text" name="model_summarize" value="{{ profile.model_summarize }}"
                  class="form-input" placeholder="z.B. anthropic/claude-opus-4.6">
         </div>
@@ -99,23 +99,23 @@
 <!-- ═══════════════════════ TAB: Zotero & Corpus ═══════════════════════ -->
 <div id="tab-zotero" class="tab-content">
   <div class="card">
-    <h2 style="margin-top:0;">Corpus-Status</h2>
+    <h2 style="margin-top:0;">Korpus-Status</h2>
     <table class="stats-table">
-      <tr><td>Corpus (corpus.json)</td>
+      <tr><td>Korpus <code style="font-size:.75rem; font-weight:400;">corpus.json</code></td>
           <td>{% if corpus_status.exists %}
                 {{ corpus_status.count }} Publikationen · {{ corpus_status.size_kb }} KB
                 · <span style="color:var(--muted);">{{ corpus_status.modified }}</span>
               {% else %}
                 <span style="color:var(--pflichtlektuere);">Nicht vorhanden</span>
               {% endif %}</td></tr>
-      <tr><td>Summaries (summaries.json)</td>
+      <tr><td>Werkprofil <code style="font-size:.75rem; font-weight:400;">summaries.json</code></td>
           <td>{% if summaries_status.exists %}
-                {{ summaries_status.count }} Summaries · {{ summaries_status.size_kb }} KB
+                {{ summaries_status.count }} Kurzprofile · {{ summaries_status.size_kb }} KB
                 · <span style="color:var(--muted);">{{ summaries_status.modified }}</span>
               {% else %}
                 <span style="color:var(--pflichtlektuere);">Nicht vorhanden</span>
               {% endif %}</td></tr>
-      <tr><td>Zotero-Collection</td>
+      <tr><td>Zotero-Sammlung</td>
           <td>{{ profile.zotero_collection }}</td></tr>
       <tr><td>Zotero-Storage</td>
           <td><code style="font-size:.8rem;">{{ profile.zotero_storage }}</code></td></tr>
@@ -125,14 +125,14 @@
   <div class="card">
     <h2 style="margin-top:0;">Zotero-Import</h2>
     <p style="font-size:.85rem; color:var(--muted); margin-bottom:.75rem;">
-      Liest die Zotero-Collection und extrahiert PDF-Volltexte nach corpus.json.
-      Zotero muss lokal laufen.
+      Liest die Zotero-Sammlung und übernimmt die PDF-Volltexte in den Korpus.
+      Zotero muss dabei geöffnet sein.
     </p>
     <div style="display:flex; gap:.5rem; align-items:center;">
       <button class="btn btn-primary"
               hx-post="/api/setup/ingest" hx-target="#ingest-result" hx-swap="innerHTML"
               hx-indicator="#ingest-spinner">
-        Corpus aktualisieren
+        Korpus aktualisieren
       </button>
       <span id="ingest-spinner" class="htmx-indicator" style="font-size:.85rem; color:var(--muted);">
         ⏳ Zotero wird gelesen…
@@ -142,19 +142,20 @@
   </div>
 
   <div class="card">
-    <h2 style="margin-top:0;">Summaries generieren</h2>
+    <h2 style="margin-top:0;">Werkprofil erstellen</h2>
     <p style="font-size:.85rem; color:var(--muted); margin-bottom:.75rem;">
-      Erstellt Haiku-Summaries aus corpus.json (~ $1.50, einmalig).
+      Erstellt Kurzprofile der eigenen Publikationen — sie dienen der Relevanz-Prüfung
+      als Suchindex ins eigene Werk (~ $1.50, einmalig).
       Nur neue Publikationen werden zusammengefasst.
     </p>
     <div style="display:flex; gap:.5rem; align-items:center;">
       <button class="btn"
               hx-post="/api/setup/summarize" hx-target="#summarize-result" hx-swap="innerHTML"
               hx-indicator="#summarize-spinner">
-        Summaries aktualisieren
+        Werkprofil aktualisieren
       </button>
       <span id="summarize-spinner" class="htmx-indicator" style="font-size:.85rem; color:var(--muted);">
-        ⏳ Haiku-Summaries werden erstellt…
+        ⏳ Kurzprofile werden erstellt…
       </span>
     </div>
     <div id="summarize-result" style="margin-top:.75rem;"></div>
@@ -168,7 +169,7 @@
   <div class="card">
     <h2 style="margin-top:0;">Diskursräume</h2>
     <p style="font-size:.85rem; color:var(--muted); margin-bottom:.75rem;">
-      Klick auf einen Diskursraum zum Bearbeiten. Änderungen hier aktualisieren automatisch die Matrix unten.
+      Klick auf einen Diskursraum zum Bearbeiten. Änderungen hier aktualisieren automatisch die Zuordnungstabelle unten.
     </p>
 
     <div id="diskurs-chips" class="diskurs-chips">
@@ -231,7 +232,7 @@
     <h2 style="margin-top:0;">Journal hinzufügen</h2>
     <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
       ISSN eingeben um zu prüfen, ob das Journal via OpenAlex abrufbar ist.
-      Für Journals ohne OpenAlex-Eintrag: RSS/OJS-Feed oder Custom-Config verwenden.
+      Für Journals ohne OpenAlex-Eintrag: RSS-/OJS-Feed oder eine eigene Abruf-Konfiguration verwenden.
     </p>
 
     <!-- Step 1: ISSN-Lookup -->
@@ -261,12 +262,12 @@
 
     <div class="form-row">
       <div class="form-group" style="flex:1;">
-        <label>Retrieval-Typ</label>
+        <label>Bezugsquelle</label>
         <select id="add-type" class="form-input" onchange="onTypeChange()" style="max-width:200px;">
           <option value="openalex" selected>OpenAlex (ISSN)</option>
           <option value="rss">RSS-Feed</option>
           <option value="ojs">OJS-Feed</option>
-          <option value="custom">Custom-Config</option>
+          <option value="custom">Eigene Konfiguration</option>
         </select>
       </div>
       <div class="form-group" id="add-url-group" style="flex:2; display:none;">
@@ -274,7 +275,7 @@
         <input type="text" id="add-url" class="form-input" placeholder="https://...">
       </div>
       <div class="form-group" style="flex:0 0 auto;">
-        <label>Tier</label>
+        <label title="Gründlichkeit der Prüfung: A gründliche Analyse mit Blick ins eigene Werk, B gründliche Analyse, C nur automatische Vorprüfung">Stufe</label>
         <select id="add-tier" class="form-input" style="max-width:80px;">
           <option value="A">A</option>
           <option value="B" selected>B</option>
@@ -298,7 +299,7 @@
     <!-- Custom config editor (nur für type=custom sichtbar) -->
     <div id="custom-config-section" style="display:none;">
       <div class="form-group">
-        <label>Custom-Config <span style="color:var(--muted); font-size:.8rem;">(JSON — festes Schema, CSS-Selektoren)</span></label>
+        <label>Abruf-Konfiguration <span style="color:var(--muted); font-size:.8rem;">(JSON — festes Schema, CSS-Selektoren)</span></label>
         <textarea id="add-custom-config" class="form-input" rows="12" style="font-family:monospace; font-size:.8rem;">{
   "$schema": "mojo-custom-fetcher-v1",
   "base_url": "https://example.com",
@@ -331,7 +332,7 @@
     </div>
 
     <div style="display:flex; gap:.75rem; align-items:center; margin-top:.5rem;">
-      <button type="button" class="btn" onclick="testFetchJournal()">Test-Fetch</button>
+      <button type="button" class="btn" onclick="testFetchJournal()">Abruf testen</button>
       <button type="button" class="btn btn-primary" onclick="addJournal()">Journal hinzufügen</button>
       <span id="add-journal-status" style="font-size:.85rem;"></span>
     </div>
@@ -347,7 +348,7 @@
   <div class="card" id="topic-candidate-card">
     <h2 style="margin-top:0;">Themenbasierte Journal-Kandidaten</h2>
     <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
-      Nutzt OpenAlex Topics/Sources und das Profil, ohne LLM-Kosten.
+      Nutzt die OpenAlex-Themenprofile und das eigene Forschungsprofil — ohne LLM-Kosten.
       Bestehende Journals werden markiert; neue Kandidaten können direkt ins Formular übernommen werden.
     </p>
 
@@ -379,22 +380,22 @@
 
     <div style="display:flex; gap:.75rem; align-items:center;">
       <button type="button" class="btn" onclick="loadJournalCandidates()">Kandidaten suchen</button>
-      <span style="font-size:.8rem; color:var(--muted);">Heuristik: Themenfit aus Source-Topics, kein automatisches Tier-Setzen in der Matrix.</span>
+      <span style="font-size:.8rem; color:var(--muted);">Einschätzung nach Themenprofil (OpenAlex) — Journals werden nicht automatisch zugeordnet oder eingestuft.</span>
     </div>
 
     <div id="journal-candidates-output" style="margin-top:.75rem;"></div>
   </div>
 
   <div class="card" id="journal-profile-router-card">
-    <h2 style="margin-top:0;">Journal-Profile-Router</h2>
+    <h2 style="margin-top:0;">Journal-Profile (Themenprofile via OpenAlex)</h2>
     <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
-      Persistiert OpenAlex-Themenprofile der aktiven Journals als lokalen Routing-Layer.
-      Das ersetzt keine Matrix-Entscheidung, macht aber Suchbudgets und A/B/C-Hinweise begründbarer.
+      Speichert die OpenAlex-Themenprofile der aktiven Journals lokal.
+      Das ersetzt keine eigene Zuordnung, macht aber die Hinweise zur Stufe (A/B/C) nachvollziehbarer.
     </p>
 
     <div class="form-row" style="align-items:flex-end;">
       <div class="form-group" style="max-width:220px;">
-        <label>Topics pro Journal</label>
+        <label>Themen pro Journal</label>
         <input type="number" id="profile-topic-limit" class="form-input" value="80" min="10" max="200">
       </div>
       <div style="display:flex; gap:.75rem; align-items:center; margin-bottom:.85rem;">
@@ -411,9 +412,9 @@
   <div class="card" id="historical-scan-card">
     <h2 style="margin-top:0;">Historische Scans</h2>
     <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
-      Vorschau zieht nur Metadaten in die DB und verursacht keine LLM-Kosten.
-      Der eigentliche Scan verarbeitet danach nur ungeprozessierte Artikel im gewählten Scope
-      und stoppt am Kostenlimit oder früher, falls die Cache-Sicherungen anschlagen.
+      Die Vorschau lädt nur Metadaten in die Datenbank und verursacht keine LLM-Kosten.
+      Der eigentliche Scan bewertet danach nur die noch offenen Artikel im gewählten Bereich
+      und stoppt am Kostenlimit — oder früher, falls die Kosten-Schutzmechanismen anschlagen.
     </p>
 
     <div class="form-row" style="align-items:flex-start;">
@@ -434,7 +435,7 @@
           </div>
         </div>
         <div class="form-group">
-          <label>Agent-Modell</label>
+          <label>Analyse-Modell</label>
           <input type="text" id="year-scan-model" class="form-input" value="{{ profile.model_agent }}">
         </div>
         <div style="display:flex; gap:.75rem; align-items:center;">
@@ -448,7 +449,7 @@
         <h3 style="margin-top:0;">Neues Journal historisch scannen</h3>
         <p style="font-size:.82rem; color:var(--muted); margin-bottom:.75rem;">
           Nimmt die neuesten verfügbaren Jahrgänge eines Journals, standardmäßig max. 10.
-          Die Verfügbarkeit wird über DB/OpenAlex ermittelt.
+          Die Verfügbarkeit wird über die lokale Datenbank und OpenAlex ermittelt.
         </p>
         <div class="form-group">
           <label>Journal</label>
@@ -472,7 +473,7 @@
           </div>
         </div>
         <div class="form-group">
-          <label>Agent-Modell</label>
+          <label>Analyse-Modell</label>
           <input type="text" id="history-scan-model" class="form-input" value="{{ profile.model_agent }}">
         </div>
         <div style="display:flex; gap:.75rem; align-items:center;">
@@ -490,8 +491,8 @@
   <div class="card">
     <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
       Aktive Forschungsprojekte steuern die Relevanz-Bewertung: Ein Artikel kann durch Projektbezug
-      von <em>scannen</em> zu <em>lesenswert</em> aufgewertet werden.
-      Änderungen werden in <code>projects.json</code> gespeichert.
+      von <em>Scannen</em> zu <em>Lesenswert</em> aufgewertet werden.
+      Änderungen werden sofort wirksam.
     </p>
   </div>
 
@@ -504,7 +505,7 @@
           {% if p.status == 'active' %}
           <span class="badge badge-lesenswert">aktiv</span>
           {% else %}
-          <span class="badge badge-ignorieren">{{ p.status }}</span>
+          <span class="badge badge-ignorieren">{{ {'completed': 'abgeschlossen', 'planned': 'geplant'}.get(p.status, humanize_key(p.status)) }}</span>
           {% endif %}
           {% if p.funder %}<span style="font-size:.8rem; color:var(--muted);">{{ p.funder }}</span>{% endif %}
           {% if p.period %}<span style="font-size:.8rem; color:var(--muted);">{{ p.period }}</span>{% endif %}
@@ -516,7 +517,7 @@
 
         {% if p.relevance_shifts %}
         <div style="margin-top:.5rem;">
-          <strong style="font-size:.82rem; color:var(--muted);">Relevance Shifts:</strong>
+          <strong style="font-size:.82rem; color:var(--muted);">Relevanz-Verschiebungen:</strong>
           <ul style="font-size:.85rem; margin-top:.25rem; padding-left:1.2rem;">
             {% for rs in p.relevance_shifts %}
             <li>{{ rs }}</li>
@@ -545,9 +546,9 @@
             <div class="form-group" style="flex:1;">
               <label>Status</label>
               <select name="status" class="form-input">
-                <option value="active" {{ 'selected' if p.status == 'active' }}>active</option>
-                <option value="completed" {{ 'selected' if p.status == 'completed' }}>completed</option>
-                <option value="planned" {{ 'selected' if p.status == 'planned' }}>planned</option>
+                <option value="active" {{ 'selected' if p.status == 'active' }}>aktiv</option>
+                <option value="completed" {{ 'selected' if p.status == 'completed' }}>abgeschlossen</option>
+                <option value="planned" {{ 'selected' if p.status == 'planned' }}>geplant</option>
               </select>
             </div>
             <div class="form-group" style="flex:1;">
@@ -564,11 +565,11 @@
             <textarea name="description" class="form-input" rows="3">{{ p.description }}</textarea>
           </div>
           <div class="form-group">
-            <label>Relevance Shifts <span style="color:var(--muted); font-size:.8rem;">(eins pro Zeile — wie verschiebt dieses Projekt Relevanzbewertungen?)</span></label>
+            <label>Relevanz-Verschiebungen <span style="color:var(--muted); font-size:.8rem;">(eins pro Zeile — wie verschiebt dieses Projekt die Relevanz-Bewertung?)</span></label>
             <textarea name="relevance_shifts" class="form-input" rows="5">{{ p.relevance_shifts|join('\n') }}</textarea>
           </div>
           <div class="form-group">
-            <label>Verknüpfte Publikationen <span style="color:var(--muted); font-size:.8rem;">(pub_ids, kommasepariert)</span></label>
+            <label>Verknüpfte Publikationen <span style="color:var(--muted); font-size:.8rem;">(Publikations-IDs aus dem Korpus, kommasepariert)</span></label>
             <input type="text" name="connected_publications" value="{{ p.connected_publications|join(', ') }}" class="form-input">
           </div>
           <div style="display:flex; gap:.5rem; align-items:center;">
@@ -614,7 +615,7 @@
        hx-trigger="load, monitoring-changed from:body"
        hx-swap="innerHTML">
     <div class="card">
-      <span style="font-size:.85rem; color:var(--muted);">Monitoring wird geladen…</span>
+      <span style="font-size:.85rem; color:var(--muted);">Wochenlauf wird geladen…</span>
     </div>
   </div>
 </div>
@@ -636,7 +637,7 @@
   <div class="card">
     <h2 style="margin-top:0;">API-Keys</h2>
     <p style="font-size:.85rem; color:var(--muted); margin-bottom:.75rem;">
-      Keys werden unter <code>~/.config/mojo/</code> mit <code>chmod 600</code> abgelegt.
+      Keys werden lokal unter <code>~/.config/mojo/</code> abgelegt, nur für das eigene Benutzerkonto lesbar.
       Leer lassen = bestehender Wert bleibt. Neuen Wert eintragen = überschreibt.
     </p>
     <form hx-post="/api/setup/api-keys" hx-target="#api-keys-status" hx-swap="innerHTML">
@@ -651,7 +652,7 @@
         <tbody>
           {% set rows = [
             ('api_key',         api_key_status,         'OpenRouter',      'sk-or-...',                              'LLM-Analyse via OpenRouter'),
-            ('s2_api_key',      s2_key_status,          'Semantic Scholar','semanticscholar.org/product/api',        'Abstract-Backfill (optional)'),
+            ('s2_api_key',      s2_key_status,          'Semantic Scholar','semanticscholar.org/product/api',        'Ergänzt fehlende Abstracts (optional)'),
             ('zotero_user_id',  zotero_user_id_status,  'Zotero User-ID',  'Wert aus zotero.org/settings/keys',      'Steht auf zotero.org/settings/keys'),
             ('zotero_api_key',  zotero_api_key_status,  'Zotero API-Key',  'Private Key mit Write-Permission',       'Für «In Zotero»-Button — siehe zotero.org/settings/keys'),
             ('mistral_api_key', mistral_key_status,     'Mistral',         'Aus console.mistral.ai/api-keys',        'Direkter Mistral-Zugang (optional)')
@@ -692,12 +693,12 @@
     <h2 style="margin-top:0;">Datenbank</h2>
     <table class="stats-table">
       <tr><td>Artikel gesamt</td><td>{{ db_stats.total|format_number }}</td></tr>
-      <tr><td>Agent-bewertet</td><td>{{ db_stats.processed|format_number }}</td></tr>
+      <tr><td>Automatisch bewertet</td><td>{{ db_stats.processed|format_number }}</td></tr>
       <tr><td>Gesamtkosten</td><td>${{ '%.2f'|format(db_stats.total_cost_usd) }}</td></tr>
-      <tr><td>DB-Größe</td><td>{{ db_size_mb }} MB</td></tr>
+      <tr><td>Datenbank-Größe</td><td>{{ db_size_mb }} MB</td></tr>
     </table>
     <div style="margin-top:.75rem;">
-      <h3 style="margin-bottom:.4rem;">Verdicts</h3>
+      <h3 style="margin-bottom:.4rem;">Bewertungen</h3>
       <div style="display:flex; gap:1rem; font-size:.85rem;">
         {% for v, count in db_stats.by_verdict.items() %}
         <span>
@@ -727,20 +728,20 @@
     </div>
     <p style="font-size:.8rem; color:var(--muted); margin-top:.5rem;">
       Das Backup enthält den lokalen Nutzerzustand
-      (DB, Profil, Projekte, Journals, Journalprofile, Diskursräume, Corpus, Summaries,
-      Custom-Fetcher und projektlokale Digest-Ausgaben). API-Keys sind aus Sicherheitsgründen nicht enthalten.
+      (Datenbank, Profil, Projekte, Journals, Journalprofile, Diskursräume, Korpus, Werkprofil,
+      eigene Abruf-Konfigurationen und lokale Digest-Ausgaben). API-Keys sind aus Sicherheitsgründen nicht enthalten.
     </p>
     <p style="font-size:.8rem; color:var(--muted); margin-top:.5rem;">
-      Rücksicherung auf einem neuen Rechner per CLI:
+      Rücksicherung auf einem neuen Rechner per Kommandozeile:
       <code>mojo restore /pfad/zum/backup.zip</code>
     </p>
     <p style="font-size:.8rem; color:var(--muted); margin-top:.5rem;">
-      Rohdatenpaket ist fuer andere Installationen gedacht:
-      Artikel, Abstracts und Enrichment ja, Bewertungen/Memos nein.
-      Import per CLI: <code>mojo import-raw /pfad/zum/rohdaten.zip</code>
+      Das Rohdatenpaket ist für andere Installationen gedacht:
+      Artikel, Abstracts und ergänzte Metadaten ja, Bewertungen und Memos nein.
+      Import per Kommandozeile: <code>mojo import-raw /pfad/zum/rohdaten.zip</code>
     </p>
     <p style="font-size:.8rem; color:var(--muted); margin-top:.5rem;">
-      JSON/CSV enthalten Metadaten plus Verdicts und sind keine neutrale Austauschdatei.
+      JSON/CSV enthalten Metadaten samt Bewertungen und sind keine neutrale Austauschdatei.
     </p>
   </div>
 </div>
@@ -1100,7 +1101,7 @@ function lookupISSN() {
         document.getElementById('add-type').value = 'openalex';
         onTypeChange();
       } else {
-        el.innerHTML = '<span style="color:var(--scannen);">Nicht in OpenAlex — RSS/OJS/Custom nötig</span>';
+        el.innerHTML = '<span style="color:var(--scannen);">Nicht in OpenAlex — RSS-/OJS-Feed oder eigene Konfiguration nötig</span>';
       }
     })
     .catch(function(err) {
@@ -1118,7 +1119,7 @@ function _candidateQueryString() {
 
 function loadJournalCandidates() {
   var target = document.getElementById('journal-candidates-output');
-  target.innerHTML = '<span style="color:var(--muted); font-size:.85rem;">Suche Kandidaten via OpenAlex Topics…</span>';
+  target.innerHTML = '<span style="color:var(--muted); font-size:.85rem;">Suche Kandidaten über OpenAlex-Themenprofile…</span>';
   fetch('/api/openalex/journal-candidates?' + _candidateQueryString())
     .then(function(r) { return r.text(); })
     .then(function(html) { target.innerHTML = html; })
@@ -1189,7 +1190,7 @@ function testFetchJournal() {
   var resultDiv = document.getElementById('test-fetch-result');
   var contentDiv = document.getElementById('test-fetch-content');
   resultDiv.style.display = 'block';
-  contentDiv.innerHTML = '<span style="color:var(--muted);">Fetche…</span>';
+  contentDiv.innerHTML = '<span style="color:var(--muted);">Rufe ab…</span>';
 
   // For custom type: save config first
   var savePromise = Promise.resolve();
@@ -1294,7 +1295,7 @@ function addJournal() {
 
 function deleteJournal(short, name, count) {
   var msg = 'Journal «' + name + '» (' + short + ') entfernen?';
-  if (count > 0) msg += '\n\n' + count + ' Artikel bleiben in der DB erhalten.';
+  if (count > 0) msg += '\n\n' + count + ' Artikel bleiben in der Datenbank erhalten.';
   if (!confirm(msg)) return;
 
   fetch('/api/setup/journal/' + encodeURIComponent(short), { method: 'DELETE' })
@@ -1405,7 +1406,7 @@ function previewHistoricalScan(mode) {
 
 function runHistoricalScan(mode) {
   var target = document.getElementById(_historicalScanTarget(mode));
-  target.innerHTML = '<span style="color:var(--muted); font-size:.85rem;">Scan läuft… Tab offen lassen.</span>';
+  target.innerHTML = '<span style="color:var(--muted); font-size:.85rem;">Scan läuft — Fenster geöffnet lassen …</span>';
   fetch('/api/setup/scan/run', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -1441,7 +1442,7 @@ function refreshMonitoringPanel() {
 }
 
 function installMonitoringSchedule() {
-  _replaceMonitoringPanel('<div class="card"><span style="font-size:.85rem; color:var(--muted);">Monitoring wird gespeichert…</span></div>');
+  _replaceMonitoringPanel('<div class="card"><span style="font-size:.85rem; color:var(--muted);">Zeitplan wird gespeichert…</span></div>');
   fetch('/api/setup/monitoring/install', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -1452,8 +1453,8 @@ function installMonitoringSchedule() {
 }
 
 function disableMonitoringSchedule() {
-  if (!confirm('Monitoring wirklich deaktivieren?')) return;
-  _replaceMonitoringPanel('<div class="card"><span style="font-size:.85rem; color:var(--muted);">Monitoring wird deaktiviert…</span></div>');
+  if (!confirm('Automatischen Wochenlauf wirklich deaktivieren?')) return;
+  _replaceMonitoringPanel('<div class="card"><span style="font-size:.85rem; color:var(--muted);">Wochenlauf wird deaktiviert…</span></div>');
   fetch('/api/setup/monitoring/disable', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -1464,7 +1465,7 @@ function disableMonitoringSchedule() {
 }
 
 function runMonitoringNow() {
-  _replaceMonitoringPanel('<div class="card"><span style="font-size:.85rem; color:var(--muted);">Monitoring läuft… Tab offen lassen.</span></div>');
+  _replaceMonitoringPanel('<div class="card"><span style="font-size:.85rem; color:var(--muted);">Prüfung läuft — Fenster geöffnet lassen …</span></div>');
   fetch('/api/setup/monitoring/run', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},

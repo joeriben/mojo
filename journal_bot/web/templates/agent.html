@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}MOJO — Research Agent{% endblock %}
+{% block title %}MOJO — Recherche{% endblock %}
 {% block content %}
 <div class="agent-layout">
 
@@ -8,8 +8,8 @@
     <div class="card">
       <h2 style="margin-top:0;">Text / Entwurf</h2>
       <p style="font-size:.85rem; color:var(--muted); margin-bottom:.75rem;">
-        Lade einen Textentwurf, Artikelskizze oder Stub hoch.
-        Der Agent durchsucht die MOJO-Datenbank nach fehlenden Referenzen und Bezügen.
+        Lade einen Textentwurf, eine Artikelskizze oder Notizen hoch.
+        MOJO durchsucht deinen Bestand nach fehlenden Referenzen und Bezügen.
       </p>
       <form id="upload-form">
         <div class="form-group">
@@ -52,7 +52,7 @@
       </p>
       {% elif context_source in ["fallback_excerpt", "legacy_fallback"] %}
       <p style="font-size:.78rem; color:var(--muted);" id="active-context-meta">
-        Lokaler Kurzkontext ohne LLM-Kosten
+        Lokal erstellter Kurzkontext — kostenfrei
       </p>
       {% elif context_source == "raw_short" %}
       <p style="font-size:.78rem; color:var(--muted);" id="active-context-meta">
@@ -70,7 +70,7 @@
           Fehlende Referenzen im Text prüfen
         </button>
         <button class="btn suggestion-btn" onclick="sendSuggestion(this)">
-          Relevante Artikel in der MOJO-DB recherchieren
+          Relevante Artikel im Bestand finden
         </button>
         <button class="btn suggestion-btn" onclick="sendSuggestion(this)">
           Gegenargumente oder Widersprüche prüfen
@@ -79,7 +79,7 @@
           Methodische Zugänge ähnlicher Arbeiten synthetisieren
         </button>
         <button class="btn suggestion-btn" onclick="sendSuggestion(this)">
-          Kostenfreie DB-Trefferliste ohne LLM anzeigen
+          Trefferliste ohne KI-Analyse (kostenfrei)
         </button>
       </div>
     </div>
@@ -89,29 +89,29 @@
   <div class="agent-chat">
     <div class="card" style="display:flex; flex-direction:column; height:calc(100vh - 8rem);">
       <h2 style="margin-top:0; flex-shrink:0;">
-        Research Agent
+        Recherche
         <button class="btn" style="float:right; font-size:.75rem;" onclick="clearChat()">Chat leeren</button>
       </h2>
 
       <div id="chat-messages" class="chat-messages">
         {% if not messages %}
         <div class="chat-welcome">
-          <p><strong>Hallo!</strong> Ich bin der MOJO Research Agent.</p>
-          <p>Setze links einen Text als Kontext, dann stelle mir Fragen dazu.
-             Ich durchsuche {{ db_article_count|format_number }} Artikel und
-             {{ corpus_count }} Publikationen nach relevanten Bezügen.</p>
+          <p><strong>Recherche in deinem Bestand:</strong>
+             {{ db_article_count|format_number }} gesichtete Artikel und
+             {{ corpus_count }} eigene Publikationen.</p>
+          <p>Setze links optional einen Text als Kontext und stelle Fragen.</p>
         </div>
         {% endif %}
         {% for msg in messages %}
         <div class="chat-msg chat-msg-{{ msg.role }}">
-          <div class="chat-msg-label">{{ 'Du' if msg.role == 'user' else 'Agent' }}</div>
+          <div class="chat-msg-label">{{ 'Du' if msg.role == 'user' else 'MOJO' }}</div>
           <div class="chat-msg-content">{{ msg.content_html|safe if msg.content_html else msg.content }}</div>
         </div>
         {% endfor %}
       </div>
 
       <div id="chat-loading" class="chat-loading" style="display:none;">
-        <span class="loading-dots">Agent arbeitet</span>
+        <span class="loading-dots">Recherche läuft</span>
       </div>
 
       <form id="chat-form" class="chat-input-bar" onsubmit="sendMessage(event)">
@@ -205,7 +205,7 @@ function contextMetaLabel(data) {
   if (data.source === 'raw_short') {
     return 'Kurztext direkt verwendet';
   }
-  return 'Lokaler Kurzkontext ohne LLM-Kosten';
+  return 'Lokal erstellter Kurzkontext — kostenfrei';
 }
 
 function loadFile(input) {
@@ -353,7 +353,7 @@ function appendMessage(role, html) {
 
   const div = document.createElement('div');
   div.className = 'chat-msg chat-msg-' + role;
-  div.innerHTML = '<div class="chat-msg-label">' + (role === 'user' ? 'Du' : 'Agent') + '</div>' +
+  div.innerHTML = '<div class="chat-msg-label">' + (role === 'user' ? 'Du' : 'MOJO') + '</div>' +
                   '<div class="chat-msg-content">' + html + '</div>';
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;

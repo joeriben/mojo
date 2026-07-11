@@ -38,12 +38,18 @@ from journal_bot.settings import (
     RESEARCHER_TRIAGE_TOPICS,
     SINCE_YEAR,
     SUMMARIES_JSON,
+    UI_LAB,
     ZOTERO_API_KEY_FILE,
     ZOTERO_COLLECTION,
     ZOTERO_STORAGE,
     ZOTERO_USER_ID_FILE,
     journals_in_cluster,
     save_profile,
+)
+from journal_bot.web.labels import (
+    VERDICT_LABEL, RELATION_LABEL,
+    selection_mode_label, discourse_indicator_label, signal_group_label,
+    humanize_key,
 )
 
 app = Flask(
@@ -56,6 +62,15 @@ app.secret_key = os.urandom(24)  # For session (lightweight state only)
 # (browsers scope cookies & password managers by hostname, not port).
 # Pair with `mojo.localhost:5555` access (see cmd_web in cli.py).
 app.config["SESSION_COOKIE_NAME"] = "mojo_session"
+
+# Templates never see raw internal identifiers — labels.py is the choke-point.
+app.jinja_env.globals.update(
+    ui_lab=UI_LAB,
+    selection_mode_label=selection_mode_label,
+    discourse_indicator_label=discourse_indicator_label,
+    signal_group_label=signal_group_label,
+    humanize_key=humanize_key,
+)
 
 # Server-side agent state (single-user tool, no cookie size limits)
 # Context is persisted to disk so it survives server restarts.
@@ -195,19 +210,7 @@ def cache_warning_filter(row):
 
 VERDICT_ORDER = ["pflichtlektuere", "lesenswert", "scannen", "ignorieren"]
 VERDICT_RANK = {verdict: rank for rank, verdict in enumerate(VERDICT_ORDER)}
-VERDICT_LABEL = {
-    "pflichtlektuere": "Pflichtlektüre",
-    "lesenswert": "Lesenswert",
-    "scannen": "Scannen",
-    "ignorieren": "Ignorieren",
-}
-RELATION_LABEL = {
-    "erweitert": "erweitert",
-    "widerspricht": "widerspricht",
-    "parallelisiert": "parallel",
-    "importiert": "Import",
-    "tangential": "tangential",
-}
+# VERDICT_LABEL / RELATION_LABEL live in journal_bot.web.labels (imported above).
 
 
 def _store():
@@ -437,10 +440,10 @@ def digest():
 
 
 STATE_LABEL = {
-    "konsens_behalten": "Konsens behalten (1+1)",
-    "dissens": "Dissens — geflaggt",
+    "konsens_behalten": "beide behalten",
+    "dissens": "uneinig — geflaggt",
     "ein_signal": "nur eine Stimme",
-    "konsens_wegwerfen": "Konsens wegwerfen",
+    "konsens_wegwerfen": "beide wegwerfen",
 }
 
 
@@ -453,8 +456,8 @@ def kombiniert():
     gold_file = PROJECT_ROOT / "combine_gold.json"
     if not gold_file.exists():
         return render_template_string(
-            "<p style='padding:2rem'>Noch keine Daten. Erst "
-            "<code>.venv/bin/python scripts/combine_gold_export.py</code> laufen lassen.</p>")
+            "<p style='padding:2rem'>Noch keine Vergleichsdaten vorhanden — "
+            "der Vergleichssatz (Labor) ist noch nicht erzeugt.</p>")
     data = json.loads(gold_file.read_text(encoding="utf-8"))
     state_filter = request.args.get("state") or ""
     entries = data["entries"]
@@ -606,7 +609,7 @@ def diskursraum(cluster_key: str | None = None):
         signal_groups.append(
             {
                 "key": group_key,
-                "label": group_key.replace("_", " "),
+                "label": signal_group_label(group_key),
                 "count": len(ordered),
                 "strong_count": sum(
                     1 for a in ordered if a.discourse_indicator == "starker_indikator"

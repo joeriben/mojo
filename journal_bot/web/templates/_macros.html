@@ -10,7 +10,7 @@
 {% macro title_actions(a) %}
 <span class="title-actions" style="font-size:.8rem; font-weight:normal; white-space:nowrap; margin-left:.5rem;">
   {% if a.zotero_key %}
-  <span style="color:var(--lesenswert);" title="In Zotero (Key: {{ a.zotero_key }})">✓ Zotero</span>
+  <span style="color:var(--lesenswert);" title="In Zotero gespeichert">✓ Zotero</span>
   {% else %}
   <span id="zotero-{{ a.id }}" style="display:inline;">
     <a href="#" style="color:var(--muted); text-decoration:none;"
@@ -23,7 +23,7 @@
   <span id="obsidian-{{ a.id }}" style="display:inline;">
     <a href="#" style="color:var(--muted); text-decoration:none;"
        hx-post="/api/obsidian/{{ a.id }}" hx-target="#obsidian-{{ a.id }}" hx-swap="innerHTML"
-       title="Als Markdown in Obsidian-Vault exportieren"
+       title="Als Markdown in den Obsidian-Vault exportieren"
        onclick="event.preventDefault();">→ Obsidian</a>
   </span>
 </span>
