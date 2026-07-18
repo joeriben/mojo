@@ -74,7 +74,13 @@
                   border-radius: 6px; }
   .import-block > summary { font-size: .88rem; cursor: pointer; font-weight: 600; }
   .import-hinweis { font-size: .82rem; color: var(--muted); margin: .5rem 0 .6rem; }
-  .import-block input[type=file] { font-size: .82rem; max-width: 100%; }
+  .datei-waehler { font-size: .82rem; cursor: pointer; white-space: nowrap;
+                   border: 1px solid var(--border); border-radius: 5px;
+                   padding: .34rem .75rem; }
+  .datei-waehler:hover { border-color: var(--muted); }
+  .datei-waehler input[type=file] { position: absolute; width: 1px; height: 1px;
+                                    opacity: 0; pointer-events: none; }
+  .datei-name { font-size: .8rem; color: var(--muted); word-break: break-all; }
   .import-block form { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap;
                        margin-bottom: .5rem; }
   .import-meldung { font-size: .83rem; margin: .4rem 0; }
@@ -133,7 +139,20 @@
           hx-target="#import-status"
           hx-swap="outerHTML"
           hx-encoding="multipart/form-data">
-      <input type="file" name="dokument" multiple accept="{{ import_formate }}">
+      {# Das native Dateifeld rendert seinen Knopf je nach Browser ohne
+         Beschriftung — ein leeres Kästchen, das niemand als Dateiauswahl
+         erkennt. Deshalb ein eigenes Label als Auslöser, Feld dahinter. #}
+      <label class="datei-waehler">
+        Datei wählen …
+        <input type="file" name="dokument" multiple accept="{{ import_formate }}"
+               onchange="
+                 const n = this.files.length;
+                 this.closest('.datei-waehler').nextElementSibling.textContent =
+                   n === 0 ? '' :
+                   n === 1 ? this.files[0].name :
+                   n + ' Dateien gewählt';">
+      </label>
+      <span class="datei-name"></span>
       <button type="submit" class="btn">Hinzufügen und einlesen</button>
     </form>
     {% include "_profil_import.html" %}
