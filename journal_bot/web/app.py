@@ -2922,51 +2922,6 @@ _import_run: dict[str, Any] = {}
 _import_run_lock = threading.RLock()
 
 
-def _register_eigene_texte_source() -> None:
-    """Den Ablageordner als Quelle in profile.json führen (idempotent).
-
-    Ohne das läge der Text zwar da, verschwände aber beim nächsten Neuaufbau
-    aus dem Bestand: `refs build` liest die konfigurierten Quellen, nicht das
-    Dateisystem. Entspricht `mojo refs sources add folder <PFAD>`.
-    """
-    from journal_bot.settings import _load_profile
-
-    profile = _load_profile()
-    sources = list(profile.get("refs_sources") or [])
-    pfad = str(EIGENE_TEXTE_DIR.resolve())
-    if any(s.get("type") == "folder" and s.get("path") == pfad for s in sources):
-        return
-    sources.append({"type": "folder", "path": pfad})
-    profile["refs_sources"] = sources
-    save_profile(profile)
-
-
-def _konfigurierte_quellen() -> list[dict[str, Any]]:
-    """Woher der Bestand gespeist wird — für die Anzeige im Panel.
-
-    Die Herkunft war bisher nirgends sichtbar: sie steht in profile.json und
-    ist sonst nur über die Kommandozeile abfragbar. Wer einen eigenen Text
-    hinzufügt, soll sehen, wo der landet und was sonst noch gelesen wird.
-    """
-    from journal_bot.settings import _load_profile
-
-    quellen: list[dict[str, Any]] = []
-    for s in _load_profile().get("refs_sources") or []:
-        if s.get("type") == "zotero":
-            quellen.append({
-                "art": "Zotero-Sammlung",
-                "bezeichnung": s.get("label") or s.get("key") or "(ohne Angabe)",
-            })
-        elif s.get("type") == "folder":
-            pfad = Path(s.get("path") or "")
-            quellen.append({
-                "art": "Ordner",
-                "bezeichnung": str(pfad),
-                "eigene_ablage": pfad.resolve() == EIGENE_TEXTE_DIR.resolve(),
-            })
-    return quellen
-
-
 def _sicherer_dateiname(name: str) -> str:
     """Dateinamen auf das Nötige reduzieren, ohne den Titel zu zerstören.
 
@@ -3174,6 +3129,7 @@ def _profil_context() -> dict[str, Any]:
         "year_groups": _texts_by_year(texts),
         "n_texts": len(texts),
         "n_analysed": sum(1 for t in texts if t["analysed"]),
+        "n_veraltet": sum(1 for t in texts if t.get("veraltet")),
         "pform": pform,
         "form_error": form_error,
         "network": network,
@@ -3188,7 +3144,6 @@ def _profil_context() -> dict[str, Any]:
         "seconds_per_text": PROFIL_SECONDS_PER_TEXT,
         "import_run": _import_run_state(),
         "import_formate": IMPORT_ACCEPT,
-        "quellen": _konfigurierte_quellen(),
     }
 
 
@@ -3259,8 +3214,6 @@ def api_profil_dokumente():
                 + f". Lesbar sind {IMPORT_ACCEPT.replace(',', ', ')}."
             ),
         )
-
-    _register_eigene_texte_source()
 
     with _import_run_lock:
         venv_python = PROJECT_ROOT / ".venv" / "bin" / "python"

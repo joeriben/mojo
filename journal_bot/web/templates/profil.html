@@ -93,17 +93,6 @@
   .import-log > summary { font-size: .78rem; color: var(--muted); cursor: pointer; }
   .import-log pre { font-size: .74rem; white-space: pre-wrap; margin: .35rem 0 0;
                     max-height: 14rem; overflow: auto; }
-  .quellen-block { margin-top: .7rem; padding-top: .55rem; border-top: 1px solid var(--border); }
-  .quellen-kopf { font-size: .75rem; text-transform: uppercase; letter-spacing: .03em;
-                  color: var(--muted); font-weight: 600; }
-  .quellen-liste { list-style: none; padding: 0; margin: .35rem 0 0; font-size: .8rem; }
-  .quellen-liste li { display: flex; gap: .5rem; align-items: baseline; padding: .12rem 0;
-                      flex-wrap: wrap; }
-  .q-art { color: var(--muted); min-width: 8.5rem; }
-  .q-bez { word-break: break-all; }
-  .q-hier { font-size: .72rem; color: var(--muted); border: 1px solid var(--border);
-            border-radius: 3px; padding: 0 .3rem; }
-  .quellen-warnung { font-size: .8rem; color: var(--muted); margin: .45rem 0 0; }
   .spinner { width: .7rem; height: .7rem; border: 2px solid var(--border);
              border-top-color: var(--muted); border-radius: 50%;
              display: inline-block; animation: spin .8s linear infinite; }
@@ -121,6 +110,16 @@
   <h2 style="margin-top:0;">Meine ausgewerteten Texte</h2>
   <p style="font-size:.9rem; margin-bottom:.6rem;">
     <strong>{{ n_analysed }} von {{ n_texts }} Texten ausgewertet.</strong>
+    {% if n_veraltet %}
+    <span style="color:var(--muted);">
+      {{ n_veraltet }} weitere{{ "r" if n_veraltet == 1 else "" }}
+      Text{{ "" if n_veraltet == 1 else "e" }}
+      {{ "wurde" if n_veraltet == 1 else "wurden" }} ausgewertet, bevor
+      {{ "er" if n_veraltet == 1 else "sie" }} neu eingelesen
+      {{ "wurde" if n_veraltet == 1 else "wurden" }} —
+      {{ "er steht" if n_veraltet == 1 else "sie stehen" }} unten wieder zur Wahl.
+    </span>
+    {% endif %}
     <span style="color:var(--muted);">
       Ausgewertet werden können deine Publikationen, zu denen ein Volltext vorliegt.
     </span>
@@ -156,33 +155,6 @@
       <button type="submit" class="btn">Hinzufügen und einlesen</button>
     </form>
     {% include "_profil_import.html" %}
-
-    <div class="quellen-block">
-      <span class="quellen-kopf">Woher deine Texte kommen</span>
-      {% if quellen %}
-      <ul class="quellen-liste">
-        {% for q in quellen %}
-        <li>
-          <span class="q-art">{{ q.art }}</span>
-          <span class="q-bez">{{ q.bezeichnung }}</span>
-          {% if q.eigene_ablage %}<span class="q-hier">hier abgelegt</span>{% endif %}
-        </li>
-        {% endfor %}
-      </ul>
-      {% if not quellen|selectattr('art', 'equalto', 'Zotero-Sammlung')|list %}
-      <p class="quellen-warnung">
-        Deine Zotero-Sammlung ist hier nicht eingetragen. Die daraus stammenden
-        Texte bleiben im Bestand, werden aber bei einem Neuaufbau nicht mehr
-        aufgefrischt.
-      </p>
-      {% endif %}
-      {% else %}
-      <p class="import-hinweis" style="margin:.3rem 0 0;">
-        Noch keine Quelle eingetragen — der Bestand stammt aus einem einmaligen
-        Einlesen und wird nicht aufgefrischt.
-      </p>
-      {% endif %}
-    </div>
   </details>
 
   {% if not n_texts %}
@@ -309,6 +281,10 @@
     jeden Text gelesen und darin Quellen, Haltungen und Begriffe benannt. Alles Folgende
     ist das Ergebnis dieser Lektüre — keine Messung und keine Statistik über dein Werk.
     Zahlen darin zählen Lese-Ergebnisse, nicht Belegstellen.
+    {% if n_veraltet %}
+    Bei {{ n_veraltet }} dieser Lektüren hat sich der Text seither geändert; sie
+    beschreiben eine frühere Fassung und sind hier trotzdem eingerechnet.
+    {% endif %}
   </p>
   <p>
     <strong>Zusammenführung ist heuristisch.</strong>
