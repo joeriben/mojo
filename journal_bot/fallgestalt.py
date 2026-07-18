@@ -580,6 +580,10 @@ def run_document_profile_h7(
                     "messages": messages,
                     "temperature": temperature,
                 }
+                # Anbieter-Bindung der Route durchreichen. Ohne das wählt
+                # OpenRouter frei, und die Preise der Routen-Tabelle gelten nicht.
+                if route.extra_body:
+                    kwargs["extra_body"] = route.extra_body
                 # Kein Output-Deckel per Default: ein Cap schneidet die Fallgestalt
                 # mitten im JSON ab, der Parser sieht Degenerat, der Versuch wird
                 # verworfen und teuer wiederholt (gemessen 2026-07-18: 3×16k

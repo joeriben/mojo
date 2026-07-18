@@ -25,8 +25,9 @@ nutzen. Produktiv-Calls gehen über `journal_bot.llm_client`.
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from openai import OpenAI
 
@@ -120,6 +121,11 @@ class Route:
     dsgvo: bool
     supports_anthropic_cache: bool  # darf cache_control: ephemeral senden
     has_implicit_cache: bool        # Provider cached automatisch ab Call 2-3
+    # Zusatz-Parameter für den Call (OpenRouter-Routing o.ä.). Bei Modellen, die
+    # von vielen Anbietern zu sehr verschiedenen Preisen und Quantisierungen
+    # bedient werden, gehört hier die Anbieter-Bindung hinein — sonst entscheidet
+    # OpenRouter, und der Preis in dieser Tabelle stimmt nicht mehr.
+    extra_body: dict[str, Any] = field(default_factory=dict)
 
 
 ROUTES: dict[str, Route] = {
@@ -186,6 +192,33 @@ ROUTES: dict[str, Route] = {
         # OpenRouter den Block uncached durch, kein implicit-caching.
         supports_anthropic_cache=True,
         has_implicit_cache=False,
+    ),
+    "glm": Route(
+        provider="openrouter",
+        model="z-ai/glm-5.2",
+        label="GLM 5.2 (OpenRouter, Z.AI)",
+        # Preise des gebundenen Anbieter-Segments (fp8, ≤$4/Mtok Ausgabe).
+        # Abgefragt 2026-07-18 über /models/z-ai/glm-5.2/endpoints.
+        input_usd_per_mtok=0.30,
+        output_usd_per_mtok=0.93,
+        region="US",
+        dsgvo=False,
+        supports_anthropic_cache=False,
+        has_implicit_cache=False,
+        # 29 Anbieter bedienen glm-5.2, Ausgabepreise $0.93 bis $10.25/Mtok.
+        # Ohne Bindung ist der Preis Zufall. Gebunden wird auf: fp8 statt fp4
+        # (Quantisierung), Ausgabe höchstens $4/Mtok (Vorgabe Benjamin
+        # 2026-07-18), billigster zuerst. Die fp8-Beschränkung schließt zugleich
+        # DeepInfra aus, das einen anbieterseitigen Ausgabedeckel von 32 768
+        # Tokens führt — bei gemessenen ~45 000 Ausgabe-Tokens je Werk wäre das
+        # eine stille Trunkierung.
+        extra_body={
+            "provider": {
+                "sort": "price",
+                "quantizations": ["fp8"],
+                "max_price": {"completion": 4.0},
+            }
+        },
     ),
     # Existierender MOJO-Stack als Vergleich
     "deepseek": Route(
