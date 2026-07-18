@@ -381,7 +381,7 @@ def _score_search_row(row, terms: list[str], phrases: list[str], intent: str) ->
         if key in matched_terms:
             reasons.append(f"{label_map[key]}: {', '.join(matched_terms[key][:3])}")
     if citation_hits:
-        reasons.append("zitiert Benjamin")
+        reasons.append("zitiert eigenes Werk")
     if entry.get("bezuege"):
         first = entry["bezuege"][0]
         pub = first.get("pub_kurz", "")
@@ -1660,7 +1660,7 @@ def _should_use_focused_db_agent(message: str, user_context: str | None = None) 
             "eigene publikationen",
             "eigene texte",
             "eigene arbeiten",
-            "benjamins publikationen",
+            "meine publikationen",
             "forscherprofil",
             "corpus",
             "korpus",

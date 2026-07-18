@@ -645,7 +645,7 @@ def cmd_refs(args: argparse.Namespace) -> int:
             print(
                 "FEHLER: Keine Quellen konfiguriert.\n"
                 "  mojo refs sources add zotero <COLLECTION_KEY>   "
-                "(z.B. QM7TZT44 für 'Benjamin's publications')\n"
+                "(Schlüssel der Zotero-Sammlung mit den eigenen Publikationen)\n"
                 "  mojo refs sources add folder /pfad/zu/pdfs"
             )
             return 2
