@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -73,6 +74,54 @@ TRIGGER_AUTHOR_PATTERNS: tuple[str, ...] = tuple(
 TRIGGER_AUTHOR_SLUGS: tuple[str, ...] = tuple(
     _profile.get("trigger_author_slugs") or ()
 )
+
+# Snapshot-Verzeichnis der Trigger-Bibliographien. Gitignored (`backtest_data/`),
+# liegt also nur lokal — ein frischer Clone hat weder profile.json noch diese
+# Files. Deshalb steht hier kein Slug-Default: er zeigte ins Leere.
+TRIGGER_BIBLIOGRAPHIES_DIR = PROJECT_ROOT / "backtest_data" / "trigger_bibliographies"
+
+
+def trigger_authors_status() -> dict:
+    """Report whether the trigger-author escalation is actually armed.
+
+    An empty config disables the path silently and by design (see above). That
+    is fine as a default, but it must not stay invisible when the feature is
+    meant to be on: between 2026-05-25 (commit 99e476b, which moved the names
+    out of the code into profile.json) and 2026-07-18 the lists were empty in
+    production and nothing said so.
+
+    Returns keys `armed`, `n_patterns`, `n_slugs`, `missing_bibliographies`
+    and a user-facing German `hinweis` (None when everything is in place).
+    """
+    patterns = tuple(TRIGGER_AUTHOR_PATTERNS)
+    slugs = tuple(TRIGGER_AUTHOR_SLUGS)
+    missing = [
+        s for s in slugs
+        if not (TRIGGER_BIBLIOGRAPHIES_DIR / f"{s}.json").exists()
+    ]
+
+    hinweis: str | None = None
+    if not patterns:
+        hinweis = (
+            "Keine Trigger-Autor:innen eingetragen — Beiträge dieser Autor:innen "
+            "werden derzeit NICHT unabhängig vom Journal-Rang vorgelegt. "
+            "Pflege in profile.json unter \"trigger_author_patterns\"."
+        )
+    elif missing:
+        hinweis = (
+            "Trigger-Autor:innen sind eingetragen, aber für "
+            f"{', '.join(missing)} fehlt die Bibliographie — der Blind-Spot-"
+            "Abgleich läuft für sie leer."
+        )
+
+    return {
+        "armed": bool(patterns),
+        "n_patterns": len(patterns),
+        "n_slugs": len(slugs),
+        "missing_bibliographies": missing,
+        "hinweis": hinweis,
+    }
+
 
 # --- OpenAlex Polite Pool ---
 # Echte Kontakt-Mail für den OpenAlex Polite Pool (höhere Rate-Limits).
@@ -167,30 +216,59 @@ ZOTERO_API_KEY_FILE = _KEY_DIR / "zotero_api_key"
 MISTRAL_KEY_FILE = _KEY_DIR / "mistral_key"
 
 
-def save_profile(data: dict) -> None:
-    """Write profile.json and update module-level constants in-place."""
+def save_profile(data: dict, *, manages: Iterable[str] | None = None) -> None:
+    """Merge `data` into profile.json and refresh module constants in-place.
+
+    Keys absent from `data` keep their stored value. This used to be a plain
+    overwrite, and every caller only knows the fields it renders — so saving
+    the profile from the web form silently deleted `refs_sources`,
+    `trigger_author_patterns`, `trigger_author_slugs`, `openalex_mailto` and
+    `ranker_enabled` from disk (reproduced 2026-07-18).
+
+    Pass `manages` to declare the full key set a caller owns. Those keys are
+    dropped when absent from `data` — that is how "user cleared the field"
+    keeps working without endangering keys the caller never heard of.
+    """
     import journal_bot.settings as _self
+
+    stored = _load_profile()
+    if manages is not None:
+        managed = set(manages)
+        stored = {k: v for k, v in stored.items() if k not in managed}
+    merged = {**stored, **data}
+
     PROFILE_JSON.write_text(
-        json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        json.dumps(merged, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
-    # Update module globals so running process sees changes immediately
-    _self.RESEARCHER_NAME = data.get("name", _self.RESEARCHER_NAME)
-    _self.RESEARCHER_INSTITUTION = data.get("institution", _self.RESEARCHER_INSTITUTION)
-    _self.RESEARCHER_AREAS = data.get("areas", _self.RESEARCHER_AREAS)
-    _self.RESEARCHER_TRIAGE_TOPICS = data.get("triage_topics", _self.RESEARCHER_TRIAGE_TOPICS)
-    _self.ZOTERO_STORAGE = Path(data["zotero_storage"]) if data.get("zotero_storage") else _self.ZOTERO_STORAGE
-    _self.ZOTERO_COLLECTION = data.get("zotero_collection", _self.ZOTERO_COLLECTION)
-    _self.SINCE_YEAR = data.get("since_year", _self.SINCE_YEAR)
-    _self.DIGEST_DIR = Path(data["digest_dir"]) if data.get("digest_dir") else _self.DIGEST_DIR
-    _self.MODEL_SUMMARIZE = data.get("model_summarize", _self.MODEL_SUMMARIZE)
-    _self.MODEL_AGENT = data.get("model_agent", _self.MODEL_AGENT)
-    _self.MODEL_TRENDS = data.get("model_trends", _self.MODEL_TRENDS)
-    _self.MAX_TOKENS_TRENDS = int(data.get("max_tokens_trends", _self.MAX_TOKENS_TRENDS))
-    _self.OLLAMA_BASE_URL = data.get("ollama_base_url", _self.OLLAMA_BASE_URL)
-    _self.MODEL_AGENT_LOCAL = data.get("model_agent_local", _self.MODEL_AGENT_LOCAL)
-    _self.RESEARCH_USE_LOCAL = bool(data.get("research_use_local", _self.RESEARCH_USE_LOCAL))
-    _self.TRIGGER_AUTHOR_PATTERNS = tuple(data.get("trigger_author_patterns") or ())
-    _self.TRIGGER_AUTHOR_SLUGS = tuple(data.get("trigger_author_slugs") or ())
+    # Update module globals so running process sees changes immediately.
+    # Read from `merged`, not `data`: a partial save must not reset a constant
+    # to its module default just because the caller did not carry that field.
+    _self.RESEARCHER_NAME = merged.get("name", _self.RESEARCHER_NAME)
+    _self.RESEARCHER_INSTITUTION = merged.get("institution", _self.RESEARCHER_INSTITUTION)
+    _self.RESEARCHER_AREAS = merged.get("areas", _self.RESEARCHER_AREAS)
+    _self.RESEARCHER_TRIAGE_TOPICS = merged.get("triage_topics", _self.RESEARCHER_TRIAGE_TOPICS)
+    _self.ZOTERO_STORAGE = Path(merged["zotero_storage"]) if merged.get("zotero_storage") else _self.ZOTERO_STORAGE
+    _self.ZOTERO_COLLECTION = merged.get("zotero_collection", _self.ZOTERO_COLLECTION)
+    _self.SINCE_YEAR = merged.get("since_year", _self.SINCE_YEAR)
+    _self.DIGEST_DIR = Path(merged["digest_dir"]) if merged.get("digest_dir") else _self.DIGEST_DIR
+    _self.MODEL_SUMMARIZE = merged.get("model_summarize", _self.MODEL_SUMMARIZE)
+    _self.MODEL_AGENT = merged.get("model_agent", _self.MODEL_AGENT)
+    _self.MODEL_TRENDS = merged.get("model_trends", _self.MODEL_TRENDS)
+    _self.MAX_TOKENS_TRENDS = int(merged.get("max_tokens_trends", _self.MAX_TOKENS_TRENDS))
+    _self.OLLAMA_BASE_URL = merged.get("ollama_base_url", _self.OLLAMA_BASE_URL)
+    _self.MODEL_AGENT_LOCAL = merged.get("model_agent_local", _self.MODEL_AGENT_LOCAL)
+    _self.RESEARCH_USE_LOCAL = bool(merged.get("research_use_local", _self.RESEARCH_USE_LOCAL))
+    _self.OPENALEX_MAILTO = merged.get("openalex_mailto", _self.OPENALEX_MAILTO)
+    _self.RANKER_ENABLED = bool(merged.get("ranker_enabled", _self.RANKER_ENABLED))
+    _self.UI_LAB = bool(merged.get("ui_lab", _self.UI_LAB))
+    # `... or ()` fängt zusätzlich ein explizites null/"" in der JSON ab —
+    # fehlender Schlüssel behält den laufenden Wert, leerer Wert leert bewusst.
+    _self.TRIGGER_AUTHOR_PATTERNS = tuple(
+        merged.get("trigger_author_patterns", _self.TRIGGER_AUTHOR_PATTERNS) or ()
+    )
+    _self.TRIGGER_AUTHOR_SLUGS = tuple(
+        merged.get("trigger_author_slugs", _self.TRIGGER_AUTHOR_SLUGS) or ()
+    )
 
 
 # --- Diskursräume ---

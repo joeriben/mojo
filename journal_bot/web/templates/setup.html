@@ -42,6 +42,24 @@
         <label>Relevanz-Themen <span style="color:var(--muted); font-size:.8rem;">(eins pro Zeile — fließen in die automatische Relevanz-Prüfung ein)</span></label>
         <textarea name="triage_topics" class="form-input" rows="6">{{ profile.triage_topics|join('\n') }}</textarea>
       </div>
+
+      <div class="form-group" style="border-top:1px solid var(--border); padding-top:.9rem;">
+        <label style="margin-bottom:.3rem;">Trigger-Autor:innen</label>
+        <p style="font-size:.85rem; color:var(--muted); margin:0 0 .5rem;">
+          Beiträge dieser Autor:innen werden unabhängig vom Journal-Rang vorgelegt,
+          statt in der Vorauswahl auszuscheiden.
+        </p>
+        {% if trigger_status.hinweis %}
+          <p style="font-size:.85rem; color:var(--pflichtlektuere); margin:0;">
+            ⚠ {{ trigger_status.hinweis }}
+          </p>
+        {% else %}
+          <p style="font-size:.85rem; color:var(--lesenswert); margin:0;">
+            ✓ {{ trigger_status.n_patterns }} Erkennungsmuster aktiv,
+            {{ trigger_status.n_slugs }} Bibliographie(n) hinterlegt.
+          </p>
+        {% endif %}
+      </div>
     </div>
 
     <div class="card">

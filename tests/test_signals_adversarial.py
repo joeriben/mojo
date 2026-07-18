@@ -49,6 +49,15 @@ def _clear_index_cache():
     clear_cache()
 
 
+# Slugs der Fixture-Files unten. Werden explizit übergeben, statt sich auf
+# `settings.TRIGGER_AUTHOR_SLUGS` als Default zu verlassen: der Wert kommt aus
+# profile.json, und profile.json ist wie `backtest_data/` nicht im Repo. Ein
+# Test, der darauf baut, prüft die Konfiguration der Maschine statt der Logik —
+# genau daran sind diese Tests gescheitert, als die Slugs 2026-05 aus dem Code
+# nach profile.json wanderten und dort nie eintrafen.
+FIXTURE_TRIGGER_SLUGS = ("macgilchrist", "jarke", "wendy_chun")
+
+
 @pytest.fixture
 def tmp_trigger_dir(tmp_path: Path) -> Path:
     """Drei Trigger-Bibliographie-JSONs mit überschaubaren Refs."""
@@ -98,7 +107,10 @@ def benjamin_index_with_one_shared(tmp_path: Path) -> OwnRefsIndex:
 
 def test_adversarial_index_set_difference(tmp_trigger_dir, benjamin_index_with_one_shared):
     """Trigger-Union ohne Benjamins eigene Refs."""
-    adv = compute_adversarial_index(tmp_trigger_dir, benjamin_index_with_one_shared)
+    adv = compute_adversarial_index(
+        tmp_trigger_dir, benjamin_index_with_one_shared,
+        author_keys=FIXTURE_TRIGGER_SLUGS,
+    )
     # Trigger-Union: Wa1, Wa2, Wa3, Wshared
     # Minus Benjamin (Wshared, Wb1): Wa1, Wa2, Wa3
     assert adv.oa_ids == frozenset({"Wa1", "Wa2", "Wa3"})
@@ -122,6 +134,7 @@ def test_adversarial_index_cache_roundtrip(
     adv1 = load_or_compute_adversarial_index(
         tmp_trigger_dir, benjamin_index_with_one_shared,
         own_refs_db=Path(benjamin_index_with_one_shared.db_path),
+        author_keys=FIXTURE_TRIGGER_SLUGS,
     )
     assert adv1.oa_ids == frozenset({"Wa1", "Wa2", "Wa3"})
 
@@ -133,6 +146,7 @@ def test_adversarial_index_cache_roundtrip(
     adv2 = load_or_compute_adversarial_index(
         tmp_trigger_dir, benjamin_index_with_one_shared,
         own_refs_db=Path(benjamin_index_with_one_shared.db_path),
+        author_keys=FIXTURE_TRIGGER_SLUGS,
     )
     assert adv2.oa_ids == adv1.oa_ids
 

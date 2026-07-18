@@ -141,6 +141,15 @@ def run_batch_digest(
         f"(Agent-Modell: {model}; Screening: {agent_mod.MODEL_SCREEN})",
     )
 
+    # Leere Trigger-Liste heißt: die Eskalation ist aus. Das wird beim Start
+    # gesagt, statt still durchzulaufen — genau dieser lautlose Ausfall lief
+    # von 2026-05-25 (Commit 99e476b) bis 2026-07-18 unbemerkt mit.
+    if not TRIGGER_AUTHOR_PATTERNS:
+        _log(logger, verbose,
+             "[digest] Hinweis: keine Trigger-Autor:innen eingetragen — Beiträge "
+             "dieser Autor:innen werden NICHT unabhängig vom Journal-Rang "
+             "vorgelegt (profile.json: \"trigger_author_patterns\")")
+
     junk = [sa for sa in pending if _is_junk_title(sa.title)]
     if junk:
         _log(logger, verbose, f"[digest] {len(junk)} Nicht-Artikel entfernt (Corrections, Issue Info etc.)")
@@ -354,7 +363,8 @@ def run_batch_digest(
             _log(logger, verbose, f"[digest] Ranker übersprungen: {exc}")
             ranked = {}
 
-    # Trigger-Autor:innen aus settings/profile.json (OS-Default: leer)
+    # Trigger-Autor:innen aus settings/profile.json (OS-Default: leer).
+    # Auf eine leere Liste weist der Lauf-Kopf oben hin.
     trigger_authors = [p.lower() for p in TRIGGER_AUTHOR_PATTERNS]
     auto_pass: list[tuple[StoredArticle, str]] = []
     screen_candidates: list[StoredArticle] = []
