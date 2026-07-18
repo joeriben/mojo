@@ -1,0 +1,49 @@
+{# Aufnahme eigener Texte: Ablage, Einlesestand, Meldung. Wird nach dem
+   Hochladen ausgetauscht und pollt, solange eingelesen wird. #}
+<div id="import-status"
+     {% if import_run.running %}
+     hx-get="/api/profil/import-status"
+     hx-trigger="every 2s"
+     hx-swap="outerHTML"
+     {% endif %}>
+
+  {% if meldung %}
+  <p class="import-meldung">{{ meldung }}</p>
+  {% endif %}
+
+  {% if import_run.running %}
+  <p class="import-lauf">
+    <span class="spinner"></span>
+    Wird eingelesen … Text wird herausgezogen, Literaturverzeichnis getrennt.
+    {% if import_run.dateien %}
+    <span class="muted">({{ import_run.dateien|join(', ') }})</span>
+    {% endif %}
+  </p>
+  {% elif import_run.ever_started and import_run.returncode not in (None, 0) %}
+  <p class="import-meldung import-fehler">
+    Das Einlesen ist gescheitert (Code {{ import_run.returncode }}). Das
+    Protokoll unten sagt, woran.
+  </p>
+  {% elif import_run.ever_started %}
+  <p class="import-meldung import-fertig">
+    Eingelesen. Die Texte stehen jetzt in der Werkliste oben und lassen sich
+    auswerten.
+  </p>
+  {% endif %}
+
+  {% if import_run.n_abgelegt %}
+  <p class="muted" style="font-size:.78rem;">
+    {{ import_run.n_abgelegt }} eigene{{ "r" if import_run.n_abgelegt == 1 else "" }}
+    Text{{ "" if import_run.n_abgelegt == 1 else "e" }} abgelegt in
+    <code>eigene_texte/</code> — der Ordner wird bei jedem Neuaufbau
+    mitgelesen.
+  </p>
+  {% endif %}
+
+  {% if import_run.log_tail %}
+  <details class="import-log">
+    <summary>Protokoll des Einlesens</summary>
+    <pre>{{ import_run.log_tail }}</pre>
+  </details>
+  {% endif %}
+</div>

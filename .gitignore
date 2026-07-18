@@ -58,3 +58,7 @@ exports/
 launchd/*.log
 launchd/*.plist
 !launchd/*.plist.template
+
+# Über die Oberfläche hereingegebene eigene Texte (Manuskripte, Entwürfe)
+eigene_texte/
+output/textimport.log

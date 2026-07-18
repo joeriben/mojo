@@ -69,6 +69,39 @@
   .self-pos { padding: .6rem 0; border-bottom: 1px solid var(--border); }
   .self-pos:last-child { border-bottom: none; }
   .self-pos .sp-head { font-size: .85rem; color: var(--muted); margin-bottom: .2rem; }
+
+  .import-block { margin: 0 0 .9rem; padding: .55rem .7rem; border: 1px dashed var(--border);
+                  border-radius: 6px; }
+  .import-block > summary { font-size: .88rem; cursor: pointer; font-weight: 600; }
+  .import-hinweis { font-size: .82rem; color: var(--muted); margin: .5rem 0 .6rem; }
+  .import-block input[type=file] { font-size: .82rem; max-width: 100%; }
+  .import-block form { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap;
+                       margin-bottom: .5rem; }
+  .import-meldung { font-size: .83rem; margin: .4rem 0; }
+  .import-fehler { color: var(--bad, #c0392b); }
+  .import-fertig { color: var(--good, #2d7a4f); }
+  .import-lauf { font-size: .83rem; margin: .4rem 0; display: flex; align-items: center;
+                 gap: .45rem; }
+  .import-lauf .muted { color: var(--muted); }
+  .import-log { margin-top: .5rem; }
+  .import-log > summary { font-size: .78rem; color: var(--muted); cursor: pointer; }
+  .import-log pre { font-size: .74rem; white-space: pre-wrap; margin: .35rem 0 0;
+                    max-height: 14rem; overflow: auto; }
+  .quellen-block { margin-top: .7rem; padding-top: .55rem; border-top: 1px solid var(--border); }
+  .quellen-kopf { font-size: .75rem; text-transform: uppercase; letter-spacing: .03em;
+                  color: var(--muted); font-weight: 600; }
+  .quellen-liste { list-style: none; padding: 0; margin: .35rem 0 0; font-size: .8rem; }
+  .quellen-liste li { display: flex; gap: .5rem; align-items: baseline; padding: .12rem 0;
+                      flex-wrap: wrap; }
+  .q-art { color: var(--muted); min-width: 8.5rem; }
+  .q-bez { word-break: break-all; }
+  .q-hier { font-size: .72rem; color: var(--muted); border: 1px solid var(--border);
+            border-radius: 3px; padding: 0 .3rem; }
+  .quellen-warnung { font-size: .8rem; color: var(--muted); margin: .45rem 0 0; }
+  .spinner { width: .7rem; height: .7rem; border: 2px solid var(--border);
+             border-top-color: var(--muted); border-radius: 50%;
+             display: inline-block; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 
 <h1 style="font-size:1.3rem; margin-bottom:.4rem;">Werkprofil</h1>
@@ -87,10 +120,57 @@
     </span>
   </p>
 
+  <details class="import-block" {% if not n_texts %}open{% endif %}>
+    <summary>Eigenen Text hinzufügen</summary>
+    <p class="import-hinweis">
+      Manuskripte, Entwürfe, alles was nicht über Zotero läuft. Offene Formate
+      sind dem PDF vorzuziehen — bei PDFs verschränken sich Spalten und
+      Trennstriche bleiben stehen. Auf Seitenzahlen und Schlussredaktion kommt
+      es nicht an. Das Einlesen kostet nichts; erst das Auswerten liest ein
+      Sprachmodell.
+    </p>
+    <form hx-post="/api/profil/dokumente"
+          hx-target="#import-status"
+          hx-swap="outerHTML"
+          hx-encoding="multipart/form-data">
+      <input type="file" name="dokument" multiple accept="{{ import_formate }}">
+      <button type="submit" class="btn">Hinzufügen und einlesen</button>
+    </form>
+    {% include "_profil_import.html" %}
+
+    <div class="quellen-block">
+      <span class="quellen-kopf">Woher deine Texte kommen</span>
+      {% if quellen %}
+      <ul class="quellen-liste">
+        {% for q in quellen %}
+        <li>
+          <span class="q-art">{{ q.art }}</span>
+          <span class="q-bez">{{ q.bezeichnung }}</span>
+          {% if q.eigene_ablage %}<span class="q-hier">hier abgelegt</span>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% if not quellen|selectattr('art', 'equalto', 'Zotero-Sammlung')|list %}
+      <p class="quellen-warnung">
+        Deine Zotero-Sammlung ist hier nicht eingetragen. Die daraus stammenden
+        Texte bleiben im Bestand, werden aber bei einem Neuaufbau nicht mehr
+        aufgefrischt.
+      </p>
+      {% endif %}
+      {% else %}
+      <p class="import-hinweis" style="margin:.3rem 0 0;">
+        Noch keine Quelle eingetragen — der Bestand stammt aus einem einmaligen
+        Einlesen und wird nicht aufgefrischt.
+      </p>
+      {% endif %}
+    </div>
+  </details>
+
   {% if not n_texts %}
   <p style="font-size:.9rem; color:var(--muted);">
     Es liegt noch keine eigene Publikation mit hinterlegtem Volltext vor — ohne Volltext
-    lässt sich nichts auswerten.
+    lässt sich nichts auswerten. Über »Eigenen Text hinzufügen« lässt sich einer
+    hereingeben.
   </p>
   {% else %}
   <form hx-post="/api/profil/confirm" hx-target="#profil-aktion" hx-swap="innerHTML">

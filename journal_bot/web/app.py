@@ -9,6 +9,7 @@ import html as html_mod
 import io
 import json
 import os
+import re
 import sqlite3
 import subprocess
 import sys
@@ -2653,6 +2654,18 @@ FALLGESTALT_DIR = PROJECT_ROOT / "output" / "fallgestalt"
 PROFIL_LOG = PROJECT_ROOT / "output" / "profil_auswertung.log"
 PROFIL_SCRIPT = PROJECT_ROOT / "scripts" / "h7_run.py"
 
+# Ablage für Texte, die über die Oberfläche hereingegeben werden — Manuskripte,
+# Entwürfe, alles was nicht über Zotero läuft. Der Ordner ist zugleich als
+# Quelle in profile.json eingetragen, damit jeder spätere Neuaufbau ihn
+# mitnimmt; die Oberfläche legt hier nur ab und stößt den Einlesevorgang an.
+EIGENE_TEXTE_DIR = PROJECT_ROOT / "eigene_texte"
+IMPORT_LOG = PROJECT_ROOT / "output" / "textimport.log"
+
+# Was FolderSource lesen kann (journal_bot/own_refs/extract.SUPPORTED_SUFFIXES).
+# Offene Formate stehen vorn: sie gewinnen dort gegen ein PDF desselben Textes,
+# weil die PDF-Extraktion Spalten verschränkt und Trennstriche stehen lässt.
+IMPORT_ACCEPT = ".docx,.odt,.txt,.md,.markdown,.pdf"
+
 # Erfahrungswerte aus gemessenen Einzelläufen — bewusst Anzeige-Konstanten des
 # Panels und kein Stellparameter in settings.py. Sie werden im UI ausdrücklich
 # als Schätzung ausgewiesen, nie als Preis.
@@ -2905,6 +2918,89 @@ def _tail_lines(path: Path, n: int) -> str:
     return "\n".join(lines[-n:])
 
 
+_import_run: dict[str, Any] = {}
+_import_run_lock = threading.RLock()
+
+
+def _register_eigene_texte_source() -> None:
+    """Den Ablageordner als Quelle in profile.json führen (idempotent).
+
+    Ohne das läge der Text zwar da, verschwände aber beim nächsten Neuaufbau
+    aus dem Bestand: `refs build` liest die konfigurierten Quellen, nicht das
+    Dateisystem. Entspricht `mojo refs sources add folder <PFAD>`.
+    """
+    from journal_bot.settings import _load_profile
+
+    profile = _load_profile()
+    sources = list(profile.get("refs_sources") or [])
+    pfad = str(EIGENE_TEXTE_DIR.resolve())
+    if any(s.get("type") == "folder" and s.get("path") == pfad for s in sources):
+        return
+    sources.append({"type": "folder", "path": pfad})
+    profile["refs_sources"] = sources
+    save_profile(profile)
+
+
+def _konfigurierte_quellen() -> list[dict[str, Any]]:
+    """Woher der Bestand gespeist wird — für die Anzeige im Panel.
+
+    Die Herkunft war bisher nirgends sichtbar: sie steht in profile.json und
+    ist sonst nur über die Kommandozeile abfragbar. Wer einen eigenen Text
+    hinzufügt, soll sehen, wo der landet und was sonst noch gelesen wird.
+    """
+    from journal_bot.settings import _load_profile
+
+    quellen: list[dict[str, Any]] = []
+    for s in _load_profile().get("refs_sources") or []:
+        if s.get("type") == "zotero":
+            quellen.append({
+                "art": "Zotero-Sammlung",
+                "bezeichnung": s.get("label") or s.get("key") or "(ohne Angabe)",
+            })
+        elif s.get("type") == "folder":
+            pfad = Path(s.get("path") or "")
+            quellen.append({
+                "art": "Ordner",
+                "bezeichnung": str(pfad),
+                "eigene_ablage": pfad.resolve() == EIGENE_TEXTE_DIR.resolve(),
+            })
+    return quellen
+
+
+def _sicherer_dateiname(name: str) -> str:
+    """Dateinamen auf das Nötige reduzieren, ohne den Titel zu zerstören.
+
+    Der Dateiname trägt Titel und Jahr — FolderSource liest beides daraus.
+    Umlaute bleiben deshalb erhalten; entfernt wird nur, was aus dem Ordner
+    herausführen oder ihn beschädigen könnte.
+    """
+    name = os.path.basename(name.replace("\\", "/")).strip()
+    name = re.sub(r"[\x00-\x1f/]+", "", name)
+    name = name.lstrip(".") or "ohne-namen"
+    return name[:180]
+
+
+def _import_run_state() -> dict[str, Any]:
+    """Läuft ein Einlesevorgang, und was hat er zuletzt gemeldet?"""
+    with _import_run_lock:
+        proc = _import_run.get("proc")
+        running = proc is not None and proc.poll() is None
+        state: dict[str, Any] = {
+            "running": running,
+            "started": _import_run.get("started"),
+            "dateien": list(_import_run.get("dateien") or []),
+            "returncode": None if (running or proc is None) else proc.returncode,
+            "ever_started": proc is not None,
+        }
+    state["log_tail"] = _tail_lines(IMPORT_LOG, 14)
+    state["n_abgelegt"] = (
+        sum(1 for p in EIGENE_TEXTE_DIR.iterdir() if p.is_file() and not p.name.startswith("."))
+        if EIGENE_TEXTE_DIR.exists()
+        else 0
+    )
+    return state
+
+
 def _profil_run_state() -> dict[str, Any]:
     """Is a reading running, how far is it, what did it last print?"""
     with _profil_run_lock:
@@ -3090,12 +3186,129 @@ def _profil_context() -> dict[str, Any]:
         "stance_order": STANCE_ORDER,
         "cost_per_text": PROFIL_COST_PER_TEXT_USD,
         "seconds_per_text": PROFIL_SECONDS_PER_TEXT,
+        "import_run": _import_run_state(),
+        "import_formate": IMPORT_ACCEPT,
+        "quellen": _konfigurierte_quellen(),
     }
 
 
 @app.route("/profil")
 def profil():
     return render_template("profil.html", **_profil_context())
+
+
+@app.route("/api/profil/dokumente", methods=["POST"])
+def api_profil_dokumente():
+    """Eigene Texte über die Oberfläche hereingeben.
+
+    Legt die Dateien im Ablageordner ab, führt ihn als Quelle und liest ihn
+    ein. Danach stehen die Texte in der Werkliste wie die aus Zotero und
+    können gelesen werden. Kostet nichts — das Einlesen ist Extraktion, kein
+    Sprachmodell.
+    """
+    from journal_bot.own_refs.extract import SUPPORTED_SUFFIXES
+
+    dateien = [f for f in request.files.getlist("dokument") if f and f.filename]
+    if not dateien:
+        return render_template(
+            "_profil_import.html",
+            import_run=_import_run_state(),
+            import_formate=IMPORT_ACCEPT,
+            meldung="Keine Datei ausgewählt.",
+        )
+
+    with _import_run_lock:
+        proc = _import_run.get("proc")
+        if proc is not None and proc.poll() is None:
+            return render_template(
+                "_profil_import.html",
+                import_run=_import_run_state(),
+                import_formate=IMPORT_ACCEPT,
+                meldung="Es werden gerade Texte eingelesen — bitte abwarten.",
+            )
+
+    EIGENE_TEXTE_DIR.mkdir(parents=True, exist_ok=True)
+    abgelegt: list[str] = []
+    abgewiesen: list[str] = []
+    for f in dateien:
+        name = _sicherer_dateiname(f.filename)
+        if Path(name).suffix.lower() not in SUPPORTED_SUFFIXES:
+            abgewiesen.append(name)
+            continue
+        ziel = EIGENE_TEXTE_DIR / name
+        # Gleichnamiges nicht stillschweigend überschreiben: der frühere Text
+        # wäre weg, und seine Lektüre bezöge sich auf etwas nicht mehr
+        # Vorhandenes. Stattdessen durchnummerieren.
+        if ziel.exists():
+            stamm, endung = ziel.stem, ziel.suffix
+            n = 2
+            while ziel.exists():
+                ziel = EIGENE_TEXTE_DIR / f"{stamm} ({n}){endung}"
+                n += 1
+        f.save(ziel)
+        abgelegt.append(ziel.name)
+
+    if not abgelegt:
+        return render_template(
+            "_profil_import.html",
+            import_run=_import_run_state(),
+            import_formate=IMPORT_ACCEPT,
+            meldung=(
+                "Keine lesbare Datei dabei: "
+                + ", ".join(abgewiesen)
+                + f". Lesbar sind {IMPORT_ACCEPT.replace(',', ', ')}."
+            ),
+        )
+
+    _register_eigene_texte_source()
+
+    with _import_run_lock:
+        venv_python = PROJECT_ROOT / ".venv" / "bin" / "python"
+        cmd = [
+            str(venv_python if venv_python.exists() else sys.executable),
+            "-m", "journal_bot.cli", "refs", "build",
+            "--source", f"folder:{EIGENE_TEXTE_DIR.resolve()}",
+        ]
+        started = datetime.now()
+        try:
+            IMPORT_LOG.parent.mkdir(parents=True, exist_ok=True)
+            log = open(IMPORT_LOG, "a", encoding="utf-8")
+            log.write(
+                f"\n=== Texte eingelesen {started:%Y-%m-%d %H:%M:%S} · "
+                f"{len(abgelegt)} Datei(en): {', '.join(abgelegt)} ===\n"
+            )
+            log.flush()
+            proc = subprocess.Popen(
+                cmd, cwd=str(PROJECT_ROOT), stdout=log, stderr=subprocess.STDOUT
+            )
+        except OSError as exc:
+            app.logger.exception("Einlesen ließ sich nicht starten")
+            return render_template(
+                "_profil_import.html",
+                import_run=_import_run_state(),
+                import_formate=IMPORT_ACCEPT,
+                meldung=f"Einlesen ließ sich nicht starten: {exc}",
+            )
+        _import_run.update({"proc": proc, "started": started, "dateien": abgelegt})
+
+    meldung = f"{len(abgelegt)} Text(e) abgelegt, werden eingelesen …"
+    if abgewiesen:
+        meldung += f" Übergangen (Format nicht lesbar): {', '.join(abgewiesen)}."
+    return render_template(
+        "_profil_import.html",
+        import_run=_import_run_state(),
+        import_formate=IMPORT_ACCEPT,
+        meldung=meldung,
+    )
+
+
+@app.route("/api/profil/import-status")
+def api_profil_import_status():
+    return render_template(
+        "_profil_import.html",
+        import_run=_import_run_state(),
+        import_formate=IMPORT_ACCEPT,
+    )
 
 
 @app.route("/api/profil/confirm", methods=["POST"])
