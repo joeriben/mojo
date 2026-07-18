@@ -546,7 +546,7 @@ def run_document_profile_h7(
     fulltext: str,
     *,
     route_key: str = DEFAULT_ROUTE_KEY,
-    max_tokens: int = 16000,
+    max_tokens: int | None = None,
 ) -> dict[str, Any]:
     """Führt EINEN co-präsenten Werk-Positionierungs-Pass aus (Port aus SARAHs
     runDocumentProfileH7). Bis zu 4 Content-Versuche (Temperatur steigt bei
@@ -575,12 +575,18 @@ def run_document_profile_h7(
             if wait:
                 time.sleep(wait)
             try:
-                resp = client.chat.completions.create(
-                    model=route.model,
-                    messages=messages,
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                )
+                kwargs: dict[str, Any] = {
+                    "model": route.model,
+                    "messages": messages,
+                    "temperature": temperature,
+                }
+                # Kein Output-Deckel per Default: ein Cap schneidet die Fallgestalt
+                # mitten im JSON ab, der Parser sieht Degenerat, der Versuch wird
+                # verworfen und teuer wiederholt (gemessen 2026-07-18: 3×16k
+                # Ausgabe-Tokens, ≈$0.18, Ergebnis 1 Knoten/0 Kanten).
+                if max_tokens is not None:
+                    kwargs["max_tokens"] = max_tokens
+                resp = client.chat.completions.create(**kwargs)
                 break
             except Exception as e:  # noqa: BLE001 — Provider-Fehler, nicht klassifizierbar vorab
                 status = getattr(e, "status_code", None) or getattr(e, "status", None)

@@ -219,7 +219,6 @@ def check_local_backend(model: str) -> tuple[bool, str]:
                 {"role": "user", "content": "Search the database for the term 'test'."},
             ],
             tools=_PROBE_TOOL,
-            max_tokens=384,
         )
     except Exception as exc:
         return False, (

@@ -2652,11 +2652,18 @@ FALLGESTALT_DIR = PROJECT_ROOT / "output" / "fallgestalt"
 PROFIL_LOG = PROJECT_ROOT / "output" / "profil_auswertung.log"
 PROFIL_SCRIPT = PROJECT_ROOT / "scripts" / "h7_run.py"
 
-# Erfahrungswerte aus EINEM gemessenen Lauf — bewusst Anzeige-Konstanten des
+# Erfahrungswerte aus gemessenen Einzelläufen — bewusst Anzeige-Konstanten des
 # Panels und kein Stellparameter in settings.py. Sie werden im UI ausdrücklich
 # als Schätzung ausgewiesen, nie als Preis.
-PROFIL_COST_PER_TEXT_USD = 0.025
-PROFIL_SECONDS_PER_TEXT = 70
+#
+# Korrigiert 2026-07-18 nach Messung an „Prompt Interception" (MedienPädagogik
+# 2026): 40 293 → 45 413 Tokens, ≈$0.18, 507 s. Die vorherigen Werte (0.025 /
+# 70 s) stammten aus einem Lauf, der unter dem inzwischen entfernten
+# 16k-Output-Deckel lief und deshalb zu früh abbrach — sie waren um das
+# Siebenfache zu niedrig und haben eine Batch-Schätzung von $2.25 statt $16
+# erzeugt.
+PROFIL_COST_PER_TEXT_USD = 0.18
+PROFIL_SECONDS_PER_TEXT = 510
 
 # Nur EIN Lauf gleichzeitig (Kosten + doppelte Schreibzugriffe auf dieselbe Ablage).
 # Reentrant, weil die Start-Route den Status-Leser (_profil_run_state) aufruft,
