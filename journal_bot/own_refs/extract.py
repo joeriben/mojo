@@ -139,9 +139,16 @@ def _resolve_pdftotext() -> str | None:
     return None
 
 
-def _pdf_cache_path(pdf_path: Path, cache_dir: Path) -> Path:
+def _pdf_cache_path(pdf_path: Path, cache_dir: Path, layout: bool = False) -> Path:
+    """Cache-Pfad. Zwei Varianten je Quelldatei, siehe `ensure_fulltext`.
+
+    Die Fließtext-Variante trägt `.v2`, weil die vor 2026-07-18 angelegten
+    `{hash}.txt` mit `-layout` erzeugt wurden und damit spaltenverschränkt sein
+    können. Neuer Name statt Löschen: alte Caches bleiben liegen und werden
+    beim nächsten Build durch die neuen ersetzt.
+    """
     h = hashlib.sha1(str(pdf_path.resolve()).encode("utf-8")).hexdigest()[:16]
-    return cache_dir / f"{h}.txt"
+    return cache_dir / (f"{h}.layout.txt" if layout else f"{h}.v2.txt")
 
 
 # -- Offene Formate -----------------------------------------------------------
@@ -194,12 +201,25 @@ def ensure_fulltext(
     pdf_path: Path,
     cache_dir: Path = DEFAULT_FULLTEXT_CACHE,
     force: bool = False,
+    layout: bool = False,
 ) -> tuple[Path | None, str]:
     """Stellt sicher, dass für `pdf_path` ein Plain-Text-Cache existiert.
 
-    Nimmt neben PDF auch offene Formate (.docx, .odt, .txt, .md) — für die
-    eigenen Publikationen sind die der PDF-Extraktion vorzuziehen (siehe
-    OPEN_DOC_SUFFIXES).
+    Zwei Varianten, weil die beiden Verwertungen Gegenteiliges brauchen:
+
+    `layout=False` (Default) — pdftotext in **Lesereihenfolge**. Das ist der
+    Fließtext für die Werkanalyse. Bei zweispaltigem Satz ist er der einzig
+    brauchbare: mit `-layout` legt pdftotext die Spalten zeilenweise
+    ineinander, gemessen bis 83 % betroffene Zeilen, und es existiert dann
+    kein zusammenhängender Satz mehr.
+
+    `layout=True` — pdftotext mit `-layout`. Das braucht der
+    Literaturlisten-Parser: `split_citations` erkennt Zitationsgrenzen an der
+    Einrückung, die nur die Layout-Variante trägt.
+
+    Offene Formate (.docx, .odt, .txt, .md) kennen keinen Layout-Unterschied
+    und liefern in beiden Fällen denselben Text — für die eigenen
+    Publikationen sind sie der PDF-Extraktion ohnehin vorzuziehen.
 
     Returns: (txt_path | None, status). Status ∈ {ok, no_pdf, pdftotext_failed,
     pdftotext_missing, open_format_failed}.
@@ -210,7 +230,10 @@ def ensure_fulltext(
         return None, "no_pdf"
 
     cache_dir.mkdir(parents=True, exist_ok=True)
-    txt_path = _pdf_cache_path(pdf_path, cache_dir)
+    is_pdf = pdf_path.suffix.lower() == ".pdf"
+    # Ohne Layout-Begriff (offene Formate) nur EIN Cache, sonst schriebe die
+    # Layout-Anfrage dieselbe Extraktion ein zweites Mal auf die Platte.
+    txt_path = _pdf_cache_path(pdf_path, cache_dir, layout=layout and is_pdf)
 
     if not force and txt_path.exists():
         try:
@@ -238,11 +261,12 @@ def ensure_fulltext(
     if pdftotext is None:
         return None, "pdftotext_missing"
 
+    argv = [pdftotext]
+    if layout:
+        argv.append("-layout")
+    argv += ["-enc", "UTF-8", str(pdf_path), str(txt_path)]
     try:
-        subprocess.run(
-            [pdftotext, "-layout", "-enc", "UTF-8", str(pdf_path), str(txt_path)],
-            check=True, capture_output=True, timeout=120,
-        )
+        subprocess.run(argv, check=True, capture_output=True, timeout=120)
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
         print(f"  [warn] pdftotext failed for {pdf_path}: {e}", file=sys.stderr)
         return None, "pdftotext_failed"
@@ -403,7 +427,17 @@ def extract_refs(
             fulltext_chars=chars, status="pdf_empty",
         )
 
-    refs_text, header_line, header_label = find_references_block(text)
+    # Referenzen aus der Layout-Variante: `split_citations` erkennt die
+    # Zitationsgrenzen an der Einrückung, die nur `-layout` trägt. Der Fließtext
+    # oben kommt bewusst aus der Lesereihenfolge-Variante (Spaltenverschränkung).
+    layout_path, _layout_status = ensure_fulltext(pdf_path, cache_dir, force=force, layout=True)
+    layout_text = (
+        layout_path.read_text(encoding="utf-8", errors="replace")
+        if layout_path is not None
+        else text
+    )
+
+    refs_text, header_line, header_label = find_references_block(layout_text)
     # find_references_block kann drei Zustände liefern:
     #   - Header gefunden:           label = "Literatur"/"References"/etc.
     #   - Letzte-25%-Fallback:       label = "(fallback)"  (§2.3)
@@ -413,8 +447,9 @@ def extract_refs(
     used_fallback = header_label in (None, "(fallback)")
     if header_label is None and not refs_text:
         # Notfall-Fallback: ganzer Volltext (alter Pre-§2.3-Pfad, fängt
-        # sehr kurze Dokumente ohne Header-Match ab).
-        refs_text = text
+        # sehr kurze Dokumente ohne Header-Match ab). Layout-Variante, damit
+        # der Fallback dieselbe Textform sieht wie der reguläre Pfad.
+        refs_text = layout_text
 
     refs_text = cut_post_refs_garbage(refs_text)
     dois = extract_dois(refs_text)
