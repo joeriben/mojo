@@ -2870,6 +2870,10 @@ def _texts_by_year(texts: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "texts": members,
             "n_texts": len(members),
             "n_analysed": sum(1 for t in members if t["analysed"]),
+            # Nur diese lassen sich sinnvoll wählen: bereits ausgewertete
+            # Texte werden beim Lauf übersprungen, sie mitzuwählen ändert
+            # nichts und täuscht eine größere Auswahl vor.
+            "n_offen": sum(1 for t in members if not t["analysed"]),
         }
 
     out = [entry(y, str(y)) for y in sorted((y for y in groups if y is not None), reverse=True)]
@@ -2918,6 +2922,26 @@ def _tail_lines(path: Path, n: int) -> str:
     return "\n".join(lines[-n:])
 
 
+def _letzter_lauf(path: Path, marke: str) -> str:
+    """Nur den jüngsten Lauf aus der fortlaufenden Protokolldatei.
+
+    Ein blinder Schnitt der letzten N Zeilen mischt Läufe: unter der
+    Überschrift »Protokoll des Laufs« standen dann Ergebnisse früherer
+    Läufe, als gehörten sie zum aktuellen. Geschnitten wird deshalb an der
+    Startmarke, nicht an einer Zeilenzahl.
+    """
+    if not path.exists():
+        return ""
+    try:
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return ""
+    for i in range(len(lines) - 1, -1, -1):
+        if lines[i].startswith(marke):
+            return "\n".join(lines[i:]).strip()
+    return "\n".join(lines[-25:]).strip()
+
+
 _import_run: dict[str, Any] = {}
 _import_run_lock = threading.RLock()
 
@@ -2935,6 +2959,52 @@ def _sicherer_dateiname(name: str) -> str:
     return name[:180]
 
 
+_IMPORT_STATS = {
+    "PDFs extracted": "gelesen",
+    "items discovered": "gefunden",
+    "refs persisted": "Literaturangaben erfasst",
+    "PDFs failed": "nicht lesbar",
+}
+
+
+def _import_ergebnis(roh: str) -> list[str]:
+    """Das Einlesen in Sätzen statt in Werkzeugausgabe.
+
+    Die Rohausgabe des Einlesevorgangs ist Entwicklerprotokoll — Pfade,
+    interne Kennungen, Zwischenstände einer Referenzauflösung. Im Panel steht
+    davon nur, was den Text betrifft, plus Warnungen im Klartext.
+    """
+    zahlen: dict[str, int] = {}
+    warnungen: list[str] = []
+    for zeile in roh.splitlines():
+        z = zeile.strip()
+        for schluessel, wort in _IMPORT_STATS.items():
+            if z.startswith(schluessel + ":"):
+                try:
+                    zahlen[wort] = int(z.split(":", 1)[1].strip())
+                except ValueError:
+                    pass
+        if z.startswith("[warn]") or z.startswith("FEHLER") or "Traceback" in z:
+            warnungen.append(z.split("]", 1)[-1].strip()[:160])
+
+    saetze: list[str] = []
+    gelesen = zahlen.get("gelesen", 0)
+    if gelesen:
+        satz = f"{gelesen} Text{'' if gelesen == 1 else 'e'} gelesen"
+        refs = zahlen.get("Literaturangaben erfasst", 0)
+        if refs:
+            satz += f", {refs} Literaturangabe{'' if refs == 1 else 'n'} darin erfasst"
+        saetze.append(satz + ".")
+    if zahlen.get("nicht lesbar"):
+        n = zahlen["nicht lesbar"]
+        saetze.append(
+            f"{n} Datei{'' if n == 1 else 'en'} ließ{'' if n == 1 else 'en'} sich "
+            "nicht lesen — bei PDFs hilft meist das offene Original."
+        )
+    saetze.extend(warnungen[:3])
+    return saetze
+
+
 def _import_run_state() -> dict[str, Any]:
     """Läuft ein Einlesevorgang, und was hat er zuletzt gemeldet?"""
     with _import_run_lock:
@@ -2947,7 +3017,7 @@ def _import_run_state() -> dict[str, Any]:
             "returncode": None if (running or proc is None) else proc.returncode,
             "ever_started": proc is not None,
         }
-    state["log_tail"] = _tail_lines(IMPORT_LOG, 14)
+    state["ergebnis"] = _import_ergebnis(_letzter_lauf(IMPORT_LOG, "=== Texte eingelesen"))
     state["n_abgelegt"] = (
         sum(1 for p in EIGENE_TEXTE_DIR.iterdir() if p.is_file() and not p.name.startswith("."))
         if EIGENE_TEXTE_DIR.exists()
@@ -2972,7 +3042,7 @@ def _profil_run_state() -> dict[str, Any]:
     state["n_selected"] = len(state["ids"])
     state["n_done"] = sum(1 for i in state["ids"] if i in analysed)
     state["n_analysed_total"] = len(analysed)
-    state["log_tail"] = _tail_lines(PROFIL_LOG, 25)
+    state["log_tail"] = _letzter_lauf(PROFIL_LOG, "=== Auswertung gestartet")
     return state
 
 
@@ -3218,9 +3288,16 @@ def api_profil_dokumente():
     with _import_run_lock:
         venv_python = PROJECT_ROOT / ".venv" / "bin" / "python"
         cmd = [
-            str(venv_python if venv_python.exists() else sys.executable),
+            str(venv_python if venv_python.exists() else sys.executable), "-u",
             "-m", "journal_bot.cli", "refs", "build",
             "--source", f"folder:{EIGENE_TEXTE_DIR.resolve()}",
+            # Ohne das zieht das Hinzufügen einer einzigen Datei einen Nachlauf
+            # über den gesamten Altbestand freier Referenzen nach sich (beim
+            # ersten Versuch 6120 Stück, abgewiesen mit »Insufficient budget«).
+            # Der Text selbst wird vollständig gelesen; das Auflösen freier
+            # Angaben gegen OpenAlex ist eine eigene Aufgabe, kein Nebeneffekt
+            # des Hinzufügens.
+            "--no-text-resolve",
         ]
         started = datetime.now()
         try:
@@ -3323,7 +3400,11 @@ def api_profil_start():
             )
 
         venv_python = PROJECT_ROOT / ".venv" / "bin" / "python"
-        cmd = [str(venv_python if venv_python.exists() else sys.executable), str(PROFIL_SCRIPT)]
+        # -u: ungepuffert. Sonst steht die Ausgabe im Puffer und geht verloren,
+        # wenn der Lauf abbricht — im Protokoll stünde dann nur die Startzeile
+        # und darunter nichts, obwohl minutenlang gearbeitet wurde.
+        cmd = [str(venv_python if venv_python.exists() else sys.executable), "-u",
+               str(PROFIL_SCRIPT)]
         cmd += [t["id"] for t in pending]
         cmd += ["--route", route_key, "--yes"]
 

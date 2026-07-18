@@ -89,10 +89,14 @@
   .import-lauf { font-size: .83rem; margin: .4rem 0; display: flex; align-items: center;
                  gap: .45rem; }
   .import-lauf .muted { color: var(--muted); }
-  .import-log { margin-top: .5rem; }
-  .import-log > summary { font-size: .78rem; color: var(--muted); cursor: pointer; }
-  .import-log pre { font-size: .74rem; white-space: pre-wrap; margin: .35rem 0 0;
-                    max-height: 14rem; overflow: auto; }
+  .import-ergebnis { list-style: none; padding: 0; margin: .4rem 0 0; font-size: .82rem; }
+  .import-ergebnis li { padding: .1rem 0; color: var(--muted); }
+  .jahr-alle { font-size: .76rem; color: var(--muted); background: none; cursor: pointer;
+               border: 1px solid var(--border); border-radius: 4px; padding: .1rem .5rem;
+               margin-left: .6rem; }
+  .jahr-alle:hover { color: var(--fg); border-color: var(--muted); }
+  .auswahl-stand { font-size: .83rem; color: var(--muted); margin: .5rem 0 0; }
+  .auswahl-stand.hat-auswahl { color: var(--fg); font-weight: 600; }
   .spinner { width: .7rem; height: .7rem; border: 2px solid var(--border);
              border-top-color: var(--muted); border-radius: 50%;
              display: inline-block; animation: spin .8s linear infinite; }
@@ -166,29 +170,42 @@
   {% else %}
   <form hx-post="/api/profil/confirm" hx-target="#profil-aktion" hx-swap="innerHTML">
     <details {% if not n_analysed %}open{% endif %} style="margin-bottom:.6rem;">
-      <summary style="font-size:.9rem;">Auswahl treffen — nach Jahren oder einzelne Texte</summary>
+      <summary style="font-size:.9rem;">Texte wählen</summary>
       <p style="font-size:.83rem; color:var(--muted); margin:.4rem 0 .6rem;">
-        Ein angehaktes Jahr wählt alle Texte dieses Jahres. Einzelne Texte lassen sich
-        zusätzlich ankreuzen; beides wird zusammengefasst.
+        Die Jahre sind nur Überschriften — ausgewertet werden einzelne Texte.
+        »alle offenen wählen« hakt die noch nicht ausgewerteten eines Jahres an.
       </p>
       {% for g in year_groups %}
+      {# Das Jahr ist eine Überschrift, kein wählbarer Gegenstand — ausgewertet
+         werden Texte. Früher stand hier ein Kästchen am Jahr; angehakt wählte
+         es stumm alle Texte des Jahres, ohne dass unten ein einziges Häkchen
+         erschien. Jetzt setzt der Knopf die Häkchen sichtbar. #}
       <div class="year-block">
-        <label class="year-row" style="cursor:pointer;">
-          <input type="checkbox" name="year" value="{{ g.year if g.year is not none else '' }}"
-                 {% if g.year is none %}disabled title="Texte ohne Jahresangabe lassen sich nur einzeln auswählen"{% endif %}>
+        <div class="year-row">
           <span class="year-no">{{ g.label }}</span>
           <span class="year-meta">
             {{ g.n_texts }} Text{{ "" if g.n_texts == 1 else "e" }} ·
             {{ g.n_analysed }} ausgewertet
           </span>
-        </label>
+          {% if g.n_offen %}
+          <button type="button" class="jahr-alle" onclick="jahrWaehlen(this)">
+            alle {{ g.n_offen }} offenen wählen
+          </button>
+          {% endif %}
+        </div>
         <details>
           <summary style="font-size:.82rem; color:var(--muted); margin-left:1.6rem;">einzelne Texte</summary>
           <ul class="work-list">
             {% for t in g.texts %}
             <li>
-              <input type="checkbox" name="work" value="{{ t.id }}" id="w-{{ loop.index }}-{{ g.label }}">
-              <label for="w-{{ loop.index }}-{{ g.label }}" style="flex:1; cursor:pointer;">{{ t.title }}</label>
+              {# Bereits Ausgewertetes bleibt sichtbar, aber nicht wählbar:
+                 ein Häkchen dort bewirkt nichts, der Lauf überspringt es. #}
+              <input type="checkbox" name="work" value="{{ t.id }}"
+                     id="w-{{ loop.index }}-{{ g.label }}"
+                     onchange="auswahlZaehlen()"
+                     {% if t.analysed %}disabled{% endif %}>
+              <label for="w-{{ loop.index }}-{{ g.label }}"
+                     style="flex:1; {% if t.analysed %}color:var(--muted);{% else %}cursor:pointer;{% endif %}">{{ t.title }}</label>
               {% if t.analysed %}
               <span class="work-state state-done">ausgewertet</span>
               {% elif t.veraltet %}
@@ -203,6 +220,11 @@
       </div>
       {% endfor %}
     </details>
+
+    {# Rückmeldung zur Auswahl, bevor irgendetwas ausgelöst wird. Vorher war
+       der Bestätigungsschritt die erste Stelle, an der überhaupt eine Zahl
+       stand. #}
+    <p id="auswahl-stand" class="auswahl-stand">Noch kein Text gewählt.</p>
 
     <div class="actions" style="margin-top:.5rem;">
       <label style="font-size:.85rem; margin-right:.6rem;">
@@ -227,6 +249,34 @@
       </span>
     </div>
   </form>
+
+  <script>
+    // Ein Jahr ist kein wählbarer Gegenstand. Der Knopf hakt die noch nicht
+    // ausgewerteten Texte des Jahres an — sichtbar, statt sie beim Absenden
+    // stillschweigend mitzunehmen.
+    function jahrWaehlen(btn) {
+      const block = btn.closest('.year-block');
+      const kaesten = block.querySelectorAll('.work-list input[type=checkbox]:not([disabled])');
+      const anhaken = ![...kaesten].every(k => k.checked);
+      kaesten.forEach(k => { k.checked = anhaken; });
+      block.querySelector('details').open = true;
+      btn.textContent = anhaken
+        ? 'Auswahl dieses Jahres aufheben'
+        : 'alle ' + kaesten.length + ' offenen wählen';
+      auswahlZaehlen();
+    }
+
+    function auswahlZaehlen() {
+      const n = document.querySelectorAll(
+        '.work-list input[type=checkbox]:checked:not([disabled])').length;
+      const stand = document.getElementById('auswahl-stand');
+      if (!stand) return;
+      stand.textContent = n === 0
+        ? 'Noch kein Text gewählt.'
+        : n === 1 ? '1 Text gewählt.' : n + ' Texte gewählt.';
+      stand.classList.toggle('hat-auswahl', n > 0);
+    }
+  </script>
   {% endif %}
 
   <div id="profil-aktion" style="margin-top:.75rem;">

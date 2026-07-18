@@ -134,11 +134,17 @@ def test_profil_page_loads(client, substrate):
     assert "ausgewertet" in html and "noch nicht" in html
 
 
-def test_profil_page_offers_year_and_single_work_selection(client, substrate):
+def test_profil_page_selects_texts_not_years(client, substrate):
+    """Gewählt werden Texte. Das Jahr ist Überschrift, kein Ankreuzfeld.
+
+    Ein Kästchen am Jahr nahm beim Absenden stumm alle Texte des Jahres mit,
+    ohne dass unten ein Häkchen erschien — die Auswahl war nicht ablesbar.
+    """
     html = client.get("/profil").get_data(as_text=True)
-    assert 'name="year" value="2024"' in html
+    assert 'name="year"' not in html
     assert 'name="work" value="hash:aaa"' in html
     assert 'name="work" value="hash:bbb"' in html
+    assert "2024" in html  # Jahr weiterhin als Überschrift sichtbar
     # Werke ohne Volltext tauchen im Substrat nicht auf
     assert "hash:ccc" not in html
 

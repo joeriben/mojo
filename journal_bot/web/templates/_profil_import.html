@@ -37,10 +37,11 @@
   </p>
   {% endif %}
 
-  {% if import_run.log_tail %}
-  <details class="import-log">
-    <summary>Protokoll des Einlesens</summary>
-    <pre>{{ import_run.log_tail }}</pre>
-  </details>
+  {% if import_run.ergebnis %}
+  <ul class="import-ergebnis">
+    {% for satz in import_run.ergebnis %}
+    <li>{{ satz }}</li>
+    {% endfor %}
+  </ul>
   {% endif %}
 </div>
