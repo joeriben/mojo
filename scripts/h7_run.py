@@ -57,6 +57,7 @@ nicht erfasst → die Schätzung ist eine Obergrenze, echte Kosten ggf. niedrige
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sqlite3
 import sys
@@ -352,6 +353,12 @@ def analyze_one(pub: dict, route_key: str, out_dir: Path) -> dict | None:
         "year": str(pub["year"]) if pub["year"] else None,
         "venue": pub["venue"],
         "disc": None,
+        # Fingerabdruck GENAU des Textes, der gelesen wurde. Wird ein Volltext
+        # später neu extrahiert, lässt sich daran exakt sagen, ob die Lektüre
+        # noch zu ihm passt — Dateidatum taugt dafür nicht, ein Neuaufbau fasst
+        # auch die Texte an, deren Inhalt sich nicht ändert.
+        "fulltext_sha1": hashlib.sha1(fulltext.encode("utf-8")).hexdigest(),
+        "fulltext_chars": len(fulltext),
     }
     fg = assemble_fallgestalt(meta, read["nodes"], read["edges"])
 

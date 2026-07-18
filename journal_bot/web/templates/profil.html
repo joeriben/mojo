@@ -120,6 +120,8 @@
               <label for="w-{{ loop.index }}-{{ g.label }}" style="flex:1; cursor:pointer;">{{ t.title }}</label>
               {% if t.analysed %}
               <span class="work-state state-done">ausgewertet</span>
+              {% elif t.veraltet %}
+              <span class="work-state state-open" title="Der Volltext wurde seit dieser Lektüre neu eingelesen">Text hat sich geändert</span>
               {% else %}
               <span class="work-state state-open">noch nicht</span>
               {% endif %}

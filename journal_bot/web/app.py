@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import csv
+import hashlib
 import html as html_mod
 import io
 import json
@@ -2773,7 +2774,8 @@ def _own_texts() -> list[dict[str, Any]]:
     conn.row_factory = sqlite3.Row
     try:
         rows = conn.execute(
-            "SELECT canonical_id, title, year, venue, authors_json, fulltext_chars "
+            "SELECT canonical_id, title, year, venue, authors_json, fulltext_chars, "
+            "fulltext_path "
             "FROM publications "
             "WHERE fulltext_path IS NOT NULL AND TRIM(fulltext_path) != '' "
             "ORDER BY (year IS NULL), year DESC, title ASC"
@@ -2805,9 +2807,40 @@ def _own_texts() -> list[dict[str, Any]]:
             # Tokens skalieren mit der Textlänge, nicht mit der Werkzahl).
             "chars": int(r["fulltext_chars"] or 0),
             "authors": authors if isinstance(authors, list) else [],
-            "analysed": (FALLGESTALT_DIR / _fallgestalt_filename(r["canonical_id"])).exists(),
+            **_reading_state(r["canonical_id"], r["fulltext_path"]),
         })
     return texts
+
+
+def _reading_state(canonical_id: str, fulltext_path: str | None) -> dict[str, bool]:
+    """Ob eine Lektüre vorliegt — und ob sie noch zum selben Text gehört.
+
+    Bloße Existenz der Datei genügt nicht: wird ein Volltext neu extrahiert
+    (andere Extraktion, besseres Original), beschreibt die alte Lektüre einen
+    Text, den es so nicht mehr gibt. Sie bliebe im Panel als »ausgewertet«
+    stehen und wäre damit unerreichbar.
+
+    Verglichen wird der Fingerabdruck, nicht das Dateidatum: ein Neuaufbau
+    schreibt auch die Volltexte neu, deren Inhalt gleich bleibt — nach Datum
+    sähen die alle veraltet aus und würden zu bezahlten Neulektüren drängen,
+    die nichts ändern. Lektüren ohne Fingerabdruck stammen von vor dieser
+    Prüfung; sie gelten als gültig, statt sie ungeprüft zu verdächtigen.
+    """
+    reading = FALLGESTALT_DIR / _fallgestalt_filename(canonical_id)
+    if not reading.exists():
+        return {"analysed": False, "veraltet": False}
+    if not fulltext_path:
+        return {"analysed": True, "veraltet": False}
+    try:
+        meta = json.loads(reading.read_text(encoding="utf-8")).get("meta") or {}
+        gelesen = meta.get("fulltext_sha1")
+        if not gelesen:
+            return {"analysed": True, "veraltet": False}
+        aktuell = hashlib.sha1(Path(fulltext_path).read_bytes()).hexdigest()
+    except (OSError, json.JSONDecodeError, AttributeError):
+        return {"analysed": True, "veraltet": False}
+    veraltet = gelesen != aktuell
+    return {"analysed": not veraltet, "veraltet": veraltet}
 
 
 def _texts_by_year(texts: list[dict[str, Any]]) -> list[dict[str, Any]]:
