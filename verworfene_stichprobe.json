@@ -1,0 +1,702 @@
+[
+ {
+  "n": 1,
+  "id": "862342fa850207e725020a83b5d2d511",
+  "title": "Radikalisierung im Netz?",
+  "journal": "merz",
+  "year": 2018
+ },
+ {
+  "n": 2,
+  "id": "19788c7ba5c79352a23663244e2a9f6e",
+  "title": "Demokratiedämmerung – Eine Kritik der Demokratietheorie",
+  "journal": "merz",
+  "year": 2024
+ },
+ {
+  "n": 3,
+  "id": "9b50d8baaf52770ec8919f838624c1b0",
+  "title": "The politics of educational transitions: Evidence from Catalonia",
+  "journal": "EERJ",
+  "year": 2020
+ },
+ {
+  "n": 4,
+  "id": "6975f9fcfa76a97f5eeeabd923e0fe16",
+  "title": "Using video technology to enable student voice in assessment feedback",
+  "journal": "BJET",
+  "year": 2016
+ },
+ {
+  "n": 5,
+  "id": "9535cf44c1ae8014ab5b2a4495c54142",
+  "title": "The GLOBE Program: Long-term memories of program-relevant experience",
+  "journal": "JEE",
+  "year": 2018
+ },
+ {
+  "n": 6,
+  "id": "e96a5246f14b2f8e28c6ab72241df3fb",
+  "title": "New Model of Teacher Learning in an Online Network",
+  "journal": "JRTE",
+  "year": 2016
+ },
+ {
+  "n": 7,
+  "id": "1a6872871e7d4da391eb055fb6f61e8b",
+  "title": "Reflexion und Dokumentation des Erwerbs digitaler Kompetenzen mithilfe von E-Portfolios",
+  "journal": "MedienPaed",
+  "year": 2024
+ },
+ {
+  "n": 8,
+  "id": "8e88903cadd98aee72e40e8ccbaea36f",
+  "title": "Effects of a social tutor on participation, sense of community and learning in online university courses",
+  "journal": "BJET",
+  "year": 2018
+ },
+ {
+  "n": 9,
+  "id": "14b017868272275003e2ee752d7c4e30",
+  "title": "Augusta Savage: Sacrifice, Social Responsibility, and Early African American Art Education",
+  "journal": "SAE",
+  "year": 2017
+ },
+ {
+  "n": 10,
+  "id": "46f6b49299788a08ec618d4592fa53a0",
+  "title": "Development, Implementation, and Outcomes of an Equitable Computer Science After-School Program: Findings From Middle-School Students",
+  "journal": "JRTE",
+  "year": 2016
+ },
+ {
+  "n": 11,
+  "id": "bae4b72d0b4485ecca84fc99b03b4b67",
+  "title": "Elterninformationen zur Medienerziehung auf Kinderseiten",
+  "journal": "merz",
+  "year": 2025
+ },
+ {
+  "n": 12,
+  "id": "35fc6da2fee2c7abbd8a417201e85103",
+  "title": "Observing the Indicators of Technological Pedagogical Content Knowledge in Science Classrooms: Video-Based Research",
+  "journal": "JRTE",
+  "year": 2019
+ },
+ {
+  "n": 13,
+  "id": "d7ee77ad88a42d235c78139f5194c829",
+  "title": "Do cultural differences affect users’ e‐learning adoption? A meta‐analysis",
+  "journal": "BJET",
+  "year": 2020
+ },
+ {
+  "n": 14,
+  "id": "0fe5d13711081b6199756758fd8b8d9f",
+  "title": "\"What exactly is a paedophile?\" Children talking about Internet risk",
+  "journal": "MedienPaed",
+  "year": 2017
+ },
+ {
+  "n": 15,
+  "id": "f57a9772586bb58a6f6259c1881a9cbe",
+  "title": "‘Rigour’, ‘discipline’ and the ‘systematic’ in educational research – and why they matter",
+  "journal": "EERJ",
+  "year": 2019
+ },
+ {
+  "n": 16,
+  "id": "b3935061ed63cfc809d4b35bb15b8f9a",
+  "title": "Parents of children with special educational needs’ shared work in fully online learning",
+  "journal": "JRTE",
+  "year": 2022
+ },
+ {
+  "n": 17,
+  "id": "31bdea74d36626f77400b27a92bb51e6",
+  "title": "Eine Analyse über die Veränderung von Bildungsaspirationen von SchülerInnen nach dem Übergang in die Sekundarstufe",
+  "journal": "ZfPaed",
+  "year": 2021
+ },
+ {
+  "n": 18,
+  "id": "a62699b689750d26e2aa2bdbfd5819e9",
+  "title": "Interprofessionelle Kooperationskompetenz von Pflegeauszubildenden im Kontext der digitalen Transformation",
+  "journal": "ZfPaed",
+  "year": 2024
+ },
+ {
+  "n": 19,
+  "id": "32e0281233264a04a2f82e328445ca40",
+  "title": "Out of weakness: the ‘educational good’ in late antiquity",
+  "journal": "PCS",
+  "year": 2016
+ },
+ {
+  "n": 20,
+  "id": "ba94307237b0dc8d65e1bbe230672c71",
+  "title": "The virality of Norwegian guilt. How a story of male rape from Norway made international headlines",
+  "journal": "JAC",
+  "year": 2018
+ },
+ {
+  "n": 21,
+  "id": "9ae720894dfb953c785345835a3ce7d6",
+  "title": "Validation of an Expressive and Receptive Tablet Assessment of Early Literacy",
+  "journal": "JRTE",
+  "year": 2019
+ },
+ {
+  "n": 22,
+  "id": "b7da042415fe499c0945fcbae7b0c13e",
+  "title": "Diversität an Hochschulen: Einblick, Umsicht und Aussicht",
+  "journal": "MedienPaed",
+  "year": 2022
+ },
+ {
+  "n": 23,
+  "id": "ff34f725c8f3fdbb9224d221ee2c809d",
+  "title": "From real to virtual mobility: Erasmus students’ transition to online learning amid the COVID-19 crisis",
+  "journal": "EERJ",
+  "year": 2021
+ },
+ {
+  "n": 24,
+  "id": "6062764730627ea24a4b5d09afacd43b",
+  "title": "What comes after postmodernism and how this will affect educational theory? – From a Chinese Taoist perspective",
+  "journal": "EPT",
+  "year": 2018
+ },
+ {
+  "n": 25,
+  "id": "5d6cdf2d13c540085e7657da1a41410d",
+  "title": "Providing tailored reflection instructions in collaborative learning using large language models",
+  "journal": "BJET",
+  "year": 2024
+ },
+ {
+  "n": 26,
+  "id": "40fdf6861a093fbb7945b1bce824335b",
+  "title": "Academic couples, parenthood and women’s research careers",
+  "journal": "EERJ",
+  "year": 2017
+ },
+ {
+  "n": 27,
+  "id": "358d3fc1985812deace32d2e743fdc9b",
+  "title": "Cultural representation in English language textbooks: a comparison of textbooks used in mainland China and Hong Kong",
+  "journal": "PCS",
+  "year": 2019
+ },
+ {
+  "n": 28,
+  "id": "135e05fd09ff8caa3289d56ba9bb9cae",
+  "title": "Vulnerable Children and Moral Responsibility: Loss of Humanity",
+  "journal": "EduTheory",
+  "year": 2020
+ },
+ {
+  "n": 29,
+  "id": "5ca5bca270703dfa1acd457cda90fe32",
+  "title": "Wege zum Beruf Medienpädagog*in",
+  "journal": "merz",
+  "year": 2020
+ },
+ {
+  "n": 30,
+  "id": "da35f3f076e5d70f0887dfc392427a8c",
+  "title": "Trust and fiduciary relationships in education: What happens when trust is breached?",
+  "journal": "EPT",
+  "year": 2016
+ },
+ {
+  "n": 31,
+  "id": "c61787eaa3c786b5667c4e241fa5ece0",
+  "title": "Collective obituary for James D. Marshall (1937–2021)",
+  "journal": "EPT",
+  "year": 2021
+ },
+ {
+  "n": 32,
+  "id": "585754bfe9ca5221c6958bcb645bc17c",
+  "title": "SWAMPLAB",
+  "journal": "AIandSoc",
+  "year": 2020
+ },
+ {
+  "n": 33,
+  "id": "9a12a7d29ea2e769e7785ab5b83d651d",
+  "title": "Reflexive empathy as social relation: the case for contextualised professional learning",
+  "journal": "Discourse",
+  "year": 2023
+ },
+ {
+  "n": 34,
+  "id": "868fdb4ca940422ea2148b8d7b87eff8",
+  "title": "In‐game performance: The role of students' socio‐economic status, self‐efficacy and situational interest in an augmented reality game",
+  "journal": "BJET",
+  "year": 2023
+ },
+ {
+  "n": 35,
+  "id": "64880d312ea114ee2befac07abfb8128",
+  "title": "Schultheorien und transformierte Schulwirklichkeiten",
+  "journal": "ZfPaed",
+  "year": 2026
+ },
+ {
+  "n": 36,
+  "id": "f021c6e4383486fe7c74eaf2f5a901ce",
+  "title": "Fooled by ‘smart drugs’ – why shouldn’t pharmacological cognitive enhancement be liberally used in education?",
+  "journal": "EthicsEd",
+  "year": 2018
+ },
+ {
+  "n": 37,
+  "id": "e25f33dae959eee2af2c8521e57e8484",
+  "title": "Von der Schulbank an die Wahlurne …",
+  "journal": "merz",
+  "year": 2019
+ },
+ {
+  "n": 38,
+  "id": "90d8d9f547ce17321914e082ff8bf991",
+  "title": "No country for old men: utopian stories of welfare society’s shortcomings in<i>A Man Called Ove</i>and<i>The 100-Year-Old Man</i>",
+  "journal": "JAC",
+  "year": 2018
+ },
+ {
+  "n": 39,
+  "id": "a8d828f6080fe6cc378fd5e19d967250",
+  "title": "Neugierige Eltern",
+  "journal": "merz",
+  "year": 2021
+ },
+ {
+  "n": 40,
+  "id": "d433c4e8e014d056abb593f4225c46e1",
+  "title": "Children’s connection to nature: A comparison between forest school and conventional school students",
+  "journal": "JEE",
+  "year": 2026
+ },
+ {
+  "n": 41,
+  "id": "cf572f41edc4152df0af8f781ce62469",
+  "title": "Doubtful dialogue: how youth navigate the draw (and drawbacks) of online political dialogue",
+  "journal": "LMT",
+  "year": 2019
+ },
+ {
+  "n": 42,
+  "id": "e9c8aad9e45dace1138d59bc819f4377",
+  "title": "Wirtz, Malte (2020). Das Leben ist kein Drehbuch. Filmemachen ohne Geld. Marburg: Schüren Verlag GmbH. 120 S., 15,00 €.",
+  "journal": "merz",
+  "year": 2020
+ },
+ {
+  "n": 43,
+  "id": "1ed4834a6291cc6b3f16aff2898f3af9",
+  "title": "An inquiry into the efficiency of WhatsApp for self‐ and peer‐assessments of oral language proficiency",
+  "journal": "BJET",
+  "year": 2016
+ },
+ {
+  "n": 44,
+  "id": "f016de079bf175b26bbd534463ca7ce5",
+  "title": "Meta‐analysis of the effect of 360‐degree videos on students' learning outcomes and non‐cognitive outcomes",
+  "journal": "BJET",
+  "year": 2024
+ },
+ {
+  "n": 45,
+  "id": "31911ca6e94ba7a6ec1f7d58b330f180",
+  "title": "OER-Zertifizierung an österreichischen Hochschulen",
+  "journal": "merz",
+  "year": 2017
+ },
+ {
+  "n": 46,
+  "id": "5d5dba72a00b28ef41bafdbaf15f6c6c",
+  "title": "Institutionenskepsis und Bildungsmisstrauen",
+  "journal": "ZfPaed",
+  "year": 2025
+ },
+ {
+  "n": 47,
+  "id": "3e14ef49020e338eaaea2493d7cc079e",
+  "title": "GG – E-Sport und Gaming Jugendzentrum",
+  "journal": "merz",
+  "year": 2022
+ },
+ {
+  "n": 48,
+  "id": "782141adc459755118e22081c42b5720",
+  "title": "Weite Wege, viele Spiele, volle Gänge",
+  "journal": "merz",
+  "year": 2023
+ },
+ {
+  "n": 49,
+  "id": "dcae4a1f633ae88b0026bbd9be6ab1fc",
+  "title": "Effects of a concept mapping‐based problem‐posing approach on students’ learning achievements and critical thinking tendency: An application in Classical Chinese learning contexts",
+  "journal": "BJET",
+  "year": 2020
+ },
+ {
+  "n": 50,
+  "id": "21392e721c73b5fe6f01205025559bfb",
+  "title": "Factors that influence behavioral intention to use mobile‐based assessment: A STEM teachers’ perspective",
+  "journal": "BJET",
+  "year": 2018
+ },
+ {
+  "n": 51,
+  "id": "ed04e8d7e3d1d20d319afaf45aac154e",
+  "title": "Empathetic Timing and Existential Landscapes—An Investigation of the Significance of Empathy in Educational Practices",
+  "journal": "JAE",
+  "year": 2025
+ },
+ {
+  "n": 52,
+  "id": "2afccb8e41d4a07c1b6acd76ed1188dd",
+  "title": "Building the role of ICT coordinators in primary schools: A typology based on task prioritisation",
+  "journal": "BJET",
+  "year": 2019
+ },
+ {
+  "n": 53,
+  "id": "57cb7eba31b983143b2c5026b684ba7e",
+  "title": "Purification",
+  "journal": "STHV",
+  "year": 2017
+ },
+ {
+  "n": 54,
+  "id": "da3e43713036064f39a8984f40277a9a",
+  "title": "Situated teacher quality: a case study of an experienced elementary school teacher",
+  "journal": "PCS",
+  "year": 2017
+ },
+ {
+  "n": 55,
+  "id": "fe374afca9a0f051ae9a71ccc1e1eb49",
+  "title": "Killguss, Hans-Peter/Meier, Marcus/ Werner, Sebastian (Hrsg.) (2020). Bildungsarbeit gegen Antisemitismus.",
+  "journal": "merz",
+  "year": 2020
+ },
+ {
+  "n": 56,
+  "id": "2edb8acd9562108f16b73051277a89ca",
+  "title": "Linktipps zum Thema „Institutionenskepsis und Bildungsmisstrauen“",
+  "journal": "ZfPaed",
+  "year": 2025
+ },
+ {
+  "n": 57,
+  "id": "a90683622c24364a51e74dfd556ee975",
+  "title": "The commercial school heterarchy",
+  "journal": "Discourse",
+  "year": 2020
+ },
+ {
+  "n": 58,
+  "id": "57dcdfa7499e8528325f5d84ca9adf09",
+  "title": "Fairness in the Field: The Ethics of Resource Allocation in Randomized Controlled Field Experiments",
+  "journal": "STHV",
+  "year": 2018
+ },
+ {
+  "n": 59,
+  "id": "dcd8a64dab05c87e4ce7e33962f522ec",
+  "title": "Professional Identity Development Through Embodied and Reflective Practice",
+  "journal": "JTE",
+  "year": 2025
+ },
+ {
+  "n": 60,
+  "id": "4fb08ad3c978e6e04e94fcf7798268c0",
+  "title": "‘A little one among giants’: First-generation students transitioning to university in Italy, before and beyond the pandemic",
+  "journal": "EERJ",
+  "year": 2025
+ },
+ {
+  "n": 61,
+  "id": "b8d674cb6a44c376715557cc57180c41",
+  "title": "Besteht ein Zusammenhang zwischen dem Besuch eines inklusiven Bildungssettings und dem Selbstwertgefühl von Schüler:innen ohne sonderpädagogischen Förderbedarf?",
+  "journal": "JERO",
+  "year": 2021
+ },
+ {
+  "n": 62,
+  "id": "fac9a9ac3b63332f5442415054e09b3c",
+  "title": "Governing Occupational Exposure Using Thresholds: A Policy Biased Toward Industry",
+  "journal": "STHV",
+  "year": 2021
+ },
+ {
+  "n": 63,
+  "id": "4b731ba04f8734900c36172532d714d1",
+  "title": "stichwort: Performanz",
+  "journal": "merz",
+  "year": 2020
+ },
+ {
+  "n": 64,
+  "id": "a4435a73ff114e7a56b54c63722faed2",
+  "title": "Online learning: Cheap degrees or educational pluralization?",
+  "journal": "BJET",
+  "year": 2016
+ },
+ {
+  "n": 65,
+  "id": "7e94a40a4c5336561c5552ada8148c2f",
+  "title": "Pädagogische Neuerscheinungen",
+  "journal": "ZfPaed",
+  "year": 2024
+ },
+ {
+  "n": 66,
+  "id": "07ab8d9deed40a23880ab12d6202fd75",
+  "title": "Thinking my way back to you: John Dewey on the communication and formation of concepts",
+  "journal": "EPT",
+  "year": 2016
+ },
+ {
+  "n": 67,
+  "id": "78b05c6ca8e67b2fc90cf15f4bf3d885",
+  "title": "A study of the facilitation of cross‐cultural understanding and intercultural sensitivity using speech‐enabled language translation technology",
+  "journal": "BJET",
+  "year": 2018
+ },
+ {
+  "n": 68,
+  "id": "09fea90ba7cf3b0479e3bb78763a0e0e",
+  "title": "Video gaming and digital competence among elementary school students",
+  "journal": "LMT",
+  "year": 2022
+ },
+ {
+  "n": 69,
+  "id": "9bfd42d426277100880df45faa3ce2aa",
+  "title": "Insights Into Three Frames of Creative Minds: Igniting Perspective Transformation Among First-Year University Students",
+  "journal": "JTE",
+  "year": 2019
+ },
+ {
+  "n": 70,
+  "id": "8b213afc804a50913de085d2e265087d",
+  "title": "Ambiguities and tensions in the construction of ‘global’ graduates",
+  "journal": "Discourse",
+  "year": 2023
+ },
+ {
+  "n": 71,
+  "id": "d3726262b67c9a01e2683b43838a0af5",
+  "title": "Exploring the type-based vocational education system: Insights from China",
+  "journal": "EPT",
+  "year": 2021
+ },
+ {
+  "n": 72,
+  "id": "034c1cb97cb0176f278eda639ff757a6",
+  "title": "Mining social media divides: an analysis of K-12 U.S. School uses of Twitter",
+  "journal": "LMT",
+  "year": 2018
+ },
+ {
+  "n": 73,
+  "id": "fa7dcbe63d444f53aa68fece7633f3c8",
+  "title": "Globally mobile middle class lives in government secondary schools",
+  "journal": "Discourse",
+  "year": 2019
+ },
+ {
+  "n": 74,
+  "id": "547f86601507b4ca2db5b38a0b40a381",
+  "title": "Theoretische Forschung in der Erziehungswissenschaft – Beiträge zur Konturierung eines Forschungsfelds",
+  "journal": "ZfPaed",
+  "year": 2020
+ },
+ {
+  "n": 75,
+  "id": "703099fc16fd7895143772e0f55f8d26",
+  "title": "Unter Druck: Doing Family in mediatisierten Lebenswelten",
+  "journal": "merz",
+  "year": 2021
+ },
+ {
+  "n": 76,
+  "id": "74fcf3ec950e4dc5aa83eb311eae3337",
+  "title": "From “They are Just Teachers” to Teacher Leaders: A Transformative Faculty Development Experience in Sudan Using Vignettes Pedagogy",
+  "journal": "JTE",
+  "year": 2026
+ },
+ {
+  "n": 77,
+  "id": "1e7acdcc9dfabe7184aa8419760f18eb",
+  "title": "What Does Social Engagement Mean and What Should Art Education Do About It?",
+  "journal": "SAE",
+  "year": 2019
+ },
+ {
+  "n": 78,
+  "id": "c63b1ef3c20fe0e4688d92a549ec794d",
+  "title": "Grosse Erwartungen: Die Rolle von Einstellungen bei der Nutzung und Verbreitung von Open Educational Resources",
+  "journal": "MedienPaed",
+  "year": 2020
+ },
+ {
+  "n": 79,
+  "id": "445ff9a24049d3408fe8ca20f933a6b7",
+  "title": "Understanding the focal points and sentiment of learners in MOOC reviews: A machine learning and SC‐LIWC‐based approach",
+  "journal": "BJET",
+  "year": 2020
+ },
+ {
+  "n": 80,
+  "id": "037a9929511c0c16182f1af5a35d87fc",
+  "title": "Against selection: Educational justice and the ascription of talent",
+  "journal": "EPT",
+  "year": 2020
+ },
+ {
+  "n": 81,
+  "id": "fc1d80629e0cd1fb9860000cab247915",
+  "title": "#22 – Kinder- und Jugendmedienschutz mitmachen Teil 3",
+  "journal": "merz",
+  "year": 2022
+ },
+ {
+  "n": 82,
+  "id": "f86e0c71e243ddad1923876abd5992a6",
+  "title": "Rethinking Science as a Vocation: One Hundred Years of Bureaucratization of Academic Science",
+  "journal": "STHV",
+  "year": 2021
+ },
+ {
+  "n": 83,
+  "id": "58c8934c5a0169698ec98fc99ee873a1",
+  "title": "Michael Gove: the government’s reformer in chief?",
+  "journal": "PCS",
+  "year": 2016
+ },
+ {
+  "n": 84,
+  "id": "554c2752cc55c3e4aad7e58196de6fa2",
+  "title": "What comes after postmodernism?",
+  "journal": "EPT",
+  "year": 2018
+ },
+ {
+  "n": 85,
+  "id": "ec7f95f8ac948bc598c5e627270f3991",
+  "title": "An augmented reality‐based learning approach to enhancing students’ science reading performances from the perspective of the cognitive load theory",
+  "journal": "BJET",
+  "year": 2018
+ },
+ {
+  "n": 86,
+  "id": "cbe42a589685be8b3992619908cd55a9",
+  "title": "Moral Education through Literary Aesthetic Experience: A Moral Study of the Harry Potter Series",
+  "journal": "JAE",
+  "year": 2022
+ },
+ {
+  "n": 87,
+  "id": "8f1bdc546f1d0985e717a6c54c336f05",
+  "title": "Appearance Emotionalism in Music: Analysis and Criticism",
+  "journal": "JAE",
+  "year": 2019
+ },
+ {
+  "n": 88,
+  "id": "061e76baec8d51530444c6e8b23c6e83",
+  "title": "Using emoticons to encourage students to recycle",
+  "journal": "JEE",
+  "year": 2017
+ },
+ {
+  "n": 89,
+  "id": "82292ac1a8e6cd1463e9b1a7ef83e0b5",
+  "title": "Studying the COVID-19 infodemic at scale",
+  "journal": "BDS",
+  "year": 2021
+ },
+ {
+  "n": 90,
+  "id": "8f2f7696b3ef03a688c32ebb0167cecb",
+  "title": "Pädagogische Neuerscheinungen",
+  "journal": "ZfPaed",
+  "year": 2024
+ },
+ {
+  "n": 91,
+  "id": "51669de674e063ada326688a15f75418",
+  "title": "A study of Chinese technical and vocational college teachers' adoption and gratification in new technologies",
+  "journal": "BJET",
+  "year": 2020
+ },
+ {
+  "n": 92,
+  "id": "11a79d51a4b5409f3802caeff43544a5",
+  "title": "On the Concept of Divine Success in the <i>Nāṭyaśāstra</i>",
+  "journal": "JAE",
+  "year": 2019
+ },
+ {
+  "n": 93,
+  "id": "ed9e5b505f628e109e235d99a3943468",
+  "title": "If not quality, then what? The discursive risks in early childhood quality reform",
+  "journal": "Discourse",
+  "year": 2018
+ },
+ {
+  "n": 94,
+  "id": "46dd3cdb868bed84547bea94507dc1c5",
+  "title": "Praktiken der Homogenisierung",
+  "journal": "ZfPaed",
+  "year": 2019
+ },
+ {
+  "n": 95,
+  "id": "ea8e3fa7d9cb7a92ad017c7a1fd3b222",
+  "title": "Vergleichen kontrastierender Fälle in Problem-Solving first Aktivitäten. Erkenntnisse zur analytischen Bearbeitungsqualität",
+  "journal": "JERO",
+  "year": 2025
+ },
+ {
+  "n": 96,
+  "id": "2216c092493c45bfaecf1295d2be8ce2",
+  "title": "Supplying private tuition: edu-business and Asian migration in Australia",
+  "journal": "Discourse",
+  "year": 2018
+ },
+ {
+  "n": 97,
+  "id": "d79ab151de57752558f7d49115dcf9e0",
+  "title": "Expanding the Learning Network: How Teachers Use Pinterest",
+  "journal": "JRTE",
+  "year": 2019
+ },
+ {
+  "n": 98,
+  "id": "4f94415848272209db6ea45f25dc2366",
+  "title": "Inklusionspädagogische Qualifizierung in der universitären Ausbildung von Grundschullehrkräften",
+  "journal": "ZfPaed",
+  "year": 2023
+ },
+ {
+  "n": 99,
+  "id": "672a0be6eb46e478b65badb914a634c3",
+  "title": "Turning to Poetry for Help—Some Desultory Remarks",
+  "journal": "JAE",
+  "year": 2019
+ },
+ {
+  "n": 100,
+  "id": "7996416240bf9338faefbaf9fe5887e4",
+  "title": "Geschlechter- und Sexualitätsnormen in Social Media",
+  "journal": "merz",
+  "year": 2024
+ }
+]
