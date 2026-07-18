@@ -50,6 +50,27 @@ SIGNAL_GROUP_LABEL = {
 }
 
 
+# Haltung eines Werks zu einer Bezugsquelle (Fallgestalt-Kanten). Die internen
+# Werte sind das englische Relations-Vokabular des Positionierungs-Passes —
+# hier in die Sprache übersetzt, in der über Texte gesprochen wird.
+STANCE_LABEL = {
+    "affirms": "stützt sich auf",
+    "extends": "führt weiter",
+    "contrasts": "setzt sich ab",
+    "reserves": "mit Vorbehalt",
+    "rejects": "weist zurück",
+    "coins": "prägt Begriff",
+    "trajectory": "eigene Linie",
+}
+
+# Knotenarten der Fallgestalt / Profilform.
+NODE_TYPE_LABEL = {
+    "position": "Selbstverortung",
+    "source": "Bezugsquelle",
+    "term": "eigener Begriff",
+}
+
+
 def humanize_key(value: str | None) -> str:
     """Fallback: turn an internal snake_case key into display text."""
     return (value or "").replace("_", " ")
@@ -65,3 +86,11 @@ def discourse_indicator_label(value: str | None) -> str:
 
 def signal_group_label(value: str | None) -> str:
     return SIGNAL_GROUP_LABEL.get(value or "", humanize_key(value))
+
+
+def stance_label(value: str | None) -> str:
+    return STANCE_LABEL.get(value or "", humanize_key(value))
+
+
+def node_type_label(value: str | None) -> str:
+    return NODE_TYPE_LABEL.get(value or "", humanize_key(value))

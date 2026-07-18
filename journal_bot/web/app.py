@@ -8,6 +8,9 @@ import html as html_mod
 import io
 import json
 import os
+import sqlite3
+import subprocess
+import sys
 import threading
 from datetime import datetime
 from pathlib import Path
@@ -45,6 +48,7 @@ from journal_bot.settings import (
     ZOTERO_USER_ID_FILE,
     journals_in_cluster,
     save_profile,
+    trigger_authors_status,
 )
 from journal_bot.web.labels import (
     VERDICT_LABEL, RELATION_LABEL,
@@ -1500,6 +1504,7 @@ def setup():
         mistral_key_status=mistral_key_status,
         verdict_label=VERDICT_LABEL,
         journal_profiles=journal_profile_status(),
+        trigger_status=trigger_authors_status(),
     )
 
 
@@ -1525,6 +1530,11 @@ def api_setup_profile():
         "model_summarize": request.form.get("model_summarize", "").strip(),
     }
 
+    # The keys this form owns. Declared so a cleared field is still removed
+    # while everything the form does not render (refs_sources, trigger authors,
+    # openalex_mailto, ranker_enabled, …) survives the save.
+    managed_keys = tuple(profile_data)
+
     # Remove empty strings (fall back to defaults)
     profile_data = {k: v for k, v in profile_data.items() if v}
 
@@ -1532,7 +1542,7 @@ def api_setup_profile():
         return '<span style="color:var(--pflichtlektuere);">Name ist Pflichtfeld.</span>'
 
     try:
-        save_profile(profile_data)
+        save_profile(profile_data, manages=managed_keys)
     except Exception as e:
         return f'<span style="color:var(--pflichtlektuere);">Fehler: {esc(str(e))}</span>'
 
@@ -2630,6 +2640,471 @@ def api_costs_fragment():
 
     parts.append('</div>')
     return "\n".join(parts)
+
+
+# ========================================================== Werkprofil ===
+# Bereich "Profil": eigene Volltexte auswählen, maschinelle Lektüre als
+# Hintergrundlauf anstoßen, verdichtete Profilform ansehen. Die Lektüre selbst
+# bleibt scripts/h7_run.py — hier nur Auswahl, Kosten-Schranke, Status, Anzeige.
+
+OWN_REFS_DB = PROJECT_ROOT / "own_refs.db"
+FALLGESTALT_DIR = PROJECT_ROOT / "output" / "fallgestalt"
+PROFIL_LOG = PROJECT_ROOT / "output" / "profil_auswertung.log"
+PROFIL_SCRIPT = PROJECT_ROOT / "scripts" / "h7_run.py"
+
+# Erfahrungswerte aus EINEM gemessenen Lauf — bewusst Anzeige-Konstanten des
+# Panels und kein Stellparameter in settings.py. Sie werden im UI ausdrücklich
+# als Schätzung ausgewiesen, nie als Preis.
+PROFIL_COST_PER_TEXT_USD = 0.025
+PROFIL_SECONDS_PER_TEXT = 70
+
+# Nur EIN Lauf gleichzeitig (Kosten + doppelte Schreibzugriffe auf dieselbe Ablage).
+# Reentrant, weil die Start-Route den Status-Leser (_profil_run_state) aufruft,
+# während sie den Lock hält — mit einem einfachen Lock wäre das ein Deadlock.
+_profil_run: dict[str, Any] = {}
+_profil_run_lock = threading.RLock()
+
+# Deutsche Haltungs-/Knoten-Labels kommen aus labels.py (Choke-Point). Solange
+# die dortigen Mapper fehlen, greift ein gleichwertiger lokaler Fallback —
+# niemals darf ein rohes englisches Enum in die Seite durchschlagen.
+_STANCE_FALLBACK = {
+    "affirms": "zustimmend",
+    "extends": "weiterführend",
+    "contrasts": "kontrastierend",
+    "reserves": "mit Vorbehalt",
+    "rejects": "zurückweisend",
+}
+_NODE_TYPE_FALLBACK = {
+    "source": "Quelle",
+    "term": "eigener Begriff",
+    "position": "Selbstverortung",
+}
+STANCE_ORDER = ["affirms", "extends", "contrasts", "reserves", "rejects"]
+
+
+def _stance_label(value: Any) -> str:
+    try:
+        from journal_bot.web.labels import stance_label as _mapped
+    except ImportError:
+        pass
+    else:
+        return _mapped(value)
+    key = str(value or "")
+    return _STANCE_FALLBACK.get(key, humanize_key(key))
+
+
+def _node_type_label(value: Any) -> str:
+    try:
+        from journal_bot.web.labels import node_type_label as _mapped
+    except ImportError:
+        pass
+    else:
+        return _mapped(value)
+    key = str(value or "")
+    return _NODE_TYPE_FALLBACK.get(key, humanize_key(key))
+
+
+def _plain_label(value: Any) -> str:
+    """Strip markdown emphasis from a read label — display fix, not a content change.
+
+    The reading layer hands back labels like `Barad (2007), *Meeting the Universe
+    Halfway*`; the raw spellings stay visible in the label_variants list.
+    """
+    text = str(value or "")
+    for marker in ("**", "*", "`"):
+        text = text.replace(marker, "")
+    return text.strip()
+
+
+app.jinja_env.filters["plain_label"] = _plain_label
+
+
+def _fallgestalt_filename(canonical_id: str) -> str:
+    """File name of a stored reading — same sanitising as scripts/h7_run.py."""
+    stem = "".join(c if (c.isalnum() or c in "._-") else "_" for c in canonical_id)
+    return f"{stem}.json"
+
+
+def _own_texts() -> list[dict[str, Any]]:
+    """Own publications that have a stored full text (the readable substrate).
+
+    Mirrors the query of scripts/h7_run.py:load_publications, plus the flag
+    whether a machine reading already lies in output/fallgestalt.
+    """
+    if not OWN_REFS_DB.exists():
+        return []
+    conn = sqlite3.connect(OWN_REFS_DB)
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = conn.execute(
+            "SELECT canonical_id, title, year, venue, authors_json "
+            "FROM publications "
+            "WHERE fulltext_path IS NOT NULL AND TRIM(fulltext_path) != '' "
+            "ORDER BY (year IS NULL), year DESC, title ASC"
+        ).fetchall()
+    except sqlite3.OperationalError:
+        return []
+    finally:
+        conn.close()
+
+    texts: list[dict[str, Any]] = []
+    for r in rows:
+        try:
+            year = int(r["year"]) if r["year"] is not None else None
+        except (TypeError, ValueError):
+            year = None
+        try:
+            authors = json.loads(r["authors_json"] or "[]")
+        except (json.JSONDecodeError, TypeError):
+            authors = []
+        texts.append({
+            "id": r["canonical_id"],
+            "title": r["title"] or "(ohne Titel)",
+            "year": year,
+            "venue": r["venue"] or "",
+            "authors": authors if isinstance(authors, list) else [],
+            "analysed": (FALLGESTALT_DIR / _fallgestalt_filename(r["canonical_id"])).exists(),
+        })
+    return texts
+
+
+def _texts_by_year(texts: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Group the substrate by year, newest first, undated last."""
+    groups: dict[Any, list[dict[str, Any]]] = {}
+    for t in texts:
+        groups.setdefault(t["year"], []).append(t)
+
+    def entry(year: Any, label: str) -> dict[str, Any]:
+        members = groups[year]
+        return {
+            "year": year,
+            "label": label,
+            "texts": members,
+            "n_texts": len(members),
+            "n_analysed": sum(1 for t in members if t["analysed"]),
+        }
+
+    out = [entry(y, str(y)) for y in sorted((y for y in groups if y is not None), reverse=True)]
+    if None in groups:
+        out.append(entry(None, "ohne Jahresangabe"))
+    return out
+
+
+def _resolve_profil_selection(form: Any) -> list[dict[str, Any]]:
+    """Union of the year-wise and the single-work selection, deduplicated."""
+    years: set[int] = set()
+    for raw in form.getlist("year"):
+        try:
+            years.add(int(raw))
+        except (TypeError, ValueError):
+            continue
+    ids = set(form.getlist("work"))
+    return [
+        t for t in _own_texts()
+        if (t["year"] is not None and t["year"] in years) or t["id"] in ids
+    ]
+
+
+def _profil_estimate(pending: list[dict[str, Any]]) -> dict[str, Any]:
+    """Rough forecast for a run — an estimate from one measured work, no price."""
+    n = len(pending)
+    return {
+        "n_calls": n,
+        "cost": n * PROFIL_COST_PER_TEXT_USD,
+        "minutes": n * PROFIL_SECONDS_PER_TEXT / 60.0,
+    }
+
+
+def _tail_lines(path: Path, n: int) -> str:
+    if not path.exists():
+        return ""
+    try:
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return ""
+    return "\n".join(lines[-n:])
+
+
+def _profil_run_state() -> dict[str, Any]:
+    """Is a reading running, how far is it, what did it last print?"""
+    with _profil_run_lock:
+        proc = _profil_run.get("proc")
+        running = proc is not None and proc.poll() is None
+        state: dict[str, Any] = {
+            "running": running,
+            "started": _profil_run.get("started"),
+            "ids": list(_profil_run.get("ids") or []),
+            "returncode": None if (running or proc is None) else proc.returncode,
+            "ever_started": proc is not None,
+        }
+    analysed = {t["id"] for t in _own_texts() if t["analysed"]}
+    state["n_selected"] = len(state["ids"])
+    state["n_done"] = sum(1 for i in state["ids"] if i in analysed)
+    state["n_analysed_total"] = len(analysed)
+    state["log_tail"] = _tail_lines(PROFIL_LOG, 25)
+    return state
+
+
+def _load_profil_form() -> tuple[dict[str, Any] | None, str | None]:
+    """Read the condensed profile form; (None, reason) if it is not available."""
+    try:
+        from journal_bot.profile_form import build_profile_form, load_fallgestalten
+    except ImportError:
+        return None, (
+            "Die Verdichtung der gelesenen Texte zur Profilform steht in dieser "
+            "Installation noch nicht bereit."
+        )
+    try:
+        return build_profile_form(load_fallgestalten(str(FALLGESTALT_DIR))), None
+    except Exception as exc:  # noqa: BLE001 — Anzeige darf nie die Seite killen
+        return None, f"Die Profilform konnte nicht gebildet werden: {exc}"
+
+
+def _shift_description(shift: Any) -> str:
+    """Phrase for a stance that moves over the years — tolerant of the shape."""
+    if not shift:
+        return ""
+    if isinstance(shift, str):
+        return shift
+    if isinstance(shift, (list, tuple)):
+        return " → ".join(_stance_label(x) for x in shift if x)
+    if isinstance(shift, dict):
+        frm, to = shift.get("from"), shift.get("to")
+        if frm or to:
+            span = ""
+            if shift.get("from_year") or shift.get("to_year"):
+                span = f" ({shift.get('from_year') or '?'} → {shift.get('to_year') or '?'})"
+            return f"{_stance_label(frm)} → {_stance_label(to)}{span}"
+        return " · ".join(
+            f"{humanize_key(str(k))}: {v}" for k, v in shift.items() if v not in (None, "", [], {})
+        )
+    return str(shift)
+
+
+def _years_label(years: Any) -> str:
+    """"2019–2026" for a span, plain "2026" for a single year, "" if unknown."""
+    numbers = sorted({int(y) for y in (years or []) if str(y).strip().isdigit()})
+    if not numbers:
+        return ""
+    return str(numbers[0]) if numbers[0] == numbers[-1] else f"{numbers[0]}–{numbers[-1]}"
+
+
+def _profil_network(pform: dict[str, Any], limit: int = 40) -> list[dict[str, Any]]:
+    """Sources enriched with the sources they keep company with.
+
+    The point of the panel is the with-each-other, not a frequency ranking:
+    every source carries its co-occurrence partners (weight = shared texts).
+    """
+    sources = [s for s in (pform.get("sources") or []) if isinstance(s, dict)]
+    by_key = {s.get("key"): s for s in sources}
+    partners: dict[Any, list[dict[str, Any]]] = {}
+    for co in pform.get("cooccurrence") or []:
+        if not isinstance(co, dict):
+            continue
+        a, b = co.get("a"), co.get("b")
+        weight = co.get("weight") or 0
+        for one, other in ((a, b), (b, a)):
+            if one in by_key and other in by_key:
+                label = _plain_label(by_key[other].get("label") or other)
+                partners.setdefault(one, []).append({
+                    "label": label if len(label) <= 46 else label[:45] + "…",
+                    "full_label": label,
+                    "weight": weight,
+                })
+    ranked = sorted(sources, key=lambda s: (-(s.get("n_works") or 0), str(s.get("label") or "")))
+    out = []
+    for s in ranked[:limit]:
+        mates = sorted(partners.get(s.get("key"), []), key=lambda p: -p["weight"])
+        stance = s.get("stance") or {}
+        counts = [(k, int(stance.get(k) or 0)) for k in STANCE_ORDER]
+        total = sum(c for _, c in counts) or 0
+        out.append({
+            **s,
+            "display_label": _plain_label(s.get("label")) or "(ohne Bezeichnung)",
+            "partners": mates[:6],
+            "n_partners": len(mates),
+            "stance_counts": counts,
+            "stance_total": total,
+            "stance_phrase": " · ".join(f"{_stance_label(k)} ({c})" for k, c in counts if c),
+            "years_label": _years_label(s.get("years")),
+            "shift_text": _shift_description(s.get("shift")),
+        })
+    return out
+
+
+def _profil_periods(pform: dict[str, Any]) -> list[dict[str, Any]]:
+    """Periods with their source/term keys resolved to the read labels.
+
+    The keys are internal identifiers (`barad:2007`) — they must never reach
+    the page; only the label a reading actually produced does.
+    """
+    def labels_of(items: Any) -> dict[Any, str]:
+        return {
+            x.get("key"): _plain_label(x.get("label") or x.get("key"))
+            for x in (items or []) if isinstance(x, dict)
+        }
+
+    source_labels = labels_of(pform.get("sources"))
+    term_labels = labels_of(pform.get("terms"))
+
+    def resolve(keys: Any, table: dict[Any, str]) -> list[str]:
+        return [
+            table.get(k) or humanize_key(str(k)).replace(":", " ")
+            for k in (keys or [])
+        ]
+
+    out = []
+    for p in pform.get("periods") or []:
+        if not isinstance(p, dict):
+            continue
+        out.append({
+            **p,
+            "years_label": _years_label(p.get("years")),
+            "new_source_labels": resolve(p.get("new_sources"), source_labels),
+            "dropped_source_labels": resolve(p.get("dropped_sources"), source_labels),
+            "new_term_labels": resolve(p.get("new_terms"), term_labels),
+        })
+    return out
+
+
+def _profil_context() -> dict[str, Any]:
+    texts = _own_texts()
+    pform, form_error = _load_profil_form()
+    network: list[dict[str, Any]] = []
+    shifted: list[dict[str, Any]] = []
+    periods: list[dict[str, Any]] = []
+    if pform:
+        network = _profil_network(pform)
+        shifted = [s for s in network if s["shift_text"]]
+        periods = _profil_periods(pform)
+    skipped = ((pform or {}).get("reliability") or {}).get("skipped_files")
+    n_skipped = len(skipped) if isinstance(skipped, (list, tuple, set)) else int(skipped or 0)
+    return {
+        "texts": texts,
+        "year_groups": _texts_by_year(texts),
+        "n_texts": len(texts),
+        "n_analysed": sum(1 for t in texts if t["analysed"]),
+        "pform": pform,
+        "form_error": form_error,
+        "network": network,
+        "shifted": shifted,
+        "periods": periods,
+        "n_skipped_files": n_skipped,
+        "run": _profil_run_state(),
+        "stance_label": _stance_label,
+        "node_type_label": _node_type_label,
+        "stance_order": STANCE_ORDER,
+        "cost_per_text": PROFIL_COST_PER_TEXT_USD,
+        "seconds_per_text": PROFIL_SECONDS_PER_TEXT,
+    }
+
+
+@app.route("/profil")
+def profil():
+    return render_template("profil.html", **_profil_context())
+
+
+@app.route("/api/profil/confirm", methods=["POST"])
+def api_profil_confirm():
+    """First stage: show what a run would cost. Starts nothing."""
+    selected = _resolve_profil_selection(request.form)
+    pending = [t for t in selected if not t["analysed"]]
+    already = [t for t in selected if t["analysed"]]
+    return render_template(
+        "_profil_confirm.html",
+        selected=selected,
+        pending=pending,
+        already=already,
+        estimate=_profil_estimate(pending),
+        run=_profil_run_state(),
+        blocked=False,
+        cost_per_text=PROFIL_COST_PER_TEXT_USD,
+        seconds_per_text=PROFIL_SECONDS_PER_TEXT,
+    )
+
+
+@app.route("/api/profil/start", methods=["POST"])
+def api_profil_start():
+    """Second stage: only an explicit confirmation starts the background run."""
+    selected = _resolve_profil_selection(request.form)
+    pending = [t for t in selected if not t["analysed"]]
+    already = [t for t in selected if t["analysed"]]
+
+    if (request.form.get("confirmed") or "").strip().lower() != "ja":
+        # Ohne den zweiten, ausdrücklichen Klick wird kein Prozess gestartet.
+        return render_template(
+            "_profil_confirm.html",
+            selected=selected,
+            pending=pending,
+            already=already,
+            estimate=_profil_estimate(pending),
+            run=_profil_run_state(),
+            blocked=True,
+            cost_per_text=PROFIL_COST_PER_TEXT_USD,
+            seconds_per_text=PROFIL_SECONDS_PER_TEXT,
+        )
+
+    if not pending:
+        return render_template(
+            "_profil_status.html",
+            run=_profil_run_state(),
+            message="Nichts zu tun — alle ausgewählten Texte sind bereits ausgewertet.",
+        )
+
+    with _profil_run_lock:
+        proc = _profil_run.get("proc")
+        if proc is not None and proc.poll() is None:
+            return render_template(
+                "_profil_status.html",
+                run=_profil_run_state(),
+                message="Es läuft bereits eine Auswertung — bitte abwarten.",
+            )
+
+        venv_python = PROJECT_ROOT / ".venv" / "bin" / "python"
+        cmd = [str(venv_python if venv_python.exists() else sys.executable), str(PROFIL_SCRIPT)]
+        cmd += [t["id"] for t in pending]
+        cmd.append("--yes")
+
+        started = datetime.now()
+        try:
+            PROFIL_LOG.parent.mkdir(parents=True, exist_ok=True)
+            log = open(PROFIL_LOG, "a", encoding="utf-8")
+            log.write(
+                f"\n=== Auswertung gestartet {started:%Y-%m-%d %H:%M:%S} · "
+                f"{len(pending)} Texte, {len(already)} bereits gelesen (übersprungen) ===\n"
+            )
+            log.flush()
+            new_proc = subprocess.Popen(
+                cmd, cwd=str(PROJECT_ROOT), stdout=log, stderr=subprocess.STDOUT,
+            )
+        except OSError as exc:
+            return render_template(
+                "_profil_status.html",
+                run=_profil_run_state(),
+                message=f"Die Auswertung ließ sich nicht starten: {exc}",
+            )
+
+        # Log-Handle festhalten, damit es nicht unter dem Prozess weggeräumt wird.
+        _profil_run.update({
+            "proc": new_proc,
+            "log": log,
+            "started": started.strftime("%d.%m.%Y %H:%M"),
+            "ids": [t["id"] for t in pending],
+        })
+
+    return render_template(
+        "_profil_status.html",
+        run=_profil_run_state(),
+        message=(
+            f"Auswertung gestartet: {len(pending)} Text(e) werden gelesen"
+            + (f", {len(already)} bereits ausgewertete übersprungen." if already else ".")
+        ),
+    )
+
+
+@app.route("/api/profil/status")
+def api_profil_status():
+    return render_template("_profil_status.html", run=_profil_run_state(), message=None)
 
 
 # ============================================================== Main ===

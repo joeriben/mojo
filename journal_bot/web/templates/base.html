@@ -209,6 +209,7 @@
     <a href="/review" {% if request.path == "/review" %}class="active"{% endif %}>Sichten</a>
     <a href="/" {% if request.path == "/" %}class="active"{% endif %}>Digest</a>
     <a href="/diskurs" {% if request.path.startswith("/diskurs") %}class="active"{% endif %}>Diskursräume</a>
+    <a href="/profil" {% if request.path == "/profil" %}class="active"{% endif %}>Werkprofil</a>
     <a href="/agent" {% if request.path == "/agent" %}class="active"{% endif %}>Recherche</a>
     {% if ui_lab %}
     <span class="nav-lab">
@@ -226,7 +227,7 @@
              style="font-size:.8rem; color:var(--muted); display:flex; align-items:center;
                     gap:.2rem; cursor:pointer; user-select:none;">
         <input type="checkbox" name="regex" value="1"
-               {% if request.args.get('regex') %}checked{% endif %}>.*
+               {% if request.args.get('regex') %}checked{% endif %}>Muster
       </label>
       <button type="submit" style="font-size:.85rem; padding:3px 10px; border:none;
               border-radius:4px; background:var(--accent); color:#fff; cursor:pointer;">

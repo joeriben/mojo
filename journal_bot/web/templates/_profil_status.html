@@ -1,0 +1,46 @@
+<div id="profil-lauf"
+     {% if run.running %}hx-get="/api/profil/status" hx-trigger="every 3s" hx-swap="outerHTML"{% endif %}>
+
+  {% if message %}
+  <p style="font-size:.9rem; margin-bottom:.5rem;">{{ message }}</p>
+  {% endif %}
+
+  {% if run.running or run.ever_started %}
+  <div class="card" style="margin-bottom:0;">
+    <div style="display:flex; gap:.6rem; align-items:baseline; flex-wrap:wrap;">
+      {% if run.running %}
+      <span class="badge badge-scannen">Auswertung läuft</span>
+      {% elif run.returncode == 0 %}
+      <span class="badge badge-lesenswert">Auswertung beendet</span>
+      {% else %}
+      <span class="badge badge-pflichtlektuere">Auswertung abgebrochen</span>
+      {% endif %}
+      {% if run.n_selected %}
+      <span style="font-size:.9rem;">{{ run.n_done }} von {{ run.n_selected }} Text{{ "" if run.n_selected == 1 else "en" }} ausgewertet</span>
+      {% endif %}
+      {% if run.started %}
+      <span style="font-size:.85rem; color:var(--muted);">seit {{ run.started }}</span>
+      {% endif %}
+      {% if run.running %}
+      <span style="font-size:.85rem; color:var(--muted);">
+        Der Lauf arbeitet im Hintergrund weiter — diese Seite darf geschlossen werden.
+      </span>
+      {% endif %}
+    </div>
+
+    {% if not run.running %}
+    <div class="actions">
+      <a href="/profil" class="btn btn-primary">Profil aktualisieren</a>
+    </div>
+    {% endif %}
+
+    {% if run.log_tail %}
+    <details style="margin-top:.6rem;">
+      <summary style="font-size:.85rem; color:var(--muted);">Protokoll des Laufs</summary>
+      <pre style="white-space:pre-wrap; font-size:.78rem; line-height:1.45; margin-top:.4rem;
+                  background:var(--code-bg); padding:.5rem; border-radius:4px;">{{ run.log_tail }}</pre>
+    </details>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>

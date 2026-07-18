@@ -1,0 +1,453 @@
+{% extends "base.html" %}
+{% block title %}MOJO — Werkprofil{% endblock %}
+{% block content %}
+
+<style>
+  .stats-table { border-collapse: collapse; font-size: .9rem; }
+  .stats-table td { padding: 4px 12px 4px 0; vertical-align: top; }
+  .stats-table td:first-child { font-weight: 600; white-space: nowrap; color: var(--muted); }
+
+  .epistemic { border-left: 4px solid var(--scannen); }
+  .epistemic p { font-size: .88rem; margin-bottom: .5rem; }
+  .epistemic p:last-child { margin-bottom: 0; }
+
+  .year-row { display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap;
+              padding: .35rem 0; }
+  .year-row .year-no { font-weight: 600; min-width: 3.5rem; }
+  .year-row .year-meta { font-size: .82rem; color: var(--muted); }
+  .year-block { border-bottom: 1px solid var(--border); }
+  .year-block:last-child { border-bottom: none; }
+  .work-list { list-style: none; margin: .2rem 0 .5rem 1.6rem; }
+  .work-list li { padding: .15rem 0; font-size: .88rem; display: flex;
+                  gap: .5rem; align-items: baseline; }
+  .work-list .work-state { font-size: .75rem; white-space: nowrap; }
+  .state-done { color: var(--lesenswert); }
+  .state-open { color: var(--muted); }
+
+  .stance-bar { display: flex; height: 7px; width: 150px; border-radius: 3px;
+                overflow: hidden; background: var(--border); }
+  .stance-bar span { display: block; }
+  .s-affirms { background: var(--lesenswert); }
+  .s-extends { background: var(--accent); }
+  .s-contrasts { background: var(--scannen); }
+  .s-reserves { background: var(--ignorieren); }
+  .s-rejects { background: var(--pflichtlektuere); }
+  .stance-legend { font-size: .78rem; color: var(--muted); display: flex;
+                   gap: .8rem; flex-wrap: wrap; margin-bottom: .6rem; }
+  .stance-legend i { display: inline-block; width: 10px; height: 10px;
+                     border-radius: 2px; margin-right: .25rem; font-style: normal; }
+
+  .net-item { padding: .55rem 0; border-bottom: 1px solid var(--border); }
+  .net-item:last-child { border-bottom: none; }
+  .net-head { display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
+  .net-label { font-weight: 600; }
+  .net-meta { font-size: .8rem; color: var(--muted); }
+  .net-mates { font-size: .83rem; margin-top: .25rem; }
+  .chip { display: inline-block; font-size: .75rem; padding: 1px 8px; margin: 2px 3px 0 0;
+          border: 1px solid var(--border); border-radius: 11px; color: var(--fg); }
+  .chip .w { color: var(--muted); }
+
+  .shift-item { padding: .5rem 0; border-bottom: 1px solid var(--border); }
+  .shift-item:last-child { border-bottom: none; }
+  .shift-arrow { font-size: .9rem; }
+
+  .period-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                 gap: .75rem; }
+  .period-card h4 { font-size: .95rem; margin-bottom: .1rem; }
+  .period-card .p-years { font-size: .8rem; color: var(--muted); margin-bottom: .4rem; }
+  .period-card .p-group { font-size: .82rem; margin-top: .4rem; }
+  .period-card .p-group .p-title { color: var(--muted); }
+
+  .profil-table { border-collapse: collapse; width: 100%; font-size: .87rem; }
+  .profil-table th { text-align: left; font-size: .75rem; text-transform: uppercase;
+                     letter-spacing: .03em; color: var(--muted); font-weight: 600;
+                     padding: 4px 10px 4px 0; border-bottom: 1px solid var(--border); }
+  .profil-table td { padding: 4px 10px 4px 0; border-bottom: 1px solid var(--border);
+                     vertical-align: top; }
+  .profil-table tr:last-child td { border-bottom: none; }
+
+  .self-pos { padding: .6rem 0; border-bottom: 1px solid var(--border); }
+  .self-pos:last-child { border-bottom: none; }
+  .self-pos .sp-head { font-size: .85rem; color: var(--muted); margin-bottom: .2rem; }
+</style>
+
+<h1 style="font-size:1.3rem; margin-bottom:.4rem;">Werkprofil</h1>
+<p style="color:var(--muted); font-size:.9rem; margin-bottom:1.25rem;">
+  Dein Werkprofil aus deinen eigenen Texten: welche Quellen wiederkehren, mit welcher Haltung
+  du sie aufnimmst, welche gemeinsam auftreten — und was sich über die Jahre verschiebt.
+</p>
+
+<!-- ============================================ Substrat ================ -->
+<div class="card" id="substrat">
+  <h2 style="margin-top:0;">Meine ausgewerteten Texte</h2>
+  <p style="font-size:.9rem; margin-bottom:.6rem;">
+    <strong>{{ n_analysed }} von {{ n_texts }} Texten ausgewertet.</strong>
+    <span style="color:var(--muted);">
+      Ausgewertet werden können deine Publikationen, zu denen ein Volltext vorliegt.
+    </span>
+  </p>
+
+  {% if not n_texts %}
+  <p style="font-size:.9rem; color:var(--muted);">
+    Es liegt noch keine eigene Publikation mit hinterlegtem Volltext vor — ohne Volltext
+    lässt sich nichts auswerten.
+  </p>
+  {% else %}
+  <form hx-post="/api/profil/confirm" hx-target="#profil-aktion" hx-swap="innerHTML">
+    <details {% if not n_analysed %}open{% endif %} style="margin-bottom:.6rem;">
+      <summary style="font-size:.9rem;">Auswahl treffen — nach Jahren oder einzelne Texte</summary>
+      <p style="font-size:.83rem; color:var(--muted); margin:.4rem 0 .6rem;">
+        Ein angehaktes Jahr wählt alle Texte dieses Jahres. Einzelne Texte lassen sich
+        zusätzlich ankreuzen; beides wird zusammengefasst.
+      </p>
+      {% for g in year_groups %}
+      <div class="year-block">
+        <label class="year-row" style="cursor:pointer;">
+          <input type="checkbox" name="year" value="{{ g.year if g.year is not none else '' }}"
+                 {% if g.year is none %}disabled title="Texte ohne Jahresangabe lassen sich nur einzeln auswählen"{% endif %}>
+          <span class="year-no">{{ g.label }}</span>
+          <span class="year-meta">
+            {{ g.n_texts }} Text{{ "" if g.n_texts == 1 else "e" }} ·
+            {{ g.n_analysed }} ausgewertet
+          </span>
+        </label>
+        <details>
+          <summary style="font-size:.82rem; color:var(--muted); margin-left:1.6rem;">einzelne Texte</summary>
+          <ul class="work-list">
+            {% for t in g.texts %}
+            <li>
+              <input type="checkbox" name="work" value="{{ t.id }}" id="w-{{ loop.index }}-{{ g.label }}">
+              <label for="w-{{ loop.index }}-{{ g.label }}" style="flex:1; cursor:pointer;">{{ t.title }}</label>
+              {% if t.analysed %}
+              <span class="work-state state-done">ausgewertet</span>
+              {% else %}
+              <span class="work-state state-open">noch nicht</span>
+              {% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+        </details>
+      </div>
+      {% endfor %}
+    </details>
+
+    <div class="actions" style="margin-top:.5rem;">
+      <button type="submit" class="btn btn-primary" {% if run.running %}disabled{% endif %}>
+        Auswertung starten
+      </button>
+      <span style="font-size:.83rem; color:var(--muted); align-self:center;">
+        {% if run.running %}
+          Es läuft bereits eine Auswertung — der Start ist so lange gesperrt.
+        {% else %}
+          Zeigt zuerst Anzahl und geschätzte Kosten; gestartet wird erst mit einem zweiten Klick.
+        {% endif %}
+      </span>
+    </div>
+  </form>
+  {% endif %}
+
+  <div id="profil-aktion" style="margin-top:.75rem;">
+    {% if run.running or run.ever_started %}
+    {% include "_profil_status.html" %}
+    {% endif %}
+  </div>
+</div>
+
+<!-- ============================================ Profilform ============== -->
+<h2>Werkprofil</h2>
+
+{% if not n_analysed %}
+<div class="card">
+  <p style="font-size:.9rem; margin-bottom:.5rem;">
+    Noch keiner deiner Texte ist ausgewertet — deshalb gibt es noch kein Profil.
+  </p>
+  <p style="font-size:.9rem; color:var(--muted); margin-bottom:.5rem;">
+    Das Profil entsteht, indem deine eigenen Volltexte maschinell gelesen werden: Pro Text
+    werden die herangezogenen Quellen, deine Haltung zu ihnen, deine eigenen Begriffe und
+    deine Selbstverortung festgehalten. Aus mehreren Texten ergibt sich daraus ein Netz
+    wiederkehrender Bezüge.
+  </p>
+  <p style="font-size:.9rem; color:var(--muted); margin-bottom:.6rem;">
+    Fang klein an — ein einzelnes Jahr genügt, um zu sehen, was dabei herauskommt.
+    Kosten und Dauer werden vor dem Start angezeigt.
+  </p>
+  <a href="#substrat" class="btn btn-primary">Texte auswählen</a>
+</div>
+
+{% elif not pform %}
+<div class="card">
+  <p style="font-size:.9rem;">{{ form_error or "Die Profilform ist derzeit nicht verfügbar." }}</p>
+  <p style="font-size:.85rem; color:var(--muted); margin-top:.4rem;">
+    Die Auswertungen der einzelnen Texte sind davon nicht betroffen — sie bleiben erhalten.
+  </p>
+</div>
+
+{% else %}
+{% set sub = pform.get('substrate') or {} %}
+{% set rel = pform.get('reliability') or {} %}
+
+<!-- Epistemischer Status: gehört sichtbar an den Kopf des Panels, nicht ins Kleingedruckte -->
+<div class="card epistemic">
+  <h3 style="color:var(--fg); font-size:.95rem; margin-top:0;">Woher dieses Profil stammt</h3>
+  {% set n_read = rel.get('n_works') or sub.get('n_works') or n_analysed %}
+  {% set n_fuzzy = rel.get('fuzzy_matched_keys') or 0 %}
+  <p>
+    <strong>Gelesen, nicht gerechnet.</strong>
+    Grundlage sind maschinelle Lektüren deiner eigenen Volltexte
+    ({{ n_read }} Text{{ "" if n_read == 1 else "e" }} ausgewertet): Ein Sprachmodell hat
+    jeden Text gelesen und darin Quellen, Haltungen und Begriffe benannt. Alles Folgende
+    ist das Ergebnis dieser Lektüre — keine Messung und keine Statistik über dein Werk.
+    Zahlen darin zählen Lese-Ergebnisse, nicht Belegstellen.
+  </p>
+  <p>
+    <strong>Zusammenführung ist heuristisch.</strong>
+    Dieselbe Quelle taucht in verschiedenen Schreibweisen auf; sie wird nach Ähnlichkeit
+    zusammengeführt.
+    {% if n_fuzzy %}
+    Bei {{ n_fuzzy }} Quelle{{ "" if n_fuzzy == 1 else "n" }} ist das über abweichende
+    Schreibweisen geschehen.
+    {% endif %}
+    Die Schreibvarianten stehen bei jeder Quelle im Bezugsnetz — bitte darauf sehen, ob dort
+    zusammengezogen wurde, was nicht zusammengehört.
+  </p>
+  <p>
+    <strong>Belegprüfung.</strong>
+    Bei {{ rel.get('works_with_beleg_failures') or 0 }} von {{ n_read }}
+    ausgewerteten Texten ließ sich mindestens eine Angabe nicht wörtlich im Text wiederfinden
+    (zusammen {{ rel.get('total_beleg_failures') or 0 }} Stellen). Solche Angaben sind
+    Kandidaten für Erfundenes.
+    {% if n_skipped_files %}
+    {{ n_skipped_files }} Auswertung{{ "" if n_skipped_files == 1 else "en" }} ließ{{ "" if n_skipped_files == 1 else "en" }}
+    sich nicht einlesen und fehl{{ "t" if n_skipped_files == 1 else "en" }} hier.
+    {% endif %}
+  </p>
+</div>
+
+<!-- ------------------------------------------- Bezugsnetz -------------- -->
+<h3 style="color:var(--fg); font-size:1rem; margin-top:1.25rem;">
+  Bezugsnetz
+  <span class="section-count">({{ pform.get('sources')|length }} Quellen)</span>
+</h3>
+<p style="font-size:.85rem; color:var(--muted); margin-bottom:.6rem;">
+  Nicht als Rangliste, sondern als Geflecht: zu jeder Quelle steht, mit welchen anderen
+  Quellen sie in denselben Texten auftritt. Die Zahl in Klammern ist die Anzahl gemeinsamer Texte.
+</p>
+
+{% if network %}
+<div class="card">
+  <div class="stance-legend">
+    <span>Haltung:</span>
+    {% for s in stance_order %}
+    <span><i class="s-{{ s }}"></i>{{ stance_label(s) }}</span>
+    {% endfor %}
+  </div>
+
+  {% for s in network %}
+  <div class="net-item">
+    <div class="net-head">
+      <span class="net-label">{{ s.display_label }}</span>
+      {% if s.get('own_work') %}
+      <span class="badge badge-lesenswert">eigener Text</span>
+      {% endif %}
+      <span class="net-meta">in {{ s.get('n_works') or 0 }} Text{{ "" if (s.get('n_works') or 0) == 1 else "en" }}</span>
+      {% if s.years_label %}
+      <span class="net-meta">{{ s.years_label }}</span>
+      {% endif %}
+      {% if s.stance_total %}
+      <span class="stance-bar" title="Haltungen in den einzelnen Texten">
+        {% for kind, count in s.stance_counts %}
+        {% if count %}
+        <span class="s-{{ kind }}" style="width:{{ (100 * count / s.stance_total)|round(1) }}%"
+              title="{{ stance_label(kind) }}: {{ count }}"></span>
+        {% endif %}
+        {% endfor %}
+      </span>
+      <span class="net-meta">{{ s.stance_phrase }}</span>
+      {% endif %}
+      {% if s.get('sigma') %}
+      <span class="net-meta">
+        insgesamt {{ s.get('sigma').get('+') or 0 }} zugewandt · {{ s.get('sigma').get('-') or 0 }} abgrenzend
+      </span>
+      {% endif %}
+    </div>
+
+    {% if s.partners %}
+    <div class="net-mates">
+      <span style="color:var(--muted);">tritt gemeinsam auf mit:</span>
+      {% for p in s.partners %}
+      <span class="chip" title="{{ p.full_label }}">{{ p.label }} <span class="w">({{ p.weight }})</span></span>
+      {% endfor %}
+      {% if s.n_partners > s.partners|length %}
+      <span class="net-meta">und {{ s.n_partners - s.partners|length }} weiteren</span>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if s.shift_text %}
+    <div class="net-mates" style="color:var(--scannen);">
+      Haltung verschiebt sich: {{ s.shift_text }}
+    </div>
+    {% endif %}
+
+    {% if s.get('label_variants') and s.get('label_variants')|length > 1 %}
+    <details style="margin-top:.2rem;">
+      <summary style="font-size:.78rem; color:var(--muted);">
+        {{ s.get('label_variants')|length }} Schreibweisen zusammengeführt
+      </summary>
+      <div style="font-size:.8rem; color:var(--muted); margin:.2rem 0 0 1rem;">
+        {{ s.get('label_variants')|join(" · ") }}
+      </div>
+    </details>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <p style="font-size:.9rem; color:var(--muted);">
+    In den ausgewerteten Texten sind noch keine wiederkehrenden Quellen zusammengekommen.
+  </p>
+</div>
+{% endif %}
+
+<!-- ------------------------------------------- Verschiebungen ---------- -->
+<h3 style="color:var(--fg); font-size:1rem; margin-top:1.25rem;">
+  Verschiebungen
+  <span class="section-count">({{ shifted|length }})</span>
+</h3>
+<p style="font-size:.85rem; color:var(--muted); margin-bottom:.6rem;">
+  Quellen, zu denen sich deine Haltung über die Jahre ändert — gelesen aus den Texten,
+  in denen sie vorkommen.
+</p>
+<div class="card">
+  {% if shifted %}
+  {% for s in shifted %}
+  <div class="shift-item">
+    <div class="net-head">
+      <span class="net-label">{{ s.display_label }}</span>
+      <span class="net-meta">in {{ s.get('n_works') or 0 }} Text{{ "" if (s.get('n_works') or 0) == 1 else "en" }}</span>
+      {% if s.years_label %}
+      <span class="net-meta">{{ s.years_label }}</span>
+      {% endif %}
+    </div>
+    <div class="shift-arrow">{{ s.shift_text }}</div>
+  </div>
+  {% endfor %}
+  {% else %}
+  <p style="font-size:.9rem; color:var(--muted);">
+    Bisher keine Quelle, deren Haltung sich über die ausgewerteten Texte hinweg ändert.
+    Das kann auch daran liegen, dass zu wenige Jahrgänge ausgewertet sind.
+  </p>
+  {% endif %}
+</div>
+
+<!-- ------------------------------------------- Perioden ---------------- -->
+<h3 style="color:var(--fg); font-size:1rem; margin-top:1.25rem;">
+  Perioden
+  <span class="section-count">({{ periods|length }})</span>
+</h3>
+{% if periods %}
+<div class="period-grid">
+  {% for p in periods %}
+  <div class="card period-card">
+    <h4>{{ p.get('label') or '—' }}</h4>
+    <div class="p-years">
+      {% if p.years_label %}{{ p.years_label }} · {% endif %}
+      {{ p.get('n_works') or 0 }} Text{{ "" if (p.get('n_works') or 0) == 1 else "e" }}
+    </div>
+    {% if p.new_source_labels %}
+    <div class="p-group">
+      <span class="p-title">neu hinzugekommen:</span>
+      {{ p.new_source_labels|join(" · ") }}
+    </div>
+    {% endif %}
+    {% if p.dropped_source_labels %}
+    <div class="p-group">
+      <span class="p-title">nicht mehr aufgegriffen:</span>
+      {{ p.dropped_source_labels|join(" · ") }}
+    </div>
+    {% endif %}
+    {% if p.new_term_labels %}
+    <div class="p-group">
+      <span class="p-title">neue eigene Begriffe:</span>
+      {{ p.new_term_labels|join(" · ") }}
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <p style="font-size:.9rem; color:var(--muted);">
+    Für einen Vergleich von Zeiträumen sind noch zu wenige Jahrgänge ausgewertet.
+  </p>
+</div>
+{% endif %}
+
+<!-- ------------------------------------------- Eigene Begriffe --------- -->
+{% set terms = pform.get('terms') or [] %}
+<h3 style="color:var(--fg); font-size:1rem; margin-top:1.25rem;">
+  Eigene Begriffe
+  <span class="section-count">({{ terms|length }})</span>
+</h3>
+<div class="card">
+  {% if terms %}
+  <table class="profil-table">
+    <thead>
+      <tr>
+        <th>Begriff</th>
+        <th>in Texten</th>
+        <th>erstmals</th>
+        <th>zuletzt</th>
+        <th>Schreibweisen</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in terms %}
+      <tr>
+        <td>{{ t.get('label')|plain_label or '—' }}</td>
+        <td>{{ t.get('n_works') or 0 }}</td>
+        <td>{{ t.get('first_year') or "—" }}</td>
+        <td>{{ t.get('last_year') or "—" }}</td>
+        <td style="color:var(--muted);">
+          {% if t.get('label_variants') and t.get('label_variants')|length > 1 %}
+          {{ t.get('label_variants')|join(" · ") }}
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="font-size:.9rem; color:var(--muted);">
+    In den ausgewerteten Texten wurden noch keine eigenen Begriffe als wiederkehrend gelesen.
+  </p>
+  {% endif %}
+</div>
+
+<!-- ------------------------------------------- Selbstverortungen ------- -->
+{% set positions = pform.get('self_positions') or [] %}
+<h3 style="color:var(--fg); font-size:1rem; margin-top:1.25rem;">
+  Selbstverortungen
+  <span class="section-count">({{ positions|length }})</span>
+</h3>
+<p style="font-size:.85rem; color:var(--muted); margin-bottom:.6rem;">
+  Was der jeweilige Text als sein eigenes Vorhaben ausweist — chronologisch, gelesen aus dem Text selbst.
+</p>
+<div class="card">
+  {% if positions %}
+  {% for p in positions %}
+  <div class="self-pos">
+    <div class="sp-head">{{ p.get('year') or "ohne Jahr" }} · {{ p.get('title') or '—' }}</div>
+    <div style="font-size:.9rem;">{{ p.get('label') or '—' }}</div>
+  </div>
+  {% endfor %}
+  {% else %}
+  <p style="font-size:.9rem; color:var(--muted);">
+    Noch keine Selbstverortung aus den ausgewerteten Texten gelesen.
+  </p>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

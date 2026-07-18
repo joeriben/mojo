@@ -1,0 +1,90 @@
+{# Erste Stufe der Kosten-Schranke: zeigt, was ein Lauf kostet — startet nichts.
+   Erst der zweite, ausdrückliche Klick unten schickt `confirmed=ja`. #}
+<div class="card" style="border-color:var(--scannen);">
+  <h3 style="color:var(--fg); font-size:1rem; margin-top:0;">Vor dem Start</h3>
+
+  {% if blocked %}
+  <p style="font-size:.9rem; color:var(--pflichtlektuere); margin-bottom:.6rem;">
+    Nicht gestartet — die Bestätigung fehlte. Es wurde nichts gelesen und nichts abgerechnet.
+  </p>
+  {% endif %}
+
+  {% if not selected %}
+  <p style="font-size:.9rem; color:var(--muted);">
+    Noch nichts ausgewählt. Wähle oben einzelne Jahre oder einzelne Texte aus.
+  </p>
+  {% elif not pending %}
+  <p style="font-size:.9rem;">
+    Alle {{ selected|length }} ausgewählten Text{{ "" if selected|length == 1 else "e" }} sind bereits ausgewertet —
+    es gibt nichts neu auszuwerten und nichts zu bezahlen.
+  </p>
+  {% else %}
+  <table class="stats-table" style="margin-bottom:.6rem;">
+    <tr>
+      <td>Ausgewählt</td>
+      <td>{{ selected|length }} Text{{ "" if selected|length == 1 else "e" }}</td>
+    </tr>
+    {% if already %}
+    <tr>
+      <td>Bereits ausgewertet</td>
+      <td>{{ already|length }} — wird übersprungen, nicht erneut bezahlt</td>
+    </tr>
+    {% endif %}
+    <tr>
+      <td>Neu auszuwerten</td>
+      <td><strong>{{ pending|length }} Text{{ "" if pending|length == 1 else "e" }}</strong></td>
+    </tr>
+    <tr>
+      <td>Maschinelle Lektüren</td>
+      <td>{{ estimate.n_calls }} Aufruf{{ "" if estimate.n_calls == 1 else "e" }} an das Sprachmodell (einer je Text)</td>
+    </tr>
+    <tr>
+      <td>Geschätzte Kosten</td>
+      <td>
+        <strong>≈ {{ "%.2f"|format(estimate.cost) }} US-Dollar</strong>
+        <span style="color:var(--muted);">
+          — Schätzung, hochgerechnet aus einem einzigen gemessenen Text
+          (≈ {{ "%.3f"|format(cost_per_text) }} $ je Text). Kein zugesagter Preis:
+          längere Texte und Wiederholversuche kosten mehr.
+        </span>
+      </td>
+    </tr>
+    <tr>
+      <td>Geschätzte Dauer</td>
+      <td>
+        ≈ {{ "%.0f"|format(estimate.minutes) }} Minute{{ "" if estimate.minutes|round(0) == 1 else "n" }}
+        <span style="color:var(--muted);">— gerechnet mit ≈ {{ seconds_per_text }} Sekunden je Text (an einem Text gemessen)</span>
+      </td>
+    </tr>
+  </table>
+
+  <details style="margin-bottom:.7rem;">
+    <summary style="font-size:.85rem; color:var(--muted);">
+      Diese{{ " " ~ pending|length if pending|length > 1 else "r" }} Text{{ "e" if pending|length > 1 else "" }} {{ "werden" if pending|length > 1 else "wird" }} ausgewertet
+    </summary>
+    <ul style="font-size:.85rem; margin:.4rem 0 0 1.2rem;">
+      {% for t in pending %}
+      <li><span style="color:var(--muted);">{{ t.year or "ohne Jahr" }}</span> — {{ t.title }}</li>
+      {% endfor %}
+    </ul>
+  </details>
+
+  <form hx-post="/api/profil/start" hx-target="#profil-aktion" hx-swap="innerHTML">
+    <input type="hidden" name="confirmed" value="ja">
+    {% for t in pending %}
+    <input type="hidden" name="work" value="{{ t.id }}">
+    {% endfor %}
+    <div class="actions" style="margin-top:0;">
+      <button type="submit" class="btn btn-primary">
+        {% if pending|length == 1 %}Ja, diesen Text jetzt auswerten
+        {% else %}Ja, diese {{ pending|length }} Texte jetzt auswerten{% endif %}
+      </button>
+      <button type="button" class="btn"
+              hx-get="/api/profil/status" hx-target="#profil-aktion" hx-swap="innerHTML">
+        Abbrechen
+      </button>
+      <span class="htmx-indicator" style="font-size:.85rem; color:var(--muted);">wird gestartet …</span>
+    </div>
+  </form>
+  {% endif %}
+</div>
