@@ -272,16 +272,26 @@ def estimate_cost(route_key: str, tokens_in: int, tokens_out: int) -> float:
     )
 
 
-def estimate_selection_cost(selected: list[dict], route) -> float:
-    """Grobe Vorab-Kostenschätzung für eine Auswahl aus der Preistabelle.
+# Kalibriert an EINER ungedeckelten Messung (2026-07-18, „Prompt Interception",
+# 52 258 Zeichen Volltext, Route mimo): 40 293 Eingabe- und 45 413 Ausgabe-Tokens.
+# Die vorherigen Werte (chars/4 bzw. pauschal 2500 Ausgabe-Tokens) unterschätzten
+# um Faktor 2,8 bzw. 18 und ließen einen $16-Batch wie $2.25 aussehen. Der
+# Ausgabe-Anteil ist beim Reasoning-Modell weitgehend längenunabhängig (Denken
+# dominiert), deshalb als Pauschale je Dokument geführt.
+_TOKENS_IN_PER_CHAR = 0.77
+_TOKENS_OUT_PER_DOC = 45_000
 
-    Untergrenze (Retries bei Degenerat/Beleg-Fail erhöhen die realen Calls):
-    ~chars/4 Input-Tokens + ~1200 Prompt-Overhead je Dok, ~2500 Output-Tokens je
-    Dok. KEIN Provider-Ist-Wert, Cache-Rabatte nicht erfasst → als Schätzung (≈)
-    zu lesen."""
+
+def estimate_selection_cost(selected: list[dict], route) -> float:
+    """Vorab-Kostenschätzung für eine Auswahl aus der Preistabelle.
+
+    Basis ist EINE gemessene Route (mimo); nicht-reasoning-Routen liegen im
+    Ausgabe-Anteil deutlich darunter. KEIN Provider-Ist-Wert, Cache-Rabatte
+    nicht erfasst, Retries bei Degenerat/Beleg-Fail erhöhen die realen Calls
+    → als Schätzung (≈) zu lesen."""
     total_chars = sum(int(p.get("fulltext_chars") or 0) for p in selected)
-    est_in = total_chars / 4 + 1200 * len(selected)
-    est_out = 2500 * len(selected)
+    est_in = total_chars * _TOKENS_IN_PER_CHAR
+    est_out = _TOKENS_OUT_PER_DOC * len(selected)
     return (
         est_in / 1_000_000 * route.input_usd_per_mtok
         + est_out / 1_000_000 * route.output_usd_per_mtok
