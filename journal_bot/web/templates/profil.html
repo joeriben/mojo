@@ -274,7 +274,12 @@
       </span>
       <span class="net-meta">{{ s.stance_phrase }}</span>
       {% endif %}
-      {% if s.get('sigma') %}
+      {# Nur zeigen, wenn tatsächlich eine Haltung mit Vorzeichen vorliegt. Das
+         Dict ist immer da (»{+: 0, −: 0}«), auch wenn keine einzige Kante ein
+         Vorzeichen trug — Selbstbezüge etwa laufen über Trajektorien, die per
+         Konstruktion keins haben. »0 zugewandt · 0 abgrenzend« läse sich dort
+         als gemessene Null, wo gar nichts zu messen war. #}
+      {% if (s.get('sigma', {}).get('+') or 0) or (s.get('sigma', {}).get('-') or 0) %}
       <span class="net-meta">
         insgesamt {{ s.get('sigma').get('+') or 0 }} zugewandt · {{ s.get('sigma').get('-') or 0 }} abgrenzend
       </span>
