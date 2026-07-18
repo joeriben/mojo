@@ -410,6 +410,12 @@ def normalize_for_beleg_match(s: str) -> str:
     vereinheitlicht)."""
     s = unicodedata.normalize("NFKC", s).lower()
     s = s.replace("\xad", "")  # Soft Hyphen (Silbentrennung aus PDF/DOCX-Extrakten)
+    # Silbentrennung am Zeilenende zusammenziehen. Gemessen 2026-07-18 über die
+    # 73 Volltexte: 59 % tragen ≥2 Trennstriche je 1000 Zeichen, Spitze 5,6 —
+    # das Modell liest sie zusammen und gibt das ungetrennte Wort zurück, der
+    # Verbatim-Vergleich scheiterte daran. Muss VOR dem Whitespace-Kollaps
+    # laufen, sonst ist der Zeilenumbruch schon ein Leerzeichen.
+    s = re.sub(r"-\s*\n\s*", "", s)
     s = re.sub("[\"'„“”«»‹›’‘`´]", "", s)
     s = re.sub(r"[–—‒−]", "-", s)
     s = re.sub(r"\s+", " ", s)
@@ -420,16 +426,42 @@ def normalize_for_beleg_match(s: str) -> str:
 BELEG_MIN_CHECKABLE = 12
 
 
+# Anteil der prüfbaren Zeichen, der wörtlich im Volltext stehen muss, damit ein
+# Beleg als geerdet gilt. Gemessen 2026-07-18: das vorherige „ALLE Stücke müssen
+# treffen" ließ 57,8 % aller Belege scheitern, obwohl kein einziger frei erfunden
+# war — es genügte EIN Verbindungsstück des Modells (»…« (im Kontext von: »…«),
+# 16 Zeichen, über BELEG_MIN_CHECKABLE), um den ganzen Beleg zu kippen. Ein
+# Massen-Anteil trifft die Absicht des Gates besser: erfundene Zitate steuern
+# null Masse bei und fallen weiterhin durch, Rahmungsfloskeln kosten nur Anteil.
+BELEG_MIN_VERBATIM_SHARE = 0.60
+
+
 def _beleg_pieces(beleg: str) -> list[str]:
     """Prüfstücke eines Belegs: an Ellipsen UND an Quote-Glyphen gesplittet,
     normalisiert, nur prüfbar lange Stücke behalten. Der Quote-Split fängt
     Mehrfach-Zitate in einem BELEG-Feld (»«Zitat1» sowie «Zitat2»« — real
-    beobachtet, MiMo/JK26): jedes Stück muss einzeln im Text stehen; die
-    Verkettung müsste es nicht. Apostrophe bleiben ungesplittet
-    (Binnen-'quotes' gehören zum Zitat). Spiegel von SARAH profile-parse.ts."""
-    raw_pieces = re.split(r"\[\s*(?:…|\.{3})\s*\]|…|\.{3}|[«»„“”\"]", beleg)
+    beobachtet, MiMo/JK26): die Verkettung müsste nicht im Text stehen, die
+    Stücke schon. Apostrophe bleiben ungesplittet (Binnen-'quotes' gehören zum
+    Zitat). Spiegel von SARAH profile-parse.ts.
+
+    `›‹‚‘` ergänzt 2026-07-18: die deutschen inneren Anführungszeichen fehlten
+    in der Zeichenklasse, weshalb deutsche Belege als EIN Stück aus Modelltext
+    plus Zitat geprüft wurden und nie treffen konnten — Fehlschlagquote 70–96 %
+    auf deutschen Texten gegen 16 % auf englischen."""
+    raw_pieces = re.split(r"\[\s*(?:…|\.{3})\s*\]|…|\.{3}|[«»„“”›‹‚‘\"]", beleg)
     pieces = [normalize_for_beleg_match(p) for p in raw_pieces]
     return [p for p in pieces if len(p) >= BELEG_MIN_CHECKABLE]
+
+
+def beleg_verbatim_share(beleg: str, haystack: str) -> float:
+    """Anteil der prüfbaren Zeichen eines Belegs, die wörtlich im (bereits
+    normalisierten) Volltext stehen. 1.0 = jedes Stück gefunden, 0.0 = keines."""
+    pieces = _beleg_pieces(beleg)
+    if not pieces:
+        return 1.0  # zu kurz für einen belastbaren Check — kein Fail erfinden
+    total = sum(len(p) for p in pieces)
+    hit = sum(len(p) for p in pieces if p in haystack)
+    return hit / total if total else 1.0
 
 
 @dataclass
@@ -461,7 +493,7 @@ def verify_belege(parsed: ParsedProfile, full_text: str) -> BelegGateResult:
             return  # zu kurz für einen belastbaren Check
         ok = verdict_by_beleg.get(beleg)
         if ok is None:
-            ok = all(p in haystack for p in pieces)
+            ok = beleg_verbatim_share(beleg, haystack) >= BELEG_MIN_VERBATIM_SHARE
             verdict_by_beleg[beleg] = ok
             if not ok:
                 failures.append({"where": where, "beleg": beleg})
