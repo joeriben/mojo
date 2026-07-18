@@ -29,6 +29,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterator
 
+from journal_bot.own_refs.extract import SUPPORTED_SUFFIXES
 from journal_bot.own_refs.sources.base import DiscoveredItem
 
 
@@ -54,12 +55,17 @@ class FolderSource:
             return
         if not root.is_dir():
             return
+        # Offene Formate mit aufnehmen: für die eigenen Publikationen liegen
+        # meist Manuskripte als .docx/.odt vor, und die sind der PDF-Extraktion
+        # vorzuziehen (Spaltenverschränkung, OCR-Fehler — siehe
+        # own_refs/extract.py, OPEN_DOC_SUFFIXES). Liegen zu einem Werk mehrere
+        # Formate im selben Ordner, gewinnt das offene: sortiert wird so, dass
+        # PDF zuletzt kommt, und der Aufrufer nimmt den ersten Treffer je Titel.
+        candidates = (p for p in root.rglob("*") if p.suffix.lower() in SUPPORTED_SUFFIXES)
         iterator = (
-            (p for p in root.rglob("*.pdf") if not p.is_symlink())
-            if self.skip_symlinks
-            else root.rglob("*.pdf")
+            (p for p in candidates if not p.is_symlink()) if self.skip_symlinks else candidates
         )
-        for pdf in sorted(iterator):
+        for pdf in sorted(iterator, key=lambda p: (str(p.parent), p.stem, p.suffix.lower() == ".pdf")):
             if not pdf.is_file():
                 # is_file() folgt Symlinks, also gilt der Test auch für Symlink-Ziele
                 continue

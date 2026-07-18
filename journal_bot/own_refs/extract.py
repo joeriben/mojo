@@ -144,6 +144,52 @@ def _pdf_cache_path(pdf_path: Path, cache_dir: Path) -> Path:
     return cache_dir / f"{h}.txt"
 
 
+# -- Offene Formate -----------------------------------------------------------
+#
+# Für die eigenen Publikationen liegen meist Manuskripte in offenen Formaten
+# vor. Die sind der PDF-Extraktion vorzuziehen: pdftotext `-layout` verschränkt
+# bei zweispaltigem Satz die Spalten zeilenweise (gemessen 2026-07-18: 12 von 73
+# Volltexten mit ≥30 % Spaltenrinne, Spitze 83 %), und gescannte PDFs tragen
+# zusätzlich OCR-Zeichenfehler, die kein Schalter behebt. Auf Seitenzahlen und
+# Schlussredaktion kommt es für die Werkanalyse nicht an.
+
+OPEN_TEXT_SUFFIXES = frozenset({".txt", ".md", ".markdown"})
+OPEN_DOC_SUFFIXES = frozenset({".docx", ".odt"})
+SUPPORTED_SUFFIXES = frozenset({".pdf"}) | OPEN_TEXT_SUFFIXES | OPEN_DOC_SUFFIXES
+
+
+def _text_from_docx(path: Path) -> str:
+    """Absätze und Tabellenzellen eines .docx in Lesereihenfolge."""
+    import docx  # python-docx
+
+    doc = docx.Document(str(path))
+    parts = [p.text for p in doc.paragraphs]
+    for table in doc.tables:
+        for row in table.rows:
+            parts.extend(c.text for c in row.cells)
+    return "\n".join(parts)
+
+
+def _text_from_odt(path: Path) -> str:
+    """Text eines .odt ohne Zusatzabhängigkeit: content.xml entpacken, Tags weg.
+
+    `text:p`/`text:h` werden zu Zeilenumbrüchen, damit Absatzgrenzen erhalten
+    bleiben — die Refs-Heuristiken arbeiten zeilenweise.
+    """
+    import xml.etree.ElementTree as ET
+    import zipfile
+
+    with zipfile.ZipFile(path) as z:
+        xml = z.read("content.xml").decode("utf-8", errors="replace")
+    root = ET.fromstring(xml)
+    ns = "{urn:oasis:names:tc:opendocument:xmlns:text:1.0}"
+    lines: list[str] = []
+    for el in root.iter():
+        if el.tag in (f"{ns}p", f"{ns}h"):
+            lines.append("".join(el.itertext()))
+    return "\n".join(lines)
+
+
 def ensure_fulltext(
     pdf_path: Path,
     cache_dir: Path = DEFAULT_FULLTEXT_CACHE,
@@ -151,10 +197,14 @@ def ensure_fulltext(
 ) -> tuple[Path | None, str]:
     """Stellt sicher, dass für `pdf_path` ein Plain-Text-Cache existiert.
 
+    Nimmt neben PDF auch offene Formate (.docx, .odt, .txt, .md) — für die
+    eigenen Publikationen sind die der PDF-Extraktion vorzuziehen (siehe
+    OPEN_DOC_SUFFIXES).
+
     Returns: (txt_path | None, status). Status ∈ {ok, no_pdf, pdftotext_failed,
-    pdftotext_missing}.
-    Idempotent: wenn txt-Cache aktueller als PDF, wird pdftotext nicht erneut
-    aufgerufen.
+    pdftotext_missing, open_format_failed}.
+    Idempotent: wenn txt-Cache aktueller als die Quelldatei, wird nicht erneut
+    extrahiert.
     """
     if not pdf_path.exists() or not pdf_path.is_file():
         return None, "no_pdf"
@@ -168,6 +218,21 @@ def ensure_fulltext(
                 return txt_path, "ok"
         except OSError:
             pass
+
+    suffix = pdf_path.suffix.lower()
+    if suffix in OPEN_TEXT_SUFFIXES or suffix in OPEN_DOC_SUFFIXES:
+        try:
+            if suffix in OPEN_TEXT_SUFFIXES:
+                text = pdf_path.read_text(encoding="utf-8", errors="replace")
+            elif suffix == ".docx":
+                text = _text_from_docx(pdf_path)
+            else:
+                text = _text_from_odt(pdf_path)
+        except Exception as e:  # noqa: BLE001 — Formatfehler nicht vorab klassifizierbar
+            print(f"  [warn] {suffix} extraction failed for {pdf_path}: {e}", file=sys.stderr)
+            return None, "open_format_failed"
+        txt_path.write_text(text, encoding="utf-8")
+        return txt_path, "ok"
 
     pdftotext = _resolve_pdftotext()
     if pdftotext is None:
