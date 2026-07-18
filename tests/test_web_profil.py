@@ -19,14 +19,24 @@ from journal_bot.web import app as app_mod
 
 
 def _make_own_refs_db(path, rows: list[tuple]) -> None:
-    """Minimale own_refs.db: nur die Spalten, die der Bereich liest."""
+    """Minimale own_refs.db: nur die Spalten, die der Bereich liest.
+
+    `fulltext_chars` trägt die routenabhängige Kostenschätzung; fehlt die
+    Spalte, liefert `_own_texts()` still eine leere Liste (die Abfrage läuft in
+    OperationalError, der dort abgefangen wird).
+    """
     conn = sqlite3.connect(path)
     conn.execute(
         "CREATE TABLE publications ("
         "canonical_id TEXT, title TEXT, year INTEGER, venue TEXT, "
-        "authors_json TEXT, fulltext_path TEXT)"
+        "authors_json TEXT, fulltext_path TEXT, fulltext_chars INTEGER DEFAULT 0)"
     )
-    conn.executemany("INSERT INTO publications VALUES (?,?,?,?,?,?)", rows)
+    conn.executemany(
+        "INSERT INTO publications "
+        "(canonical_id, title, year, venue, authors_json, fulltext_path) "
+        "VALUES (?,?,?,?,?,?)",
+        rows,
+    )
     conn.commit()
     conn.close()
 

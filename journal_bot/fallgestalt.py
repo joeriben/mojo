@@ -49,6 +49,47 @@ from journal_bot.multi_provider import ROUTES, build_client, extract_stats, make
 # und per Aufruf änderbar (siehe feedback_models_only_from_settings_no_code_default).
 DEFAULT_ROUTE_KEY = "mimo"
 
+# ── Gemessene Token-Profile je Route ──────────────────────────────────────
+# Für Vorab-Kostenschätzungen. Tokenisierung und Denkaufwand unterscheiden sich
+# zwischen Modellen so stark, dass eine einzige Konstante grob falsch wird:
+# derselbe deutsche Text ergibt bei MiMo 40 293 Eingabe-Tokens (1,3
+# Zeichen/Token), bei GLM 12 855 (4,1). MiMo verbrennt zusätzlich ~45 000
+# Ausgabe-Tokens im Reasoning, GLM ~6 400.
+#
+#   (Eingabe-Tokens je Zeichen, Ausgabe-Tokens je Dokument, Sekunden je Dokument)
+#
+# glm : gemessen an 20 Werken (2026-07-18, 924 697 Zeichen → 336 636/127 813 Tok)
+# mimo: gemessen an 1 Werk  (2026-07-18, 52 258 Zeichen → 40 293/45 413 Tok)
+# Andere Routen sind NICHT gemessen und erben das GLM-Profil — die Schätzung ist
+# dort entsprechend unsicher und als solche auszuweisen.
+TOKEN_PROFILES: dict[str, tuple[float, int, int]] = {
+    "glm": (0.364, 6_400, 100),
+    "mimo": (0.771, 45_000, 510),
+}
+_FALLBACK_PROFILE = TOKEN_PROFILES["glm"]
+
+
+def estimate_run(total_chars: int, n_docs: int, route_key: str) -> dict[str, Any]:
+    """Vorab-Schätzung für einen Fallgestalt-Lauf: Kosten und Dauer.
+
+    KEIN zugesagter Preis: Preistabelle × gemessenes Token-Profil, ohne
+    Cache-Rabatte, und Wiederholungen bei Beleg-/Degenerat-Fehlschlägen erhöhen
+    die realen Calls. `measured` sagt, ob für diese Route eine Messung vorliegt.
+    """
+    route = ROUTES[route_key]
+    per_char, out_per_doc, secs = TOKEN_PROFILES.get(route_key, _FALLBACK_PROFILE)
+    tok_in = total_chars * per_char
+    tok_out = out_per_doc * n_docs
+    cost = tok_in / 1e6 * route.input_usd_per_mtok + tok_out / 1e6 * route.output_usd_per_mtok
+    return {
+        "route": route_key,
+        "label": route.label,
+        "n_docs": n_docs,
+        "cost": cost,
+        "minutes": secs * n_docs / 60.0,
+        "measured": route_key in TOKEN_PROFILES,
+    }
+
 # ── Prompt (VERBATIM aus SARAH src/lib/server/ai/h7/profile-read.ts SYS_PROFILE) ──
 
 SYS_PROFILE = """Du liest einen wissenschaftlichen Text, der dir GANZ und KO-PRÄSENT vorliegt. Lege das DISKURSIVE PROFIL des Werks frei: wo es sich im Diskurs verortet — zu welchen Quellen es sich wie verhält, welche Begriffe es als eigene Münze führt, was es selbst will, und auf welche eigenen Vorarbeiten es aufbaut.

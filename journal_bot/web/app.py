@@ -2665,6 +2665,35 @@ PROFIL_SCRIPT = PROJECT_ROOT / "scripts" / "h7_run.py"
 PROFIL_COST_PER_TEXT_USD = 0.18
 PROFIL_SECONDS_PER_TEXT = 510
 
+# Vorgabe Benjamin 2026-07-18: GLM 5.2 über OpenRouter, Anbieter gebunden auf
+# fp8 und höchstens $4/Mtok Ausgabe. Gemessen an 20 Werken: ≈$0.011 je Text
+# gegen ≈$0.18 über MiMo.
+PROFIL_DEFAULT_ROUTE = "glm"
+
+
+def _profil_routes() -> list[dict[str, Any]]:
+    """Wählbare Modell-Routen für das Panel, billigste zuerst."""
+    from journal_bot.fallgestalt import ROUTES, TOKEN_PROFILES
+
+    out = [
+        {
+            "key": k,
+            "label": r.label,
+            "measured": k in TOKEN_PROFILES,
+            "out_price": r.output_usd_per_mtok,
+        }
+        for k, r in ROUTES.items()
+    ]
+    return sorted(out, key=lambda r: r["out_price"])
+
+
+def _profil_route_from(form: Any) -> str:
+    """Routenwahl aus dem Formular, gegen die Routen-Tabelle geprüft."""
+    from journal_bot.fallgestalt import ROUTES
+
+    key = (form.get("route") or "").strip()
+    return key if key in ROUTES else PROFIL_DEFAULT_ROUTE
+
 # Nur EIN Lauf gleichzeitig (Kosten + doppelte Schreibzugriffe auf dieselbe Ablage).
 # Reentrant, weil die Start-Route den Status-Leser (_profil_run_state) aufruft,
 # während sie den Lock hält — mit einem einfachen Lock wäre das ein Deadlock.
@@ -2744,12 +2773,15 @@ def _own_texts() -> list[dict[str, Any]]:
     conn.row_factory = sqlite3.Row
     try:
         rows = conn.execute(
-            "SELECT canonical_id, title, year, venue, authors_json "
+            "SELECT canonical_id, title, year, venue, authors_json, fulltext_chars "
             "FROM publications "
             "WHERE fulltext_path IS NOT NULL AND TRIM(fulltext_path) != '' "
             "ORDER BY (year IS NULL), year DESC, title ASC"
         ).fetchall()
-    except sqlite3.OperationalError:
+    except sqlite3.OperationalError as exc:
+        # Nicht still leer zurückgeben: eine leere Werkliste sieht im Panel aus
+        # wie „keine Texte vorhanden", obwohl in Wahrheit das Schema abweicht.
+        app.logger.warning("own_refs.db lässt sich nicht lesen: %s", exc)
         return []
     finally:
         conn.close()
@@ -2769,6 +2801,9 @@ def _own_texts() -> list[dict[str, Any]]:
             "title": r["title"] or "(ohne Titel)",
             "year": year,
             "venue": r["venue"] or "",
+            # Zeichenzahl trägt die routenabhängige Kostenschätzung (Eingabe-
+            # Tokens skalieren mit der Textlänge, nicht mit der Werkzahl).
+            "chars": int(r["fulltext_chars"] or 0),
             "authors": authors if isinstance(authors, list) else [],
             "analysed": (FALLGESTALT_DIR / _fallgestalt_filename(r["canonical_id"])).exists(),
         })
@@ -2812,14 +2847,19 @@ def _resolve_profil_selection(form: Any) -> list[dict[str, Any]]:
     ]
 
 
-def _profil_estimate(pending: list[dict[str, Any]]) -> dict[str, Any]:
-    """Rough forecast for a run — an estimate from one measured work, no price."""
-    n = len(pending)
-    return {
-        "n_calls": n,
-        "cost": n * PROFIL_COST_PER_TEXT_USD,
-        "minutes": n * PROFIL_SECONDS_PER_TEXT / 60.0,
-    }
+def _profil_estimate(pending: list[dict[str, Any]], route_key: str = PROFIL_DEFAULT_ROUTE) -> dict[str, Any]:
+    """Forecast for a run — price table × measured token profile, no promise.
+
+    Route-abhängig, weil eine einzige Konstante grob falsch wird: derselbe Text
+    kostet über MiMo ≈$0.18 und über GLM ≈$0.005 (Tokenisierung + Reasoning).
+    """
+    from journal_bot.fallgestalt import estimate_run
+
+    chars = sum(int(t.get("chars") or 0) for t in pending)
+    est = estimate_run(chars, len(pending), route_key)
+    est["n_calls"] = len(pending)
+    est["cost_per_text"] = est["cost"] / len(pending) if pending else 0.0
+    return est
 
 
 def _tail_lines(path: Path, n: int) -> str:
@@ -2878,10 +2918,22 @@ def _shift_description(shift: Any) -> str:
     if isinstance(shift, dict):
         frm, to = shift.get("from"), shift.get("to")
         if frm or to:
-            span = ""
-            if shift.get("from_year") or shift.get("to_year"):
-                span = f" ({shift.get('from_year') or '?'} → {shift.get('to_year') or '?'})"
-            return f"{_stance_label(frm)} → {_stance_label(to)}{span}"
+            # build_profile_form liefert `{"from": {"year": …, "stance": …}, "to": …}`.
+            # Die Jahre stecken also IN den beiden Enden, nicht daneben — der
+            # frühere Pfad las `from_year`/`to_year` auf oberster Ebene und reichte
+            # die Enden als Ganzes an die Beschriftung weiter (AttributeError,
+            # sobald der erste echte Haltungswechsel im Substrat auftauchte).
+            def _end(v: Any) -> tuple[str, Any]:
+                if isinstance(v, dict):
+                    return _stance_label(v.get("stance")), v.get("year")
+                return _stance_label(v), None
+
+            frm_label, frm_year = _end(frm)
+            to_label, to_year = _end(to)
+            frm_year = frm_year or shift.get("from_year")
+            to_year = to_year or shift.get("to_year")
+            span = f" ({frm_year or '?'} → {to_year or '?'})" if (frm_year or to_year) else ""
+            return f"{frm_label} → {to_label}{span}"
         return " · ".join(
             f"{humanize_key(str(k))}: {v}" for k, v in shift.items() if v not in (None, "", [], {})
         )
@@ -2988,6 +3040,8 @@ def _profil_context() -> dict[str, Any]:
     n_skipped = len(skipped) if isinstance(skipped, (list, tuple, set)) else int(skipped or 0)
     return {
         "texts": texts,
+        "routes": _profil_routes(),
+        "route_key": PROFIL_DEFAULT_ROUTE,
         "year_groups": _texts_by_year(texts),
         "n_texts": len(texts),
         "n_analysed": sum(1 for t in texts if t["analysed"]),
@@ -3014,6 +3068,7 @@ def profil():
 @app.route("/api/profil/confirm", methods=["POST"])
 def api_profil_confirm():
     """First stage: show what a run would cost. Starts nothing."""
+    route_key = _profil_route_from(request.form)
     selected = _resolve_profil_selection(request.form)
     pending = [t for t in selected if not t["analysed"]]
     already = [t for t in selected if t["analysed"]]
@@ -3022,17 +3077,18 @@ def api_profil_confirm():
         selected=selected,
         pending=pending,
         already=already,
-        estimate=_profil_estimate(pending),
+        estimate=_profil_estimate(pending, route_key),
         run=_profil_run_state(),
         blocked=False,
-        cost_per_text=PROFIL_COST_PER_TEXT_USD,
-        seconds_per_text=PROFIL_SECONDS_PER_TEXT,
+        routes=_profil_routes(),
+        route_key=route_key,
     )
 
 
 @app.route("/api/profil/start", methods=["POST"])
 def api_profil_start():
     """Second stage: only an explicit confirmation starts the background run."""
+    route_key = _profil_route_from(request.form)
     selected = _resolve_profil_selection(request.form)
     pending = [t for t in selected if not t["analysed"]]
     already = [t for t in selected if t["analysed"]]
@@ -3044,11 +3100,11 @@ def api_profil_start():
             selected=selected,
             pending=pending,
             already=already,
-            estimate=_profil_estimate(pending),
+            estimate=_profil_estimate(pending, route_key),
             run=_profil_run_state(),
             blocked=True,
-            cost_per_text=PROFIL_COST_PER_TEXT_USD,
-            seconds_per_text=PROFIL_SECONDS_PER_TEXT,
+            routes=_profil_routes(),
+            route_key=route_key,
         )
 
     if not pending:
@@ -3070,7 +3126,7 @@ def api_profil_start():
         venv_python = PROJECT_ROOT / ".venv" / "bin" / "python"
         cmd = [str(venv_python if venv_python.exists() else sys.executable), str(PROFIL_SCRIPT)]
         cmd += [t["id"] for t in pending]
-        cmd.append("--yes")
+        cmd += ["--route", route_key, "--yes"]
 
         started = datetime.now()
         try:

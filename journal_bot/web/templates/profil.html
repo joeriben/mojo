@@ -132,6 +132,16 @@
     </details>
 
     <div class="actions" style="margin-top:.5rem;">
+      <label style="font-size:.85rem; margin-right:.6rem;">
+        Lesendes Modell
+        <select name="route" style="margin-left:.35rem;">
+          {% for r in routes %}
+          <option value="{{ r.key }}" {% if r.key == route_key %}selected{% endif %}>
+            {{ r.label }}{% if not r.measured %} — Aufwand ungemessen{% endif %}
+          </option>
+          {% endfor %}
+        </select>
+      </label>
       <button type="submit" class="btn btn-primary" {% if run.running %}disabled{% endif %}>
         Auswertung starten
       </button>

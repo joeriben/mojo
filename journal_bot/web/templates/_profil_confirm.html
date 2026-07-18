@@ -39,13 +39,24 @@
       <td>{{ estimate.n_calls }} Aufruf{{ "" if estimate.n_calls == 1 else "e" }} an das Sprachmodell (einer je Text)</td>
     </tr>
     <tr>
+      <td>Lesendes Modell</td>
+      <td>
+        <strong>{{ estimate.label }}</strong>
+        <span style="color:var(--muted);">
+          {% if estimate.measured %}— Aufwand an echten Läufen gemessen
+          {% else %}— für dieses Modell liegt keine Messung vor, die Schätzung unten ist entsprechend unsicher
+          {% endif %}
+        </span>
+      </td>
+    </tr>
+    <tr>
       <td>Geschätzte Kosten</td>
       <td>
         <strong>≈ {{ "%.2f"|format(estimate.cost) }} US-Dollar</strong>
         <span style="color:var(--muted);">
-          — Schätzung, hochgerechnet aus einem einzigen gemessenen Text
-          (≈ {{ "%.3f"|format(cost_per_text) }} $ je Text). Kein zugesagter Preis:
-          längere Texte und Wiederholversuche kosten mehr.
+          — ≈ {{ "%.3f"|format(estimate.cost_per_text) }} $ je Text, aus Preistabelle
+          und gemessenem Token-Aufwand. Kein zugesagter Preis: längere Texte und
+          Wiederholversuche kosten mehr.
         </span>
       </td>
     </tr>
@@ -53,7 +64,7 @@
       <td>Geschätzte Dauer</td>
       <td>
         ≈ {{ "%.0f"|format(estimate.minutes) }} Minute{{ "" if estimate.minutes|round(0) == 1 else "n" }}
-        <span style="color:var(--muted);">— gerechnet mit ≈ {{ seconds_per_text }} Sekunden je Text (an einem Text gemessen)</span>
+        <span style="color:var(--muted);">— aus gemessenen Laufzeiten dieses Modells</span>
       </td>
     </tr>
   </table>
@@ -71,6 +82,9 @@
 
   <form hx-post="/api/profil/start" hx-target="#profil-aktion" hx-swap="innerHTML">
     <input type="hidden" name="confirmed" value="ja">
+    {# Routenwahl mit in den zweiten Klick tragen, sonst liefe der Start auf dem
+       Default statt auf dem Modell, dessen Kosten oben angezeigt wurden. #}
+    <input type="hidden" name="route" value="{{ route_key }}">
     {% for t in pending %}
     <input type="hidden" name="work" value="{{ t.id }}">
     {% endfor %}
