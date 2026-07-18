@@ -504,7 +504,12 @@ def assemble_fallgestalt(
     arbeitet) läuft dieser Port direkt auf den geparsten Knoten: `id` =
     `localKey` (stabil und eindeutig innerhalb eines Laufs, kein DB-Primär-
     schlüssel nötig — MOJO persistiert die Fallgestalt nicht in einer eigenen
-    Graph-Tabelle, sondern konsumiert das JSON direkt)."""
+    Graph-Tabelle, sondern konsumiert das JSON direkt).
+
+    Kanten führen `props` mit, weil das Verbatim-BELEG-Gate (verify_belege)
+    auch Kanten prüft und dort `belegVerified=False` setzt. Ohne dieses Feld
+    fielen die Kanten-Fails aus dem Export heraus und jede Auswertung der
+    Beleg-Verlässlichkeit hätte systematisch zu niedrig gezählt."""
     v = [
         {
             "id": n["localKey"],
@@ -523,6 +528,7 @@ def assemble_fallgestalt(
             "to": ed["toKey"],
             "sigma": ed.get("sigma"),
             "anchors": ed.get("anchorElementIds") or [],
+            "props": ed.get("properties") or {},
             "prov": ed["provenance"],
             "internalKind": ed["edgeKind"],
         }
