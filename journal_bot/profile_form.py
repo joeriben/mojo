@@ -107,14 +107,38 @@ def _clean_label(label: str) -> str:
     return re.sub(r"\s+", " ", s).strip()
 
 
+# Führende Funktionswörter deutscher Prosa-Labels. Trajektorie-Knoten tragen
+# als Label ganze Sätze („Auf eigene Vorarbeiten zur Digitalität … (Jörissen/
+# Möller/Unterberg 2022)"), nicht Zitations-Labels. Ohne diese Liste wurde „Auf"
+# als Nachname gelesen: gemessen 2026-07-18 waren 39 von 250 Schlüsseln über 20
+# Fallgestalten Artefakte der Form `auf:2022` — und zwar genau die Selbstbezüge,
+# also die für ein Werkprofil interessanteste Schicht.
+_PROSE_LEAD = frozenset(
+    """auf an in im zu zur zum bei mit von vom aus über unter gegen durch
+    das der die den dem des ein eine einen einem eines
+    eigene eigenen eigenes eigener anschluss bezug rueckgriff rekurs verweis
+    fortfuehrung weiterfuehrung aufnahme""".split()
+)
+
+
 def _leading_surname(text: str) -> str | None:
-    """Führenden Nachnamen aus einem Quell-Label ziehen (mit Namenszusatz)."""
+    """Führenden Nachnamen aus einem Quell-Label ziehen (mit Namenszusatz).
+
+    Beginnt das Label mit deutscher Prosa (Trajektorie-Sätze), wird der erste
+    Name übersprungen, der ein Funktionswort ist — der eigentliche Beleg steht
+    dann weiter hinten, meist in Klammern.
+    """
     matches = list(_NAME_RE.finditer(text))
     if not matches:
         return None
-    first = matches[0].group(0)
-    if _fold(first) in _PARTICLES and len(matches) > 1:
-        return f"{first} {matches[1].group(0)}"
+    idx = 0
+    while idx < len(matches) and _fold(matches[idx].group(0)) in _PROSE_LEAD:
+        idx += 1
+    if idx >= len(matches):
+        return None
+    first = matches[idx].group(0)
+    if _fold(first) in _PARTICLES and idx + 1 < len(matches):
+        return f"{first} {matches[idx + 1].group(0)}"
     return first
 
 
