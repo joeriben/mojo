@@ -1380,8 +1380,11 @@ def main(argv: list[str] | None = None) -> int:
     # --- mojo escalate (MOJO 2.0 §2.5 — Volltext-LLM-Eskalations-Slot) ---
     p_esc = sub.add_parser(
         "escalate",
+        # »%%« ist Pflicht: argparse jagt jeden help-Text durch »% params«.
+        # »10 % der« wurde als Formatanweisung »% d« gelesen und riss die
+        # gesamte Hilfe mit einem TypeError ab — nicht nur die dieses Befehls.
         help="Unklar-Zone-Kandidaten auswählen und Volltext beschaffen "
-             "(NICHT Default — Eskalation für ≤10 % der Items)",
+             "(NICHT Default — Eskalation für ≤10 %% der Items)",
     )
     p_esc.set_defaults(func=cmd_escalate)
     esc_sub = p_esc.add_subparsers(dest="action", required=True)
