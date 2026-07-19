@@ -158,3 +158,65 @@ def test_render_survives_legacy_string_bezuege_without_repair():
              "bemerkenswert": []}
     md = _render(entry)
     assert "Keine substantiellen Bezüge" in md
+
+
+# --- candidate_reads: dieselbe Reparatur, eigener Fehlerfall ---------------
+
+def test_candidate_reads_zerlegte_bruchstuecke_werden_zusammengesetzt():
+    """Real beobachtet: das Modell liefert JSON-Text, das Schema zerlegt ihn.
+
+    Ohne Reparatur greift Phase 2 mit c['pub_id'] auf Strings zu und wirft
+    TypeError — der Artikel fällt aus dem Lauf, obwohl die Einschätzung
+    bereits bezahlt ist.
+    """
+    from journal_bot.agent import _coerce_candidate_reads, _format_verification_context
+
+    entry = {"candidate_reads": [
+        '[{"pub_id": "L224MAYL"',
+        '"search_term": "counterfactual prompting"',
+        '"hypothesis": "Erster Teil des Satzes',
+        'zweiter Teil nach dem Komma."}',
+        '{"pub_id": "M8RZJRHN"',
+        '"search_term": "Regime des Komputablen"',
+        '"hypothesis": "Zweite Hypothese."}]',
+    ]}
+    repair = _coerce_candidate_reads(entry)
+
+    assert repair["method"] == "rejoin_json_loads"
+    assert entry["candidate_reads_repaired"] is True
+    assert [c["pub_id"] for c in entry["candidate_reads"]] == ["L224MAYL", "M8RZJRHN"]
+    assert entry["candidate_reads"][0]["search_term"] == "counterfactual prompting"
+    # Phase 2 muss danach durchlaufen.
+    _format_verification_context({}, entry["candidate_reads"])
+
+
+def test_candidate_reads_string_und_einzelobjekt():
+    from journal_bot.agent import _coerce_candidate_reads
+
+    als_text = {"candidate_reads": '[{"pub_id": "ABC123", "hypothesis": "y"}]'}
+    assert _coerce_candidate_reads(als_text)["method"] == "json_loads"
+    assert als_text["candidate_reads"][0]["pub_id"] == "ABC123"
+
+    einzeln = {"candidate_reads": {"pub_id": "ABC123", "hypothesis": "y"}}
+    assert _coerce_candidate_reads(einzeln)["method"] == "wrapped_single_object"
+    assert len(einzeln["candidate_reads"]) == 1
+
+
+def test_candidate_reads_korrekte_liste_bleibt_unberuehrt():
+    from journal_bot.agent import _coerce_candidate_reads
+
+    entry = {"candidate_reads": [{"pub_id": "ABC123", "hypothesis": "y"}]}
+    assert _coerce_candidate_reads(entry) is None
+    assert "candidate_reads_repaired" not in entry
+
+
+def test_candidate_reads_unrettbar_bricht_phase_2_nicht():
+    from journal_bot.agent import _coerce_candidate_reads, _format_verification_context
+
+    entry = {"candidate_reads": ["völlig kaputt", "ohne jedes JSON"]}
+    repair = _coerce_candidate_reads(entry)
+
+    assert repair["method"] == "unparsed_kept_raw"
+    assert entry["candidate_reads"] == []
+    assert entry["candidate_reads_unparsed"]  # Rohmaterial bleibt erhalten
+    _format_verification_context({}, entry["candidate_reads"])

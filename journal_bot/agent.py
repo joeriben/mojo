@@ -1005,6 +1005,68 @@ def _escape_stray_quotes_in_json_strings(raw: str) -> str:
     return "".join(out)
 
 
+def _coerce_candidate_reads(entry: dict) -> dict | None:
+    """`candidate_reads` in die Objektform bringen (sichtbare Reparatur).
+
+    Dasselbe Motiv wie bei `_coerce_bezuege`, aber ein eigener Fehlerfall: das
+    Einschätzungs-Modell liefert das Feld gelegentlich als JSON-Text, und weil
+    das Schema eine Liste verlangt, zerlegt es diesen Text an den Kommas in
+    Bruchstücke — aus einem Objekt werden fünf Strings. Ungerepariert greift
+    Phase 2 mit `c['pub_id']` darauf zu und wirft TypeError; der Artikel fällt
+    dann aus dem Lauf, obwohl die Einschätzung schon bezahlt ist.
+
+    Beobachtet in 2 von 18 Einschätzungen ohne Werkprofil, in 0 von 18 mit.
+    """
+    roh = entry.get("candidate_reads")
+    if roh is None:
+        return None
+    if isinstance(roh, list) and all(isinstance(c, dict) for c in roh):
+        return None
+
+    def _mark(method: str) -> dict:
+        entry["candidate_reads_repaired"] = True
+        entry["candidate_reads_repair_method"] = method
+        return {"field": "candidate_reads", "method": method}
+
+    def _als_liste(wert) -> list[dict] | None:
+        if isinstance(wert, dict):
+            return [wert]
+        if isinstance(wert, list) and all(isinstance(c, dict) for c in wert):
+            return wert
+        return None
+
+    if isinstance(roh, dict):
+        entry["candidate_reads"] = [roh]
+        return _mark("wrapped_single_object")
+
+    kandidaten: list[tuple[str, str]] = []
+    if isinstance(roh, str):
+        kandidaten = [("json_loads", roh)]
+    elif isinstance(roh, list) and all(isinstance(c, str) for c in roh):
+        # Die zerlegten Bruchstücke wieder zusammensetzen — sie sind an
+        # ", " getrennt worden, der Rest ist unverändertes JSON.
+        wieder = ", ".join(roh)
+        kandidaten = [("rejoin_json_loads", wieder),
+                      ("rejoin_wrapped_json_loads", f"[{wieder}]")]
+
+    for methode, text in kandidaten:
+        try:
+            geparst = json.loads(text)
+        except json.JSONDecodeError:
+            continue
+        liste = _als_liste(geparst)
+        if liste is not None:
+            entry["candidate_reads"] = liste
+            return _mark(methode)
+
+    # Nichts wegwerfen: das Rohmaterial bleibt erhalten, aber Phase 2 bekommt
+    # eine Form, an der sie nicht zerbricht.
+    entry["candidate_reads"] = [c for c in roh if isinstance(c, dict)] if isinstance(roh, list) else []
+    entry["candidate_reads_unparsed"] = roh if isinstance(roh, str) else json.dumps(
+        roh, ensure_ascii=False, default=str)
+    return _mark("unparsed_kept_raw")
+
+
 def _coerce_bezuege(entry: dict) -> dict | None:
     """Normalize a string-typed `bezuege` field in-place (visible repair).
 
@@ -1509,6 +1571,11 @@ def assess_then_verify(
     )
 
     entry = assessment.get("entry") or {}
+    reparatur = _coerce_candidate_reads(entry)
+    if reparatur:
+        assessment.setdefault("format_repairs", []).append(reparatur)
+        if verbose:
+            print(f"[assess] candidate_reads repariert ({reparatur['method']})")
     candidates = entry.get("candidate_reads") or []
 
     if not candidates:
