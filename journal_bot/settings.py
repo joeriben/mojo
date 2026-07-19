@@ -193,8 +193,16 @@ MODEL_AGENT_LOCAL = _profile.get(
 )
 
 
-def _env_flag(name: str) -> bool:
-    return os.environ.get(name, "").strip().lower() in ("1", "true", "yes", "on")
+def _env_flag(name: str, default: bool = False) -> bool:
+    """Schalter aus der Umgebung; ungesetzt → `default`.
+
+    Gesetzte Werte schalten in beide Richtungen, damit ein Schalter mit
+    Standard AN per Umgebung auch wieder abgeschaltet werden kann.
+    """
+    roh = os.environ.get(name, "").strip().lower()
+    if not roh:
+        return default
+    return roh in ("1", "true", "yes", "on")
 
 
 # Standard: AUS — Recherche läuft weiter über die Cloud, bis bewusst auf lokal
@@ -202,6 +210,13 @@ def _env_flag(name: str) -> bool:
 # Ollama nicht installiert/erreichbar ist.
 RESEARCH_USE_LOCAL = bool(
     _profile.get("research_use_local", _env_flag("MOJO_RESEARCH_LOCAL"))
+)
+
+# Werkprofil (Fallgestalt-Lektüren der eigenen Texte) im Systemblock von
+# Screening und Assessment. Standard AN: ohne Lektüren liefert
+# `build_profile_block()` None, der Block entfällt dann folgenlos.
+PROFILE_BLOCK_ENABLED = bool(
+    _profile.get("profile_block_enabled", _env_flag("MOJO_PROFILE_BLOCK", True))
 )
 
 # Show the Labor (dev/eval) pages in the web UI nav. Default off.
@@ -260,6 +275,9 @@ def save_profile(data: dict, *, manages: Iterable[str] | None = None) -> None:
     _self.RESEARCH_USE_LOCAL = bool(merged.get("research_use_local", _self.RESEARCH_USE_LOCAL))
     _self.OPENALEX_MAILTO = merged.get("openalex_mailto", _self.OPENALEX_MAILTO)
     _self.RANKER_ENABLED = bool(merged.get("ranker_enabled", _self.RANKER_ENABLED))
+    _self.PROFILE_BLOCK_ENABLED = bool(
+        merged.get("profile_block_enabled", _self.PROFILE_BLOCK_ENABLED)
+    )
     _self.UI_LAB = bool(merged.get("ui_lab", _self.UI_LAB))
     # `... or ()` fängt zusätzlich ein explizites null/"" in der JSON ab —
     # fehlender Schlüssel behält den laufenden Wert, leerer Wert leert bewusst.

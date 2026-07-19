@@ -271,9 +271,43 @@ def _build_projects_block() -> str:
     return "\n".join(lines)
 
 
-def build_system_prompt(summaries: dict[str, dict], outro: str | None = None) -> str:
+def _profile_block() -> str | None:
+    """Werkprofil-Block, wenn eingeschaltet und Lektüren vorliegen — sonst None.
+
+    Abschaltbar (`profile_block_enabled` / `MOJO_PROFILE_BLOCK`), damit sich
+    mit und ohne vergleichen lässt. Fehler bleiben folgenlos: fehlt das Profil,
+    läuft der Lauf wie bisher weiter statt abzubrechen.
+    """
+    from journal_bot.settings import PROFILE_BLOCK_ENABLED
+
+    if not PROFILE_BLOCK_ENABLED:
+        return None
+    try:
+        from journal_bot.profile_block import build_profile_block
+
+        return build_profile_block()
+    except Exception:
+        return None
+
+
+def build_system_prompt(
+    summaries: dict[str, dict],
+    outro: str | None = None,
+    *,
+    profile_block: str | None = None,
+) -> str:
+    """Systemblock für Screening und Assessment.
+
+    `profile_block`: das Werkprofil aus den H7-Lektüren (wie der Nutzer sich zu
+    Quellen verhält). Steht vor dem Publikationsindex, weil es rahmt, wie der
+    zu lesen ist. Teil des zwischengespeicherten Präfixes — kostet einmal
+    Tokens, danach nichts pro Artikel.
+    """
     projects_block = _build_projects_block()
-    lines = [SYSTEM_INTRO, projects_block, outro or SYSTEM_OUTRO, ""]
+    lines = [SYSTEM_INTRO, projects_block]
+    if profile_block:
+        lines.append(profile_block)
+    lines += [outro or SYSTEM_OUTRO, ""]
     # Sortiert nach Jahr absteigend — aktuelles zuerst
     sorted_pubs = sorted(
         summaries.items(),
@@ -679,7 +713,9 @@ def batch_screen(
     Returns: dict of article_id -> {"verdict": "weitergeben"|"ignorieren", "grund": str}.
     """
     summaries_data = json.loads(summaries_path.read_text(encoding="utf-8"))
-    system_prompt = build_system_prompt(summaries_data["summaries"]) + SCREENING_SUFFIX
+    system_prompt = build_system_prompt(
+        summaries_data["summaries"], profile_block=_profile_block()
+    ) + SCREENING_SUFFIX
     cacheable_tokens = _rough_token_count(system_prompt)
     min_cache_tokens = _anthropic_cache_min_tokens(model)
     if min_cache_tokens is not None and cacheable_tokens < min_cache_tokens:
@@ -1129,7 +1165,9 @@ def run_agent(
     summaries_data = json.loads(summaries_path.read_text(encoding="utf-8"))
     summaries = summaries_data["summaries"]
 
-    system_prompt = build_system_prompt(summaries, outro=system_outro)
+    system_prompt = build_system_prompt(
+        summaries, outro=system_outro, profile_block=_profile_block()
+    )
     if verbose:
         phase = "assessment" if system_outro is ASSESSMENT_OUTRO else "full"
         print(f"[agent] System-Prompt ({phase}): ~{len(system_prompt)//4} Tokens "
