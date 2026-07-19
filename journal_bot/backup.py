@@ -21,6 +21,8 @@ from journal_bot.settings import (
     SUMMARIES_JSON,
 )
 from journal_bot.store import ARTICLES_DB
+from journal_bot.signals import OWN_REFS_DB
+from journal_bot.profile_block import FALLGESTALT_DIR
 from journal_bot.fetchers.configurable_fetcher import CUSTOM_CONFIG_DIR
 
 
@@ -29,7 +31,10 @@ JOURNAL_PROFILES_JSON = PROJECT_ROOT / "journal_profiles.json"
 AGENT_CONTEXT_JSON = PROJECT_ROOT / ".agent_context.json"
 LEGACY_AGENT_CONTEXT_TXT = PROJECT_ROOT / ".agent_context.txt"
 BACKUP_DIR = PROJECT_ROOT / "backups"
-BACKUP_SCHEMA_VERSION = 1
+# 2: Lektüren der eigenen Texte (fallgestalt/) und own_refs.db kommen mit.
+# Die Version wird geschrieben, nicht geprüft — ältere Archive lassen sich
+# unverändert einspielen, es fehlen dann eben diese Teile.
+BACKUP_SCHEMA_VERSION = 2
 CORE_ARCHIVE_MEMBERS = [
     "project_root/profile.json",
     "project_root/projects.json",
@@ -105,7 +110,7 @@ def create_backup_archive(
             source = entry.source
             temp_snapshot: Path | None = None
             try:
-                if source == ARTICLES_DB:
+                if source in (ARTICLES_DB, OWN_REFS_DB):
                     temp_snapshot = _snapshot_sqlite(source)
                     source_to_write = temp_snapshot
                 else:
@@ -235,6 +240,7 @@ def _collect_entries(
         ("corpus", CORPUS_JSON),
         ("summaries", SUMMARIES_JSON),
         ("articles_db", ARTICLES_DB),
+        ("own_refs_db", OWN_REFS_DB),
     ]
 
     for logical_name, path in core_files:
@@ -289,7 +295,52 @@ def _collect_entries(
     else:
         skipped.append("digest_dir ausgelassen (--no-digests)")
 
+    # Nach den Digests, damit gegen das geprüft werden kann, was wirklich
+    # eingesammelt wurde — nicht gegen nachgebaute Bedingungen.
+    entries.extend(
+        _collect_fallgestalt_entries(
+            skipped=skipped,
+            bereits_erfasst={e.source.resolve() for e in entries},
+        )
+    )
+
     return entries, skipped
+
+
+def _collect_fallgestalt_entries(
+    *,
+    skipped: list[str],
+    bereits_erfasst: set[Path],
+) -> list[BackupEntry]:
+    """Die Lektüren der eigenen Texte.
+
+    Sie sind nicht in der Versionsverwaltung und nur durch erneute LLM-Läufe
+    über die Volltexte wiederherstellbar. Fehlen sie, läuft die Triage ohne
+    Werkprofil weiter — lautlos. Darum gehören sie ins Backup.
+
+    Liegen sie unterhalb von `digest_dir` (der Standardfall, `output/`), sind
+    sie dort schon erfasst und werden nicht doppelt gepackt. Diese Abdeckung
+    ist aber ein Zufall der Konfiguration und kein Verlass: zeigt `digest_dir`
+    woanders hin oder ist er ausgelassen, greift dieser Sammler.
+    """
+    if not FALLGESTALT_DIR.is_dir():
+        skipped.append("keine Lektüren der eigenen Texte")
+        return []
+
+    dateien = [p for p in sorted(FALLGESTALT_DIR.glob("*.json")) if p.is_file()]
+    if not dateien:
+        skipped.append("Ordner der Lektüren ist leer")
+        return []
+
+    return [
+        BackupEntry(
+            source=path,
+            archive_path=f"fallgestalt/{path.name}",
+            logical_name=f"fallgestalt:{path.stem}",
+        )
+        for path in dateien
+        if path.resolve() not in bereits_erfasst
+    ]
 
 
 def _collect_digest_entries(
@@ -469,6 +520,12 @@ def _restore_destination(
         if not rel:
             return None
         return CUSTOM_CONFIG_DIR / rel
+
+    if archive_member.startswith("fallgestalt/"):
+        rel = archive_member[len("fallgestalt/"):]
+        if not rel or "/" in rel:
+            return None
+        return FALLGESTALT_DIR / rel
 
     if archive_member.startswith("digest_dir/"):
         if not restore_digests:
