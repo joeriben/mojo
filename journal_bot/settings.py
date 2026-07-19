@@ -219,6 +219,13 @@ PROFILE_BLOCK_ENABLED = bool(
     _profile.get("profile_block_enabled", _env_flag("MOJO_PROFILE_BLOCK", True))
 )
 
+# Die eigenen Korrekturen (Memos + überstimmte Begründungen) im Systemblock.
+# Standard AUS, bis an der zurückgehaltenen Menge gemessen ist, ob der Block
+# trägt — ein Block, der noch nichts belegt, gehört nicht in den Wochenlauf.
+KORREKTUR_BLOCK_ENABLED = bool(
+    _profile.get("korrektur_block_enabled", _env_flag("MOJO_KORREKTUR_BLOCK", False))
+)
+
 # Show the Labor (dev/eval) pages in the web UI nav. Default off.
 UI_LAB = bool(_profile.get("ui_lab", _env_flag("MOJO_UI_LAB")))
 
