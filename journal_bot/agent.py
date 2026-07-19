@@ -290,30 +290,11 @@ def _profile_block() -> str | None:
         return None
 
 
-def _korrektur_block() -> str | None:
-    """Block aus den eigenen Korrekturen des Nutzers — sonst None.
-
-    Abschaltbar (`korrektur_block_enabled` / `MOJO_KORREKTUR_BLOCK`), damit sich
-    mit und ohne vergleichen lässt. Wie beim Werkprofil bleiben Fehler folgenlos.
-    """
-    from journal_bot.settings import KORREKTUR_BLOCK_ENABLED
-
-    if not KORREKTUR_BLOCK_ENABLED:
-        return None
-    try:
-        from journal_bot.korrekturen import build_korrektur_block
-
-        return build_korrektur_block()
-    except Exception:
-        return None
-
-
 def build_system_prompt(
     summaries: dict[str, dict],
     outro: str | None = None,
     *,
     profile_block: str | None = None,
-    korrektur_block: str | None = None,
 ) -> str:
     """Systemblock für Screening und Assessment.
 
@@ -321,17 +302,11 @@ def build_system_prompt(
     Quellen verhält). Steht vor dem Publikationsindex, weil es rahmt, wie der
     zu lesen ist. Teil des zwischengespeicherten Präfixes — kostet einmal
     Tokens, danach nichts pro Artikel.
-
-    `korrektur_block`: seine eigenen Urteile über frühere Vorschläge. Steht
-    NACH dem Werkprofil: das Profil sagt, wie er sich verortet, die Korrekturen
-    sagen, wo genau das bisher falsch angewandt wurde. Ebenfalls im Präfix.
     """
     projects_block = _build_projects_block()
     lines = [SYSTEM_INTRO, projects_block]
     if profile_block:
         lines.append(profile_block)
-    if korrektur_block:
-        lines.append(korrektur_block)
     lines += [outro or SYSTEM_OUTRO, ""]
     # Sortiert nach Jahr absteigend — aktuelles zuerst
     sorted_pubs = sorted(
@@ -739,9 +714,7 @@ def batch_screen(
     """
     summaries_data = json.loads(summaries_path.read_text(encoding="utf-8"))
     system_prompt = build_system_prompt(
-        summaries_data["summaries"],
-        profile_block=_profile_block(),
-        korrektur_block=_korrektur_block(),
+        summaries_data["summaries"], profile_block=_profile_block()
     ) + SCREENING_SUFFIX
     cacheable_tokens = _rough_token_count(system_prompt)
     min_cache_tokens = _anthropic_cache_min_tokens(model)
@@ -1255,10 +1228,7 @@ def run_agent(
     summaries = summaries_data["summaries"]
 
     system_prompt = build_system_prompt(
-        summaries,
-        outro=system_outro,
-        profile_block=_profile_block(),
-        korrektur_block=_korrektur_block(),
+        summaries, outro=system_outro, profile_block=_profile_block()
     )
     if verbose:
         phase = "assessment" if system_outro is ASSESSMENT_OUTRO else "full"
