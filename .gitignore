@@ -10,6 +10,8 @@ articles.db
 seen.db
 llm_log.db
 profile.json
+# Auswahlregeln des Nutzers — seine Sätze, nicht Projektinhalt.
+regeln.json
 profile.md
 *.key
 .env
@@ -21,6 +23,12 @@ profile.md
 journal_profiles.json
 .agent_context.json
 .agent_context.txt
+
+# MOJO 2.0 Filter-Artefakte (abgeleitet aus den Urteilen des Nutzers,
+# regenerierbar via scripts/*_build.py — nutzerspezifisch, kein Repo-Inhalt)
+kriterienfilter_params.json
+kriterienfilter_pub.npy
+beispiel_index.npz
 
 # MOJO 2.0 Refs-Pipeline (lokale DB + Cache + Snapshot-Daten)
 own_refs.db

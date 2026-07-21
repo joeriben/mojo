@@ -43,6 +43,8 @@ class BatchDigestResult:
     ranker_active: bool = False
     ranker_rescued: int = 0
     ranker_consensus_dropped: int = 0
+    # Semantischer Vorfilter (journal_bot/kriterienfilter.py): ohne LLM verworfen
+    prefilter_dropped: int = 0
 
 
 def _is_junk_title(title: str) -> bool:
@@ -391,6 +393,38 @@ def run_batch_digest(
             journal_name = sa.journal_full or sa.journal_short
             _log(logger, verbose, f"  ★ {journal_name}: {sa.title[:60]} [{reason}]")
 
+    # Semantischer Vorfilter VOR dem LLM: verwirft die aussichtslose untere Zone
+    # ohne Modellaufruf, recall-sicher (≤5 % lesenswert-Verlust je Kanal). Läuft
+    # auf Titel + Abstract, ohne DOI, und erreicht so auch die Kernzeitschriften.
+    # Ausfall folgenlos: fehlen die Parameter, bleibt alles »unsicher«.
+    prefilter_dropped: list[StoredArticle] = []
+    if not no_screen and screen_candidates:
+        try:
+            from journal_bot import kriterienfilter
+            from journal_bot.settings import KRITERIENFILTER_ENABLED
+            if KRITERIENFILTER_ENABLED and kriterienfilter.verfuegbar():
+                zonen = kriterienfilter.bewerte(
+                    [{"id": sa.id, "title": sa.title, "abstract": sa.abstract,
+                      "openalex_abstract": sa.openalex_abstract}
+                     for sa in screen_candidates],
+                    kanal="screening")
+                behalten_kandidaten = []
+                for sa in screen_candidates:
+                    z = zonen.get(sa.id)
+                    if z is not None and z.zone == "verwerfen":
+                        prefilter_dropped.append(sa)
+                    else:
+                        behalten_kandidaten.append(sa)
+                if prefilter_dropped:
+                    screen_candidates = behalten_kandidaten
+                    result.prefilter_dropped = len(prefilter_dropped)
+                    _log(logger, verbose,
+                         f"[digest] Semantischer Vorfilter: {len(prefilter_dropped)} "
+                         f"von {len(prefilter_dropped) + len(screen_candidates)} "
+                         f"Artikeln ohne LLM verworfen (untere Zone).")
+        except Exception as exc:  # Vorfilter darf den Lauf nie anhalten
+            _log(logger, verbose, f"[digest] Vorfilter übersprungen: {exc}")
+
     if not no_screen and len(screen_candidates) > 1:
         screen_input = [
             {
@@ -410,16 +444,29 @@ def run_batch_digest(
             _log(logger, verbose, f"[digest] ABBRUCH: {result.abort_reason}")
             return _finalize_with_cache_report(result, logger=logger, verbose=verbose)
 
+        # »vertiefen« geht wie »weitergeben« weiter, NICHT weg: die Stufe hat
+        # eine Sperre erkannt und eine Öffnung, die sie aufhebt. Ein Gleich-
+        # heitstest auf "weitergeben" würde genau diese Fälle stillschweigend
+        # verwerfen — das Gegenteil der Regel. Nur "ignorieren" filtert.
         passed = [
             sa
             for sa in screen_candidates
-            if screen_results[sa.id]["verdict"] == "weitergeben"
+            if screen_results[sa.id]["verdict"] in ("weitergeben", "vertiefen")
         ]
         filtered = [
             sa
             for sa in screen_candidates
             if screen_results[sa.id]["verdict"] == "ignorieren"
         ]
+        vertieft = [
+            sa
+            for sa in screen_candidates
+            if screen_results[sa.id]["verdict"] == "vertiefen"
+        ]
+        if vertieft:
+            _log(logger, verbose,
+                 f"[digest] {len(vertieft)} Beiträge mit aufgehobener Sperre — "
+                 f"gehen mit benannter Spannung in die Einschätzung")
 
         # Kombination mit der Algo-Stimme: Drop nur im Konsens, Dissens wird
         # recall-schützend behalten (combine.py, Union halbiert FN).
@@ -485,6 +532,31 @@ def run_batch_digest(
     else:
         passed = screen_candidates
         result.screened_in = len(passed)
+
+    # Vom semantischen Vorfilter verworfene Artikel als »ignorieren« festhalten —
+    # ohne LLM-Kosten, aber sichtbar und nicht neu verarbeitbar.
+    for sa in prefilter_dropped:
+        store.update_agent_result(
+            sa.id,
+            verdict="ignorieren",
+            entry={
+                "kernthese": "(Vorfilter: ignorieren)",
+                "bezuege": [],
+                "bemerkenswert": [],
+                "theoretisch_methodisch": "",
+                "verdict": "ignorieren",
+                "verdict_begruendung": (
+                    "Semantischer Vorfilter: untere Zone, ohne LLM verworfen "
+                    "(recall-sicher kalibriert, ≤5 % Fund-Verlust je Kanal)."
+                ),
+            },
+            citation_hits=[], tokens_in=0, tokens_out=0,
+            tokens_cached_read=0, tokens_cache_write=0, cost_usd=0.0,
+            iterations=0, selection_mode="screening",
+            discourse_indicator="kein_indikator",
+        )
+    if prefilter_dropped:
+        result.screened_out += len(prefilter_dropped)
 
     tier_by_short = {j.short: j.tier for j in JOURNALS}
 

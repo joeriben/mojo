@@ -290,11 +290,26 @@ def _profile_block() -> str | None:
         return None
 
 
+def _regel_block() -> str | None:
+    """Die eigenen Triage-Regeln des Nutzers — None, wenn keine hinterlegt sind.
+
+    Ohne `regeln.json` läuft alles wie bisher: ein frischer Clone hat keine
+    Regeln, und das ist der richtige Zustand, nicht ein Fehler.
+    """
+    try:
+        from journal_bot.regeln import build_regel_block
+
+        return build_regel_block()
+    except Exception:
+        return None
+
+
 def build_system_prompt(
     summaries: dict[str, dict],
     outro: str | None = None,
     *,
     profile_block: str | None = None,
+    regel_block: str | None = None,
 ) -> str:
     """Systemblock für Screening und Assessment.
 
@@ -302,9 +317,15 @@ def build_system_prompt(
     Quellen verhält). Steht vor dem Publikationsindex, weil es rahmt, wie der
     zu lesen ist. Teil des zwischengespeicherten Präfixes — kostet einmal
     Tokens, danach nichts pro Artikel.
+
+    `regel_block`: die eigenen Triage-Regeln des Nutzers, geordnet. Steht VOR
+    dem Werkprofil, weil eine terminale Sperre nicht davon abhängt, wie gut ein
+    Beitrag sonst passt — sie entscheidet vorher.
     """
     projects_block = _build_projects_block()
     lines = [SYSTEM_INTRO, projects_block]
+    if regel_block:
+        lines.append(regel_block)
     if profile_block:
         lines.append(profile_block)
     lines += [outro or SYSTEM_OUTRO, ""]
@@ -640,7 +661,7 @@ def title_matches_catchwords(title: str, catchwords: set[str]) -> list[str]:
 
 MODEL_SCREEN = "deepseek/deepseek-v3.2"
 
-SCREENING_SUFFIX = f"""
+SCREENING_SUFFIX = """
 
 === SCREENING MODE ===
 You now receive a LIST of articles (title, journal, abstract excerpt).
@@ -648,17 +669,27 @@ For each article: decide whether it COULD be relevant and therefore deserves
 full analysis.
 
 Respond with EXACTLY one line per article in this format:
-[ID] weitergeben|ignorieren — reason in ≤15 words
+[ID] weitergeben|vertiefen|ignorieren — reason in ≤15 words
+
+weitergeben — worth a full analysis
+vertiefen   — a block applied, but an opening rule lifted it: pass it on WITH
+              that tension named, so the analysis checks it
+ignorieren  — a final block applied, or nothing speaks for it
+
+Where the researcher's own rules above speak, they decide. Only where no rule
+speaks does this general judgement apply:
 
 "weitergeben" when:
 - Topical overlap with the researcher's themes/positions
 - Methodologically/phenomenally noteworthy for the observation field
-- Cites {RESEARCHER_NAME} or cites works from the bibliography
 
 "ignorieren" when:
 - Obviously unrelated to the research
 - Purely empirical/applied without theoretical connection
-- Topically in a field without overlap (e.g. pure psychometrics, nursing didactics)
+
+Note what you CANNOT see here: you get title, journal and an abstract excerpt.
+No reference list. Do not claim an article cites anyone — you have no way to
+know, and a guess here is worse than no signal.
 
 When in doubt: weitergeben. Better to pass through than to miss.
 No explanation, no introduction, just the lines."""
@@ -700,6 +731,156 @@ def _build_screening_messages(
     ]
 
 
+# Wie oft eine unvollständige Batch-Antwort nachgefordert wird, bevor die
+# verbliebenen Artikel recall-sicher (und SICHTBAR) durchgelassen werden.
+_SCREEN_MAX_RETRIES = 2
+
+
+def _format_screen_batch(batch: list[dict]) -> str:
+    """Einen Stapel in die Zeilenform für den Screening-Prompt bringen.
+
+    Führt ein Artikel unter `beispiele` einen vorformatierten Block der
+    ähnlichsten früheren Nutzer-Urteile mit (Few-Shot aus den Daten), wird er
+    nach dem Abstract gesetzt. Fehlt er, ist die Ausgabe unverändert.
+    """
+    zeilen = []
+    for a in batch:
+        abstract = (a.get("openalex_abstract") or a.get("abstract") or "")[:500]
+        block = (
+            f"[{a['id'][:8]}] {a.get('journal', '')} | {a.get('title', '')}\n"
+            f"  Abstract: {abstract}\n"
+        )
+        beispiele = (a.get("beispiele") or "").strip()
+        if beispiele:
+            block += f"  {beispiele}\n"
+        zeilen.append(block)
+    return "\n".join(zeilen)
+
+
+def _parse_screen_lines(raw: str, batch: list[dict]) -> dict[str, dict]:
+    """Screening-Antwort zeilenweise lesen — nur IDs aus DIESEM Stapel zählen.
+
+    Gibt ausschliesslich die Artikel zurück, für die eine verwertbare Zeile
+    kam. Fehlende IDs bleiben fehlend (der Aufrufer fordert sie nach), statt
+    still auf einen Vorgabewert zu fallen.
+    """
+    short_to_full = {a["id"][:8]: a["id"] for a in batch}
+    out: dict[str, dict] = {}
+    for line in raw.strip().split("\n"):
+        line = line.strip()
+        if not line or not line.startswith("["):
+            continue
+        bracket_end = line.find("]")
+        if bracket_end < 0:
+            continue
+        short_id = line[1:bracket_end].strip()
+        rest = line[bracket_end + 1:].strip()
+        full_id = short_to_full.get(short_id)
+        if not full_id:
+            continue
+        # »vertiefen« VOR »weitergeben« prüfen, damit die aufgehobene Sperre
+        # nicht als gewöhnlicher Durchlass verschwindet — die Spannung ist die
+        # Information.
+        low = rest.lower()
+        verdict = "weitergeben"
+        if low.startswith("ignor"):
+            verdict = "ignorieren"
+        elif low.startswith("vertief"):
+            verdict = "vertiefen"
+        grund = rest.split("—", 1)[1].strip() if "—" in rest else rest[:80]
+        out[full_id] = {"verdict": verdict, "grund": grund}
+    return out
+
+
+def _screen_request(client, system_prompt: str, user_msg: str, model: str):
+    """Einen Screening-Aufruf absetzen; (raw, cost, usage, usage_dump) zurück.
+
+    Kein `max_tokens`: die Aufgabe ist selbst begrenzt (eine Zeile je Artikel),
+    ein harter Ausgabedeckel würde nur riskieren, die letzte Zeile abzu-
+    schneiden — genau die stille Lücke, die diese Stufe gerade beseitigt.
+    """
+    resp = client.chat.completions.create(
+        model=model,
+        messages=_build_screening_messages(system_prompt, user_msg, model),
+        temperature=0.0,
+    )
+    raw = resp.choices[0].message.content or ""
+    usage = getattr(resp, "usage", None)
+    usage_dump: dict[str, Any] = {}
+    cost = 0.0
+    if usage:
+        usage_dump = usage.model_dump() if hasattr(usage, "model_dump") else {}
+        cost = usage_dump.get("cost") or 0.0
+    return raw, cost, usage, usage_dump
+
+
+def _screen_retry_missing(
+    client, system_prompt: str, model: str,
+    missing: list[dict], results: dict[str, dict], *,
+    batch_num: int, verbose: bool,
+) -> tuple[float, list[dict]]:
+    """Fehlende Artikel gezielt nachfordern statt still durchzulassen.
+
+    Ergänzt `results` an Ort und Stelle und gibt (Zusatzkosten, ungelöst)
+    zurück. Der Einzel-Hardcap greift auch hier — eine Nachforderung darf nicht
+    zum Kostenleck werden.
+    """
+    zusatz = 0.0
+    remaining = missing
+    for versuch in range(1, _SCREEN_MAX_RETRIES + 1):
+        if not remaining:
+            break
+        if verbose:
+            print(f"[screen] Batch {batch_num}: {len(remaining)} ohne Zeile — "
+                  f"Nachforderung {versuch}/{_SCREEN_MAX_RETRIES}")
+        raw, cost, _usage, usage_dump = _screen_request(
+            client, system_prompt, _format_screen_batch(remaining), model)
+        zusatz += cost
+        if cost > _MAX_SINGLE_BATCH_COST_USD:
+            record_llm_call(
+                endpoint="batch_screen", model=model, usage=usage_dump,
+                cost_usd=cost, status="aborted_single_cap",
+            )
+            raise CacheNotHitError(
+                f"[screen] HARD-CAP Nachforderung Batch {batch_num}: ${cost:.3f}"
+            )
+        record_llm_call(
+            endpoint="batch_screen", model=model, usage=usage_dump,
+            cost_usd=cost, status="ok_retry", batch_num=batch_num,
+        )
+        results.update(_parse_screen_lines(raw, remaining))
+        remaining = [a for a in remaining if a["id"] not in results]
+    return zusatz, remaining
+
+
+def _mit_beispielen(articles: list[dict], system_prompt: str) -> str:
+    """Few-Shot aus den Daten an das Screening hängen — gegated, ausfallsicher.
+
+    Setzt bei aktiviertem BEISPIELE_ENABLED je Artikel die nächsten schon
+    beurteilten Artikel als `beispiele`-Zeile (journal_bot/beispiele.py) und
+    ergänzt den Systemprompt um den erklärenden Hinweis. Fehlt der Index oder
+    scheitert das Einbetten, bleibt alles wie bisher — ein Vorfilter/Beleg darf
+    den Lauf nie stoppen. Gibt den (ggf. ergänzten) Systemprompt zurück.
+    """
+    try:
+        from journal_bot.settings import BEISPIELE_ENABLED
+        if not BEISPIELE_ENABLED:
+            return system_prompt
+        from journal_bot import beispiele
+        if not beispiele.verfuegbar():
+            return system_prompt
+        bloecke = beispiele.bloecke(articles)
+        if not bloecke:
+            return system_prompt
+        for a in articles:
+            b = bloecke.get(a["id"])
+            if b:
+                a["beispiele"] = b
+        return system_prompt + beispiele.HINWEIS
+    except Exception:
+        return system_prompt
+
+
 def batch_screen(
     articles: list[dict],
     summaries_path: Path = SUMMARIES_JSON,
@@ -710,12 +891,20 @@ def batch_screen(
     """Batch screening: cheap model with cached system prompt, one verdict per article.
 
     articles: list of dicts with keys: id, title, journal, abstract (or openalex_abstract).
-    Returns: dict of article_id -> {"verdict": "weitergeben"|"ignorieren", "grund": str}.
+    Returns: dict of article_id -> {"verdict": "weitergeben"|"vertiefen"|"ignorieren",
+    "grund": str}.
+
+    Jeder Artikel bekommt genau ein Urteil. Fehlt in einer Batch-Antwort eine
+    Zeile, wird sie gezielt nachgefordert (bis `_SCREEN_MAX_RETRIES`); erst dann
+    wird recall-sicher durchgelassen — sichtbar als "UNRESOLVED", nie stumm.
     """
     summaries_data = json.loads(summaries_path.read_text(encoding="utf-8"))
     system_prompt = build_system_prompt(
-        summaries_data["summaries"], profile_block=_profile_block()
+        summaries_data["summaries"],
+        profile_block=_profile_block(),
+        regel_block=_regel_block(),
     ) + SCREENING_SUFFIX
+    system_prompt = _mit_beispielen(articles, system_prompt)
     cacheable_tokens = _rough_token_count(system_prompt)
     min_cache_tokens = _anthropic_cache_min_tokens(model)
     if min_cache_tokens is not None and cacheable_tokens < min_cache_tokens:
@@ -728,40 +917,20 @@ def batch_screen(
     client = build_client()
     all_results: dict[str, dict] = {}
     total_cost = 0.0
+    total_unresolved = 0
     total_budget = _max_total_batch_screen_cost_usd(model)
 
     for i in range(0, len(articles), batch_size):
         batch = articles[i:i + batch_size]
         batch_num = i // batch_size + 1
-
-        # Format batch
-        lines = []
-        for a in batch:
-            abstract = (a.get("openalex_abstract") or a.get("abstract") or "")[:500]
-            lines.append(
-                f"[{a['id'][:8]}] {a.get('journal', '')} | {a.get('title', '')}\n"
-                f"  Abstract: {abstract}\n"
-            )
-        user_msg = "\n".join(lines)
+        user_msg = _format_screen_batch(batch)
 
         if verbose:
             print(f"[screen] Batch {batch_num}: {len(batch)} Artikel, "
                   f"~{len(user_msg) // 4} User-Tokens")
 
-        resp = client.chat.completions.create(
-            model=model,
-            messages=_build_screening_messages(system_prompt, user_msg, model),
-            max_tokens=2000,
-            temperature=0.0,
-        )
-
-        raw = resp.choices[0].message.content or ""
-        usage = getattr(resp, "usage", None)
-        cost = 0.0
-        usage_dump: dict[str, Any] = {}
-        if usage:
-            usage_dump = usage.model_dump() if hasattr(usage, "model_dump") else {}
-            cost = usage_dump.get("cost") or 0.0
+        raw, cost, usage, usage_dump = _screen_request(
+            client, system_prompt, user_msg, model)
         total_cost += cost
 
         # Hard cost caps — fire BEFORE the cache-ratio heuristic so we cannot
@@ -832,46 +1001,62 @@ def batch_screen(
                 print(msg, file=sys.stderr)
                 raise CacheNotHitError(msg)
 
-        # Parse response
-        valid_ids = {a["id"]: a["id"][:8] for a in batch}
-        short_to_full = {v: k for k, v in valid_ids.items()}
-
-        for line in raw.strip().split("\n"):
-            line = line.strip()
-            if not line or not line.startswith("["):
-                continue
-            bracket_end = line.find("]")
-            if bracket_end < 0:
-                continue
-            short_id = line[1:bracket_end].strip()
-            rest = line[bracket_end + 1:].strip()
-
-            verdict = "weitergeben"  # default: pass through
-            if rest.startswith("ignorieren") or rest.startswith("ignor"):
-                verdict = "ignorieren"
-
-            full_id = short_to_full.get(short_id)
-            if full_id:
-                grund = rest.split("—", 1)[1].strip() if "—" in rest else rest[:80]
-                all_results[full_id] = {"verdict": verdict, "grund": grund}
+        # Was die Antwort hergibt, direkt übernehmen. Fehlende Zeilen werden
+        # NICHT still auf einen Vorgabewert gesetzt, sondern unten gezielt
+        # nachgefordert — das war die stille Verlustquelle.
+        all_results.update(_parse_screen_lines(raw, batch))
+        missing = [a for a in batch if a["id"] not in all_results]
+        if missing:
+            zusatz, ungeloest = _screen_retry_missing(
+                client, system_prompt, model, missing, all_results,
+                batch_num=batch_num, verbose=verbose)
+            total_cost += zusatz
+            if total_cost > total_budget:
+                msg = (f"[screen] HARD-CAP: Gesamtbudget ${total_budget:.2f} "
+                       f"überschritten (${total_cost:.3f}). ABBRUCH.")
+                print(msg, file=sys.stderr)
+                raise CacheNotHitError(msg)
+            # Was auch nach Nachforderung fehlt, wird recall-sicher durchgelassen
+            # — aber gezählt und als solches markiert, nicht getarnt.
+            for a in ungeloest:
+                all_results[a["id"]] = {
+                    "verdict": "weitergeben",
+                    "grund": ("UNRESOLVED: keine Screening-Zeile nach "
+                              f"{_SCREEN_MAX_RETRIES} Nachforderungen — "
+                              "recall-sicher durchgelassen"),
+                }
+            total_unresolved += len(ungeloest)
+            if ungeloest:
+                print(f"[screen] WARNUNG: Batch {batch_num}: {len(ungeloest)} "
+                      f"Artikel ohne Urteil, recall-sicher durchgelassen.",
+                      file=sys.stderr)
 
         parsed = sum(1 for a in batch if a["id"] in all_results)
         if verbose:
-            print(f"[screen] → {parsed}/{len(batch)} geparst, ${cost:.4f}")
+            print(f"[screen] → {parsed}/{len(batch)} entschieden, "
+                  f"${total_cost:.4f} kumuliert")
 
-    # Articles not in results default to "weitergeben"
+    # Sicherheitsnetz: sollte nach der Nachforderung nichts fehlen. Wenn doch,
+    # sichtbar zählen statt kommentarlos durchlassen.
     for a in articles:
         if a["id"] not in all_results:
             all_results[a["id"]] = {
                 "verdict": "weitergeben",
-                "grund": "(nicht im Screening-Output, default: weitergeben)",
+                "grund": "UNRESOLVED: nie im Screening-Output — recall-sicher durchgelassen",
             }
+            total_unresolved += 1
+
+    if total_unresolved:
+        print(f"[screen] {total_unresolved} von {len(articles)} Artikeln blieben "
+              f"ohne echtes Urteil und wurden recall-sicher durchgelassen.",
+              file=sys.stderr)
 
     if verbose:
         passed = sum(1 for r in all_results.values() if r["verdict"] == "weitergeben")
+        vertieft = sum(1 for r in all_results.values() if r["verdict"] == "vertiefen")
         filtered = sum(1 for r in all_results.values() if r["verdict"] == "ignorieren")
-        print(f"[screen] Gesamt: {passed} weitergeben, {filtered} ignorieren, "
-              f"${total_cost:.4f}")
+        print(f"[screen] Gesamt: {passed} weitergeben, {vertieft} vertiefen, "
+              f"{filtered} ignorieren, ${total_cost:.4f}")
 
     return all_results
 
@@ -1228,7 +1413,10 @@ def run_agent(
     summaries = summaries_data["summaries"]
 
     system_prompt = build_system_prompt(
-        summaries, outro=system_outro, profile_block=_profile_block()
+        summaries,
+        outro=system_outro,
+        profile_block=_profile_block(),
+        regel_block=_regel_block(),
     )
     if verbose:
         phase = "assessment" if system_outro is ASSESSMENT_OUTRO else "full"

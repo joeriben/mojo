@@ -219,6 +219,25 @@ PROFILE_BLOCK_ENABLED = bool(
     _profile.get("profile_block_enabled", _env_flag("MOJO_PROFILE_BLOCK", True))
 )
 
+# Semantischer Vorfilter (journal_bot/kriterienfilter.py): verwirft die untere
+# Zone VOR dem LLM-Screening, kanal-sicher (≤5 % Fund-Verlust je Kanal). Standard
+# AUS — eine Stufe, die OHNE Modellaufruf verwirft, wird erst scharf geschaltet,
+# wenn eine Validierung gegen die eigenen Urteile vorliegt. Aktivierung:
+# profile.json {"kriterienfilter_enabled": true} oder MOJO_KRITERIENFILTER=1.
+KRITERIENFILTER_ENABLED = bool(
+    _profile.get("kriterienfilter_enabled", _env_flag("MOJO_KRITERIENFILTER", False))
+)
+
+# Few-Shot aus den Daten: die nächsten schon beurteilten Artikel als Beleg im
+# Screening-Prompt (journal_bot/beispiele.py). Held-out validiert: mit dem
+# Regelblock +6.8 pp Übereinstimmung, halbierte Fund-Verluste (über der
+# Rauschgrenze). Standard AUS bis zur Sichtung; Aktivierung: profile.json
+# {"beispiele_enabled": true} oder MOJO_BEISPIELE=1. Braucht beispiel_index.npz
+# (scripts/beispiel_index_build.py).
+BEISPIELE_ENABLED = bool(
+    _profile.get("beispiele_enabled", _env_flag("MOJO_BEISPIELE", False))
+)
+
 # Show the Labor (dev/eval) pages in the web UI nav. Default off.
 UI_LAB = bool(_profile.get("ui_lab", _env_flag("MOJO_UI_LAB")))
 
