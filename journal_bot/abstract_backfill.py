@@ -1,16 +1,21 @@
 """Abstract-Backfill: fills missing abstracts from cached or external sources.
 
 Tier strategy (stops at first success):
+  0. OpenAlex+DOAJ   — OpenAlex fresh re-fetch (abstracts land after first fetch)
+                       + DOAJ for open-access journals; API, no scraping, biggest win
   1. Crossref cache  — extract abstract from already-cached Crossref responses (free)
   2. curl_cffi       — HTTP with browser TLS fingerprint (bypasses Cloudflare, fast)
   3. Playwright       — headless browser for JS-rendered pages (Wiley, De Gruyter)
   4. Zotero           — read abstractNote from local Zotero library
 
-curl_cffi handles Taylor & Francis (Cloudflare Turnstile) and Springer.
-Playwright handles JS-rendered pages where meta tags aren't in the raw HTML.
+Tier 0 is API-based and always runs (even for articles a prior scraping pass gave
+up on) — it targets the measured core of the gap: OpenAlex carries abstracts weeks
+after title/DOI, and DOAJ covers OA journals OpenAlex leaves empty. curl_cffi
+handles Taylor & Francis (Cloudflare Turnstile) and Springer; Playwright handles
+JS-rendered pages where meta tags aren't in the raw HTML.
 
 Usage:
-  mojo backfill [--limit N] [--dry-run] [--journal ZfE]
+  mojo backfill [--limit N] [--dry-run] [--journal ZfE] [--refresh] [--include-no-doi]
 """
 
 from __future__ import annotations
@@ -55,6 +60,7 @@ CSS_SELECTORS = [
 @dataclass
 class BackfillStats:
     total_missing: int = 0
+    filled_enrichment: int = 0   # Tier 0: OpenAlex-Neuabruf / DOAJ (API)
     filled_crossref: int = 0
     filled_curl: int = 0
     filled_playwright: int = 0
@@ -63,6 +69,28 @@ class BackfillStats:
     verdicts_reset: int = 0
     still_missing: int = 0
     errors: list[str] = field(default_factory=list)
+
+
+def _try_enrichment(doi: str, title: str = "", journal: str = "") -> tuple[str, str]:
+    """Tier 0: OpenAlex frisch nachfassen + DOAJ — API-basiert, kein Scraping.
+
+    OpenAlex trägt Abstracts oft erst Wochen nach Titel/DOI nach; ein Force-
+    Refresh zieht sie nach (belegt: 68 % der abstract-losen 2024+-Artikel).
+    DOAJ deckt Open-Access-Journals, die OpenAlex ohne Abstract führt. Das ist
+    der grösste und sauberste Teil der Lücke — deshalb vor allem Scraping.
+    """
+    try:
+        from journal_bot.enrichment import enrich
+        data = enrich(doi, refresh=True, title=title, journal=journal)
+    except Exception:
+        return "", ""
+    oa = ((data.get("openalex") or {}).get("abstract") or "").strip()
+    if len(oa) > 80:
+        return oa, "openalex"
+    doaj = (data.get("doaj_abstract") or "").strip()
+    if len(doaj) > 80:
+        return doaj, "doaj"
+    return "", ""
 
 
 def _strip_jats(text: str) -> str:
@@ -439,19 +467,31 @@ def _try_zotero(doi: str, verbose: bool = False) -> str:
 
 # ---------------------------------------------------------------- Main
 
-def find_missing(store: Store, journal: str | None = None) -> list[dict]:
-    """Articles with DOI but no abstract from any source."""
+def find_missing(store: Store, journal: str | None = None,
+                 include_no_doi: bool = False,
+                 since_year: int | None = None) -> list[dict]:
+    """Artikel ohne Abstract aus irgendeiner Quelle.
+
+    Standardmässig nur mit DOI (die Scraping-Stufen brauchen ihn). Mit
+    `include_no_doi` auch DOI-lose OA-Journals — die heilt Tier 0 via DOAJ-Titel
+    (z. B. Digital Culture & Education). `since_year` grenzt auf den filter-
+    relevanten Bereich ein.
+    """
     sql = """
         SELECT id, doi, title, journal_short, journal_full
         FROM articles
-        WHERE doi IS NOT NULL AND doi != ''
-          AND (abstract IS NULL OR abstract = '')
+        WHERE (abstract IS NULL OR abstract = '')
           AND (openalex_abstract IS NULL OR openalex_abstract = '')
     """
+    if not include_no_doi:
+        sql += " AND doi IS NOT NULL AND doi != ''"
     params: list = []
     if journal:
         sql += " AND journal_short = ?"
         params.append(journal)
+    if since_year:
+        sql += " AND year >= ?"
+        params.append(since_year)
     sql += " ORDER BY year DESC, fetched_at DESC"
 
     import sqlite3
@@ -546,12 +586,24 @@ def run(
     dry_run: bool = False,
     verbose: bool = True,
     delay: float = 2.0,
+    refresh: bool = False,
+    include_no_doi: bool = False,
+    since_year: int | None = None,
+    scrape: bool = False,
 ) -> BackfillStats:
-    """Fill missing abstracts: Crossref → curl_cffi → Playwright → Zotero."""
+    """Fehlende Abstracts füllen. Standard: nur die sauberen offenen APIs
+    (OpenAlex-Neuabruf + DOAJ, Tier 0) plus Crossref-Cache.
+
+    `scrape` schaltet zusätzlich die Verlags-Scraper zu (curl_cffi/Playwright/
+    Zotero). Für eine Open-Access-Plattform ist Scraping fragil und rechtlich
+    grau — deshalb ausdrücklich opt-in, nicht Default. `refresh` übergeht den
+    Negativ-Cache der Scraping-Stufen.
+    """
     store = store or Store()
     stats = BackfillStats()
 
-    missing = find_missing(store, journal=journal)
+    missing = find_missing(store, journal=journal, include_no_doi=include_no_doi,
+                           since_year=since_year)
     if limit:
         missing = missing[:limit]
     stats.total_missing = len(missing)
@@ -561,17 +613,22 @@ def run(
             print("[backfill] Keine Artikel ohne Abstract gefunden.")
         return stats
 
-    curl_ok = _curl_cffi_available()
-    pw_ok = _playwright_available()
-    zot_ok = _zotero_available()
+    curl_ok = scrape and _curl_cffi_available()
+    pw_ok = scrape and _playwright_available()
+    zot_ok = scrape and _zotero_available()
 
     if verbose:
         print(f"[backfill] {len(missing)} Artikel ohne Abstract")
-        sources = ["Crossref-Cache ✓"]
-        sources.append(f"curl_cffi {'✓' if curl_ok else '✗ (pip install curl_cffi)'}")
-        sources.append(f"Playwright {'✓' if pw_ok else '✗'}")
-        sources.append(f"Zotero {'✓' if zot_ok else '✗'}")
+        sources = ["OpenAlex+DOAJ ✓", "Crossref-Cache ✓"]
+        if scrape:
+            sources.append(f"curl_cffi {'✓' if curl_ok else '✗ (pip install curl_cffi)'}")
+            sources.append(f"Playwright {'✓' if pw_ok else '✗'}")
+            sources.append(f"Zotero {'✓' if zot_ok else '✗'}")
+        else:
+            sources.append("Verlags-Scraper aus (--scrape zum Zuschalten)")
         print(f"[backfill] Quellen: {'  '.join(sources)}")
+        if refresh:
+            print("[backfill] REFRESH — Negativ-Cache der Scraping-Stufen wird übergangen")
         if dry_run:
             print("[backfill] DRY RUN — keine Änderungen")
         print()
@@ -588,17 +645,27 @@ def run(
 
     try:
         for i, row in enumerate(missing, 1):
-            doi = row["doi"]
-            title = row["title"][:70]
+            doi = row["doi"] or ""
+            full_title = row["title"] or ""
+            title = full_title[:70]
             journal_name = row["journal_full"] or row["journal_short"]
             source = ""
+            abstract = ""
+            refs: list[dict] = []
 
             if verbose:
                 print(f"[{i}/{len(missing)}] {journal_name}: {title}")
 
-            # Check backfill cache
-            cached = _load_backfill_cache(doi)
-            if cached is not None:
+            # Tier 0: OpenAlex-Neuabruf + DOAJ (API, günstig). Läuft IMMER — auch
+            # für früher vergeblich gescrapte Artikel, unabhängig vom Negativ-Cache.
+            abstract, source = _try_enrichment(doi, full_title, journal_name)
+            if abstract:
+                stats.filled_enrichment += 1
+
+            # Negativ-Cache gilt nur für die teuren Scraping-Stufen (per --refresh
+            # übergehbar, sonst sehen früher Gescheiterte die neuen Quellen nie).
+            cached = _load_backfill_cache(doi) if doi else None
+            if not abstract and cached is not None and not refresh:
                 if cached:
                     abstract = cached
                     source = "cache"
@@ -608,8 +675,7 @@ def run(
                     if verbose:
                         print("  — bereits geprüft, kein Abstract")
                     continue
-            else:
-                abstract = ""
+            elif not abstract:
 
                 # Tier 1: Crossref cache
                 if not abstract:
@@ -640,8 +706,9 @@ def run(
                         source = "zotero"
                         stats.filled_zotero += 1
 
-                # Cache result (even empty = negative cache)
-                _save_backfill_cache(doi, abstract, source)
+                # Cache result (even empty = negative cache) — nur mit DOI
+                if doi:
+                    _save_backfill_cache(doi, abstract, source)
 
             if abstract:
                 if verbose:
@@ -658,8 +725,9 @@ def run(
                 if verbose:
                     print("  ✗ kein Abstract gefunden")
 
-            # Rate limiting for external calls
-            if source not in ("crossref", "cache", ""):
+            # Nur die Scraping-Stufen drosseln; die API-Tiers (OpenAlex/DOAJ)
+            # cachen selbst und laufen im höflichen Pool.
+            if source in ("curl", "playwright"):
                 time.sleep(delay)
 
     finally:
@@ -671,11 +739,13 @@ def run(
         stats.verdicts_reset = reset_stale_verdicts(store, verbose=verbose)
 
     if verbose:
-        total_filled = (stats.filled_crossref + stats.filled_curl
-                        + stats.filled_playwright + stats.filled_zotero)
+        total_filled = (stats.filled_enrichment + stats.filled_crossref
+                        + stats.filled_curl + stats.filled_playwright
+                        + stats.filled_zotero)
         print()
         print("=== Backfill fertig ===")
         print(f"Geprüft:           {stats.total_missing}")
+        print(f"OpenAlex/DOAJ:     {stats.filled_enrichment}")
         print(f"Crossref-Cache:    {stats.filled_crossref}")
         print(f"curl_cffi:         {stats.filled_curl}")
         print(f"Playwright:        {stats.filled_playwright}")

@@ -37,15 +37,27 @@ def _year_from_published(published: str) -> int | None:
 
 
 def _enrich_article(article: Article) -> dict:
-    """Wrapped enrichment — gibt immer ein dict zurück, auch im Fehlerfall."""
+    """Wrapped enrichment — gibt immer ein dict zurück, auch im Fehlerfall.
+
+    Ohne DOI trotzdem DOAJ per Titel versuchen: Open-Access-Journals ohne DOI
+    (z. B. Digital Culture & Education) führen ihre Abstracts dort.
+    """
     if not article.doi:
-        return {"status": "no_doi"}
+        doaj = ""
+        try:
+            from journal_bot.enrichment import get_abstract_doaj
+            doaj = get_abstract_doaj(title=article.title, journal=article.journal_full)
+        except Exception:
+            pass
+        return {"status": "no_doi", "openalex": None,
+                "references_crossref": [], "doaj_abstract": doaj}
     try:
-        data = enrich(article.doi)
+        data = enrich(article.doi, title=article.title, journal=article.journal_full)
         data["status"] = "ok"
         return data
     except Exception as e:
-        return {"status": f"failed:{e}", "openalex": None, "references_crossref": []}
+        return {"status": f"failed:{e}", "openalex": None,
+                "references_crossref": [], "doaj_abstract": ""}
 
 
 def _article_to_stored(art: Article, enrichment: dict) -> StoredArticle:
@@ -55,13 +67,18 @@ def _article_to_stored(art: Article, enrichment: dict) -> StoredArticle:
     if oa and oa.get("publication_year"):
         year = oa["publication_year"]
 
+    # Feed-Abstract zuerst; fehlt er, der DOAJ-Fallback (OA-Journals außerhalb/
+    # ohne OpenAlex-Abstract). openalex_abstract bleibt separat — der Filter liest
+    # ohnehin openalex_abstract ODER abstract.
+    abstract = (art.abstract or "").strip() or (enrichment.get("doaj_abstract") or "")
+
     return StoredArticle(
         id=make_article_id(art.doi, art.url, art.title, journal_short=art.journal),
         journal_short=art.journal,
         journal_full=art.journal_full,
         title=art.title,
         authors=art.authors,
-        abstract=art.abstract,
+        abstract=abstract,
         doi=art.doi,
         url=art.url,
         year=year,
@@ -144,9 +161,14 @@ def run(
             stats.total_fetched += 1
             aid = make_article_id(art.doi, art.url, art.title, journal_short=art.journal)
 
-            # Skip wenn schon enriched im Store (aber nicht-enriched updaten)
+            # Skip nur, wenn schon angereichert UND ein Abstract vorliegt.
+            # Sonst neu anreichern: OpenAlex trägt Abstracts oft erst Wochen nach
+            # unserem Erstabruf nach (der Work-Cache verfällt jetzt) — so kommen
+            # sie an, statt dauerhaft abstract-los einzufrieren.
             existing = store.get(aid)
-            if existing and existing.enrichment_status == "ok":
+            if (existing and existing.enrichment_status == "ok"
+                    and ((existing.abstract or "").strip()
+                         or (existing.openalex_abstract or "").strip())):
                 continue
 
             enrichment = _enrich_article(art)

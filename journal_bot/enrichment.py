@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
+import urllib.parse
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -21,6 +23,13 @@ CACHE_DIR.mkdir(exist_ok=True)
 
 POLITE_MAILTO = "mojo@localhost"
 USER_AGENT = f"mojo/0.1 (mailto:{POLITE_MAILTO})"
+
+# OpenAlex trägt Abstracts oft Wochen nach Titel/DOI nach. Ein Work-Cache OHNE
+# Verfallsdatum friert genau die frühe, abstract-lose Fassung ein (belegt: 68 %
+# der abstract-losen 2024+-Artikel haben bei OpenAlex HEUTE einen Abstract, den
+# wir nur wegen des Dauer-Caches nie nachziehen). Deshalb ein TTL auf den
+# Work-per-DOI-Abruf. Referenz-Auflösung (per ID) bleibt dauerhaft.
+OPENALEX_WORK_TTL_DAYS = 21
 
 
 @dataclass
@@ -39,13 +48,36 @@ def _cache_path(kind: str, key: str) -> Path:
     return CACHE_DIR / f"{kind}_{safe}.json"
 
 
-def _cached_get(kind: str, key: str, url: str, timeout: float = 30) -> dict | None:
+def _cache_age_days(cp: Path) -> float:
+    try:
+        return (time.time() - cp.stat().st_mtime) / 86400.0
+    except OSError:
+        return float("inf")
+
+
+def _cached_get(
+    kind: str,
+    key: str,
+    url: str,
+    timeout: float = 30,
+    max_age_days: float | None = None,
+    force: bool = False,
+) -> dict | None:
+    """Gecachter GET. `max_age_days`/`force` erlauben gezieltes Nachfassen.
+
+    Ein zu altes (oder per `force` übergangenes) Cache-Objekt wird neu geholt;
+    schlägt der Neuabruf fehl, bleibt der alte Stand erhalten (besser als nichts).
+    """
     cp = _cache_path(kind, key)
+    cached: dict | None = None
     if cp.exists():
         try:
-            return json.loads(cp.read_text(encoding="utf-8"))
+            cached = json.loads(cp.read_text(encoding="utf-8"))
         except Exception:
             cp.unlink(missing_ok=True)
+    frisch = max_age_days is None or _cache_age_days(cp) <= max_age_days
+    if cached is not None and frisch and not force:
+        return cached
     try:
         resp = httpx.get(
             url,
@@ -54,12 +86,12 @@ def _cached_get(kind: str, key: str, url: str, timeout: float = 30) -> dict | No
             follow_redirects=True,
         )
         if resp.status_code != 200:
-            return None
+            return cached
         data = resp.json()
         cp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
         return data
     except Exception:
-        return None
+        return cached
 
 
 def get_references_crossref(doi: str) -> list[Reference]:
@@ -95,13 +127,83 @@ def get_references_crossref(doi: str) -> list[Reference]:
     return out
 
 
-def get_work_openalex(doi: str) -> dict | None:
-    """OpenAlex-Work-Objekt per DOI. Enthält u.a. concepts, topics, referenced_works."""
+def get_work_openalex(doi: str, force: bool = False) -> dict | None:
+    """OpenAlex-Work-Objekt per DOI. Enthält u.a. concepts, topics, referenced_works.
+
+    Der Work-Cache verfällt nach `OPENALEX_WORK_TTL_DAYS`, damit später
+    nachgetragene Abstracts ankommen; `force` erzwingt sofortiges Nachfassen
+    (für den gezielten Abstract-Nachzug).
+    """
     if not doi:
         return None
     doi = doi.strip().rstrip(".")
     url = f"https://api.openalex.org/works/doi:{doi}?mailto={POLITE_MAILTO}"
-    return _cached_get("openalex_work", doi, url)
+    return _cached_get("openalex_work", doi, url,
+                       max_age_days=OPENALEX_WORK_TTL_DAYS, force=force)
+
+
+def _norm_title(s: str) -> str:
+    return "".join(ch for ch in (s or "").lower() if ch.isalnum())
+
+
+def _title_words(s: str) -> list[str]:
+    import re
+    return [w for w in re.findall(r"[a-z0-9]+", (s or "").lower()) if len(w) >= 3]
+
+
+def _titles_match(a: str, b: str) -> bool:
+    """Gleicher Artikel trotz abweichendem Untertitel? Sicher, aber nicht naiv.
+
+    DOAJ-Titel weichen oft im Untertitel ab (belegt: »… ENTANGLEMENT« vs »…
+    entangled ecological imagination«), ein Exakt-Match verfehlt sie. Akzeptiert
+    wird, wenn die ersten Wörter übereinstimmen ODER die Wortmengen stark
+    überlappen — genug gegen Zufallstreffer, durchlässig für Untertitel-Varianten.
+    """
+    wa, wb = _title_words(a), _title_words(b)
+    if len(wa) < 3 or len(wb) < 3:
+        return _norm_title(a) == _norm_title(b)     # kurze Titel: exakt
+    k = min(5, len(wa), len(wb))
+    if wa[:k] == wb[:k]:
+        return True
+    shared = set(wa) & set(wb)
+    return len(shared) >= 4 and len(shared) / min(len(wa), len(wb)) >= 0.7
+
+
+def _doaj_results(query: str) -> list[dict]:
+    q = urllib.parse.quote(query, safe="")
+    url = f"https://doaj.org/api/v2/search/articles/{q}?pageSize=5"
+    data = _cached_get("doaj", query, url, max_age_days=OPENALEX_WORK_TTL_DAYS)
+    return (data or {}).get("results", []) or []
+
+
+def get_abstract_doaj(doi: str = "", title: str = "", journal: str = "") -> str:
+    """Abstract aus DOAJ (Directory of Open Access Journals).
+
+    DOAJ deckt Open-Access-Journals ab, die OpenAlex teils gar nicht oder ohne
+    Abstract führt (belegt: Digital Culture & Education, MedienPädagogik u. a.).
+    Erst per DOI (eindeutig), dann per Titel mit `_titles_match` und, wenn ein
+    Journal gegeben ist, auf dieses eingegrenzt — lieber eine Lücke als ein
+    falscher Abstract.
+    """
+    def _abstract(r: dict) -> str:
+        ab = ((r.get("bibjson", {}) or {}).get("abstract") or "").strip()
+        return ab if len(ab) > 80 else ""
+
+    doi = (doi or "").strip().rstrip(".")
+    if doi:
+        for r in _doaj_results(f'doi:"{doi}"'):
+            if _abstract(r):
+                return _abstract(r)
+    if title:
+        # Mit den FÜHRENDEN Titelwörtern suchen (in beiden Fassungen stabil) —
+        # die volle Titel-Phrase verfehlt DOAJ, sobald der Untertitel abweicht.
+        lead = " ".join(_title_words(title)[:6])
+        if lead:
+            for r in _doaj_results(f'bibjson.title:"{lead}"'):
+                b = r.get("bibjson", {}) or {}
+                if _titles_match(title, b.get("title", "")) and _abstract(r):
+                    return _abstract(r)
+    return ""
 
 
 def get_work_title_openalex(openalex_id: str) -> dict | None:
@@ -114,33 +216,36 @@ def get_work_title_openalex(openalex_id: str) -> dict | None:
     return _cached_get("openalex_work", wid, url)
 
 
-def enrich(doi: str) -> dict:
-    """Convenience: holt beides für ein DOI.
+def enrich(doi: str, refresh: bool = False, title: str = "", journal: str = "") -> dict:
+    """Convenience: holt Refs + OpenAlex, und wenn nötig einen DOAJ-Abstract.
+
+    `refresh` erzwingt einen frischen OpenAlex-Abruf (übergeht den Work-Cache),
+    für den gezielten Nachzug später eingetragener Abstracts. `title`/`journal`
+    erlauben den DOAJ-Titel-Treffer, wenn OpenAlex keinen Abstract liefert.
 
     Rückgabe:
       {
         "doi": ...,
         "references_crossref": [Reference, ...],  # oft leer
-        "openalex": {
-            "title": ..., "abstract": ..., "concepts": [...], "topics": [...],
-            "referenced_works": [oa_ids], "cited_by_count": ...
-        } | None
+        "openalex": {... "abstract" ...} | None,
+        "doaj_abstract": str,   # nur gefüllt, wenn OpenAlex keinen Abstract hatte
       }
     """
     result: dict = {"doi": doi}
     result["references_crossref"] = [
         r.__dict__ for r in get_references_crossref(doi)
     ]
-    oa = get_work_openalex(doi)
+    oa = get_work_openalex(doi, force=refresh)
+    oa_abstract = ""
     if oa:
         work = oa if "id" in oa else oa.get("message") or oa
         # OpenAlex returns the work directly (no .message wrapper)
         abstract_inv = work.get("abstract_inverted_index") or {}
-        abstract = _reconstruct_abstract(abstract_inv) if abstract_inv else ""
+        oa_abstract = _reconstruct_abstract(abstract_inv) if abstract_inv else ""
         result["openalex"] = {
             "id": work.get("id", ""),
             "title": work.get("title", ""),
-            "abstract": abstract,
+            "abstract": oa_abstract,
             "publication_year": work.get("publication_year"),
             "concepts": [
                 {"name": c.get("display_name"), "score": c.get("score")}
@@ -155,6 +260,10 @@ def enrich(doi: str) -> dict:
         }
     else:
         result["openalex"] = None
+    # DOAJ nur befragen, wenn OpenAlex keinen Abstract lieferte — spart Anfragen.
+    result["doaj_abstract"] = ""
+    if not oa_abstract and (doi or title):
+        result["doaj_abstract"] = get_abstract_doaj(doi=doi, title=title, journal=journal)
     return result
 
 

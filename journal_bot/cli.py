@@ -511,6 +511,10 @@ def cmd_backfill(args: argparse.Namespace) -> int:
         dry_run=args.dry_run,
         verbose=not args.quiet,
         delay=args.delay,
+        refresh=args.refresh,
+        include_no_doi=args.include_no_doi,
+        since_year=args.since_year,
+        scrape=args.scrape,
     )
     return 0
 
@@ -1430,7 +1434,7 @@ def main(argv: list[str] | None = None) -> int:
                              help="Alternativer articles.db-Pfad")
 
     p_backfill = sub.add_parser("backfill",
-                                help="Fehlende Abstracts nachziehen (Crossref/Playwright/Zotero)")
+                                help="Fehlende Abstracts nachziehen (OpenAlex/DOAJ/Crossref/Playwright/Zotero)")
     p_backfill.add_argument("--limit", type=int, default=None,
                             help="Max. Anzahl Artikel (zum Testen)")
     p_backfill.add_argument("--journal", default="",
@@ -1438,7 +1442,17 @@ def main(argv: list[str] | None = None) -> int:
     p_backfill.add_argument("--dry-run", action="store_true",
                             help="Nur prüfen, nicht schreiben")
     p_backfill.add_argument("--delay", type=float, default=2.0,
-                            help="Sekunden zwischen externen Requests (Default 2)")
+                            help="Sekunden zwischen Scraping-Requests (Default 2)")
+    p_backfill.add_argument("--refresh", action="store_true",
+                            help="Negativ-Cache übergehen — früher vergeblich geprüfte "
+                                 "Artikel erneut über OpenAlex/DOAJ versuchen")
+    p_backfill.add_argument("--include-no-doi", action="store_true",
+                            help="Auch DOI-lose OA-Journals (DOAJ per Titel, z.B. DCE)")
+    p_backfill.add_argument("--since-year", type=int, default=None,
+                            help="Nur ab Jahrgang (z.B. 2024) — filter-relevanter Bereich")
+    p_backfill.add_argument("--scrape", action="store_true",
+                            help="Zusätzlich Verlags-Scraper (curl_cffi/Playwright/Zotero) — "
+                                 "fragil/rechtlich grau, daher opt-in")
     p_backfill.add_argument("--quiet", action="store_true")
     p_backfill.set_defaults(func=cmd_backfill)
 
