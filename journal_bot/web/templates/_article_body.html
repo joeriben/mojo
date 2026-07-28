@@ -4,13 +4,13 @@
    geerdete Bezüge stehen vorn; die LLM-Analyse bleibt erhalten (§4-Erhalt),
    ist aber nachgeordnet und als ungeerdert markiert. #}
 
-{% if a.agent_entry %}
-{% set e = a.agent_entry %}
-
-<!-- Verdict -->
+{# Einstufung: auch ohne Analyse — ein abgerufener, nie durchgesehener Beitrag
+   muss hier trotzdem dein Urteil aufnehmen können. #}
 <div class="detail-section">
   {% include "_verdict_controls.html" %}
-  <p style="margin-top:.4rem;">{{ e.verdict_begruendung }}</p>
+  {% if a.agent_entry and a.agent_entry.verdict_begruendung %}
+  <p style="margin-top:.4rem;">{{ a.agent_entry.verdict_begruendung }}</p>
+  {% endif %}
   {% if a.selection_mode or a.discourse_indicator or a.signal_group or a.suggested_subgroup %}
   <p style="margin-top:.5rem; font-size:.85rem; color:var(--muted);">
     Gefunden über: {{ [
@@ -27,7 +27,6 @@
   </p>
   {% endif %}
 </div>
-{% endif %}
 
 <!-- Original-Abstract (verbatim, primäre Inhaltsquelle) -->
 {% set abs = a.openalex_abstract or a.abstract %}

@@ -24,9 +24,7 @@
 {% else %}
 {% for a in articles %}
 <div class="art-row">
-  {% if a.effective_verdict %}
   {% include "_verdict_controls.html" %}
-  {% endif %}
   <span class="art-journal">{{ a.journal_full }}</span>
   {{ title_link(a) }}
   <span class="art-year">{{ a.year or "" }}</span>

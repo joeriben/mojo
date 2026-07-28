@@ -1,10 +1,15 @@
 {# HTMX partial: inline verdict override controls #}
 <div class="verdict-controls" id="vc-{{ a.id }}">
   <div style="display:flex; gap:.4rem; align-items:center; flex-wrap:wrap;">
-    {# Current effective verdict badge #}
+    {# Current effective verdict badge — leer, wenn der Artikel nie eine
+       Einstufung bekommen hat (abgerufen, aber nicht durchgesehen). #}
+    {% if a.effective_verdict %}
     <span class="badge badge-{{ a.effective_verdict }}" title="Einstufung">
       {{ verdict_label.get(a.effective_verdict, a.effective_verdict) }}
     </span>
+    {% else %}
+    <span class="badge badge-offen" title="Einstufung">Nicht eingestuft</span>
+    {% endif %}
 
     {% if a.user_verdict and a.user_verdict == a.agent_verdict %}
     {# Confirmed: checkmark, no strikethrough #}
@@ -17,8 +22,8 @@
     </span>
     {% endif %}
 
-    {# Confirm button (only if not yet reviewed) #}
-    {% if not a.user_verdict %}
+    {# Confirm button (nur wenn es einen Vorschlag gibt und er noch offen ist) #}
+    {% if a.agent_verdict and not a.user_verdict %}
     <button class="btn btn-verdict btn-confirm"
             hx-post="/api/verdict"
             hx-vals='{"article_id": "{{ a.id }}", "verdict": "{{ a.agent_verdict }}"}'
@@ -51,7 +56,7 @@
             hx-vals='{"article_id": "{{ a.id }}", "verdict": ""}'
             hx-target="#vc-{{ a.id }}"
             hx-swap="outerHTML"
-            title="Dein Urteil zurücknehmen — es gilt wieder der Vorschlag">
+            title="{% if a.agent_verdict %}Dein Urteil zurücknehmen — es gilt wieder der Vorschlag{% else %}Dein Urteil zurücknehmen{% endif %}">
       ✕
     </button>
     {% endif %}
